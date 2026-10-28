@@ -3,7 +3,7 @@
    URL params override any key:  ?detect.cannyHigh=90&debug=1  ·  ?selftest=1 runs self-tests
    ===================================================================== */
 const CONFIG = {
-  appVersion: '1.4.0-dev',         // see CHANGELOG.md
+  appVersion: '1.4.0',         // see CHANGELOG.md
   debug: false,
   previewMaxPx: 2048,          // long side of the in-memory preview copy (and of the warped preview)
   thumbMaxPx: 720,             // long side of the copy used for the live mini preview while dragging

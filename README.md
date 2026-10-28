@@ -81,7 +81,7 @@ Pinch or scroll to zoom; drag empty space to pan.
 
 | Command or file | What it checks |
 |---|---|
-| `node tests/selftest.js` | Engine self-tests: geometry, detection on a synthetic card, levels math, and that the engine never touches the page |
+| `node tests/selftest.js` | Engine self-tests (geometry, detection on a synthetic card, levels math) plus structural checks: the engine never touches the page, asset links carry the current version, and the interface modules only reach each other through their shared namespace |
 | `tests/sample-regression.js` | Corner detection and export checks against the photos in `samples/`. Serve the folder locally, open the app, paste the file into the browser console, and it prints a pass/fail table |
 
 ## Known limitations
