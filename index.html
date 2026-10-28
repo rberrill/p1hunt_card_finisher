@@ -74,9 +74,6 @@
   .chip { min-height: 44px; min-width: 52px; padding: 0 12px; border-radius: 22px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; touch-action: manipulation; }
   .chip[aria-pressed="true"] { border-color: var(--accent); background: rgba(229, 50, 45, .18); }
   .chip:disabled { opacity: .35; }
-  .chips.scroller { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px 6px; padding: 0 12px; }
-  .chips.scroller::-webkit-scrollbar { display: none; }
-  .chips.scroller .chip { flex: none; }
   .swatch { width: 18px; height: 18px; flex: none; border-radius: 4px; border: 1px solid var(--line); }
   .levels-row > .btn { flex: 1; min-width: 0; padding: 0 6px; }
   .swatch.unset { background: repeating-linear-gradient(45deg, var(--panel2) 0 6px, var(--panel) 6px 12px); }
@@ -161,6 +158,10 @@
     .actionbar { padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
     .actionbar > .btn { padding: 0 6px; }
     .stepbtn { display: inline-flex !important; flex: none !important; }
+    /* Crop presets: one row that scrolls sideways (swipe). Wide screens wrap instead, since a mouse can't swipe. */
+    .chips.scroller { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px 6px; padding: 0 12px; }
+    .chips.scroller::-webkit-scrollbar { display: none; }
+    .chips.scroller .chip { flex: none; }
     .result-group { display: none; }
     .mini { max-width: 180px; }
     #debugPanel { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; max-height: 45vh; }
@@ -377,7 +378,7 @@
      ===================================================================== -->
 <script>
 const CONFIG = {
-  appVersion: '1.3.3',         // see CHANGELOG.md
+  appVersion: '1.4.0-dev',         // see CHANGELOG.md
   debug: false,
   previewMaxPx: 2048,          // long side of the in-memory preview copy (and of the warped preview)
   thumbMaxPx: 720,             // long side of the copy used for the live mini preview while dragging
