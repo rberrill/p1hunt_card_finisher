@@ -7,7 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [1.4.0] - Unreleased
 
 ### Changed
-- The code is split out of the single `index.html` into `css/app.css`, `js/config.js`, `js/engine.js` and `js/app.js`. There are no behavior changes. It still has no build step or dependencies, and still works opened from disk.
+- The code is split out of the single `index.html` into `css/app.css`, `js/config.js`, `js/engine.js`, and nine interface modules in `js/app/`. There are no behavior changes. It still has no build step or dependencies, and still works opened from disk.
+- `tests/selftest.js` also checks module boundaries: every cross-module name goes through the shared namespace, and no module uses an undeclared name.
 - Asset links carry the app version (`?v=`), so browsers pick up new files right after a release.
 
 ### Fixed
