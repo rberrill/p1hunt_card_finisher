@@ -4,7 +4,7 @@ Straighten, crop and color-correct photos of trading cards, including cards in o
 
 It's a single web page that runs entirely in your browser. **Your photos never leave your device**: no uploads, no accounts, no server.
 
-<!-- Live app: add the GitHub Pages URL here once Pages is on. -->
+**Use it here: [rberrill.github.io/p1hunt_card_finisher](https://rberrill.github.io/p1hunt_card_finisher/)**
 
 ## What it does
 
@@ -31,7 +31,7 @@ Also:
 
 ## Using it
 
-- **Hosted:** open the GitHub Pages site for this repository. Sharing to the iOS share sheet only works over HTTPS, which Pages provides.
+- **Hosted:** [rberrill.github.io/p1hunt_card_finisher](https://rberrill.github.io/p1hunt_card_finisher/) (GitHub Pages). This is the recommended way on a phone: the Share button needs HTTPS, which Pages provides.
 - **From disk:** download `index.html` and open it in a current browser (tested in Chrome on desktop and Safari on iPhone). It makes no network requests.
 - **Local server:** from this folder, run the command below and open `http://localhost:8765/index.html`. The sample-photo tests need this.
 
