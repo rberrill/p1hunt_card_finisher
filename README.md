@@ -8,7 +8,7 @@ It's a single web page that runs entirely in your browser. **Your photos never l
 
 ## What it does
 
-Five steps, in order:
+Six steps, in order:
 
 1. **Perspective.** Finds the card's four corners automatically, even inside a case or slab, and corrects the camera angle.
    - **Flatten** slider: 100% gives a flat 5:7 card, as if scanned; 0% squares it up but keeps some depth.
@@ -18,7 +18,8 @@ Five steps, in order:
 2. **Rotate.** 90° turns, flips, and fine rotation in 0.1° steps.
 3. **Crop.** Free, Original, 1:1, 4:3, 5:4, 3:2, 16:9 and 5:7 card. Presets follow the card's orientation (a portrait card gets 4:5, 2:3, 9:16…), and **Swap** flips them. **Fit to card** frames the card with a little padding.
 4. **Levels.** Set a white point (and optionally a black point) by tapping the image, or start from **Auto**. Press and hold the photo to compare before and after. Changes stay a draft until you **Apply** them.
-5. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size.
+5. **Overlay.** Add your logo or watermark (PNG, WebP, JPG or SVG, up to 5 MB) on top of the photo. Drag it, resize it with a corner or a pinch, nudge it, snap it to a corner, and set its opacity. Transparent logos keep their soft edges. Your last logo is remembered in the browser, so next time it's one tap: **Use saved overlay**.
+6. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size.
    - Where the browser supports it, **Share** opens the share sheet; on iPhone, Save Image puts the result straight into Photos.
    - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
    - Exports are rendered from the full-resolution original.
@@ -26,7 +27,7 @@ Five steps, in order:
 Also:
 - **Undo / redo** (50 steps).
 - **Resume:** the last photo and its edits are kept on your device, so if the page reloads or the tab closes, you can pick up where you left off.
-- **Save / load edits** as a small JSON file. Reopening the same photo and loading its edits gives an identical export.
+- **Save / load edits** as a small JSON file (with the overlay logo embedded). Reopening the same photo and loading its edits gives an identical export.
 - **Phone-first layout,** which also works on desktop.
 
 ## Using it
@@ -47,11 +48,12 @@ Load a photo with **Open**, drag and drop, or paste. JPEG, PNG and WebP work eve
 |---|---|
 | Ctrl/Cmd+Z | Undo |
 | Shift+Ctrl/Cmd+Z or Ctrl/Cmd+Y | Redo |
-| 1 – 5 | Go to a step |
+| 1 – 6 | Go to a step |
 | F | Fit the photo to the screen |
 | Tab / Shift+Tab | Perspective: select the next / previous handle |
 | Arrow keys | Perspective: nudge the selected handle 1 px (Shift: 10 px) |
 | C (hold) | Levels: compare without levels |
+| Arrow keys, + / − | Overlay: move the logo (Shift: bigger steps), make it larger / smaller; the mouse wheel also resizes it |
 
 Pinch or scroll to zoom; drag empty space to pan.
 

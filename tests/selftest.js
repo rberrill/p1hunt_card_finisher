@@ -25,7 +25,7 @@ report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersi
 
 // Shell module boundaries (js/app/*.js share the CF namespace; see the header of each module).
 {
-  const { tokenize, topLevelDecls, idUses, freeNames } = require('./jstok.js');
+  const { tokenize, topLevelDecls, idUses, freeNames, declaredNames } = require('./jstok.js');
   const html = read('index.html');
   const order = [...html.matchAll(/<script src="js\/app\/([\w-]+)\.js\?/g)].map(m => m[1]);
   const onDisk = fs.readdirSync(path.join(root, 'js/app')).filter(f => f.endsWith('.js')).map(f => f.slice(0, -3)).sort();
@@ -41,7 +41,7 @@ report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersi
     const imports = new Set(((src.match(/const \{([^}]*)\} = CF;/) || [])[1] || '').split(',').map(s => s.trim()).filter(Boolean));
     const exports = new Set(((src.match(/Object\.assign\(CF, \{([^}]*)\}\);/) || [])[1] || '').split(',').map(s => s.trim()).filter(Boolean));
     const cfRefs = new Set(); toks.forEach((t, k) => { if (t.value === 'CF' && toks[k + 1] && toks[k + 1].value === '.' && toks[k + 2] && toks[k + 2].type === 'id') cfRefs.add(toks[k + 2].value); });
-    mods[m] = { decls, imports, exports, cfRefs, uses: idUses(toks).map(u => u.tok.value) };
+    mods[m] = { decls, imports, exports, cfRefs, uses: idUses(toks).map(u => u.tok.value), locals: new Set([...declaredNames(toks)].filter(n => !imports.has(n))) };
   }
   const home = {}, dupes = [];
   for (const m of order) for (const n of mods[m].decls) { if (home[n]) dupes.push(`${n} (${home[n]}, ${m})`); else home[n] = m; }
@@ -51,7 +51,7 @@ report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersi
   let checked = 0;
   for (const m of order) {
     for (const n of mods[m].uses) {
-      const h = home[n]; if (!h || h === m) continue;
+      const h = home[n]; if (!h || h === m || mods[m].locals.has(n)) continue; // a local of the same name is fine
       checked++;
       if (!(h === 'core' && mods[m].imports.has(n))) bare.push(`${m} uses ${h}.${n} without CF`);
     }
@@ -63,7 +63,8 @@ report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersi
   // module (e.g. a dropped `const E = …`) would otherwise only throw when that code path runs.
   // Add to this list when the shell starts using a new browser API or app global.
   const GLOBALS = new Set(('Array Blob CONFIG CardEngine CardEngineModule ClipboardItem Date Error File Image ImageData Infinity JSON Map Math ' +
-    'Number Object Promise ResizeObserver String URL URLSearchParams Uint8ClampedArray Worker clearInterval clearTimeout console ' +
+    'Number Object Promise ResizeObserver String URL URLSearchParams Uint8Array Uint8ClampedArray Worker clearInterval clearTimeout console ' +
+    'DOMParser XMLSerializer TextDecoder atob btoa parseFloat ' +
     'createImageBitmap document indexedDB isFinite localStorage location matchMedia navigator parseInt performance ' +
     'requestAnimationFrame setInterval setTimeout undefined window').split(' '));
   const unknown = [];

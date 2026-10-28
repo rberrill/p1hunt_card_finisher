@@ -15,8 +15,9 @@
     document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
     document.querySelectorAll('section[data-panel]').forEach(s => s.classList.toggle('active', s.dataset.panel === tab));
     els.canvas.style.cursor = '';
-    if (tab === 'export' || tab === 'levels') app.views.export = null;
+    if (tab === 'export' || tab === 'levels' || tab === 'overlay') app.views.export = null;
     if (tab !== 'levels') { app.dropper = null; app.compare = false; }
+    if (tab !== 'overlay') app.overlayMsg = '';
     app.nudgeLoupeUntil = 0; closeStepMenu(); CF.Session.saveSoon();
     if (CF.phoneLayout.matches) collapseMore();
     syncUI(); CF.requestRender(); CF.requestMini();
@@ -27,9 +28,9 @@
   }
   function setSeg(name, val) { document.querySelectorAll(`[data-seg="${name}"] button`).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === val))); }
 
-  const STEPS = { perspective: 'Perspective', rotate: 'Rotate', crop: 'Crop', levels: 'Levels', export: 'Export' };
+  const STEPS = { perspective: 'Perspective', rotate: 'Rotate', crop: 'Crop', levels: 'Levels', overlay: 'Overlay', export: 'Export' };
 
-  // Step menu (phones): lists the five steps above the action bar.
+  // Step menu (phones): lists the steps above the action bar.
   function openStepMenu(btn) {
     const m = $('stepMenu');
     m.innerHTML = Object.keys(STEPS).map((t, i) =>
@@ -201,6 +202,7 @@
     els.editsInput.addEventListener('change', () => { const f = els.editsInput.files[0]; els.editsInput.value = ''; if (f) CF.loadEdits(f); });
 
     document.querySelectorAll('[data-reset]').forEach(b => b.addEventListener('click', () => resetStep(b.dataset.reset)));
+    CF.bindOverlayControls();
   }
 
   function resetStep(step) {
@@ -253,6 +255,7 @@
     $('size').value = String(s.export.longEdge || 0);
     $('interp').value = s.export.interp;
     syncLevels();
+    CF.syncOverlay();
     syncReadouts();
   }
 

@@ -37,6 +37,7 @@
       flip: { h: false, v: false },
       crop: cropDefaults(prefs),
       levels: null,
+      overlay: null,               // logo / watermark placement (Overlay step); the image itself lives outside the state
       export: exportDefaults(prefs),
     };
   }
@@ -105,7 +106,7 @@
     if (app.views.result && app.views.result.auto) app.views.result = null; // refit lazily
     app.views.export = null;
     app.pendingSave = null; // an export waiting for a second tap no longer matches the edits
-    CF.Prefs.save(); CF.Session.saveSoon();
+    CF.Prefs.save(); CF.Session.saveSoon(); CF.overlayStateChanged();
     CF.syncUI();
     CF.requestRender();
     CF.requestMini();
@@ -150,7 +151,7 @@
     console.info(`[card-finisher] ${img.name}: ${img.width}×${img.height} loaded + previewed in ${ms.toFixed(0)} ms`);
     app.loadMs = ms;
     hideToast();
-    if (resumed) toast('Resumed where you left off.');
+    if (resumed) { toast('Resumed where you left off.'); CF.ensureOverlayImage(); }
     runDetect({ auto: true, keepCorners: resumed });
   }
 

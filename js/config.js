@@ -3,7 +3,7 @@
    URL params override any key:  ?detect.cannyHigh=90&debug=1  ·  ?selftest=1 runs self-tests
    ===================================================================== */
 const CONFIG = {
-  appVersion: '1.4.0',         // see CHANGELOG.md
+  appVersion: '1.5.0-dev',         // see CHANGELOG.md
   debug: false,
   previewMaxPx: 2048,          // long side of the in-memory preview copy (and of the warped preview)
   thumbMaxPx: 720,             // long side of the copy used for the live mini preview while dragging
@@ -86,6 +86,15 @@ const CONFIG = {
   // Session restore: the last photo and its edits are kept on this device (IndexedDB) so a reload,
   // a navigation or iOS closing the tab can be resumed. Nothing leaves the device.
   session: { enabled: true, dbName: 'p1hunt-finisher', saveDelayMs: 400 },
+
+  // Overlay step (logo / watermark). Placement defaults live in CardEngine.OVERLAY_DEFAULTS.
+  overlay: {
+    maxBytes: 5 * 1024 * 1024,   // upload limit (AC6)
+    maxPx: 4096,                 // raster overlays are decoded at most this long side (phone memory)
+    svgPx: 2048,                 // SVGs are rasterized at this long side, so they stay crisp at export size
+    nudgePct: 0.5, nudgeShiftPct: 5, // arrow step as % of the photo width (Shift / desktop keys: bigger)
+    sizeStep: 1.05,              // − / + change the width by this factor
+  },
 
   keys: { undo: 'mod+z', redo: 'mod+shift+z', redoAlt: 'mod+y', debug: '`', fit: 'f', compare: 'c', cycleHandle: 'Tab', nudge: 1, nudgeShift: 10 },
   storageKey: 'p1hunt.straightener.v1',

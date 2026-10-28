@@ -1,0 +1,5 @@
+# Keep LF line endings in the working tree on every OS (Windows checkouts otherwise get CRLF).
+* text=auto eol=lf
+*.JPEG binary
+*.jpg binary
+*.png binary

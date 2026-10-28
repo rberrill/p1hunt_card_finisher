@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 -->
-<link rel="stylesheet" href="css/app.css?v=1.4.0">
+<link rel="stylesheet" href="css/app.css?v=1.5.0-dev">
 </head>
 <body>
 <div id="app">
@@ -27,6 +27,7 @@
       <button class="tab" role="tab" data-tab="rotate" aria-selected="false">Rotate</button>
       <button class="tab" role="tab" data-tab="crop" aria-selected="false">Crop</button>
       <button class="tab" role="tab" data-tab="levels" aria-selected="false">Levels</button>
+      <button class="tab" role="tab" data-tab="overlay" aria-selected="false">Overlay</button>
       <button class="tab" role="tab" data-tab="export" aria-selected="false">Export</button>
     </nav>
   </header>
@@ -166,6 +167,40 @@
         <div class="actionbar">
           <button class="btn primary" id="btnApplyLevels">Apply</button>
           <button class="btn" id="btnDiscardLevels">Discard</button>
+          <button class="btn" data-next="overlay">Overlay →</button>
+        </div>
+      </section>
+
+      <section data-panel="overlay">
+        <div class="controls">
+          <div id="ovEmpty">
+            <div class="row" id="ovSavedRow" hidden><img class="ov-thumb" id="ovThumb" alt="Saved overlay"><button class="btn" id="btnUseSaved">Use saved overlay</button></div>
+            <div class="readout" id="ovHint">Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.</div>
+          </div>
+          <div id="ovEdit" hidden>
+            <div class="nudge" role="group" aria-label="Move or resize the overlay">
+              <button data-onudge="0,-1" aria-label="Move up">▲</button><button data-onudge="0,1" aria-label="Move down">▼</button><button data-onudge="-1,0" aria-label="Move left">◀</button><button data-onudge="1,0" aria-label="Move right">▶</button><button data-onudge="shrink" aria-label="Smaller">−</button><button data-onudge="grow" aria-label="Larger">+</button>
+            </div>
+            <div class="inline">
+              <label for="ovOpacity">Opacity</label>
+              <input type="range" id="ovOpacity" min="0" max="100" step="1">
+              <span class="val" id="ovOpacityVal"></span>
+            </div>
+          </div>
+          <div class="status" id="overlayStatus"></div>
+          <details class="more">
+            <summary>More options</summary>
+            <div class="group">
+              <h3>Snap to</h3>
+              <div class="chips" id="ovSnap"><button class="chip" data-snap="tl" title="Top left" aria-label="Top left">↖</button><button class="chip" data-snap="tr" title="Top right" aria-label="Top right">↗</button><button class="chip" data-snap="c" title="Center" aria-label="Center">●</button><button class="chip" data-snap="bl" title="Bottom left" aria-label="Bottom left">↙</button><button class="chip" data-snap="br" title="Bottom right" aria-label="Bottom right">↘</button></div>
+            </div>
+            <div class="row"><button class="btn" id="btnOvReset">Reset</button><button class="btn" id="btnOvRemove">Remove overlay</button></div>
+            <button class="btn wide" id="btnOvDeleteSaved">Delete saved overlay</button>
+            <div class="hint">Drag to move the overlay; drag a corner, pinch, or use − + to resize. On a keyboard, arrows move it (Shift for bigger steps) and + − resize it. On this step the photo stays framed as set in Crop. Your last overlay is kept in this browser for the next photo.</div>
+          </details>
+        </div>
+        <div class="actionbar">
+          <button class="btn primary" id="btnOvUpload">Upload</button>
           <button class="btn" data-next="export">Export →</button>
         </div>
       </section>
@@ -212,22 +247,24 @@
 
   <input type="file" id="fileInput" accept="image/*,.heic,.heif" hidden>
   <input type="file" id="editsInput" accept="application/json,.json" hidden>
+  <input type="file" id="overlayInput" accept="image/png,image/webp,image/jpeg,image/svg+xml,.png,.webp,.jpg,.jpeg,.svg" hidden>
   <div id="debugPanel" hidden></div>
 </div>
 
 <!-- Classic scripts, not ES modules, so the app also runs from file://. Order matters: config → engine → app modules
      (core first: it creates the CF namespace; main last: it calls init()).
      ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay relative. -->
-<script src="js/config.js?v=1.4.0"></script>
-<script src="js/engine.js?v=1.4.0"></script>
-<script src="js/app/core.js?v=1.4.0"></script>
-<script src="js/app/adapters.js?v=1.4.0"></script>
-<script src="js/app/state.js?v=1.4.0"></script>
-<script src="js/app/view.js?v=1.4.0"></script>
-<script src="js/app/levels.js?v=1.4.0"></script>
-<script src="js/app/input.js?v=1.4.0"></script>
-<script src="js/app/ui.js?v=1.4.0"></script>
-<script src="js/app/export.js?v=1.4.0"></script>
-<script src="js/app/main.js?v=1.4.0"></script>
+<script src="js/config.js?v=1.5.0-dev"></script>
+<script src="js/engine.js?v=1.5.0-dev"></script>
+<script src="js/app/core.js?v=1.5.0-dev"></script>
+<script src="js/app/adapters.js?v=1.5.0-dev"></script>
+<script src="js/app/state.js?v=1.5.0-dev"></script>
+<script src="js/app/view.js?v=1.5.0-dev"></script>
+<script src="js/app/levels.js?v=1.5.0-dev"></script>
+<script src="js/app/overlay.js?v=1.5.0-dev"></script>
+<script src="js/app/input.js?v=1.5.0-dev"></script>
+<script src="js/app/ui.js?v=1.5.0-dev"></script>
+<script src="js/app/export.js?v=1.5.0-dev"></script>
+<script src="js/app/main.js?v=1.5.0-dev"></script>
 </body>
 </html>

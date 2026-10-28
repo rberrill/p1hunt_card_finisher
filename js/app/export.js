@@ -90,6 +90,7 @@
       await nextFrame();
     }
     reg.width = reg.height = 0;
+    CF.compositeOverlay(octx, st, outW, outH); // the overlay goes on last, before encoding (no levels on it)
     return { canvas: out, geo: g };
   }
 
@@ -151,7 +152,9 @@
   /* ---------- save / load edits (the serializable edit state) ---------- */
   function saveEdits() {
     if (!app.state) return;
-    const blob = new Blob([JSON.stringify(app.state, null, 2)], { type: 'application/json' });
+    // The overlay image travels inside the edits file, so loading it rebuilds the export exactly.
+    const data = Object.assign(clone(app.state), { overlayImage: CF.overlayForEdits(app.state) || undefined });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     CF.Session.flush(); Exporter.download(blob, (app.state.source.name || 'photo').replace(/\.[^.]+$/, '') + '-edits.json');
   }
   async function loadEdits(file) {
@@ -174,6 +177,7 @@
     }
     if (st.source.name !== app.img.name) toast(`Edits were saved for “${st.source.name}”. Applied anyway — sizes match.`, 'warn', 5000);
     st.source.name = app.img.name;
+    if (!(await CF.overlayFromEdits(st))) { toast('The overlay in these edits couldn’t be read, so it was left out.', 'warn', 5000); st.overlay = null; }
     CF.commit(s => { for (const k of Object.keys(s)) delete s[k]; Object.assign(s, st); });
   }
 
