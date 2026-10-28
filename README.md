@@ -20,7 +20,7 @@ Five steps, in order:
 4. **Levels.** Set a white point (and optionally a black point) by tapping the image, or start from **Auto**. Press and hold the photo to compare before and after. Changes stay a draft until you **Apply** them.
 5. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size.
    - Where the browser supports it, **Share** opens the share sheet; on iPhone, Save Image puts the result straight into Photos.
-   - **Download** saves the file, and **Copy** puts it on the clipboard where supported.
+   - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
    - Exports are rendered from the full-resolution original.
 
 Also:

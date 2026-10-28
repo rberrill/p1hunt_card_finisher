@@ -188,6 +188,8 @@
     $('btnShare').onclick = () => app.pendingSave ? CF.shareFile(app.pendingSave) : CF.doExport('share');
     // Share is the main action where the browser supports it; Download stays as a plain download.
     if (CF.Exporter.canShare()) { $('btnShare').hidden = false; $('btnDownload').classList.remove('primary'); }
+    // Copy needs the image clipboard (secure pages only); hide it rather than show a dead button.
+    $('btnCopy').hidden = !CF.Exporter.canCopy();
     $('btnCopy').onclick = () => CF.doExport('copy');
     $('btnListing').onclick = () => CF.commit(s => {
       s.crop = { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, orient: null, rect: null };
@@ -294,7 +296,7 @@
     if (s.export.format === 'jpeg' && s.export.fill === 'transparent') notes.push('JPEG has no transparency; empty areas will be white.');
     if (app.levelsPending) notes.push('Levels has unapplied changes; the export uses the applied levels only.');
     em.className = 'status'; em.textContent = notes.join(' ');
-    $('btnDownload').disabled = !!app.exporting; $('btnShare').disabled = !!app.exporting && !app.pendingSave; $('btnCopy').disabled = !!app.exporting || !CF.Exporter.canCopy();
+    $('btnDownload').disabled = !!app.exporting; $('btnShare').disabled = !!app.exporting && !app.pendingSave; $('btnCopy').disabled = !!app.exporting;
   }
 
   /* ---------- debug tuning panel (?debug=1 or the ` key) ---------- */
