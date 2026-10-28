@@ -1,0 +1,158 @@
+/* P1Hunt Card Finisher styles. Loaded by index.html with ?v=<appVersion> for cache-busting.
+   Phone layout lives in the @media (max-width: 760px) block at the end; phone-only behaviors stay inside it. */
+:root {
+  --bg: #161618; --panel: #1f1f22; --panel2: #2a2a2e; --line: #3a3a40; --text: #e8e8ea; --muted: #9c9ca4;
+  --accent: #e5322d; --ok: #3fb950; --warn: #e3b341; --stage: #2b2b2b;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+button, select, input { font: inherit; color: inherit; }
+#app { display: flex; flex-direction: column; height: 100%; height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  /* iOS: a long press (holding a handle, a nudge arrow, Hold to compare) must not start text selection,
+     the selection magnifier or the callout menu. Form fields keep normal selection. */
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, select, textarea { -webkit-user-select: auto; user-select: auto; }
+
+/* ---- top bar ---- */
+.topbar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.brand { font-weight: 700; letter-spacing: .02em; padding: 0 6px; white-space: nowrap; }
+.brand b { color: var(--accent); }
+.tabs { display: flex; gap: 2px; background: var(--panel2); border-radius: 12px; padding: 3px; margin: 0 auto; }
+.tab { min-height: 40px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 600; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--bg); color: var(--text); }
+.tab:disabled { opacity: .4; cursor: default; }
+.actions { display: flex; gap: 4px; }
+.btn { min-height: 44px; min-width: 44px; padding: 0 12px; border: 1px solid var(--line); background: var(--panel2); border-radius: 10px;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.btn:hover:not(:disabled) { border-color: #55555c; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn[aria-pressed="true"] { border-color: var(--accent); background: rgba(229, 50, 45, .18); }
+.btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.btn.wide { width: 100%; }
+.btn[hidden] { display: none; }
+
+/* ---- stage + panel ---- */
+main { flex: 1; display: flex; min-height: 0; }
+.stage { flex: 1; position: relative; background: var(--stage); min-width: 0; min-height: 0; overflow: hidden; touch-action: none; }
+.stage.dragover { outline: 2px dashed var(--accent); outline-offset: -10px; }
+#view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+.empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; color: var(--muted); padding: 24px; }
+.empty[hidden] { display: none; }
+.empty h2 { margin: 0; color: var(--text); font-size: 20px; }
+.resume { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; max-width: 340px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; color: var(--text); }
+.resume[hidden] { display: none; }
+.resume b { word-break: break-all; }
+.resume .when { color: var(--muted); font-size: 13px; }
+.resume .row { margin: 0; }
+.toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); max-width: min(92%, 520px); background: rgba(16, 16, 18, .94); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 14px; font-size: 13px; pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 5; }
+.toast.show { opacity: 1; }
+.toast.warn { border-left: 3px solid var(--warn); } .toast.err { border-left: 3px solid var(--accent); }
+.panel { width: 330px; flex: none; display: flex; flex-direction: column; position: relative; background: var(--panel); border-left: 1px solid var(--line); }
+.controls { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px; -webkit-overflow-scrolling: touch; }
+.group { margin-bottom: 16px; }
+.group h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin: 0 0 7px; font-weight: 600; }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.row > .btn { flex: 1; }
+.seg { display: flex; background: var(--panel2); border-radius: 11px; padding: 3px; gap: 2px; margin-bottom: 6px; }
+.seg button { flex: 1; min-height: 40px; border: 0; background: transparent; border-radius: 8px; color: var(--muted); cursor: pointer; touch-action: manipulation; }
+.seg button[aria-pressed="true"] { background: var(--bg); color: var(--text); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.chip { min-height: 44px; min-width: 52px; padding: 0 12px; border-radius: 22px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; touch-action: manipulation; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: rgba(229, 50, 45, .18); }
+.chip:disabled { opacity: .35; }
+.swatch { width: 18px; height: 18px; flex: none; border-radius: 4px; border: 1px solid var(--line); }
+.levels-row > .btn { flex: 1; min-width: 0; padding: 0 6px; }
+.swatch.unset { background: repeating-linear-gradient(45deg, var(--panel2) 0 6px, var(--panel) 6px 12px); }
+.tab.pending::after, #app.levels-pending .stepbtn::after, .stepmenu .pending::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: var(--warn); vertical-align: middle; }
+label.field { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; }
+label.field .val { float: right; color: var(--text); font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; height: 44px; margin: 0; accent-color: var(--accent); touch-action: pan-y; }
+select, input[type="number"] { min-height: 44px; width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; }
+input[type="number"] { width: 96px; }
+input[type="color"] { width: 54px; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); padding: 4px; }
+.toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+.inline { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.inline label { color: var(--muted); font-size: 13px; }
+.inline input[type="range"] { flex: 1; width: auto; min-width: 0; }
+.inline .val { min-width: 3em; text-align: right; font-variant-numeric: tabular-nums; }
+.inline input[type="number"] { width: 76px; }
+.inline .btn { flex: none; }
+/* One status line, shown only when there is something to act on. */
+.status { padding: 5px 10px; border-radius: 8px; background: var(--panel2); border-left: 3px solid var(--warn); font-size: 13px; line-height: 1.35; margin-bottom: 6px; }
+.status:empty { display: none; }
+.status.err { border-left-color: var(--accent); }
+.msg { padding: 8px 10px; border-radius: 8px; background: var(--panel2); font-size: 13px; margin-bottom: 6px; }
+.msg:empty { display: none; }
+.msg.warn { border-left: 3px solid var(--warn); } .msg.err { border-left: 3px solid var(--accent); } .msg.ok { border-left: 3px solid var(--ok); }
+.readout { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+.readout b { color: var(--text); font-weight: 600; }
+.mini { width: 100%; max-width: 280px; aspect-ratio: 1; background: var(--stage); border-radius: 8px; display: block; margin: 0 auto 6px; }
+.progress { height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; margin: 6px 0; }
+.progress > div { height: 100%; width: 0; background: var(--accent); transition: width .1s; }
+.progress[hidden] { display: none; }
+.hint { color: var(--muted); font-size: 12px; margin: 4px 0 8px; }
+section[data-panel] { display: none; }
+section[data-panel].active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+/* ---- action bar, step menu, "More" sections ---- */
+.actionbar { flex: none; display: flex; gap: 6px; padding: 8px 14px calc(8px + env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--line); }
+.actionbar > .btn { flex: 1 1 auto; min-width: 0; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stepbtn { display: none !important; }
+.stepmenu { position: absolute; left: 8px; bottom: calc(66px + env(safe-area-inset-bottom)); z-index: 10; min-width: 210px; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, .55); }
+.stepmenu[hidden] { display: none; }
+.stepmenu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; text-align: left; cursor: pointer; touch-action: manipulation; }
+.stepmenu button .n { color: var(--muted); font-variant-numeric: tabular-nums; width: 1em; }
+.stepmenu button[aria-current="step"] { background: var(--panel2); font-weight: 600; }
+details.more { margin: 4px 0 0; border-top: 1px solid var(--line); }
+details.more > summary { min-height: 44px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600; list-style: none; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::before { content: '▸'; } details.more[open] > summary::before { content: '▾'; }
+/* Nothing floats over the photo, so no handle is ever hidden under a control. */
+#app:not(.has-img) #btnPreview, #app:not([data-tab="perspective"]) #btnPreview { display: none; }
+.nudge { display: none; gap: 6px; margin-bottom: 8px; }
+.nudge button { flex: 0 0 48px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 15px; padding: 0; touch-action: none; cursor: pointer; }
+.nudge .cycle { flex: 1; font-size: 14px; }
+@media (pointer: coarse), (max-width: 760px) {
+  #app:not(.previewing) .nudge { display: flex; }
+}
+
+/* ---- debug tuning panel ---- */
+#debugPanel { position: fixed; right: 8px; top: 64px; width: 300px; max-height: 75vh; overflow: auto; z-index: 20; font-size: 12px;
+  background: rgba(18, 18, 20, .97); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+#debugPanel[hidden] { display: none; }
+#debugPanel label { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 2px 0; }
+#debugPanel input[type="number"] { min-height: 30px; width: 90px; border-radius: 6px; }
+#debugPanel pre { white-space: pre-wrap; font-size: 11px; color: var(--muted); }
+
+/* ---- narrow screens: panel becomes a bottom sheet ---- */
+@media (max-width: 760px) {
+  /* Header, photo, a control area of the same height on every step, then the action bar.
+     The step tabs are replaced by the step menu (first action-bar button); opening "More options" expands the area. */
+  .topbar { padding: 4px 6px; flex-wrap: nowrap; }
+  .brand, .tabs { display: none; }
+  .actions { width: 100%; justify-content: space-between; }
+  main { flex-direction: column; }
+  .panel { width: auto; border-left: 0; border-top: 1px solid var(--line); }
+  .controls { flex: none; height: 184px; padding: 10px 12px 0; } /* fits the tallest step (Perspective) plus a status line */
+  .nudge { margin-bottom: 6px; }
+  .status { margin-bottom: 4px; }
+  details.more { margin-top: 0; }
+  details.more > summary { min-height: 40px; }
+  .panel.expanded .controls { height: calc(64dvh - 62px); }
+  .actionbar { padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+  .actionbar > .btn { padding: 0 6px; }
+  .stepbtn { display: inline-flex !important; flex: none !important; }
+  /* Crop presets: one row that scrolls sideways (swipe). Wide screens wrap instead, since a mouse can't swipe. */
+  .chips.scroller { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px 6px; padding: 0 12px; }
+  .chips.scroller::-webkit-scrollbar { display: none; }
+  .chips.scroller .chip { flex: none; }
+  .result-group { display: none; }
+  .mini { max-width: 180px; }
+  #debugPanel { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; max-height: 45vh; }
+}

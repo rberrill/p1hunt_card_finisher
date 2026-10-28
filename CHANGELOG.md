@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.4.0] - Unreleased
 
+### Changed
+- The code is split out of the single `index.html` into `css/app.css`, `js/config.js`, `js/engine.js` and `js/app.js`. There are no behavior changes. It still has no build step or dependencies, and still works opened from disk.
+- Asset links carry the app version (`?v=`), so browsers pick up new files right after a release.
+
 ### Fixed
 - On wide screens (desktop), the Crop step showed only the first few aspect presets. The phone-only sideways-scrolling row also applied there, with no visible scrollbar. Presets now wrap onto more lines on wide screens and still scroll sideways on phones.
 
