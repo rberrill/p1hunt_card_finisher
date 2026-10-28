@@ -1,4 +1,6 @@
 # Working files from building the app with Claude. They stay on this machine and are never pushed.
+CLAUDE.md
+archive/
 brief.md
 VERSION-*.md
 tests/UAT-*.md

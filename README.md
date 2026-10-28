@@ -20,7 +20,7 @@ Five steps, in order:
 4. **Levels.** Set a white point (and optionally a black point) by tapping the image, or start from **Auto**. Press and hold the photo to compare before and after. Changes stay a draft until you **Apply** them.
 5. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size.
    - Where the browser supports it, **Share** opens the share sheet; on iPhone, Save Image puts the result straight into Photos.
-   - **Download** saves the file, and **Copy** puts it on the clipboard where supported.
+   - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
    - Exports are rendered from the full-resolution original.
 
 Also:
@@ -32,7 +32,7 @@ Also:
 ## Using it
 
 - **Hosted:** [rberrill.github.io/p1hunt_card_finisher](https://rberrill.github.io/p1hunt_card_finisher/) (GitHub Pages). This is the recommended way on a phone: the Share button needs HTTPS, which Pages provides.
-- **From disk:** download `index.html` and open it in a current browser (tested in Chrome on desktop and Safari on iPhone). It makes no network requests.
+- **From disk:** download the repository (Code → Download ZIP), unzip it, and open `index.html` in a current browser (tested in Chrome on desktop and Safari on iPhone). It makes no network requests.
 - **Local server:** from this folder, run the command below and open `http://localhost:8765/index.html`. The sample-photo tests need this.
 
   ```bash
@@ -57,7 +57,13 @@ Pinch or scroll to zoom; drag empty space to pan.
 
 ## How it's built
 
-- One file, `index.html`, with inline CSS and JavaScript. No dependencies and no build step.
+- Plain static files with no dependencies and no build step:
+  - `index.html` (markup)
+  - `css/app.css`
+  - `js/config.js` (settings)
+  - `js/engine.js` (image engine)
+  - `js/app/` (interface: nine small modules on one shared namespace)
+- The scripts are classic scripts on relative paths, so the app works from disk, from `localhost`, or from any folder on a static host.
 - The image engine is pure functions with no access to the page. Corner detection runs in a Web Worker so the interface stays responsive.
 - Every edit is a small state object, and the export is rendered from it in one resampling pass from the original photo. The work is done in bands to keep memory low on phones.
 - Output is capped at 16.7 MP (the iOS Safari canvas limit), so a full-frame 48 MP export is downscaled; cropped exports usually aren't.
@@ -75,7 +81,7 @@ Pinch or scroll to zoom; drag empty space to pan.
 
 | Command or file | What it checks |
 |---|---|
-| `node tests/selftest.js` | Engine self-tests: geometry, detection on a synthetic card, levels math, and that the engine never touches the page |
+| `node tests/selftest.js` | Engine self-tests (geometry, detection on a synthetic card, levels math) plus structural checks: the engine never touches the page, asset links carry the current version, and the interface modules only reach each other through their shared namespace |
 | `tests/sample-regression.js` | Corner detection and export checks against the photos in `samples/`. Serve the folder locally, open the app, paste the file into the browser console, and it prints a pass/fail table |
 
 ## Known limitations

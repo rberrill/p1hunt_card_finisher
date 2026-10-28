@@ -4,6 +4,17 @@ All notable changes to P1Hunt Card Finisher are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is shown in the logo tooltip and logged to the browser console.
 
+## [1.4.0] - 2026-10-28
+
+### Changed
+- The code is split out of the single `index.html` into `css/app.css`, `js/config.js`, `js/engine.js`, and nine interface modules in `js/app/`. There are no behavior changes. It still has no build step or dependencies, and still works opened from disk.
+- `tests/selftest.js` also checks module boundaries: every cross-module name goes through the shared namespace, and no module uses an undeclared name.
+- Asset links carry the app version (`?v=`), so browsers pick up new files right after a release.
+- **Copy** is hidden where the browser can't copy images to the clipboard (pages not on HTTPS), instead of showing as a greyed-out button. On those pages Export shows just Download, matching how Share already behaved.
+
+### Fixed
+- On wide screens (desktop), the Crop step showed only the first few aspect presets. The phone-only sideways-scrolling row also applied there, with no visible scrollbar. Presets now wrap onto more lines on wide screens and still scroll sideways on phones.
+
 ## [1.3.3] - 2026-10-28
 
 ### Added
