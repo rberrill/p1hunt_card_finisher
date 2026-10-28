@@ -1,0 +1,12 @@
+# Working files from building the app with Claude. They stay on this machine and are never pushed.
+brief.md
+VERSION-*.md
+tests/UAT-*.md
+.claude/
+
+# OS / editor clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
