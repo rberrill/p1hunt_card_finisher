@@ -94,6 +94,7 @@ const CONFIG = {
     svgPx: 2048,                 // SVGs are rasterized at this long side, so they stay crisp at export size
     nudgePct: 0.5, nudgeShiftPct: 5, // arrow step as % of the photo width (Shift / desktop keys: bigger)
     sizeStep: 1.05,              // − / + change the width by this factor
+    hotSpotInset: 28,            // snap rings sit this far (screen px) in from the photo's corners
   },
 
   keys: { undo: 'mod+z', redo: 'mod+shift+z', redoAlt: 'mod+y', debug: '`', fit: 'f', compare: 'c', cycleHandle: 'Tab', nudge: 1, nudgeShift: 10 },

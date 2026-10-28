@@ -215,12 +215,42 @@
     ctx.drawImage(rec.el, r.x, r.y, r.w, r.h);
     ctx.restore();
     if (app.tab !== 'overlay') return;
+    if (!app.gesture) drawHotSpots(ctx, v, c.f);
     ctx.setLineDash([6, 5]); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5;
     ctx.strokeRect(r.x, r.y, r.w, r.h); ctx.setLineDash([]);
     for (const p of Object.values(overlayCorners(r))) {
       ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.rect(p[0] - 7, p[1] - 7, 14, 14); ctx.fill(); ctx.stroke();
     }
+  }
+
+  /* ---------- snap hot spots: five rings on the photo (four corners and the center) ----------
+     A still tap on a ring snaps the logo there; a drag that starts on one moves the logo as usual.
+     The rings hide during a gesture so they never get in the way of placing by hand. */
+  function hotSpots(v, f) {
+    const a = CF.toScreen(v, [f.x, f.y]), b = CF.toScreen(v, [f.x + f.w, f.y + f.h]);
+    const i = Math.min(CONFIG.overlay.hotSpotInset, (b[0] - a[0]) / 4, (b[1] - a[1]) / 4);
+    return { tl: [a[0] + i, a[1] + i], tr: [b[0] - i, a[1] + i], c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], bl: [a[0] + i, b[1] - i], br: [b[0] - i, b[1] - i] };
+  }
+  function hitSpot(v, p) {
+    const c = current(); if (!c) return null;
+    let best = null, bd = CONFIG.handle.hitRadius;
+    for (const [k, q] of Object.entries(hotSpots(v, c.f))) { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < bd) { bd = d; best = k; } }
+    return best;
+  }
+  function drawHotSpots(ctx, v, f) {
+    for (const p of Object.values(hotSpots(v, f))) {
+      ctx.beginPath(); ctx.arc(p[0], p[1], 11, 0, Math.PI * 2);
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.stroke();
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(p[0], p[1], 2.5, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+    }
+  }
+  // Called on pointer-up for a tap (no drag) that started on a ring: undo any sub-threshold jitter, then snap.
+  function overlaySpotTap(g) {
+    app.gesture = null;
+    app.state.overlay = clone(g.before.overlay);
+    adjust((ov, f) => E.snapOverlay(ov, g.spot, f.w, f.h));
   }
 
   /* ---------- gestures (Q5: on this step every touch acts on the overlay; the photo stays framed) ---------- */
@@ -244,7 +274,7 @@
     if (corner) {
       const r = screenRect(v, c.ov, c.f), opp = { nw: 'se', ne: 'sw', se: 'nw', sw: 'ne' }[corner];
       app.gesture = { type: 'ovResize', before, ov0: c.ov, corner, anchor: CF.toWorld(v, overlayCorners(r)[opp]), start: p, last: p, moved: false };
-    } else app.gesture = { type: 'ovMove', before, ov0: c.ov, w0: CF.toWorld(v, p), start: p, last: p, moved: false };
+    } else app.gesture = { type: 'ovMove', before, ov0: c.ov, w0: CF.toWorld(v, p), start: p, last: p, moved: false, spot: hitSpot(v, p) };
     CF.requestRender();
   }
   function overlayPointerMove(g, p, pts) {
@@ -278,7 +308,7 @@
   function overlayCursor(v, p) {
     if (!current()) return 'default';
     const k = hitCorner(v, p);
-    return k ? (k === 'nw' || k === 'se' ? 'nwse-resize' : 'nesw-resize') : 'move';
+    return k ? (k === 'nw' || k === 'se' ? 'nwse-resize' : 'nesw-resize') : hitSpot(v, p) ? 'pointer' : 'move';
   }
 
   /* ---------- nudges, keys, wheel, buttons (AC14–AC18) ---------- */
@@ -308,7 +338,6 @@
     $('btnOvDeleteSaved').onclick = deleteSaved;
     $('btnOvRemove').onclick = () => { app.overlayMsg = ''; CF.commit(st => { st.overlay = null; }); };
     $('btnOvReset').onclick = () => { const ov = app.state.overlay; if (ov) CF.commit(st => { setPlacement(st, Object.assign({}, ov, { cx: 0.5, cy: 0.5, w: E.OVERLAY_DEFAULTS.width, opacity: 1 })); }); };
-    $('ovSnap').addEventListener('click', e => { const b = e.target.closest('[data-snap]'); if (b) adjust((ov, f) => E.snapOverlay(ov, b.dataset.snap, f.w, f.h)); });
     // Opacity updates live while sliding; one undo step per slide.
     const op = $('ovOpacity'); let opBefore = null;
     op.oninput = () => {
@@ -339,14 +368,14 @@
     up.disabled = !has; $('btnUseSaved').disabled = !has || !saved;
     $('btnOvDeleteSaved').disabled = !saved;
     for (const id of ['btnOvReset', 'btnOvRemove']) $(id).disabled = !placed;
-    document.querySelectorAll('#ovSnap [data-snap], [data-onudge], #ovOpacity').forEach(x => { x.disabled = !placed; });
+    document.querySelectorAll('[data-onudge], #ovOpacity').forEach(x => { x.disabled = !placed; });
     if (placed) { const pct = Math.round(ov.opacity * 100); $('ovOpacity').value = pct; $('ovOpacityVal').textContent = pct + '%'; }
     const st = $('overlayStatus'); st.className = 'status' + (app.overlayMsg ? ' err' : ''); st.textContent = app.overlayMsg || '';
   }
 
   Object.assign(CF, {
     addOverlayFile, loadSavedOverlay, overlayStateChanged, ensureOverlayImage, overlayForEdits, overlayFromEdits, compositeOverlay,
-    drawOverlayPreview, overlayPointerDown, overlayPointerMove, overlayPinchEnded, overlayCursor, overlayKey, overlayWheel,
+    drawOverlayPreview, overlayPointerDown, overlayPointerMove, overlayPinchEnded, overlaySpotTap, overlayCursor, overlayKey, overlayWheel,
     bindOverlayControls, syncOverlay,
   });
 })(window.CF);

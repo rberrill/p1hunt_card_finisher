@@ -102,6 +102,7 @@
     const g = app.gesture;
     if (g && g.type === 'pinch') { if (pointers.size === 0) app.gesture = null; return; }
     if (g && g.type === 'ovPinch' && pointers.size === 1) { CF.overlayPinchEnded([...pointers.values()][0]); return; }
+    if (g && g.type === 'ovMove' && g.spot && !g.moved && pointers.size === 0) { CF.overlaySpotTap(g); return; } // tap on a snap ring
     if (g && g.type.startsWith('ov') && pointers.size > 0) return;
     if (g && g.type === 'pan' && !g.moved && performance.now() - g.t0 < 300) {
       // Double-tap / double-click on empty canvas fits the view.

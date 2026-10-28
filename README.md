@@ -18,7 +18,7 @@ Six steps, in order:
 2. **Rotate.** 90° turns, flips, and fine rotation in 0.1° steps.
 3. **Crop.** Free, Original, 1:1, 4:3, 5:4, 3:2, 16:9 and 5:7 card. Presets follow the card's orientation (a portrait card gets 4:5, 2:3, 9:16…), and **Swap** flips them. **Fit to card** frames the card with a little padding.
 4. **Levels.** Set a white point (and optionally a black point) by tapping the image, or start from **Auto**. Press and hold the photo to compare before and after. Changes stay a draft until you **Apply** them.
-5. **Overlay.** Add your logo or watermark (PNG, WebP, JPG or SVG, up to 5 MB) on top of the photo. Drag it, resize it with a corner or a pinch, nudge it, snap it to a corner, and set its opacity. Transparent logos keep their soft edges. Your last logo is remembered in the browser, so next time it's one tap: **Use saved overlay**.
+5. **Overlay.** Add your logo or watermark (PNG, WebP, JPG or SVG, up to 5 MB) on top of the photo. Drag it, resize it with a corner or a pinch, nudge it, tap a ring on the photo to snap it to a corner or the center, and set its opacity. Transparent logos keep their soft edges. Your last logo is remembered in the browser, so next time it's one tap: **Use saved overlay**.
 6. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size.
    - Where the browser supports it, **Share** opens the share sheet; on iPhone, Save Image puts the result straight into Photos.
    - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
