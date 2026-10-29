@@ -66,6 +66,8 @@ main { flex: 1; display: flex; min-height: 0; }
 .chip:disabled { opacity: .35; }
 .swatch { width: 18px; height: 18px; flex: none; border-radius: 4px; border: 1px solid var(--line); }
 .levels-row > .btn { flex: 1; min-width: 0; padding: 0 6px; }
+.ov-thumb { width: 44px; height: 44px; flex: none; object-fit: contain; border-radius: 8px; border: 1px solid var(--line);
+  background: repeating-conic-gradient(var(--panel2) 0 25%, var(--panel) 0 50%) 0 0 / 12px 12px; }
 .swatch.unset { background: repeating-linear-gradient(45deg, var(--panel2) 0 6px, var(--panel) 6px 12px); }
 .tab.pending::after, #app.levels-pending .stepbtn::after, .stepmenu .pending::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: var(--warn); vertical-align: middle; }
 label.field { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; }

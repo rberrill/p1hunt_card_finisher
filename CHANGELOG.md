@@ -4,6 +4,23 @@ All notable changes to P1Hunt Card Finisher are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is shown in the logo tooltip and logged to the browser console.
 
+## [1.5.0] - 2026-10-28
+
+### Added
+- **Overlay** step, between Levels and Export: put a logo or watermark on the photo.
+  - Upload a PNG, WebP, JPG or SVG (up to 5 MB), or drop or paste one while on the step. Transparency is kept.
+  - It starts centered at a quarter of the photo width. Drag it, resize it with a corner handle or a pinch, use the on-screen arrows and − +, or tap one of nine rings on the photo to snap it to a corner, the middle of a side, or the center. Opacity is adjustable.
+  - On this step the photo stays framed as in Crop: every touch goes to the logo.
+  - Placement is stored relative to the final cropped photo, so the logo lands in the same spot at every export size, and stays inside the photo if the crop changes.
+  - The logo is merged into the exported image (and Share / Copy), after Levels, which never changes its colors.
+  - The last logo and its last-used placement are kept in the browser. On the next photo, **Use saved overlay** applies it in one tap; **Delete saved overlay** forgets it.
+  - Edits files include the logo, so loading one rebuilds the export exactly.
+- Regression checks for the overlay: compositing with alpha, opacity, resolution independence, edits round-trip, and an unchanged export without an overlay.
+
+### Changed
+- Start fresh (on the resume prompt) clears the photo session only; the saved logo stays.
+- Line endings are kept as LF on every OS (`.gitattributes`).
+
 ## [1.4.0] - 2026-10-28
 
 ### Changed

@@ -41,6 +41,7 @@
     const p = localPt(e);
     pointers.set(e.pointerId, p);
     const v = CF.currentView(); if (!v) return;
+    if (app.tab === 'overlay') { CF.overlayPointerDown(p, [...pointers.values()]); return; }
     if (pointers.size === 2) {
       endGesture(); // a second finger turns any drag into a pinch
       const [a, b] = [...pointers.values()];
@@ -75,6 +76,7 @@
     if (!pointers.has(e.pointerId)) { hoverCursor(e); return; }
     const p = localPt(e); pointers.set(e.pointerId, p);
     const g = app.gesture, v = CF.currentView(); if (!g || !v) return;
+    if (g.type.startsWith('ov')) { CF.overlayPointerMove(g, p, [...pointers.values()]); return; }
     if (g.type === 'pinch') {
       if (pointers.size < 2) return;
       const [a, b] = [...pointers.values()];
@@ -99,6 +101,9 @@
     pointers.delete(e.pointerId);
     const g = app.gesture;
     if (g && g.type === 'pinch') { if (pointers.size === 0) app.gesture = null; return; }
+    if (g && g.type === 'ovPinch' && pointers.size === 1) { CF.overlayPinchEnded([...pointers.values()][0]); return; }
+    if (g && g.type === 'ovMove' && g.spot && !g.moved && pointers.size === 0) { CF.overlaySpotTap(g); return; } // tap on a snap ring
+    if (g && g.type.startsWith('ov') && pointers.size > 0) return;
     if (g && g.type === 'pan' && !g.moved && performance.now() - g.t0 < 300) {
       // Double-tap / double-click on empty canvas fits the view.
       const t = performance.now(), p = g.start;
@@ -128,7 +133,7 @@
     clearTimeout(g.holdTimer);
     if (g.comparing) CF.setCompare(false);
     if (g.type === 'dropper') CF.pickAt(g.last);
-    if ((g.type === 'handle' || g.type === 'crop') && g.before) CF.commitFrom(g.before);
+    if ((g.type === 'handle' || g.type === 'crop' || g.type.startsWith('ov')) && g.before) CF.commitFrom(g.before);
     CF.requestRender();
   }
 
@@ -215,6 +220,7 @@
       c = !h ? 'grab' : h === 'move' ? 'move' : ({ n: 'ns', s: 'ns', e: 'ew', w: 'ew', nw: 'nwse', se: 'nwse', ne: 'nesw', sw: 'nesw' })[h] + '-resize';
     }
     if (app.tab === 'levels' && app.dropper) c = 'crosshair';
+    if (v && app.tab === 'overlay') c = CF.overlayCursor(v, p);
     els.canvas.style.cursor = c;
   }
 
@@ -223,6 +229,7 @@
     e.preventDefault();
     const v = CF.currentView(); if (!v) return;
     const p = localPt(e), dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    if (app.tab === 'overlay') { CF.overlayWheel(dy); return; } // the photo stays framed; the wheel sizes the overlay
     CF.zoomAt(v, p[0], p[1], Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0015)));
     CF.requestRender();
   }
@@ -249,7 +256,8 @@
     const k = e.key.toLowerCase();
     if (k === K.fit) { CF.fitCurrent(); return; }
     if (k === K.compare && app.tab === 'levels') { if (!e.repeat) CF.setCompare(true); return; }
-    if (/^[1-5]$/.test(e.key)) { CF.setTab(['perspective', 'rotate', 'crop', 'levels', 'export'][+e.key - 1]); return; }
+    if (/^[1-6]$/.test(e.key)) { CF.setTab(['perspective', 'rotate', 'crop', 'levels', 'overlay', 'export'][+e.key - 1]); return; }
+    if (app.tab === 'overlay') { if (CF.overlayKey(e)) e.preventDefault(); return; }
     if (app.tab !== 'perspective') return;
     // Tab cycles handles only while the canvas (or nothing) has focus, so form navigation still works.
     if (e.key === 'Tab' && (document.activeElement === els.canvas || document.activeElement === document.body)) {

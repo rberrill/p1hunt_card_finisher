@@ -39,9 +39,11 @@
     placeLayout(); phoneLayout.addEventListener('change', placeLayout);
     CF.EngineWorker.init();
     const onFile = (f, name) => CF.openFile(f, name);
+    // On the Overlay step, a dropped or pasted image becomes the overlay; elsewhere it opens a new photo.
+    const onDropOrPaste = (f, name) => app.tab === 'overlay' && app.img ? CF.addOverlayFile(f) : CF.openFile(f, name);
     CF.ImageSource.bindPicker(els.fileInput, onFile);
-    CF.ImageSource.bindDrop(els.stage, onFile);
-    CF.ImageSource.bindPaste(onFile);
+    CF.ImageSource.bindDrop(els.stage, onDropOrPaste);
+    CF.ImageSource.bindPaste(onDropOrPaste);
     const c = els.canvas;
     c.addEventListener('pointerdown', CF.onPointerDown);
     c.addEventListener('pointermove', CF.onPointerMove);
@@ -53,7 +55,7 @@
     // iOS Safari: cancelling touchstart on the photo and on press-and-hold buttons stops the long-press
     // selection magnifier and callout. Pointer events still fire, so drags and holds work as before.
     const noTouchDefault = e => { if (e.cancelable) e.preventDefault(); };
-    for (const el of [c, ...document.querySelectorAll('[data-nudge]')]) el.addEventListener('touchstart', noTouchDefault, { passive: false });
+    for (const el of [c, ...document.querySelectorAll('[data-nudge], [data-onudge]')]) el.addEventListener('touchstart', noTouchDefault, { passive: false });
     els.root.addEventListener('selectstart', e => { if (!e.target.closest || !e.target.closest('input, select, textarea')) e.preventDefault(); });
     window.addEventListener('keydown', CF.onKeyDown);
     window.addEventListener('keyup', e => { if (e.key.toLowerCase() === CONFIG.keys.compare) CF.setCompare(false); });
@@ -64,7 +66,7 @@
     new ResizeObserver(CF.resizeCanvas).observe(els.stage);
     new ResizeObserver(() => CF.requestMini()).observe(els.mini);
     CF.resizeCanvas(); CF.syncUI();
-    CF.offerResume();
+    CF.offerResume(); CF.loadSavedOverlay();
     if (CONFIG.debug) CF.toggleDebugPanel(true);
     if (params.has('selftest')) runSelfTests();
     // PWA (phase two): register the service worker from its own file.

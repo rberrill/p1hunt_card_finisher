@@ -22,14 +22,14 @@
       return app.views.source;
     }
     if (!app.geo || !app.geo.ok) return null;
-    if (app.tab === 'export' || app.tab === 'levels') {
+    if (app.tab === 'export' || app.tab === 'levels' || app.tab === 'overlay') {
       if (!app.views.export) { const w = exportWorld(), v = fitView(w.w, w.h); v.x -= w.x * v.z; v.y -= w.y * v.z; app.views.export = v; }
       return app.views.export;
     }
     if (!app.views.result) app.views.result = fitView(app.geo.R.w, app.geo.R.h, app.tab === 'crop' ? 36 : 24);
     return app.views.result;
   }
-  function viewKey() { return app.tab === 'perspective' && !app.previewMode ? 'source' : app.tab === 'export' || app.tab === 'levels' ? 'export' : 'result'; }
+  function viewKey() { return app.tab === 'perspective' && !app.previewMode ? 'source' : app.tab === 'export' || app.tab === 'levels' || app.tab === 'overlay' ? 'export' : 'result'; }
   const toScreen = (v, p) => [p[0] * v.z + v.x, p[1] * v.z + v.y];
   const toWorld = (v, p) => [(p[0] - v.x) / v.z, (p[1] - v.y) / v.z];
   function zoomAt(v, sx, sy, factor) {
@@ -243,7 +243,7 @@
     const c = g.crop;
     // Underlay = the export fill, so preview matches output where the warp leaves the photo.
     ctx.fillStyle = underlayStyle(ctx, s.export.fill);
-    const framed = app.tab === 'export' || app.tab === 'levels';
+    const framed = app.tab === 'export' || app.tab === 'levels' || app.tab === 'overlay';
     if (framed) ctx.fillRect(c.x, c.y, c.w, c.h); else ctx.fillRect(0, 0, g.R.w, g.R.h);
     ctx.save();
     if (framed) { ctx.beginPath(); ctx.rect(c.x, c.y, c.w, c.h); ctx.clip(); }
@@ -254,6 +254,7 @@
     setScreen(ctx);
     const a = toScreen(v, [c.x, c.y]), b = toScreen(v, [c.x + c.w, c.y + c.h]);
     if (app.tab === 'levels') CF.drawLevelsOverlay(ctx, v);
+    if (app.tab === 'overlay' || app.tab === 'export') CF.drawOverlayPreview(ctx, v);
     if (app.tab === 'rotate') {
       if (app.showGrid) {
         const f0 = toScreen(v, [0, 0]), f1 = toScreen(v, [g.R.w, g.R.h]), step = CONFIG.rotate.gridPx;

@@ -125,6 +125,56 @@
   const w = await S.EngineWorker.call('selftest', {});
   rec('R8 Engine self-tests pass inside the Web Worker', w.passed && !S.EngineWorker.failed, `${w.results.filter(r => r.pass).length}/${w.results.length}`);
 
+  // ---- R9–R13. Overlay step (1.5): compositing, opacity, resolution independence, remove, edits round-trip ----
+  {
+    const CF = window.CF;
+    await load('IMG_9136');
+    S.commit(s => { s.crop = { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, orient: null, rect: null }; s.levels = null; s.export.longEdge = 0; s.export.format = 'png'; });
+    // Test logo 200×100: left half opaque red, then a 50%-alpha blue band, then a fully transparent strip.
+    const lc = document.createElement('canvas'); lc.width = 200; lc.height = 100; const lx = lc.getContext('2d');
+    lx.fillStyle = 'rgb(255,0,0)'; lx.fillRect(0, 0, 100, 100); lx.fillStyle = 'rgba(0,0,255,0.5)'; lx.fillRect(100, 0, 80, 100);
+    const logo = new File([await new Promise(r => lc.toBlob(r, 'image/png'))], 'test-logo.png', { type: 'image/png' });
+    const render = async () => { const { canvas } = await S.renderFull(JSON.parse(JSON.stringify(S.app.state))); const d = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height); canvas.width = 0; return d; };
+    const px = (img, fx, fy) => { const x = Math.round(fx * img.width), y = Math.round(fy * img.height), o = (y * img.width + x) * 4; return [img.data[o], img.data[o + 1], img.data[o + 2]]; };
+    const near = (a, b, tol) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
+    const base = await render();
+    S.setTab('overlay');
+    await CF.addOverlayFile(logo);
+    S.commit(s => { s.overlay = Object.assign({}, s.overlay, { cx: 0.5, cy: 0.5, w: 0.4, opacity: 1 }); });
+    // Logo spans x 0.30–0.70, y 0.40–0.60 of the frame: red 0.30–0.50, blue 0.50–0.66, transparent 0.66–0.70.
+    const withOv = await render();
+    const red = px(withOv, 0.4, 0.5), blueB = px(base, 0.58, 0.5), blue = px(withOv, 0.58, 0.5), clearB = px(base, 0.68, 0.5), clear = px(withOv, 0.68, 0.5);
+    const expBlue = blueB.map((v, i) => Math.round(v * 0.5 + [0, 0, 255][i] * 0.5));
+    const outside = near(px(withOv, 0.1, 0.1), px(base, 0.1, 0.1), 0) && near(px(withOv, 0.9, 0.9), px(base, 0.9, 0.9), 0);
+    rec('R9 Overlay composites with its alpha (opaque, 50%, transparent, outside)',
+      near(red, [255, 0, 0], 2) && near(blue, expBlue, 4) && near(clear, clearB, 1) && outside,
+      `red ${red} · blue ${blue} (expected ≈${expBlue}) · clear ${clear} vs photo ${clearB} · outside untouched ${outside}`);
+    S.commit(s => { s.overlay.opacity = 0.5; });
+    const half = await render(), redH = px(half, 0.4, 0.5), redB = px(base, 0.4, 0.5), expH = redB.map((v, i) => Math.round(v * 0.5 + [255, 0, 0][i] * 0.5));
+    rec('R10 Overlay opacity 50% blends the opaque part half and half', near(redH, expH, 4), `${redH} (expected ≈${expH})`);
+    S.commit(s => { s.overlay.opacity = 1; });
+    // Resolution independence: the red/blue boundary sits at the same fraction of the width at 1080 px and at full size.
+    const edge = img => { const y = Math.round(img.height * 0.5); let x = 0; for (; x < img.width; x++) { const o = (y * img.width + x) * 4; if (img.data[o] > 200 && img.data[o + 1] < 40 && img.data[o + 2] < 40) break; } let e = x; for (; e < img.width; e++) { const o = (y * img.width + e) * 4; if (!(img.data[o] > 200 && img.data[o + 1] < 40)) break; } return [x / img.width, e / img.width]; };
+    const full = edge(withOv);
+    S.commit(s => { s.export.longEdge = 1080; });
+    const small = await render(), sm = edge(small);
+    rec('R11 Overlay lands in the same relative place at every export size', Math.abs(full[0] - sm[0]) < 2 / small.width && Math.abs(full[1] - sm[1]) < 2 / small.width,
+      `red spans ${full.map(v => v.toFixed(4)).join('–')} at ${withOv.width}px and ${sm.map(v => v.toFixed(4)).join('–')} at ${small.width}px`);
+    S.commit(s => { s.export.longEdge = 0; });
+    // Edits file round-trip with the logo embedded, then Remove restores the exact no-overlay export.
+    const payload = Object.assign(JSON.parse(JSON.stringify(S.app.state)), { overlayImage: CF.overlayForEdits(S.app.state) });
+    S.commit(s => { s.overlay = null; });
+    await CF.loadEdits(new File([JSON.stringify(payload)], 'IMG_9136-edits.json', { type: 'application/json' }));
+    const back = await render();
+    let diff = back.data.length === withOv.data.length ? 0 : -1; if (diff === 0) for (let i = 0; i < back.data.length; i++) if (back.data[i] !== withOv.data[i]) diff++;
+    rec('R12 Edits file with an embedded overlay rebuilds the export exactly', !!payload.overlayImage && diff === 0, diff < 0 ? 'size mismatch' : `${diff} differing bytes; embedded ${payload.overlayImage ? Math.round(payload.overlayImage.data.length / 1024) + ' KB base64' : 'nothing'}`);
+    S.commit(s => { s.overlay = null; });
+    const removed = await render();
+    let d2 = 0; for (let i = 0; i < removed.data.length; i++) if (removed.data[i] !== base.data[i]) d2++;
+    rec('R13 Without an overlay the export is unchanged (AC3)', d2 === 0, `${d2} differing bytes vs. the export before any overlay`);
+    S.setTab('perspective');
+  }
+
   console.table(results.map(r => ({ result: r.pass ? 'PASS' : 'FAIL', check: r.name, detail: r.detail })));
   const passed = results.every(r => r.pass);
   console.log(passed ? `All ${results.length} regression checks passed.` : `${results.filter(r => !r.pass).length} of ${results.length} checks FAILED.`);

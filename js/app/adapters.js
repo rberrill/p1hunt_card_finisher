@@ -301,7 +301,15 @@
       } catch (e) { return null; }
     },
     loadPhoto() { return this.tx('readonly', st => st.get('photo')); },
-    clear() { this.photoId = 0; return this.enabled ? this.tx('readwrite', st => st.clear()).catch(() => {}) : Promise.resolve(); },
+    // Start fresh clears the photo session only; the saved overlay ('overlay') survives it.
+    clear() {
+      this.photoId = 0;
+      return this.enabled ? this.tx('readwrite', st => { st.delete('photo'); st.delete('photoOverlay'); return st.delete('edits'); }).catch(() => {}) : Promise.resolve();
+    },
+    // Other records: 'overlay' (the saved logo, AC19) and 'photoOverlay' (the current photo's logo, for Resume).
+    get(key) { return this.enabled ? this.tx('readonly', st => st.get(key)) : Promise.reject(new Error('storage unavailable')); },
+    put(key, value) { return this.enabled ? this.tx('readwrite', st => st.put(value, key)) : Promise.reject(new Error('storage unavailable')); },
+    del(key) { return this.enabled ? this.tx('readwrite', st => st.delete(key)) : Promise.resolve(); },
   };
 
   Object.assign(CF, { ImageSource, scaledCopy, readRegion, EngineWorker, JSDetector, Detector, Prefs, Session });
