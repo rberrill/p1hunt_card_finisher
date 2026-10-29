@@ -75,6 +75,7 @@
     return { el: img, width: w * k, height: h * k };
   }
   async function register(buf, type, name) {
+    if (!Object.values(KINDS).includes(type) || !(buf instanceof ArrayBuffer)) throw new Error('bad'); // stored or embedded records too
     const id = hashBytes(buf);
     if (images.has(id)) return images.get(id);
     const d = await decode(buf, type);
@@ -96,7 +97,8 @@
     const s = settings || {};
     CF.commit(st => {
       const d = defaults(rec);
-      setPlacement(st, Object.assign(d, { cx: s.cx ?? d.cx, cy: s.cy ?? d.cy, w: s.w ?? d.w, opacity: s.opacity ?? d.opacity }));
+      const num = (v, dv, max) => typeof v === 'number' && v >= 0 && v <= max ? v : dv; // saved settings come from storage
+      setPlacement(st, Object.assign(d, { cx: num(s.cx, d.cx, 1), cy: num(s.cy, d.cy, 1), w: num(s.w, d.w, 1) || d.w, opacity: num(s.opacity, d.opacity, 1) }));
     }, 'overlayPlace');
     CF.Session.put('photoOverlay', { id: rec.id, buf: rec.buf, type: rec.type, name: rec.name }).catch(() => {});
   }
@@ -125,6 +127,7 @@
   }
   function setSaved(record) {
     if (saved && saved.url) URL.revokeObjectURL(saved.url);
+    if (record && (!Object.values(KINDS).includes(record.type) || !(record.buf instanceof ArrayBuffer))) record = null;
     saved = record ? { id: record.id, type: record.type, name: record.name, settings: record.settings, url: URL.createObjectURL(new Blob([record.buf], { type: record.type })) } : null;
     CF.syncUI();
   }
@@ -177,8 +180,11 @@
     const o = st.overlayImage; delete st.overlayImage;
     if (!st.overlay) return true;
     if (!o) return images.has(st.overlay.id);
+    // Same rules as an upload: a known image type and at most CONFIG.overlay.maxBytes.
+    if (typeof o !== 'object' || typeof o.data !== 'string' || !Object.values(KINDS).includes(o.type)
+      || o.data.length * 3 / 4 > CONFIG.overlay.maxBytes + 3) return false;
     try {
-      const rec = await register(fromBase64(o.data), o.type, o.name);
+      const rec = await register(fromBase64(o.data), o.type, typeof o.name === 'string' ? o.name.slice(0, 200) : 'overlay');
       st.overlay.id = rec.id;
       CF.Session.put('photoOverlay', { id: rec.id, buf: rec.buf, type: rec.type, name: rec.name }).catch(() => {});
       return true;

@@ -1,5 +1,5 @@
 /* =====================================================================
-   js/app/adapters.js — Phase-two swap points: ImageSource, the engine Web Worker, Detector (JS + opt-in OpenCV), Prefs (localStorage), Session (IndexedDB).
+   js/app/adapters.js — Phase-two swap points: ImageSource, the engine Web Worker, Detector (JS), Prefs (localStorage), Session (IndexedDB).
    Shell modules share one namespace, CF (created in core.js). Names from core are
    destructured below; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
@@ -171,66 +171,9 @@
     },
   };
 
-  // Opt-in (CONFIG.detect.opencv.enabled): OpenCV.js proposes extra quads from contours; the JS
-  // engine scores them next to its own Hough quads with the same evidence, then refines.
-  const OpenCVDetector = {
-    name: 'opencv', ready: null,
-    load() {
-      if (this.ready) return this.ready;
-      this.ready = new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = CONFIG.detect.opencv.url; s.async = true;
-        s.onload = () => {
-          // The Emscripten module defines Module.then, so it is "thenable": resolving a Promise
-          // with it (or awaiting it) re-resolves forever and freezes the page. Wait via its own
-          // then(), and remove that method before handing the module to a real Promise.
-          const done = m => { try { delete m.then; } catch (e) { m.then = undefined; } window.cv = m; resolve(m); };
-          const cv = window.cv;
-          if (!cv) reject(new Error('OpenCV.js loaded but did not define cv'));
-          else if (cv.Mat) done(cv);
-          else if (typeof cv.then === 'function') cv.then(done);
-          else cv.onRuntimeInitialized = () => done(cv);
-        };
-        s.onerror = () => reject(new Error('OpenCV.js failed to load (offline?)'));
-        document.head.appendChild(s);
-      });
-      this.ready.catch(() => { this.ready = null; });
-      return this.ready;
-    },
-    async detect(imageData, options) {
-      const cv = await this.load(), oc = CONFIG.detect.opencv;
-      const src = cv.matFromImageData(imageData), gray = new cv.Mat(), edges = new cv.Mat();
-      const contours = new cv.MatVector(), hier = new cv.Mat(), kernel = cv.Mat.ones(3, 3, cv.CV_8U);
-      const quads = [];
-      try {
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-        cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
-        cv.Canny(gray, edges, oc.cannyLow, oc.cannyHigh);
-        cv.dilate(edges, edges, kernel);
-        cv.findContours(edges, contours, hier, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
-        const minA = CONFIG.detect.minAreaFrac * imageData.width * imageData.height;
-        for (let i = 0; i < contours.size(); i++) {
-          const c = contours.get(i), approx = new cv.Mat();
-          cv.approxPolyDP(c, approx, oc.approxEps * cv.arcLength(c, true), true);
-          if (approx.rows === 4 && cv.isContourConvex(approx) && Math.abs(cv.contourArea(approx)) > minA) {
-            const d = approx.data32S; quads.push([[d[0], d[1]], [d[2], d[3]], [d[4], d[5]], [d[6], d[7]]]);
-          }
-          approx.delete(); c.delete();
-        }
-      } finally { [src, gray, edges, contours, hier, kernel].forEach(m => m.delete()); }
-      if (!quads.length) throw new Error('OpenCV found no quadrilaterals');
-      return JSDetector.detect(imageData, Object.assign({}, options, { quads }));
-    },
-  };
-
+  // The swap point for native detection (Apple Vision / ML Kit) in phase two; today it's the JS engine.
   const Detector = {
-    async detect(imageData, options) {
-      if (CONFIG.detect.opencv.enabled) {
-        try { return await OpenCVDetector.detect(imageData, options); }
-        catch (e) { toast('OpenCV detector unavailable — using the built-in detector. ' + e.message, 'warn'); }
-      }
-      return JSDetector.detect(imageData, options);
-    },
+    detect(imageData, options) { return JSDetector.detect(imageData, options); },
   };
 
   /* ---------- preferences (localStorage, best-effort) ---------- */

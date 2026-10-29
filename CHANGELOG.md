@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.6.0] - Unreleased
 
+A security and best-practices release. No new features.
+
+### Security
+- Links can no longer inject content or load scripts. URL settings now accept only existing number and on/off settings (for example `?detect.cannyHigh=90`); text, lists and anything else in a link is ignored. Before this, a crafted link could add markup to the page or load a script from elsewhere.
+- Edits files are checked field by field before they're used. A malformed field is reset to its default (with a notice) and unknown fields are ignored. Before this, a crafted edits file could add markup to the Export step. The same checks apply to resumed sessions and remembered settings, and an embedded logo has the same type and 5 MB limits as an upload.
+- The interface no longer builds HTML from text; controls and readouts are created as page elements.
+- A Content Security Policy allows only the site's own scripts and styles, with the engine worker as the one `blob:` exception, so even a future mistake can't run outside code. A no-referrer policy is set too.
+- `SECURITY.md`: what's stored on your device and how to report a problem privately.
+
+### Removed
+- The optional OpenCV.js detector (`?detect.opencv.enabled=1`). It was off by default, little used, and the app's only outside resource. The app now has no external dependencies at all.
+
+### Changed
+- Tests: two new engine self-tests (link settings, edits-file checks), two new structural checks (no HTML-from-text or eval in the code; a strict Content Security Policy with nothing inline or off-site), and regression R14 (real edits pass the edits-file check unchanged, and every state field has a rule). The regression script can also be loaded as a script, since the policy blocks `eval`.
+
 ## [1.5.0] - 2026-10-28
 
 ### Added

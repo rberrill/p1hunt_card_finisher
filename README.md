@@ -2,7 +2,7 @@
 
 Straighten, crop and color-correct photos of trading cards, including cards in one-touches, toploaders and graded slabs, so they're ready for a listing or a post.
 
-It's a single web page that runs entirely in your browser. **Your photos never leave your device**: no uploads, no accounts, no server.
+It's a single web page that runs entirely in your browser. **Your photos never leave your device**: no uploads, no accounts, no server, no analytics, and no third-party scripts. See [SECURITY.md](SECURITY.md) for what's stored on your device and how to report a problem.
 
 **Use it here: [rberrill.github.io/p1hunt_card_finisher](https://rberrill.github.io/p1hunt_card_finisher/)**
 
@@ -64,12 +64,13 @@ Pinch or scroll to zoom; drag empty space to pan.
   - `css/app.css`
   - `js/config.js` (settings)
   - `js/engine.js` (image engine)
-  - `js/app/` (interface: nine small modules on one shared namespace)
+  - `js/app/` (interface: ten small modules on one shared namespace)
 - The scripts are classic scripts on relative paths, so the app works from disk, from `localhost`, or from any folder on a static host.
 - The image engine is pure functions with no access to the page. Corner detection runs in a Web Worker so the interface stays responsive.
 - Every edit is a small state object, and the export is rendered from it in one resampling pass from the original photo. The work is done in bands to keep memory low on phones.
 - Output is capped at 16.7 MP (the iOS Safari canvas limit), so a full-frame 48 MP export is downscaled; cropped exports usually aren't.
-- Tunable settings live in a `CONFIG` block near the top of the file. Any of them can be overridden in the URL, for example `?detect.cannyHigh=90`.
+- Tunable settings live in `js/config.js`. Number and on/off settings can be overridden in the URL, for example `?detect.cannyHigh=90`; anything else in a link is ignored.
+- A Content Security Policy lets only the site's own files run, and the code never builds HTML from text. `node tests/selftest.js` enforces both.
 
 ### Options for tinkering
 
@@ -77,13 +78,12 @@ Pinch or scroll to zoom; drag empty space to pan.
 |---|---|
 | `?selftest=1` | Runs the engine self-tests in the page and in the worker |
 | `?debug=1` | Opens the detection tuning panel and overlay (or press the backtick key) |
-| `?detect.opencv.enabled=1` | Adds the optional OpenCV.js detector (about 10 MB, downloaded from docs.opencv.org) |
 
 ## Tests
 
 | Command or file | What it checks |
 |---|---|
-| `node tests/selftest.js` | Engine self-tests (geometry, detection on a synthetic card, levels math) plus structural checks: the engine never touches the page, asset links carry the current version, and the interface modules only reach each other through their shared namespace |
+| `node tests/selftest.js` | Engine self-tests (geometry, detection on a synthetic card, levels math, overlay placement, checks on links and edits files) plus structural checks: the engine never touches the page, asset links carry the current version, the interface modules only reach each other through their shared namespace, no code builds HTML from text, and the page keeps its Content Security Policy |
 | `tests/sample-regression.js` | Corner detection and export checks against the photos in `samples/`. Serve the folder locally, open the app, paste the file into the browser console, and it prints a pass/fail table |
 
 ## Known limitations

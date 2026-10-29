@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<!-- Content Security Policy: only this site's own scripts and styles run; photos and logos are local blob: URLs;
+     the engine worker is a blob: built from js/engine.js. Nothing is fetched from anywhere else. GitHub Pages can't
+     send headers, so this is a meta tag (which can't set frame-ancestors). Keep it before the first <link>/<script>. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src blob:; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#161618">
 <title>P1Hunt Card Finisher</title>
@@ -89,7 +94,7 @@
             </div>
             <div class="group">
               <h3>Fill outside photo</h3>
-              <div class="row"><select id="fill" style="flex:1"><option value="transparent">Transparent</option><option value="#ffffff">White</option><option value="#000000">Black</option><option value="custom">Custom…</option></select><input type="color" id="fillColor" value="#ffffff" aria-label="Custom fill color"></div>
+              <div class="row"><select id="fill" class="grow"><option value="transparent">Transparent</option><option value="#ffffff">White</option><option value="#000000">Black</option><option value="custom">Custom…</option></select><input type="color" id="fillColor" value="#ffffff" aria-label="Custom fill color"></div>
             </div>
             <button class="btn wide" data-reset="perspective">Reset perspective</button>
           </details>
@@ -204,8 +209,8 @@
       <section data-panel="export">
         <div class="controls">
           <div class="row">
-            <select id="format" aria-label="Format" style="flex:1"><option value="jpeg">JPEG</option><option value="png">PNG</option><option value="webp">WebP</option></select>
-            <select id="size" aria-label="Size (long edge)" style="flex:1"></select>
+            <select id="format" aria-label="Format" class="grow"><option value="jpeg">JPEG</option><option value="png">PNG</option><option value="webp">WebP</option></select>
+            <select id="size" aria-label="Size (long edge)" class="grow"></select>
           </div>
           <div class="readout" id="exportReadout"></div>
           <div class="status" id="exportMsg"></div>

@@ -24,8 +24,16 @@
     const id = (prefs && prefs.cropPreset) || CONFIG.crop.defaultPreset;
     return { mode: 'fit', preset: id, ratio: presetRatio(id), swapped: false, orient: null, rect: null };
   }
+  // Remembered prefs come from storage, so they're checked like an edits file.
   function newState(img) {
     const prefs = CF.Prefs.load();
+    return cleanState(defaultState(img, prefs), img).state;
+  }
+  // Rebuilds untrusted state (edits file, stored session, prefs) on top of this photo's defaults.
+  function cleanState(input, img) {
+    return E.sanitizeState(input, defaultState(img, {}), { presetIds: CONFIG.crop.presets.map(p => p.id), maxPx: CONFIG.maxOutputPx });
+  }
+  function defaultState(img, prefs) {
     return {
       version: 2,
       source: { name: img.name, width: img.width, height: img.height },
@@ -134,13 +142,14 @@
     app.work.k = app.work.data.width / img.width;
     app.state = newState(img);
     const resumed = !!(restore && restore.state && restore.width === img.width && restore.height === img.height);
-    if (resumed) { app.state = restore.state; app.state.source.name = img.name; }
+    if (resumed) { app.state = cleanState(restore.state, img).state; app.state.source.name = img.name; }
     History.reset();
     app.views = { source: null, result: null, export: null };
     app.detection = { candidates: [], index: 0, seed: null, last: null, running: 0, msg: '', snapPts: [], snapLines: [] };
     app.pPreview = null; app.edgeCanvas = null; app.selected = 0;
     app.levelsPending = false; app.levelsDraft = null; app.ppLevels = null; app.dropper = null; app.compare = false; app.previewMode = false;
-    if (resumed && restore.draft) { app.levelsDraft = restore.draft; app.levelsPending = JSON.stringify(restore.draft) !== JSON.stringify(app.state.levels || null); }
+    const draft = resumed && restore.draft ? cleanState({ levels: restore.draft }, img) : null;
+    if (draft && !draft.invalid.length && draft.state.levels) { app.levelsDraft = draft.state.levels; app.levelsPending = JSON.stringify(restore.draft) !== JSON.stringify(app.state.levels || null); }
     els.empty.hidden = true;
     if (resumed) CF.Session.photoId = id; // the photo is already stored
     else CF.Session.savePhoto(file, id);
@@ -204,5 +213,5 @@
     }
   }
 
-  Object.assign(CF, { cardAspect, presetRatio, insetCorners, cropDefaults, History, commit, commitFrom, undo, redo, cardOrient, cropOrient, alignCrop, cropLabel, stateChanged, liveChanged, openFile, runDetect, useCandidate });
+  Object.assign(CF, { cardAspect, presetRatio, insetCorners, cropDefaults, cleanState, History, commit, commitFrom, undo, redo, cardOrient, cropOrient, alignCrop, cropLabel, stateChanged, liveChanged, openFile, runDetect, useCandidate });
 })(window.CF);
