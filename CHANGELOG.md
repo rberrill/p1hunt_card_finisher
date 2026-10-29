@@ -16,6 +16,7 @@ A security and best-practices release. No new features.
 - `SECURITY.md`: what's stored on your device and how to report a problem privately.
 
 ### Removed
+- The **Listing preset** button on the Export step. It repeated what the Crop step and the size setting already do. A new photo still starts at 1:1, fit to card, 2000 px, JPEG 0.92.
 - The optional OpenCV.js detector (`?detect.opencv.enabled=1`). It was off by default, little used, and the app's only outside resource. The app now has no external dependencies at all.
 
 ### Changed

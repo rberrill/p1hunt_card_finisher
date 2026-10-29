@@ -193,11 +193,6 @@
     // Copy needs the image clipboard (secure pages only); hide it rather than show a dead button.
     $('btnCopy').hidden = !CF.Exporter.canCopy();
     $('btnCopy').onclick = () => CF.doExport('copy');
-    $('btnListing').onclick = () => CF.commit(s => {
-      s.crop = { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, orient: null, rect: null };
-      s.export.format = 'jpeg'; s.export.quality = 0.92; s.export.longEdge = 2000;
-      if (s.export.fill === 'transparent') s.export.fill = '#ffffff';
-    });
     $('btnSaveEdits').onclick = CF.saveEdits;
     $('btnLoadEdits').onclick = () => els.editsInput.click();
     els.editsInput.addEventListener('change', () => { const f = els.editsInput.files[0]; els.editsInput.value = ''; if (f) CF.loadEdits(f); });
