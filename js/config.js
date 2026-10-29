@@ -3,7 +3,7 @@
    URL params override any key:  ?detect.cannyHigh=90&debug=1  ·  ?selftest=1 runs self-tests
    ===================================================================== */
 const CONFIG = {
-  appVersion: '1.5.0',             // see CHANGELOG.md
+  appVersion: '1.6.0',             // see CHANGELOG.md
   debug: false,
   previewMaxPx: 2048,          // long side of the in-memory preview copy (and of the warped preview)
   thumbMaxPx: 720,             // long side of the copy used for the live mini preview while dragging
@@ -68,8 +68,6 @@ const CONFIG = {
     wSupport: 1.0, wAspect: 0.4, wAngle: 0.35, wCenter: 0.25, wArea: -0.45,
     seedMissFactor: 0.3, dupCornerFrac: 0.02, maxCandidates: 3, minConfidence: 0.5,
     refineSearchWorkingPx: 3, refineSamples: 48, refineBlur: 1.0, refineMinGrad: 6, refineInlierPx: 1.5,
-    // Opt-in fallback detector (decided 2026-10-24). Official pinned build, ~10 MB; loaded only when enabled.
-    opencv: { enabled: false, url: 'https://docs.opencv.org/4.9.0/opencv.js', cannyLow: 40, cannyHigh: 120, approxEps: 0.02 },
   },
 
   levels: {

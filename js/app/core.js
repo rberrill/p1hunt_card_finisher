@@ -10,18 +10,13 @@
 
   const E = CardEngine, M3 = E.M3, Quad = E.Quad;
 
-  /* ---------------- CONFIG overrides from the URL ---------------- */
+  /* ---------------- CONFIG overrides from the URL ----------------
+     Number and on/off settings only (the engine checks them); anything else in a link is ignored. */
   const params = new URLSearchParams(location.search);
-  for (const [k, v] of params) {
-    if (k === 'debug') { CONFIG.debug = v !== '0' && v !== 'false'; continue; }
-    if (k === 'selftest') continue;
-    const path = k.split('.'); let o = CONFIG;
-    for (let i = 0; i < path.length - 1 && o; i++) o = typeof o[path[i]] === 'object' ? o[path[i]] : null;
-    const last = path[path.length - 1];
-    if (!o || !(last in o)) { console.warn('[card-finisher] Unknown CONFIG key in URL:', k); continue; }
-    const cur = o[last];
-    o[last] = typeof cur === 'number' ? Number(v) : typeof cur === 'boolean' ? (v === '1' || v === 'true') : v;
-  }
+  const overrides = [...params].filter(([k]) => k !== 'debug' && k !== 'selftest');
+  if (params.has('debug')) CONFIG.debug = !['0', 'false'].includes(params.get('debug'));
+  const { rejected } = E.applyConfigOverrides(CONFIG, overrides);
+  if (rejected.length) console.warn('[card-finisher] URL settings ignored (unknown, or not a number / on-off setting):', rejected.join(', '));
   for (const [k, v] of Object.entries(CONFIG.theme)) document.documentElement.style.setProperty('--' + k, v);
 
   const $ = id => document.getElementById(id);
@@ -61,5 +56,14 @@
   }
   function hideToast() { els.toast.classList.remove('show'); }
 
-  Object.assign(CF, { E, M3, Quad, params, $, els, clone, nextFrame, makeCanvas, ctx2d, app, geoCfg, toast, hideToast });
+  // Builds an element without parsing HTML: h('button', { class: 'chip', 'data-crop': id }, label).
+  // Strings become text nodes, so data can never turn into markup (the self-test bans innerHTML).
+  function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) if (v != null && v !== false) el.setAttribute(k, v === true ? '' : String(v));
+    el.append(...kids.flat().filter(k => k != null && k !== false));
+    return el;
+  }
+
+  Object.assign(CF, { E, M3, Quad, params, $, h, els, clone, nextFrame, makeCanvas, ctx2d, app, geoCfg, toast, hideToast });
 })();

@@ -6,7 +6,7 @@
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { E, $, els, clone, app, toast } = CF;
+  const { E, $, h, els, clone, app, toast } = CF;
 
   /* ---------- tabs + panel binding ---------- */
   function setTab(tab) {
@@ -33,8 +33,9 @@
   // Step menu (phones): lists the steps above the action bar.
   function openStepMenu(btn) {
     const m = $('stepMenu');
-    m.innerHTML = Object.keys(STEPS).map((t, i) =>
-      `<button role="menuitem" data-goto="${t}"${t === app.tab ? ' aria-current="step"' : ''}${t === 'levels' && app.levelsPending ? ' class="pending"' : ''}><span class="n">${i + 1}</span>${STEPS[t]}</button>`).join('');
+    m.replaceChildren(...Object.keys(STEPS).map((t, i) =>
+      h('button', { role: 'menuitem', 'data-goto': t, 'aria-current': t === app.tab && 'step', class: t === 'levels' && app.levelsPending && 'pending' },
+        h('span', { class: 'n' }, String(i + 1)), STEPS[t])));
     m.hidden = false; btn.setAttribute('aria-expanded', 'true');
   }
   function closeStepMenu() {
@@ -45,13 +46,13 @@
   function collapseMore() { document.querySelectorAll('details.more').forEach(d => { d.open = false; }); els.panel.classList.remove('expanded'); }
 
   function buildControls() {
-    $('cropChips').innerHTML = CONFIG.crop.presets.map(p => `<button class="chip" data-crop="${p.id}">${p.label}</button>`).join('')
-      + '<button class="chip" id="btnSwap" title="Swap portrait / landscape">⇄ Swap</button>';
-    $('size').innerHTML = CONFIG.export.longEdgePresets.map(n => `<option value="${n}">${n ? n + ' px' : 'Original size'}</option>`).join('');
+    $('cropChips').replaceChildren(...CONFIG.crop.presets.map(p => h('button', { class: 'chip', 'data-crop': p.id }, p.label)),
+      h('button', { class: 'chip', id: 'btnSwap', title: 'Swap portrait / landscape' }, '⇄ Swap'));
+    $('size').replaceChildren(...CONFIG.export.longEdgePresets.map(n => h('option', { value: n }, n ? n + ' px' : 'Original size')));
     // Phones: each action bar starts with the step menu button.
     document.querySelectorAll('section[data-panel] .actionbar').forEach(bar => {
       const tab = bar.closest('section').dataset.panel;
-      bar.insertAdjacentHTML('afterbegin', `<button class="btn stepbtn" data-stepmenu aria-haspopup="menu" aria-expanded="false" title="Go to a step">${STEPS[tab]} ▾</button>`);
+      bar.prepend(h('button', { class: 'btn stepbtn', 'data-stepmenu': true, 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: 'Go to a step' }, `${STEPS[tab]} ▾`));
     });
     $('fine').min = $('fineNum').min = -CONFIG.rotate.fineRangeDeg; $('fine').max = $('fineNum').max = CONFIG.rotate.fineRangeDeg;
     $('fine').step = $('fineNum').step = CONFIG.rotate.fineStepDeg;
@@ -192,11 +193,6 @@
     // Copy needs the image clipboard (secure pages only); hide it rather than show a dead button.
     $('btnCopy').hidden = !CF.Exporter.canCopy();
     $('btnCopy').onclick = () => CF.doExport('copy');
-    $('btnListing').onclick = () => CF.commit(s => {
-      s.crop = { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, orient: null, rect: null };
-      s.export.format = 'jpeg'; s.export.quality = 0.92; s.export.longEdge = 2000;
-      if (s.export.fill === 'transparent') s.export.fill = '#ffffff';
-    });
     $('btnSaveEdits').onclick = CF.saveEdits;
     $('btnLoadEdits').onclick = () => els.editsInput.click();
     els.editsInput.addEventListener('change', () => { const f = els.editsInput.files[0]; els.editsInput.value = ''; if (f) CF.loadEdits(f); });
@@ -291,9 +287,9 @@
       : !n && app.img && app.detection.last ? 'Nothing detected — drag the corners into place.'
       : g && g.P.clamped ? `Corrected frame clamped to ${CONFIG.maxOutputPx}px on the long side.` : '';
     if (!g || !g.ok) { $('cropReadout').textContent = ''; $('exportReadout').textContent = ''; $('exportMsg').textContent = ''; $('btnDownload').disabled = $('btnShare').disabled = $('btnCopy').disabled = true; return; }
-    $('cropReadout').innerHTML = `Crop <b>${Math.round(g.crop.w)} × ${Math.round(g.crop.h)}</b> px`;
+    $('cropReadout').replaceChildren('Crop ', h('b', null, `${Math.round(g.crop.w)} × ${Math.round(g.crop.h)}`), ' px');
     const small = s.export.longEdge && g.out.scale >= 1 && Math.max(g.crop.w, g.crop.h) < s.export.longEdge;
-    $('exportReadout').innerHTML = `Output <b>${g.out.w} × ${g.out.h}</b> px · ${s.export.format.toUpperCase()}` + (small ? ' · full crop, not upscaled' : '');
+    $('exportReadout').replaceChildren('Output ', h('b', null, `${g.out.w} × ${g.out.h}`), ` px · ${s.export.format.toUpperCase()}` + (small ? ' · full crop, not upscaled' : ''));
     const em = $('exportMsg'), notes = [];
     if (g.out.clamped) notes.push(`Clamped to fit the ${Math.round(CONFIG.maxOutputArea / 1e6 * 10) / 10} MP canvas limit.`);
     if (s.export.format === 'jpeg' && s.export.fill === 'transparent') notes.push('JPEG has no transparency; empty areas will be white.');
@@ -311,12 +307,13 @@
   let redetectTimer = 0;
   function buildDebugPanel() {
     const p = els.debugPanel, d = CONFIG.detect;
-    const rows = Object.keys(d).filter(k => typeof d[k] === 'number' || typeof d[k] === 'boolean').map(k => typeof d[k] === 'boolean'
-      ? `<label>${k}<input type="checkbox" data-k="${k}" ${d[k] ? 'checked' : ''}></label>`
-      : `<label>${k}<input type="number" data-k="${k}" value="${d[k]}" step="any"></label>`).join('');
-    p.innerHTML = `<div class="row" style="justify-content:space-between"><b>Detection tuning</b><button class="btn" id="dbgClose" style="min-height:32px">×</button></div>
-      <div class="row"><button class="btn" id="dbgCopy" style="min-height:36px">Copy CONFIG</button><button class="btn" id="dbgRun" style="min-height:36px">Re-detect</button></div>
-      ${rows}<pre id="dbgInfo"></pre>`;
+    const rows = Object.keys(d).filter(k => typeof d[k] === 'number' || typeof d[k] === 'boolean').map(k => h('label', null, k, typeof d[k] === 'boolean'
+      ? h('input', { type: 'checkbox', 'data-k': k, checked: d[k] })
+      : h('input', { type: 'number', 'data-k': k, value: d[k], step: 'any' })));
+    p.replaceChildren(
+      h('div', { class: 'row dbg-head' }, h('b', null, 'Detection tuning'), h('button', { class: 'btn dbg-btn', id: 'dbgClose' }, '×')),
+      h('div', { class: 'row' }, h('button', { class: 'btn dbg-btn', id: 'dbgCopy' }, 'Copy CONFIG'), h('button', { class: 'btn dbg-btn', id: 'dbgRun' }, 'Re-detect')),
+      ...rows, h('pre', { id: 'dbgInfo' }));
     p.querySelector('#dbgClose').onclick = () => toggleDebugPanel(false);
     p.querySelector('#dbgRun').onclick = () => CF.runDetect();
     p.querySelector('#dbgCopy').onclick = async () => {

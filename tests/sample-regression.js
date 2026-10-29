@@ -5,10 +5,13 @@
 //   2. Open http://localhost:8765/index.html and keep the tab visible (hidden tabs pause rendering).
 //   3. Paste this whole file into the browser console. It prints a PASS/FAIL table and resolves
 //      to { passed, results }. Takes ~20 s.
+//      Or load it as a script (the page's Content Security Policy blocks eval, but allows its own files):
+//        document.head.append(Object.assign(document.createElement('script'), { src: 'tests/sample-regression.js' }))
+//      then await window.__regression.
 //
 // Ground truth below is hand-placed card corners (source px, TL TR BR BL) from 2026-10-24.
 // Thresholds are the v1.0 acceptance bar; "recorded" values are what v1.0 measured.
-(async () => {
+window.__regression = (async () => {
   'use strict';
   const S = window.__straightener, E = window.CardEngine, M3 = E.M3;
   if (!S || !E) throw new Error('Open index.html first — window.__straightener / CardEngine not found.');
@@ -173,6 +176,22 @@
     let d2 = 0; for (let i = 0; i < removed.data.length; i++) if (removed.data[i] !== base.data[i]) d2++;
     rec('R13 Without an overlay the export is unchanged (AC3)', d2 === 0, `${d2} differing bytes vs. the export before any overlay`);
     S.setTab('perspective');
+  }
+
+  // ---- R14. Edits files / sessions are checked field by field (1.6): real edits pass unchanged ----
+  {
+    await load('IMG_9136');
+    S.commit(s => {
+      s.rotation = { quarter: 3, fine: -3.7, fillFrame: true }; s.flip = { h: true, v: false }; s.strength = 0.35;
+      s.crop = { mode: 'manual', preset: 'free', ratio: null, swapped: false, orient: 'portrait', rect: { cx: 0.013, cy: -0.02, w: 0.41, h: 0.52 } };
+      s.levels = { white: [234.6, 233.1, 220.4], black: [12.5, 9, 10.25], whiteAt: [812, 640], blackAt: null };
+      s.export = { format: 'webp', quality: 0.8, longEdge: 0, interp: 'bicubic', fill: 'transparent' };
+    });
+    const r = CF.cleanState(S.app.state, S.app.img), keys = Object.keys(S.app.state);
+    const uncovered = keys.filter(k => !r.fields.includes(k));
+    rec('R14 Edited state passes the edits-file check unchanged; every field has a rule',
+      JSON.stringify(r.state) === JSON.stringify(S.app.state) && !r.invalid.length && !uncovered.length,
+      uncovered.length ? `no rule for: ${uncovered.join(', ')} (add one in CardEngine.sanitizeState)` : r.invalid.length ? `reset: ${r.invalid.join(', ')}` : `${keys.length} fields`);
   }
 
   console.table(results.map(r => ({ result: r.pass ? 'PASS' : 'FAIL', check: r.name, detail: r.detail })));

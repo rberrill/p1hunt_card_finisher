@@ -133,6 +133,11 @@ details.more > summary::before { content: '▸'; } details.more[open] > summary:
 #debugPanel pre { white-space: pre-wrap; font-size: 11px; color: var(--muted); }
 
 /* ---- narrow screens: panel becomes a bottom sheet ---- */
+/* Classes for what used to be inline style attributes (the Content Security Policy blocks those). */
+.grow { flex: 1; }
+.dbg-head { justify-content: space-between; }
+.dbg-btn { min-height: 36px; }
+
 @media (max-width: 760px) {
   /* Header, photo, a control area of the same height on every step, then the action bar.
      The step tabs are replaced by the step menu (first action-bar button); opening "More options" expands the area. */

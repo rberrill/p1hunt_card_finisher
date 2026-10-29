@@ -176,9 +176,12 @@
       toast(`These edits are for a ${st.source.width}×${st.source.height} photo; this one is ${app.img.width}×${app.img.height}.`, 'err', 6000); return;
     }
     if (st.source.name !== app.img.name) toast(`Edits were saved for “${st.source.name}”. Applied anyway — sizes match.`, 'warn', 5000);
-    st.source.name = app.img.name;
-    if (!(await CF.overlayFromEdits(st))) { toast('The overlay in these edits couldn’t be read, so it was left out.', 'warn', 5000); st.overlay = null; }
-    CF.commit(s => { for (const k of Object.keys(s)) delete s[k]; Object.assign(s, st); });
+    // Only well-formed fields are used; anything else in the file falls back to the default.
+    const clean = CF.cleanState(st, app.img), next = clean.state;
+    if (clean.invalid.length) toast(`Some settings in these edits weren’t valid and were reset: ${clean.invalid.join(', ')}.`, 'warn', 6000);
+    next.overlayImage = st.overlayImage;
+    if (!(await CF.overlayFromEdits(next))) { toast('The overlay in these edits couldn’t be read, so it was left out.', 'warn', 5000); next.overlay = null; }
+    CF.commit(s => { for (const k of Object.keys(s)) delete s[k]; Object.assign(s, next); });
   }
 
   Object.assign(CF, { Exporter, renderFull, doExport, shareFile, saveEdits, loadEdits });

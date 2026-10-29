@@ -495,7 +495,7 @@ function CardEngineModule(G) {
     return valid >= n * 0.5 ? hits / valid : (valid ? hits / n : 0);
   }
 
-  // Score one quad. Shared by the Hough path and any external quad source (OpenCV).
+  // Score one quad. Shared by the Hough path and any external quad source (e.g. native detection in phase two).
   function scoreQuad(q, ctx) {
     const { w, h, o, ratio, seed } = ctx;
     const sup = [0, 1, 2, 3].map(k => sideSupport(q[k], q[(k + 1) % 4], ctx));
@@ -583,7 +583,7 @@ function CardEngineModule(G) {
    * detect(img, opts) → { candidates: [{corners, confidence, score, parts}], debug }
    * img: ImageData-like at working size. opts: { ratio (card W/H, default 5:7),
    * seed: [x,y] working px or null, params: overrides of DETECT_DEFAULTS, debug: bool,
-   * quads: optional external candidate quads (e.g. from OpenCV) scored alongside the Hough quads }.
+   * quads: optional external candidate quads (e.g. from native detection in phase two) scored alongside the Hough quads }.
    */
   function detect(img, opts = {}) {
     const t0 = now();
@@ -594,7 +594,7 @@ function CardEngineModule(G) {
     const diag = Math.hypot(w, h);
     const t1 = now();
     let quads = quadsFromLines(lines, ctx);
-    // External proposals (e.g. OpenCV contours) are added to the Hough quads, never replace them.
+    // External proposals (e.g. from native detection) are added to the Hough quads, never replace them.
     if (opts.quads) for (const q of opts.quads) { const c = Quad.order(q); if (Quad.isConvex(c)) quads.push(Object.assign({ corners: c }, scoreQuad(c, ctx))); }
     const cands = pickCandidates(quads, o, diag, o.maxCandidates);
     const result = {
@@ -611,7 +611,7 @@ function CardEngineModule(G) {
     return result;
   }
 
-  // Score externally-proposed quads (OpenCV path) with the same edge evidence.
+  // Score externally-proposed quads (external path) with the same edge evidence.
   function scoreQuads(img, quads, opts = {}) { return detect(img, Object.assign({}, opts, { quads })); }
 
   /**
@@ -733,6 +733,80 @@ function CardEngineModule(G) {
     const x = where.includes('l') ? m + r.w / 2 : where.includes('r') ? fw - m - r.w / 2 : fw / 2;
     const y = where.includes('t') ? m + r.h / 2 : where.includes('b') ? fh - m - r.h / 2 : fh / 2;
     return clampOverlay(Object.assign({}, ov, { cx: x / fw, cy: y / fh }), fw, fh);
+  }
+
+  /* ---------------- untrusted input: URL overrides, edits files, stored sessions ----------------
+     These arrive from outside the app (a link, a file someone sent, storage another page on the
+     same origin could write), so only known keys with well-formed values get through. */
+  const BLOCKED_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+  const isPlainObj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
+  const ownKey = (o, k) => isPlainObj(o) && !BLOCKED_KEYS.has(k) && Object.prototype.hasOwnProperty.call(o, k);
+
+  // URL overrides of CONFIG ("?detect.cannyHigh=90"): only existing number and on/off settings.
+  // Text, lists and objects can't be set from a link, so a link can't inject markup or a script URL.
+  function applyConfigOverrides(cfg, entries) {
+    const applied = [], rejected = [];
+    for (const [k, v] of entries) {
+      const path = String(k).split('.'), last = path.pop();
+      let o = cfg;
+      for (const p of path) o = ownKey(o, p) && isPlainObj(o[p]) ? o[p] : null;
+      const cur = ownKey(o, last) ? o[last] : undefined;
+      if (typeof cur === 'number' && String(v).trim() !== '' && Number.isFinite(Number(v))) { o[last] = Number(v); applied.push(k); }
+      else if (typeof cur === 'boolean' && /^(1|0|true|false)$/.test(v)) { o[last] = v === '1' || v === 'true'; applied.push(k); }
+      else rejected.push(k);
+    }
+    return { applied, rejected };
+  }
+
+  // Edits files and resumed sessions: the state is rebuilt field by field on top of `base` (a fresh
+  // state for this photo). A malformed field keeps the base value and is listed in `invalid`; a
+  // missing sub-field takes the base value (older files); unknown fields are dropped.
+  // opts: { presetIds: crop preset ids, maxPx: largest export long edge }.
+  function sanitizeState(input, base, opts = {}) {
+    const st = JSON.parse(JSON.stringify(base)), invalid = [];
+    const fin = x => typeof x === 'number' && Number.isFinite(x);
+    const pos = x => fin(x) && x > 0, unit = x => fin(x) && x >= 0 && x <= 1, bool = x => typeof x === 'boolean';
+    const oneOf = (...vals) => x => vals.includes(x);
+    const point = p => Array.isArray(p) && p.length === 2 && p.every(fin);
+    const rgb = c => c === null || (Array.isArray(c) && c.length === 3 && c.every(v => fin(v) && v >= 0 && v <= 255)); // Auto gives fractions
+    const opt = rule => Object.assign(x => x === undefined || x === null || rule(x), { keys: rule.keys }); // may be null
+    // A nested object: every listed key must pass; on output only the listed keys are kept.
+    const shape = rules => Object.assign(x => isPlainObj(x) && Object.keys(rules).every(k => rules[k](x[k])), { keys: Object.keys(rules) });
+    const keep = (rule, v) => rule.keys && isPlainObj(v) ? Object.fromEntries(rule.keys.filter(k => v[k] !== undefined).map(k => [k, v[k]])) : v;
+    const RULES = {
+      corners: x => Array.isArray(x) && x.length === 4 && x.every(point),
+      strength: unit,
+      aspect: { ratio: pos, orientation: oneOf('auto', 'portrait', 'landscape') },
+      squareUpHeight: oneOf('preserveEdges', 'meanEdge', 'visual'),
+      rotation: { quarter: oneOf(0, 1, 2, 3), fine: x => fin(x) && Math.abs(x) <= 180, fillFrame: bool },
+      flip: { h: bool, v: bool },
+      crop: {
+        mode: oneOf('fit', 'manual', 'full'), preset: x => (opts.presetIds || []).includes(x),
+        ratio: x => x === null || x === 'original' || pos(x), swapped: bool, orient: oneOf(null, 'portrait', 'landscape'),
+        rect: opt(shape({ cx: fin, cy: fin, w: pos, h: pos })),
+      },
+      levels: opt(shape({ white: rgb, black: rgb, whiteAt: opt(point), blackAt: opt(point) })),
+      overlay: opt(shape({ id: s => typeof s === 'string' && s.length <= 64, aspect: pos, cx: unit, cy: unit, w: x => pos(x) && x <= 1, opacity: unit })),
+      export: {
+        format: oneOf('jpeg', 'png', 'webp'), quality: unit,
+        longEdge: x => Number.isInteger(x) && x >= 0 && x <= (opts.maxPx || 12000),
+        interp: oneOf('bilinear', 'bicubic'), fill: x => x === 'transparent' || /^#[0-9a-f]{6}$/i.test(x),
+      },
+    };
+    const fields = ['version', 'source', ...Object.keys(RULES)]; // every state field this checks (regression R14 compares)
+    if (!isPlainObj(input)) return { state: st, invalid: Object.keys(RULES), fields };
+    for (const [k, rule] of Object.entries(RULES)) {
+      const v = input[k];
+      if (v === undefined) continue;
+      let val = v, ok;
+      if (typeof rule === 'function') { ok = rule(v); val = keep(rule, v); }
+      else {
+        ok = isPlainObj(v);
+        if (ok) { val = {}; for (const sk of Object.keys(rule)) { val[sk] = v[sk] === undefined ? st[k][sk] : keep(rule[sk], v[sk]); if (!rule[sk](val[sk])) ok = false; } }
+      }
+      if (ok) st[k] = JSON.parse(JSON.stringify(val)); else invalid.push(k);
+    }
+    return { state: st, invalid, fields };
   }
 
   function fitCrop(quad, ratio, padPct, Rw, Rh) {
@@ -1107,6 +1181,37 @@ function CardEngineModule(G) {
     const sides = Math.abs(sb.x + sb.w / 2 - 500) < 1e-6 && Math.abs(800 - sb.y - sb.h - 30) < 1e-6 && Math.abs(sl.x - 30) < 1e-6 && Math.abs(sl.y + sl.h / 2 - 400) < 1e-6;
     rec('Overlay snap presets keep a margin', sides && Math.abs(1000 - sr.x - sr.w - 30) < 1e-6 && Math.abs(800 - sr.y - sr.h - 30) < 1e-6 && Math.abs(sc.x + sc.w / 2 - 500) < 1e-6,
       `bottom-right gap ${(1000 - sr.x - sr.w).toFixed(1)}, ${(800 - sr.y - sr.h).toFixed(1)} px; bottom-middle gap ${(800 - sb.y - sb.h).toFixed(1)} px, centered: ${sides}`);
+    // 12. URL overrides: only existing number / on-off settings; never text, lists or prototype keys.
+    {
+      const cfg = { a: 1, b: true, s: 'x', list: [{ label: 'L' }], o: { n: 2, url: 'u' } };
+      const r = applyConfigOverrides(cfg, [['a', '5'], ['b', '0'], ['o.n', '3'], ['s', '<b>'], ['list.0.label', '<img>'], ['o.url', 'https://x'],
+        ['__proto__.toString', '1'], ['constructor.name', '1'], ['a', 'NaN'], ['b', 'yes'], ['nope', '1']]);
+      const ok = cfg.a === 5 && cfg.b === false && cfg.o.n === 3 && cfg.s === 'x' && cfg.list[0].label === 'L' && cfg.o.url === 'u'
+        && typeof Object.prototype.toString === 'function' && r.applied.length === 3 && r.rejected.length === 8;
+      rec('URL overrides accept only number and on/off settings', ok, `applied ${r.applied.join(', ')}; rejected ${r.rejected.length}`);
+    }
+    // 13. Edits / sessions: a valid state passes unchanged; malformed fields fall back; unknown fields are dropped.
+    {
+      const base = { version: 2, source: { name: 'a.jpg', width: 100, height: 80 }, corners: [[0, 0], [100, 0], [100, 80], [0, 80]], strength: 1,
+        aspect: { ratio: 0.71, orientation: 'auto' }, squareUpHeight: 'preserveEdges', rotation: { quarter: 0, fine: 0, fillFrame: false },
+        flip: { h: false, v: false }, crop: { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, orient: null, rect: null },
+        levels: null, overlay: null, export: { format: 'jpeg', quality: 0.92, longEdge: 2000, interp: 'bilinear', fill: '#ffffff' } };
+      const opts = { presetIds: ['free', '1:1', 'original'], maxPx: 12000 };
+      const good = JSON.parse(JSON.stringify(base));
+      Object.assign(good, { strength: 0.4, rotation: { quarter: 3, fine: -2.5, fillFrame: true }, levels: { white: [237.9, 241.5, 231.8], black: [46.9, 33.6, 61.7], whiteAt: [120, 88], blackAt: null },
+        overlay: { id: 'abc-12', aspect: 2, cx: 0.5, cy: 0.9, w: 0.25, opacity: 0.6 }, crop: { mode: 'manual', preset: 'free', ratio: null, swapped: false, orient: 'portrait', rect: { cx: 0, cy: 0, w: 0.5, h: 0.6 } } });
+      const g = sanitizeState(good, base, opts);
+      const bad = JSON.parse(JSON.stringify(good));
+      Object.assign(bad, { extra: '<x>', export: Object.assign({}, good.export, { format: '<img src=x onerror=alert(1)>' }), crop: Object.assign({}, good.crop, { preset: '"]x' }),
+        levels: { white: [300, 0, 0], black: null }, overlay: 'nope', corners: [[0, 0], [1, 1]] });
+      const b = sanitizeState(bad, base, opts);
+      const nested = sanitizeState(Object.assign(JSON.parse(JSON.stringify(good)), { overlay: Object.assign({ evil: '<x>' }, good.overlay) }), base, opts);
+      const ok = JSON.stringify(g.state) === JSON.stringify(good) && !g.invalid.length
+        && b.state.export.format === 'jpeg' && b.state.crop.preset === '1:1' && b.state.levels === null && b.state.overlay === null && !('extra' in b.state)
+        && b.state.strength === 0.4 && b.invalid.sort().join() === 'corners,crop,export,levels,overlay'
+        && !nested.invalid.length && !('evil' in nested.state.overlay) && nested.state.overlay.opacity === 0.6;
+      rec('Edits files are checked field by field', ok, `valid state unchanged: ${JSON.stringify(g.state) === JSON.stringify(good)}; reset: ${b.invalid.join(', ')}`);
+    }
     return { passed: results.every(r => r.pass), results };
   }
 
@@ -1116,6 +1221,7 @@ function CardEngineModule(G) {
     DETECT_DEFAULTS, analyze, detect, scoreQuads, refineQuad,
     GEOMETRY_DEFAULTS, computeGeometry, fitCrop, shrinkToValid, cropRatio, warp,
     OVERLAY_DEFAULTS, overlayRect, clampOverlay, snapOverlay,
+    applyConfigOverrides, sanitizeState,
     LEVELS_DEFAULTS, levelsLUT, applyLUT, meanColor, autoLevels,
     selfTest,
   };

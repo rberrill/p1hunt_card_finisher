@@ -62,7 +62,7 @@ report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersi
   // Names a module uses but never declares or imports must be real globals. A name missing from its
   // module (e.g. a dropped `const E = …`) would otherwise only throw when that code path runs.
   // Add to this list when the shell starts using a new browser API or app global.
-  const GLOBALS = new Set(('Array Blob CONFIG CardEngine CardEngineModule ClipboardItem Date Error File Image ImageData Infinity JSON Map Math ' +
+  const GLOBALS = new Set(('Array ArrayBuffer Blob CONFIG CardEngine CardEngineModule ClipboardItem Date Error File Image ImageData Infinity JSON Map Math ' +
     'Number Object Promise ResizeObserver String URL URLSearchParams Uint8Array Uint8ClampedArray Worker clearInterval clearTimeout console ' +
     'DOMParser XMLSerializer TextDecoder atob btoa parseFloat ' +
     'createImageBitmap document indexedDB isFinite localStorage location matchMedia navigator parseInt performance ' +
@@ -75,6 +75,33 @@ report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersi
   const missing = [];
   for (const m of order) for (const n of [...mods[m].cfRefs, ...mods[m].imports]) if (!exported.has(n)) missing.push(`${m} → CF.${n}`);
   report(!missing.length, 'App modules: every CF name is exported by a module', missing.length ? missing.join(', ') : `${exported.size} exports`);
+}
+
+// Security rules (1.6). Untrusted text (file names, edits files, links) must never become markup or
+// code: no HTML-string sinks or eval anywhere in js/, and index.html keeps a strict Content Security Policy
+// with no inline script, style or event-handler attributes and no off-site assets.
+{
+  const files = ['js/config.js', 'js/engine.js', ...fs.readdirSync(path.join(root, 'js/app')).filter(f => f.endsWith('.js')).map(f => `js/app/${f}`)];
+  const SINKS = /\.(?:inner|outer)HTML\s*=|insertAdjacentHTML|document\.write|\beval\s*\(|new Function\b|createElement\(\s*['"]script|setTimeout\(\s*['"`]|setInterval\(\s*['"`]/;
+  const hits = [];
+  for (const f of files) read(f).split('\n').forEach((line, i) => { if (SINKS.test(line.replace(/\/\/.*$/, ''))) hits.push(`${f}:${i + 1}`); });
+  report(!hits.length, 'Security: no HTML-string sinks or eval in js/ (build DOM with CF.h)', hits.length ? hits.join(', ') : `${files.length} files clean`);
+
+  const body = read('index.html').replace(/<!--[\s\S]*?-->/g, ''); // markup only, comments removed
+  const csp = (body.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/) || [])[1] || '';
+  const first = Math.min(...['<link rel="stylesheet"', '<script'].map(t => body.indexOf(t)).filter(i => i >= 0));
+  const problems = [];
+  if (!csp) problems.push('no CSP meta tag');
+  else {
+    if (body.indexOf('Content-Security-Policy') > first) problems.push('CSP comes after the first stylesheet/script');
+    if (/unsafe-|https?:|\*/.test(csp)) problems.push('CSP allows unsafe-*, wildcards or other hosts');
+    for (const d of ["default-src 'none'", "script-src 'self'", "style-src 'self'", "base-uri 'none'"]) if (!csp.includes(d)) problems.push(`CSP lacks ${d}`);
+  }
+  if (/<script(?![^>]*\bsrc=)[^>]*>/.test(body)) problems.push('inline <script>');
+  if (/\sstyle="/.test(body)) problems.push('style="" attribute');
+  if (/\son[a-z]+="/i.test(body)) problems.push('on…="" handler attribute');
+  if (/(?:src|href)="(?:https?:)?\/\//.test(body)) problems.push('off-site asset');
+  report(!problems.length, 'Security: index.html has a strict CSP and nothing inline or off-site', problems.length ? problems.join('; ') : csp.split(';').length + ' CSP directives');
 }
 
 new Function(engine)(); // defines globalThis.CardEngine
