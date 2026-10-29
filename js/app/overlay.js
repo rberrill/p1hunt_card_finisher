@@ -224,13 +224,18 @@
     }
   }
 
-  /* ---------- snap hot spots: five rings on the photo (four corners and the center) ----------
+  /* ---------- snap hot spots: nine rings on the photo (corners, side middles and the center) ----------
      A still tap on a ring snaps the logo there; a drag that starts on one moves the logo as usual.
      The rings hide during a gesture so they never get in the way of placing by hand. */
   function hotSpots(v, f) {
     const a = CF.toScreen(v, [f.x, f.y]), b = CF.toScreen(v, [f.x + f.w, f.y + f.h]);
     const i = Math.min(CONFIG.overlay.hotSpotInset, (b[0] - a[0]) / 4, (b[1] - a[1]) / 4);
-    return { tl: [a[0] + i, a[1] + i], tr: [b[0] - i, a[1] + i], c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], bl: [a[0] + i, b[1] - i], br: [b[0] - i, b[1] - i] };
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    return {
+      tl: [a[0] + i, a[1] + i], t: [mx, a[1] + i], tr: [b[0] - i, a[1] + i],
+      l: [a[0] + i, my], c: [mx, my], r: [b[0] - i, my],
+      bl: [a[0] + i, b[1] - i], b: [mx, b[1] - i], br: [b[0] - i, b[1] - i],
+    };
   }
   function hitSpot(v, p) {
     const c = current(); if (!c) return null;

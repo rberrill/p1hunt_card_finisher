@@ -726,11 +726,12 @@ function CardEngineModule(G) {
     const w = Math.max(Math.min(ov.w * fw, maxW), Math.min(minWidthPx, maxW)), h = w / ov.aspect;
     return Object.assign({}, ov, { w: w / fw, cx: clamp(ov.cx * fw, w / 2, fw - w / 2) / fw, cy: clamp(ov.cy * fh, h / 2, fh - h / 2) / fh });
   }
-  // Snap presets: 'tl' 'tr' 'bl' 'br' or 'c', with a margin as a fraction of the frame width.
+  // Snap presets: corners 'tl' 'tr' 'bl' 'br', side middles 't' 'b' 'l' 'r', or 'c'; the margin is a fraction of the frame width.
+  // A preset without 'l' or 'r' is centered across; one without 't' or 'b' is centered down.
   function snapOverlay(ov, where, fw, fh, margin = OVERLAY_DEFAULTS.snapMargin) {
     const r = overlayRect(ov, fw, fh), m = margin * fw;
-    const x = where === 'c' ? fw / 2 : where[1] === 'l' ? m + r.w / 2 : fw - m - r.w / 2;
-    const y = where === 'c' ? fh / 2 : where[0] === 't' ? m + r.h / 2 : fh - m - r.h / 2;
+    const x = where.includes('l') ? m + r.w / 2 : where.includes('r') ? fw - m - r.w / 2 : fw / 2;
+    const y = where.includes('t') ? m + r.h / 2 : where.includes('b') ? fh - m - r.h / 2 : fh / 2;
     return clampOverlay(Object.assign({}, ov, { cx: x / fw, cy: y / fh }), fw, fh);
   }
 
@@ -1102,8 +1103,10 @@ function CardEngineModule(G) {
       `same relative rect at 2.5×: ${scales}; oversized logo clamped to ${big.w.toFixed(0)}×${big.h.toFixed(0)} at ${big.x.toFixed(0)},${big.y.toFixed(0)}`);
     // 11. Snap presets sit at the margin (3% of the frame width).
     const sr = overlayRect(snapOverlay(ov, 'br', 1000, 800), 1000, 800), sc = overlayRect(snapOverlay(ov, 'c', 1000, 800), 1000, 800);
-    rec('Overlay snap presets keep a margin', Math.abs(1000 - sr.x - sr.w - 30) < 1e-6 && Math.abs(800 - sr.y - sr.h - 30) < 1e-6 && Math.abs(sc.x + sc.w / 2 - 500) < 1e-6,
-      `bottom-right gap ${(1000 - sr.x - sr.w).toFixed(1)}, ${(800 - sr.y - sr.h).toFixed(1)} px`);
+    const sb = overlayRect(snapOverlay(ov, 'b', 1000, 800), 1000, 800), sl = overlayRect(snapOverlay(ov, 'l', 1000, 800), 1000, 800);
+    const sides = Math.abs(sb.x + sb.w / 2 - 500) < 1e-6 && Math.abs(800 - sb.y - sb.h - 30) < 1e-6 && Math.abs(sl.x - 30) < 1e-6 && Math.abs(sl.y + sl.h / 2 - 400) < 1e-6;
+    rec('Overlay snap presets keep a margin', sides && Math.abs(1000 - sr.x - sr.w - 30) < 1e-6 && Math.abs(800 - sr.y - sr.h - 30) < 1e-6 && Math.abs(sc.x + sc.w / 2 - 500) < 1e-6,
+      `bottom-right gap ${(1000 - sr.x - sr.w).toFixed(1)}, ${(800 - sr.y - sr.h).toFixed(1)} px; bottom-middle gap ${(800 - sb.y - sb.h).toFixed(1)} px, centered: ${sides}`);
     return { passed: results.every(r => r.pass), results };
   }
 

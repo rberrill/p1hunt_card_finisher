@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 - **Overlay** step, between Levels and Export: put a logo or watermark on the photo.
   - Upload a PNG, WebP, JPG or SVG (up to 5 MB), or drop or paste one while on the step. Transparency is kept.
-  - It starts centered at a quarter of the photo width. Drag it, resize it with a corner handle or a pinch, use the on-screen arrows and − +, or tap one of five rings on the photo to snap it to a corner or the center. Opacity is adjustable.
+  - It starts centered at a quarter of the photo width. Drag it, resize it with a corner handle or a pinch, use the on-screen arrows and − +, or tap one of nine rings on the photo to snap it to a corner, the middle of a side, or the center. Opacity is adjustable.
   - On this step the photo stays framed as in Crop: every touch goes to the logo.
   - Placement is stored relative to the final cropped photo, so the logo lands in the same spot at every export size, and stays inside the photo if the crop changes.
   - The logo is merged into the exported image (and Share / Copy), after Levels, which never changes its colors.
