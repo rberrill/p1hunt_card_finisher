@@ -6,7 +6,7 @@
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { E, M3, $, clone, nextFrame, makeCanvas, ctx2d, app, geoCfg, toast } = CF;
+  const { E, M3, $, clone, shortText, nextFrame, makeCanvas, ctx2d, app, geoCfg, toast } = CF;
 
   /* =====================================================================
      EXPORT — full-resolution render in row bands, then encode via Exporter.
@@ -157,10 +157,17 @@
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     CF.Session.flush(); Exporter.download(blob, (app.state.source.name || 'photo').replace(/\.[^.]+$/, '') + '-edits.json');
   }
+  // The file is untrusted: its size is checked before reading, and the fields the messages below show
+  // (source name and size) before they're used. Everything else goes through cleanState.
+  const isObj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
+  const isDim = x => Number.isInteger(x) && x > 0;
   async function loadEdits(file) {
+    if (file.size > CONFIG.export.editsMaxBytes) { toast('That file is too large to be a Card Finisher edits file.', 'err'); return; }
     let st;
     try { st = JSON.parse(await file.text()); } catch (e) { toast('That file isn’t valid JSON.', 'err'); return; }
-    if (!st || ![1, 2].includes(st.version) || !st.source || !Array.isArray(st.corners)) { toast('That isn’t a Card Finisher edits file.', 'err'); return; }
+    if (!isObj(st) || ![1, 2].includes(st.version) || !isObj(st.source) || !isDim(st.source.width) || !isDim(st.source.height) || !Array.isArray(st.corners)) {
+      toast('That isn’t a Card Finisher edits file.', 'err'); return;
+    }
     if (st.version === 1) {
       // v1 had separate Square up / Flatten modes and a Card/Case target; square up = 0% flatten.
       if (st.mode === 'square') st.strength = 0;
@@ -168,14 +175,14 @@
       delete st.mode; delete st.target; st.version = 2;
     }
     if (!app.img) { toast('Open the matching photo first, then load its edits.', 'warn', 5000); return; }
-    if (st.crop && st.crop.orient === undefined) {
+    if (isObj(st.crop) && st.crop.orient === undefined) {
       const r = st.crop.ratio === 'original' ? st.source.width / st.source.height : st.crop.ratio;
       st.crop.orient = r && r !== 1 ? ((st.crop.swapped ? 1 / r : r) < 1 ? 'portrait' : 'landscape') : null;
     }
     if (st.source.width !== app.img.width || st.source.height !== app.img.height) {
       toast(`These edits are for a ${st.source.width}×${st.source.height} photo; this one is ${app.img.width}×${app.img.height}.`, 'err', 6000); return;
     }
-    if (st.source.name !== app.img.name) toast(`Edits were saved for “${st.source.name}”. Applied anyway — sizes match.`, 'warn', 5000);
+    if (st.source.name !== app.img.name) toast(`Edits were saved for “${shortText(st.source.name) || 'another photo'}”. Applied anyway — sizes match.`, 'warn', 5000);
     // Only well-formed fields are used; anything else in the file falls back to the default.
     const clean = CF.cleanState(st, app.img), next = clean.state;
     if (clean.invalid.length) toast(`Some settings in these edits weren’t valid and were reset: ${clean.invalid.join(', ')}.`, 'warn', 6000);

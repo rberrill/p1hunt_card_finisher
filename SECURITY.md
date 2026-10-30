@@ -5,7 +5,7 @@ P1Hunt Card Finisher is a static web page. It has no server, no accounts and no 
 ## What the app does to stay safe
 
 - **Nothing from outside runs.** A Content Security Policy allows only the site's own scripts and styles; there are no third-party scripts, fonts or trackers.
-- **Untrusted input is checked.** Links can only change number and on/off settings. Edits files, remembered settings and resumed sessions are checked field by field, and anything malformed is reset to its default. Logos (including SVG) are only ever drawn as images, so anything embedded in them doesn't run.
+- **Untrusted input is checked.** Links can only change number and on/off settings, within safe limits: a link can lower a memory or size limit but never raise it. Edits files are size-checked before they're read, and edits files, remembered settings and resumed sessions are checked field by field, and anything malformed is reset to its default. Logos (including SVG) are only ever drawn as images, so anything embedded in them doesn't run.
 - **Text never becomes markup.** The interface builds its controls as page elements rather than from HTML text, and an automated check fails the build if that rule is broken.
 
 ## What's stored on your device

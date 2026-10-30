@@ -42,12 +42,13 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - **Engine / shell split:** `js/engine.js` is pure and runs in a Web Worker; the shell (`js/app/`) talks to adapters (`ImageSource`, `Detector`, `Exporter`, `Session`) so native versions can swap in. The rules in `.claude/rules/` load when you touch those files.
 - **Touch first:** everything works by touch alone, with ≥ 44 px targets and safe-area padding. Keyboard shortcuts are extras.
 - **Phone memory:** preview from downscaled copies, export in row bands, output capped at 16.7 MP (the iOS canvas limit).
-- Every tunable lives in `CONFIG`, overridable from the URL (numbers and on/off only).
+- Every tunable lives in `CONFIG`, overridable from the URL (numbers and on/off only). A setting that sizes canvases, memory or loops gets a range in `CONFIG_LIMITS`; a link can lower a cap, never raise it.
 - **Security:**
   - Never build HTML from strings.
   - Keep the strict CSP.
   - Untrusted input (links, edits files, IndexedDB, localStorage) goes through `applyConfigOverrides` / `sanitizeState`. A new state field needs a rule there.
   - `tests/selftest.js` enforces what it can.
+  - Before checking out an outside contributor's branch, read its diff to `.claude/` and `tests/`: the hooks run that code without asking.
 - **Public repo:** nothing personal or machine-specific in committed files (addresses, local paths, names beyond Rich's). That goes in `CLAUDE.local.md`. Selftest checks for addresses, paths and sample-photo GPS.
 - Keep the internal names `storageKey: 'p1hunt.straightener.v1'` and `window.__straightener`; renaming them breaks saved settings and the tests.
 

@@ -103,7 +103,7 @@
     CF.Session.put('photoOverlay', { id: rec.id, buf: rec.buf, type: rec.type, name: rec.name }).catch(() => {});
   }
 
-  // AC4–AC6: upload (button, drop or paste on this step). Errors leave the current overlay as it was.
+  // AC4–AC6: add a logo (button, drop or paste on this step). Errors leave the current overlay as it was.
   async function addOverlayFile(file) {
     if (!app.img || !frame() || !file) return;
     const type = mimeOf(file);
@@ -375,7 +375,7 @@
     if (saved && $('ovThumb').getAttribute('src') !== saved.url) $('ovThumb').src = saved.url;
     $('ovHint').hidden = !!saved;
     const up = $('btnOvUpload');
-    up.textContent = placed ? 'Replace' : 'Upload'; up.classList.toggle('primary', !placed);
+    up.textContent = placed ? 'Replace logo' : 'Add logo'; up.classList.toggle('primary', !placed);
     up.disabled = !has; $('btnUseSaved').disabled = !has || !saved;
     $('btnOvDeleteSaved').disabled = !saved;
     for (const id of ['btnOvReset', 'btnOvRemove']) $(id).disabled = !placed;

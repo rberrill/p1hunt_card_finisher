@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Contributor docs: `docs/architecture.md` (how the app is built, the edits-file format) and `tests/README.md` (how to run the tests and what each one guards).
 - Two privacy checks in `node tests/selftest.js`: sample photos may not carry a GPS location, and the published files may not contain private network addresses or local paths.
 - The project's Claude Code setup is now in the repository (`CLAUDE.md`, `.claude/`): path-scoped rules, the verify / UAT / release workflows, and hooks. It doesn't change the app.
+- A check in `node tests/selftest.js` that the engine's built-in defaults match `CONFIG`.
+
+### Changed
+- The Overlay step's button reads **Add logo** (then **Replace logo**) instead of **Upload**. Nothing is ever uploaded; the logo stays on your device.
+
+### Security
+- Links can no longer lift the app's safety limits. URL settings that size images, memory or work (the preview size, the 16.7 MP export cap, the 5 MB logo limit and others) only accept values inside a safe range, and memory and size caps can only be lowered. Before this, a crafted link could make the app look broken or run a phone out of memory.
+- Edits files are size-checked (8 MB at most) before they're read, and the photo name and size they carry are checked before any message shows them. Long names are cut short in messages and in the Resume prompt. A malformed crop in an edits file now gives the usual "reset" notice instead of failing silently.
 
 ## [1.6.0] - 2026-10-28
 

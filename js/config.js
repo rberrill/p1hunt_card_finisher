@@ -53,6 +53,7 @@ const CONFIG = {
                                  // Browsers only allow that on secure pages (HTTPS or localhost).
     bandPx: 2097152,             // output pixels per warp band (memory budget on phones)
     maxBandSrcPx: 6000000,       // max source pixels read for one band
+    editsMaxBytes: 8 * 1024 * 1024, // larger files aren't read as edits (a 5 MB logo is ~6.7 MB in base64)
   },
 
   detect: {
@@ -97,4 +98,21 @@ const CONFIG = {
 
   keys: { undo: 'mod+z', redo: 'mod+shift+z', redoAlt: 'mod+y', debug: '`', fit: 'f', compare: 'c', cycleHandle: 'Tab', nudge: 1, nudgeShift: 10 },
   storageKey: 'p1hunt.straightener.v1',
+};
+
+/* Safe ranges for URL overrides, [min, max] by dotted key. These settings size canvases, buffers or
+   loops, so an extreme value from a link could break the app or run a phone out of memory. Memory and
+   size caps can only be lowered (max = the shipped value). Unlisted numbers take any finite value.
+   tests/selftest.js checks every key exists in CONFIG with its default inside the range. */
+const CONFIG_LIMITS = {
+  previewMaxPx: [512, 2048], thumbMaxPx: [240, 720], historyLimit: [1, 200],
+  maxOutputPx: [1000, 12000], maxOutputArea: [1000000, 16777216], maxBoundsFactor: [1, 3],
+  loupeZoom: [1, 16], loupeSize: [60, 400], handleZoom: [1, 20],
+  'nudge.delayMs': [100, 2000], 'nudge.repeatMs': [20, 1000], 'nudge.loupeMs': [0, 20000],
+  'export.longEdge': [0, 12000], 'export.bandPx': [65536, 2097152], 'export.maxBandSrcPx': [1000000, 6000000],
+  'export.editsMaxBytes': [65536, 8388608],
+  'overlay.maxBytes': [65536, 5242880], 'overlay.maxPx': [256, 4096], 'overlay.svgPx': [256, 2048],
+  'detect.workingSize': [300, 2000], 'detect.refineMaxPx': [1000000, 8000000], 'detect.angleStepDeg': [0.1, 5],
+  'detect.houghMaxLines': [4, 96], 'detect.maxCandidates': [1, 10],
+  'levels.autoSamplePx': [100, 2000], 'session.saveDelayMs': [50, 10000],
 };

@@ -62,7 +62,7 @@ report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersi
   // Names a module uses but never declares or imports must be real globals. A name missing from its
   // module (e.g. a dropped `const E = …`) would otherwise only throw when that code path runs.
   // Add to this list when the shell starts using a new browser API or app global.
-  const GLOBALS = new Set(('Array ArrayBuffer Blob CONFIG CardEngine CardEngineModule ClipboardItem Date Error File Image ImageData Infinity JSON Map Math ' +
+  const GLOBALS = new Set(('Array ArrayBuffer Blob CONFIG CONFIG_LIMITS CardEngine CardEngineModule ClipboardItem Date Error File Image ImageData Infinity JSON Map Math ' +
     'Number Object Promise ResizeObserver String URL URLSearchParams Uint8Array Uint8ClampedArray Worker clearInterval clearTimeout console ' +
     'DOMParser XMLSerializer TextDecoder atob btoa parseFloat ' +
     'createImageBitmap document indexedDB isFinite localStorage location matchMedia navigator parseInt performance ' +
@@ -134,6 +134,24 @@ report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersi
 }
 
 new Function(engine)(); // defines globalThis.CardEngine
+
+// CONFIG consistency (1.7). The engine's built-in defaults (used when no settings are passed, as in these
+// Node tests) must match CONFIG, and every CONFIG_LIMITS key must name a CONFIG number whose default is in range.
+{
+  const ctx = {};
+  require('vm').runInNewContext(read('js/config.js') + ';this.CONFIG = CONFIG; this.CONFIG_LIMITS = CONFIG_LIMITS;', ctx);
+  const C = ctx.CONFIG, E = globalThis.CardEngine;
+  const geometry = { maxOutputPx: C.maxOutputPx, maxOutputArea: C.maxOutputArea, maxBoundsFactor: C.maxBoundsFactor,
+    minCornerDistPx: C.minCornerDistPx, fitPaddingPct: C.crop.fitPaddingPct, allowUpscale: C.export.allowUpscale };
+  const drift = [['DETECT_DEFAULTS', E.DETECT_DEFAULTS, C.detect], ['GEOMETRY_DEFAULTS', E.GEOMETRY_DEFAULTS, geometry], ['LEVELS_DEFAULTS', E.LEVELS_DEFAULTS, C.levels]]
+    .flatMap(([n, d, c]) => Object.keys(d).filter(k => JSON.stringify(d[k]) !== JSON.stringify(c[k])).map(k => `${n}.${k} ${d[k]} vs CONFIG ${c[k]}`));
+  report(!drift.length, 'CONFIG: the engine defaults match CONFIG', drift.length ? drift.join('; ') : 'detect, geometry and levels');
+
+  const get = k => k.split('.').reduce((o, p) => o && o[p], C);
+  const badLimits = Object.entries(ctx.CONFIG_LIMITS).filter(([k, [lo, hi]]) => typeof get(k) !== 'number' || !(lo <= get(k) && get(k) <= hi)).map(([k]) => k);
+  report(!badLimits.length, 'CONFIG: every URL limit names a CONFIG number with its default in range', badLimits.length ? badLimits.join(', ') : `${Object.keys(ctx.CONFIG_LIMITS).length} limits`);
+}
+
 const t0 = Date.now();
 const result = globalThis.CardEngine.selfTest();
 for (const r of result.results) report(r.pass, r.name, r.detail);

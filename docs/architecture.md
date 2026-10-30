@@ -31,7 +31,7 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 - **Render pipeline:** `computeGeometry(state)` gives every transform; `warp()` does inverse-mapped bilinear or bicubic sampling.
 - **Levels:** linear-light LUTs, a robust patch mean, the Auto estimate.
 - **Overlay:** `overlayRect`, `clampOverlay`, `snapOverlay`.
-- **Untrusted input:** `applyConfigOverrides` (URL settings) and `sanitizeState` (edits files, Resume, stored settings).
+- **Untrusted input:** `applyConfigOverrides` (URL settings, kept inside `CONFIG_LIMITS` from `js/config.js`) and `sanitizeState` (edits files, Resume, stored settings).
 - **Self-tests**, run by `tests/selftest.js` and by the app with `?selftest=1`.
 
 **Shell (`js/app/`).** Each module is `(function (CF) { … })(window.CF)`, takes core names with `const { … } = CF;`, calls other modules as `CF.name`, and ends with `Object.assign(CF, { … })`. Elements are built with `CF.h(tag, attrs, ...children)`; HTML is never built from strings.

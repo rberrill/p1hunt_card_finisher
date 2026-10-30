@@ -13,7 +13,8 @@ Exit code 0 means everything passed.
 | Module boundaries | `js/app/` modules all load (`core` first, `main` last); no name declared twice; cross-module names go through `CF`; only known globals (the `GLOBALS` list, extended when the shell uses a new browser API); every `CF` name is exported |
 | Security | No HTML-string sinks, `eval`, `new Function` or string timers in `js/`; `index.html` has a strict CSP before any asset and nothing inline or off-site |
 | Privacy | No GPS location in `samples/` photos; no private network addresses or local drive paths in the published text files |
-| Engine self-tests | Geometry (homography round trip, Flatten 0% and 100%, perspective-corrected aspect, degenerate quads, the rotate/flip/crop pipeline, identity warp), detection (synthetic card, sub-pixel refinement), Levels (pick targets, robust dropper, Auto), Overlay (placement, snap margins), untrusted input (URL overrides, edits-file checks) |
+| CONFIG consistency | The engine's built-in defaults (`DETECT_DEFAULTS`, `GEOMETRY_DEFAULTS`, `LEVELS_DEFAULTS`) match `CONFIG`; every `CONFIG_LIMITS` key is a `CONFIG` number with its default in range |
+| Engine self-tests | Geometry (homography round trip, Flatten 0% and 100%, perspective-corrected aspect, degenerate quads, the rotate/flip/crop pipeline, identity warp), detection (synthetic card, sub-pixel refinement), Levels (pick targets, robust dropper, Auto), Overlay (placement, snap margins), untrusted input (URL overrides and their safe ranges, edits-file checks) |
 
 The engine self-tests also run in the app with `?selftest=1`, on the main thread and inside the worker; the toast reads `main n/n, worker n/n`.
 

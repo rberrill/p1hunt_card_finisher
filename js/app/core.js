@@ -11,12 +11,12 @@
   const E = CardEngine, M3 = E.M3, Quad = E.Quad;
 
   /* ---------------- CONFIG overrides from the URL ----------------
-     Number and on/off settings only (the engine checks them); anything else in a link is ignored. */
+     Number and on/off settings only, inside CONFIG_LIMITS (the engine checks them); anything else in a link is ignored. */
   const params = new URLSearchParams(location.search);
   const overrides = [...params].filter(([k]) => k !== 'debug' && k !== 'selftest');
   if (params.has('debug')) CONFIG.debug = !['0', 'false'].includes(params.get('debug'));
-  const { rejected } = E.applyConfigOverrides(CONFIG, overrides);
-  if (rejected.length) console.warn('[card-finisher] URL settings ignored (unknown, or not a number / on-off setting):', rejected.join(', '));
+  const { rejected } = E.applyConfigOverrides(CONFIG, overrides, CONFIG_LIMITS);
+  if (rejected.length) console.warn('[card-finisher] URL settings ignored (unknown, not a number / on-off setting, or outside its safe range):', rejected.join(', '));
   for (const [k, v] of Object.entries(CONFIG.theme)) document.documentElement.style.setProperty('--' + k, v);
 
   const $ = id => document.getElementById(id);
@@ -25,6 +25,8 @@
     fileInput: $('fileInput'), editsInput: $('editsInput'), debugPanel: $('debugPanel'), root: $('app'),
   };
   const clone = o => JSON.parse(JSON.stringify(o));
+  // Text from a file or storage shown in a message: a string, cut short. (textContent keeps it from being markup.)
+  const shortText = (s, max = 60) => typeof s !== 'string' ? '' : s.length > max ? s.slice(0, max - 1) + '…' : s;
   const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
   const makeCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
   const ctx2d = (c, read) => c.getContext('2d', read ? { willReadFrequently: true } : undefined);
@@ -65,5 +67,5 @@
     return el;
   }
 
-  Object.assign(CF, { E, M3, Quad, params, $, h, els, clone, nextFrame, makeCanvas, ctx2d, app, geoCfg, toast, hideToast });
+  Object.assign(CF, { E, M3, Quad, params, $, h, els, clone, shortText, nextFrame, makeCanvas, ctx2d, app, geoCfg, toast, hideToast });
 })();

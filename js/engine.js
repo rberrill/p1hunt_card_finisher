@@ -744,14 +744,16 @@ function CardEngineModule(G) {
 
   // URL overrides of CONFIG ("?detect.cannyHigh=90"): only existing number and on/off settings.
   // Text, lists and objects can't be set from a link, so a link can't inject markup or a script URL.
-  function applyConfigOverrides(cfg, entries) {
+  // limits: { 'dotted.key': [min, max] }; a number outside its range is rejected (a link can't lift a memory cap).
+  function applyConfigOverrides(cfg, entries, limits = {}) {
     const applied = [], rejected = [];
+    const inRange = (k, n) => !Object.prototype.hasOwnProperty.call(limits, k) || (n >= limits[k][0] && n <= limits[k][1]);
     for (const [k, v] of entries) {
       const path = String(k).split('.'), last = path.pop();
       let o = cfg;
       for (const p of path) o = ownKey(o, p) && isPlainObj(o[p]) ? o[p] : null;
       const cur = ownKey(o, last) ? o[last] : undefined;
-      if (typeof cur === 'number' && String(v).trim() !== '' && Number.isFinite(Number(v))) { o[last] = Number(v); applied.push(k); }
+      if (typeof cur === 'number' && String(v).trim() !== '' && Number.isFinite(Number(v)) && inRange(String(k), Number(v))) { o[last] = Number(v); applied.push(k); }
       else if (typeof cur === 'boolean' && /^(1|0|true|false)$/.test(v)) { o[last] = v === '1' || v === 'true'; applied.push(k); }
       else rejected.push(k);
     }
@@ -1189,6 +1191,11 @@ function CardEngineModule(G) {
       const ok = cfg.a === 5 && cfg.b === false && cfg.o.n === 3 && cfg.s === 'x' && cfg.list[0].label === 'L' && cfg.o.url === 'u'
         && typeof Object.prototype.toString === 'function' && r.applied.length === 3 && r.rejected.length === 8;
       rec('URL overrides accept only number and on/off settings', ok, `applied ${r.applied.join(', ')}; rejected ${r.rejected.length}`);
+      // 12b. Limited settings: inside the range is applied; above the cap, below the floor or 0 is rejected.
+      const lc = { cap: 100, o: { n: 10 }, free: 1 }, lim = { cap: [10, 100], 'o.n': [1, 50] };
+      const lr = applyConfigOverrides(lc, [['cap', '40'], ['o.n', '50'], ['cap', '1e9'], ['cap', '0'], ['o.n', '51'], ['free', '1e9']], lim);
+      const lok = lc.cap === 40 && lc.o.n === 50 && lc.free === 1e9 && lr.applied.length === 3 && lr.rejected.join() === 'cap,cap,o.n';
+      rec('URL overrides stay inside safe ranges', lok, `applied ${lr.applied.join(', ')}; rejected ${lr.rejected.join(', ')}`);
     }
     // 13. Edits / sessions: a valid state passes unchanged; malformed fields fall back; unknown fields are dropped.
     {

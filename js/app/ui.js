@@ -6,7 +6,7 @@
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { E, $, h, els, clone, app, toast } = CF;
+  const { E, $, h, els, clone, shortText, app, toast } = CF;
 
   /* ---------- tabs + panel binding ---------- */
   function setTab(tab) {
@@ -345,7 +345,8 @@
   async function offerResume() {
     const rec = await CF.Session.peek();
     if (!rec || app.img) return;
-    $('resumeName').textContent = rec.name; $('resumeWhen').textContent = '(' + ago(rec.savedAt) + ')';
+    $('resumeName').textContent = shortText(rec.name) || 'your last photo'; // the record comes from storage
+    $('resumeWhen').textContent = Number.isFinite(rec.savedAt) ? '(' + ago(rec.savedAt) + ')' : '';
     $('resume').hidden = false; $('btnOpenEmpty').classList.remove('primary');
   }
   function hideResume() { $('resume').hidden = true; $('btnOpenEmpty').classList.add('primary'); }
