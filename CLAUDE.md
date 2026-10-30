@@ -10,7 +10,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 1. **Agree before building.** When Rich describes a feature or a batch of changes, reply with a proposal: what changes, how, open questions and gaps in the ACs. Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away.
 2. **Build, then verify yourself** with the `verify` skill. Report measured results, not assumptions. The only thing a browser can't check is the real iOS share sheet.
-3. **UAT:** add steps for every new or changed behavior with the `uat` skill. Rich runs the whole script on the live HTTPS site (desktop + iPhone) before each release.
+3. **UAT:** add test cases for every new or changed behavior with the `uat` skill. The script is organised by feature, with a Desktop table and a Phone table per feature, one behavior per row, and new cases marked 🆕 and listed at the top. Rich runs the whole script on the live HTTPS site before each release.
 4. **Release only on Rich's go-ahead.** He runs `/release X.Y.Z`. Pushing `main` updates the live site.
 5. **Record as you go:**
    - user-visible changes in `CHANGELOG.md` under `## [X.Y.0] - Unreleased`;
