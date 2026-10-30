@@ -1,20 +1,29 @@
 ---
 name: release
-description: Release a Card Finisher version to GitHub Pages - preflight, version bump, merge to main, tag, live-site check, start the next dev branch. Only after Rich's UAT has passed and he has said go.
+description: Release a Card Finisher version to GitHub Pages - preflight, version bump, annotated tag on main, move the release branch to the tag, live-site check, rollback if needed, start the next version. Only after Rich's UAT has passed and he has said go.
 disable-model-invocation: true
 argument-hint: "[X.Y.Z]"
 ---
 
 # Release $ARGUMENTS
 
-Pushing `main` updates the live site at https://rberrill.github.io/p1hunt_card_finisher/. **Stop and ask** if Rich hasn't said go in this conversation, or if `tests/UAT-X.Y.md` isn't signed off as Ship. That sign-off covers its cases and the pre-release smoke test, run on the dev build; (HTTPS) rows wait for step 4.
+**Stop and ask** if Rich hasn't said go in this conversation, or if `tests/UAT-X.Y.md` isn't signed off as Ship. That sign-off covers its cases and the pre-release smoke test, run on the dev build; (HTTPS) rows wait for step 4.
 
-Branches: `main` is the release branch (served by Pages). Work happens on `dev/X.Y`, or on `fix/<name>` for a patch. Both are branched from `main`.
+## Branches
 
-## 1. Preflight (on the dev or fix branch)
+| Branch | Role |
+|---|---|
+| `main` | All work, committed and pushed as you go. Pushing it never changes the live site. Releases are annotated tags on it (`vX.Y.Z`). |
+| `release` | What GitHub Pages serves (https://rberrill.github.io/p1hunt_card_finisher/). **Never commit to it.** It only moves to a release tag. |
+| `fix/<name>` | Only for a hotfix while `main` has unreleased work. Branched from the live tag. |
 
-- `git fetch origin`. Rich sometimes edits on GitHub (CNAME, settings). If `git log HEAD..origin/main` shows anything, merge `origin/main` in first.
+Edits Rich makes on GitHub's website go on `main`, never on `release`.
+
+## 1. Preflight (on `main`)
+
+- `git fetch origin`. If `git log HEAD..origin/main` shows anything (an edit on GitHub), `git pull --ff-only` first.
 - The working tree is clean.
+- `release` is an ancestor of `main`: `git merge-base --is-ancestor origin/release HEAD`. If not, stop and ask; something was committed to `release`.
 - Run the `verify` skill at full scope. Everything passes.
 - Privacy audit: `git diff --stat vPREV..HEAD` and `git ls-files`. Nothing local-only is tracked (`CLAUDE.local.md`, `tests/UAT-*.md`, `tests/uat/`, `archive/`, `.claude/settings.local.json`), and every new file is meant to be public.
 
@@ -23,22 +32,21 @@ Branches: `main` is the release branch (served by Pages). Work happens on `dev/X
 - `node .claude/skills/release/set-version.js X.Y.Z` sets `appVersion` in `js/config.js` and every `?v=` in `index.html`.
 - CHANGELOG: `## [X.Y.0] - Unreleased` becomes `## [X.Y.Z] - YYYY-MM-DD`. Update the README if features or usage changed.
 - Local (the `uat` skill): record Rich's sign-off in `tests/UAT-X.Y.md`, then merge its 🆕, changed and retired cases into `tests/uat/catalog.md`.
-- `node tests/selftest.js`, then commit `X.Y.Z: version, changelog date`.
+- `node tests/selftest.js`, then commit `X.Y.Z: version, changelog date` and `git push origin main`.
 
-## 3. Merge, push, tag
+## 3. Tag and deploy
 
 ```
-git checkout main
-git pull --ff-only origin main
-git merge --no-ff dev/X.Y
-git push origin main
-git tag vX.Y.Z
+git tag -a vX.Y.Z -F <message file>
 git push origin refs/tags/vX.Y.Z
+git push origin vX.Y.Z^{commit}:refs/heads/release
 ```
+
+The last push is a fast-forward of `release` to the tag; Pages redeploys from it. If git refuses it as non-fast-forward, stop and ask.
 
 **Never `git push --tags`**; push one tag at a time.
 
-The merge commit message is the release's **technical record**, since there's no VERSION file:
+The annotated tag's message is the release's **technical record** (`git show vX.Y.Z`):
 
 ```
 Release X.Y.Z
@@ -53,8 +61,6 @@ Caught during the work:
 - <bug found before release, and the test that now guards it>
 
 Decisions: decision-log.md, YYYY-MM-DD entries.
-
-Co-Authored-By: …
 ```
 
 ## 4. Live check
@@ -73,23 +79,30 @@ Pages takes a minute or two to deploy, and caches files for about 10 minutes.
    - Keep or Roll back.
 
 **Roll back** only on Rich's go-ahead:
-1. On `main`, run `git revert -m 1 <release merge>`, then `git push origin main`. Pages redeploys the previous version.
-2. Leave the `vX.Y.Z` tag; it records what was released.
-3. Fix on `fix/<name>` from `main`. That branch must first `git revert` the revert commit, or the release's changes won't come back when it merges.
-4. Release the fix as `X.Y.Z+1`.
-5. Log the rollback in `decision-log.md`.
+1. Move `release` back to the previous tag:
+   ```
+   git push --force-with-lease=release:vX.Y.Z^{commit} origin vPREV^{commit}:refs/heads/release
+   ```
+   The lease makes the push fail if `release` isn't where we left it. Pages redeploys the previous version.
+2. `main` and the `vX.Y.Z` tag stay as they are; the tag records what was released.
+3. Fix on `main`, then release `X.Y.Z+1` the normal way.
+4. Log the rollback in `decision-log.md`.
 
-## 5. Start the next version
+## 5. Start the next version (on `main`)
 
-- `git checkout -b dev/X.Y+1 main`.
 - `node .claude/skills/release/set-version.js X.Y+1.0-dev`.
 - Add `## [X.Y+1.0] - Unreleased` above the release in the CHANGELOG.
-- Commit `Start X.Y+1.0-dev`. Push `dev/X.Y+1` for backup (`git push -u origin dev/X.Y+1`).
+- Commit `Start X.Y+1.0-dev` and push `main`.
 - Local: start `tests/UAT-X.Y+1.md` (the `uat` skill: header, empty scope, setup, smoke test) and move the released version's file to `archive/`.
 
-For a **patch** from `fix/<name>`: merge it into `main` as above, then merge `main` into the open `dev/` branch so the fix isn't lost.
+## Hotfix while `main` has unreleased work
+
+1. `git checkout -b fix/<name> vX.Y.Z` (the live tag).
+2. Fix it, run `verify`, and set the version with `set-version.js X.Y.Z+1`. Update the CHANGELOG. Run a smoke test on the fix build.
+3. Tag `vX.Y.Z+1` on the fix branch and deploy it as in step 3. It's a fast-forward, since the fix descends from the live tag.
+4. Merge `fix/<name>` into `main` (resolve the version and CHANGELOG to keep `main`'s `-dev` version and its Unreleased section above the new patch). Push `main`, then delete the fix branch.
 
 ## 6. Record
 
-- Add a dated `decision-log.md` entry: released, the live-check results, the next dev branch.
+- Add a dated `decision-log.md` entry: released, the live-check results.
 - Update the "Waiting on" line in `CLAUDE.local.md`.

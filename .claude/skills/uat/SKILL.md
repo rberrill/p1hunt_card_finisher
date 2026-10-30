@@ -7,7 +7,7 @@ description: Maintain Rich's manual acceptance tests - the catalog of every case
 
 All three files are local only (gitignored), so they may hold the LAN address.
 
-**Where it runs.** GitHub Pages only serves `main`, so there is no HTTPS copy of a build before release.
+**Where it runs.** GitHub Pages only serves the `release` branch, so there is no HTTPS copy of a build before release.
 - **Before release:** Rich runs the version script on the dev build: desktop Chrome on `localhost` (treated as secure, so Share and Copy work there) and iPhone Safari over the LAN on plain HTTP (Share and Copy hidden).
 - **After release:** once the release is pushed, he re-runs the smoke test and any **(HTTPS)** rows on the live site.
 

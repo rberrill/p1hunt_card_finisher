@@ -19,8 +19,8 @@ A static web app that straightens, crops and color-corrects phone photos of trad
    - **the release smoke test;**
    - **each version's script:** its new and connected cases plus the smoke test.
 
-   Rich runs the version script on the dev build before release: desktop on `localhost`, iPhone over the LAN on plain HTTP. Pages only serves `main`, so the smoke test and any (HTTPS) rows (the phone's Share and Copy) run again on the live site right after deploy.
-4. **Release only on Rich's go-ahead.** He runs `/release X.Y.Z`. Pushing `main` updates the live site.
+   Rich runs the version script on the dev build before release: desktop on `localhost`, iPhone over the LAN on plain HTTP. Pages only serves the `release` branch, so the smoke test and any (HTTPS) rows (the phone's Share and Copy) run again on the live site right after deploy.
+4. **Release only on Rich's go-ahead.** He runs `/release X.Y.Z`, which tags `main` and moves the `release` branch (the live site) to the tag.
 5. **Record as you go:**
    - user-visible changes in `CHANGELOG.md` under `## [X.Y.0] - Unreleased`;
    - decisions, and files changed in the background, in `../../decision-log.md` (dated, newest first, with the *why*);
@@ -85,9 +85,10 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 | `tests/uat/` (catalog, smoke), `tests/UAT-X.Y.md`, `archive/`, `CLAUDE.local.md` | Local only (gitignored) |
 
 **Branches:**
-- `main` is the release branch, served by Pages.
-- `dev/X.Y` holds the work for a version, and `fix/<name>` a patch. Both are branched from `main` and may be pushed for backup.
-- Merging to `main` needs Rich's go-ahead.
+- `main` holds all work. Commit and push it as you go; that never changes the live site.
+- `release` is what Pages serves. Never commit to it. Only the `release` skill moves it, and only to a release tag (rollback moves it back one tag).
+- `fix/<name>`, from the live tag, is only for a hotfix while `main` has unreleased work.
+- Releases are annotated tags on `main` (`vX.Y.Z`). Moving `release` needs Rich's go-ahead.
 - Commits end with the `Co-Authored-By` trailer.
 
 ## Keeping this current
@@ -102,7 +103,7 @@ Claude maintains these files without being asked. Each kind of fact has one home
 | This machine, or personal | `CLAUDE.local.md` |
 | What changed, for users | `CHANGELOG.md` |
 | Why we decided it | `../../decision-log.md` |
-| How a release was verified | the release merge-commit message |
+| How a release was verified | the release's annotated tag message (`git show vX.Y.Z`) |
 | Current status | git + CHANGELOG (the hook prints it) + the "Waiting on" line |
 
 - When Rich settles a product decision, add one line under "Settled product decisions" and log the detail in the decision-log.

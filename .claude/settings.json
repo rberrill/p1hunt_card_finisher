@@ -7,7 +7,12 @@
     ],
     "deny": [
       "Bash(git push --tags*)",
-      "Bash(git push * --tags*)"
+      "Bash(git push * --tags*)",
+      "Bash(git push --force* origin main*)",
+      "Bash(git push -f origin main*)",
+      "Bash(git push origin +main*)",
+      "Bash(git push --force* origin *:main*)",
+      "Bash(git push --force* origin *:refs/heads/main*)"
     ]
   },
   "hooks": {
