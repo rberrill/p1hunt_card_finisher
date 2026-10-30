@@ -14,6 +14,9 @@
   --stage: #2b2b2b;
 }
 * { box-sizing: border-box; }
+/* The hidden attribute always wins: a class that sets display (.row is flex) would otherwise
+   show a hidden element. */
+[hidden] { display: none !important; }
 html, body {
   height: 100%;
   margin: 0;
@@ -107,7 +110,6 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
   flex: none;
 }
 .btn.wide { width: 100%; }
-.btn[hidden] { display: none; }
 
 /* ---- stage and panel ---- */
 main { flex: 1; display: flex; min-height: 0; }
@@ -142,7 +144,6 @@ main { flex: 1; display: flex; min-height: 0; }
   color: var(--muted);
   padding: 24px;
 }
-.empty[hidden] { display: none; }
 .empty h2 { margin: 0; color: var(--text); font-size: 20px; }
 .resume {
   display: flex;
@@ -155,7 +156,6 @@ main { flex: 1; display: flex; min-height: 0; }
   border-radius: 12px;
   color: var(--text);
 }
-.resume[hidden] { display: none; }
 .resume b { word-break: break-all; }
 .resume .when { color: var(--muted); font-size: 13px; }
 .resume .row { margin: 0; }
@@ -344,7 +344,6 @@ input[type="color"] {
   margin: 6px 0;
 }
 .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .1s; }
-.progress[hidden] { display: none; }
 .hint { color: var(--muted); font-size: 12px; margin: 4px 0 8px; }
 section[data-panel] { display: none; }
 section[data-panel].active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
@@ -379,7 +378,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   border-radius: 12px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, .55);
 }
-.step-menu[hidden] { display: none; }
 .step-menu button {
   display: flex;
   align-items: center;
@@ -451,7 +449,6 @@ details.more[open] > summary::before { content: '▾'; }
   border-radius: 10px;
   padding: 10px;
 }
-#debugPanel[hidden] { display: none; }
 #debugPanel label {
   display: flex;
   justify-content: space-between;

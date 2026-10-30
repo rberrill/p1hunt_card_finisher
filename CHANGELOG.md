@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The code was rewritten for readability: whole-word names, one statement per line, short lines, and a comment on every function, following a written code style (`.claude/rules/code-style.md`) that `node tests/selftest.js` now checks. Nothing you see in the app changes; exports are pixel-identical to before.
 - The Overlay step's button reads **Add logo** (then **Replace logo**) instead of **Upload**. Nothing is ever uploaded; the logo stays on your device.
 
+### Fixed
+- On the Overlay step, an empty "saved logo" thumbnail (a broken image next to **Use saved overlay**) no longer shows when no logo has been saved.
+
 ### Security
 - Links can no longer lift the app's safety limits. URL settings that size images, memory or work (the preview size, the 16.7 MP export cap, the 5 MB logo limit and others) only accept values inside a safe range, and memory and size caps can only be lowered. Before this, a crafted link could make the app look broken or run a phone out of memory.
 - Edits files are size-checked (8 MB at most) before they're read, and the photo name and size they carry are checked before any message shows them. Long names are cut short in messages and in the Resume prompt. A malformed crop in an edits file now gives the usual "reset" notice instead of failing silently.
