@@ -1,194 +1,417 @@
 /* =====================================================================
-   js/app/export.js — Full-resolution banded render, Download / Share / Copy (Exporter), save/load edits.
+   js/app/export.js: the full-resolution render in row bands, Download / Share / Copy
+   (Exporter), and saving and loading edits files.
    Shell modules share one namespace, CF (created in core.js). Names from core are
    destructured below; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { E, M3, $, clone, shortText, nextFrame, makeCanvas, ctx2d, app, geoCfg, toast } = CF;
+  const {
+    Mat3,
+    Vec2,
+    byId,
+    clone,
+    shortText,
+    nextFrame,
+    makeCanvas,
+    context2d,
+    app,
+    geometryConfig,
+    toast,
+  } = CF;
 
   /* =====================================================================
-     EXPORT — full-resolution render in row bands, then encode via Exporter.
+     EXPORT: a full-resolution render in row bands, then encoding through Exporter.
      ===================================================================== */
+
+  // The phase-two swap point for saving: native apps save to Photos instead.
   const Exporter = {
     download(blob, filename) {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = filename;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(link.href), 60000);
     },
-    // Share sheet (Save Image, AirDrop…): keeps the app open, where a download on iOS Safari replaces
-    // the page with the file. Only offered when the browser can share image files (secure pages only).
+
+    // The share sheet (Save Image, AirDrop…) keeps the app open, where a download on iOS Safari
+    // replaces the page with the file. Only offered when the browser can share image files
+    // (secure pages only).
     canShare() {
       if (!CONFIG.export.share || !navigator.share || !navigator.canShare) return false;
-      try { return navigator.canShare({ files: [new File([new Blob()], 'test.jpg', { type: 'image/jpeg' })] }); } catch (e) { return false; }
+      try {
+        const probe = new File([new Blob()], 'test.jpg', { type: 'image/jpeg' });
+        return navigator.canShare({ files: [probe] });
+      } catch (error) {
+        return false;
+      }
     },
-    canCopy: () => !!(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem),
-    // Safari requires the ClipboardItem to be created synchronously in the gesture with a Promise.
-    copy(blobPromise) { return navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })]); },
-  };
-  const MIME = { jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
-  const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
-  const toBlob = (c, type, q) => new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('Encoding failed (image too large for this browser?)')), type, q));
 
-  // Source-space bounding box of an output row band (projective maps send lines to lines,
-  // so the band's 4 corners bound its preimage unless it straddles the horizon).
-  function bandSourceBox(Minv, outW, y0, y1, W, H) {
-    const pts = [], n = 8;
-    for (let i = 0; i <= n; i++) for (const y of [y0, y1]) pts.push([outW * i / n, y]);
-    for (const x of [0, outW]) for (let i = 1; i < n; i++) pts.push([x, y0 + (y1 - y0) * i / n]);
-    let x0 = Infinity, ya = Infinity, x1 = -Infinity, yb = -Infinity, any = false;
-    for (const p of pts) {
-      if (M3.w(Minv, p[0], p[1]) <= 1e-12) { x0 = 0; ya = 0; x1 = W; yb = H; any = true; continue; }
-      const q = M3.apply(Minv, p[0], p[1]); any = true;
-      x0 = Math.min(x0, q[0]); ya = Math.min(ya, q[1]); x1 = Math.max(x1, q[0]); yb = Math.max(yb, q[1]);
-    }
-    const m = 3; // bicubic needs 2 px of neighbors
-    x0 = Math.max(0, Math.floor(x0) - m); ya = Math.max(0, Math.floor(ya) - m);
-    x1 = Math.min(W, Math.ceil(x1) + m); yb = Math.min(H, Math.ceil(yb) + m);
-    return any && x1 > x0 && yb > ya ? { x0, y0: ya, x1, y1: yb } : null;
+    canCopy: () => !!(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem),
+
+    // Safari requires the ClipboardItem to be created synchronously in the gesture, with a Promise.
+    copy(blobPromise) {
+      return navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })]);
+    },
+  };
+
+  const MIME_TYPES = { jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+  const EXTENSIONS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+  // Bicubic sampling reads 2 px past a pixel, so band regions get this margin.
+  const BAND_MARGIN_PX = 3;
+  const MIN_BAND_ROWS = 8;
+
+  function toBlob(canvas, type, quality) {
+    return new Promise((resolve, reject) => canvas.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error('Encoding failed (image too large for this browser?)'));
+    }, type, quality));
   }
 
-  // render(sourceImage, state) at full resolution → canvas. Deterministic for a given state.
-  async function renderFull(st, onProgress) {
-    const g = E.computeGeometry(st, geoCfg());
-    if (!g.ok) throw new Error(g.reason);
-    const W = st.source.width, H = st.source.height, outW = g.out.w, outH = g.out.h, Minv = g.MoutInv;
-    const fill = CF.fillRGBA(st.export.format === 'jpeg' && st.export.fill === 'transparent' ? '#ffffff' : st.export.fill);
-    const out = makeCanvas(outW, outH), octx = ctx2d(out);
-    const lut = E.levelsLUT(st.levels, CONFIG.levels);
-    const reg = makeCanvas(1, 1), rctx = ctx2d(reg, true);
-    let bandH = Math.max(8, Math.floor(CONFIG.export.bandPx / outW)), y = 0;
-    while (y < outH) {
-      const bh = Math.min(bandH, outH - y);
-      const box = bandSourceBox(Minv, outW, y, y + bh, W, H);
-      const band = new ImageData(outW, bh);
-      if (box) {
-        // Local sampling density: source px covered by one output px at the band center.
-        const c0 = M3.apply(Minv, outW / 2, y + bh / 2), cx = M3.apply(Minv, outW / 2 + 1, y + bh / 2), cy = M3.apply(Minv, outW / 2, y + bh / 2 + 1);
-        const dens = Math.sqrt(Math.max(1e-9, E.V.dist(c0, cx) * E.V.dist(c0, cy)));
-        // When shrinking a lot, let the browser's area-filtered resampler pre-shrink the region
-        // first (a mip level), since bilinear alone only reads 4 texels and aliases.
-        const r = isFinite(dens) && dens > 1.5 ? Math.min(1, 1.25 / dens) : 1;
-        const sw = box.x1 - box.x0, sh = box.y1 - box.y0;
-        if (sw * sh * r * r > CONFIG.export.maxBandSrcPx && bandH > 8) { bandH = Math.max(8, bandH >> 1); continue; }
-        const rw = Math.max(1, Math.round(sw * r)), rh = Math.max(1, Math.round(sh * r)), rx = rw / sw, ry = rh / sh;
-        reg.width = rw; reg.height = rh;
-        rctx.imageSmoothingEnabled = true; rctx.imageSmoothingQuality = 'high';
-        rctx.drawImage(app.img.el, box.x0, box.y0, sw, sh, 0, 0, rw, rh);
-        const src = rctx.getImageData(0, 0, rw, rh);
-        if (lut) E.applyLUT(src, lut); // levels are per-pixel, so applying before the warp leaves the fill color untouched
-        const M = M3.chain(M3.scale(rx, ry), M3.translate(-box.x0, -box.y0), Minv);
-        E.warp(band, src, M, { fill, interp: st.export.interp, rowOffset: y, bounds: [-box.x0 * rx, -box.y0 * ry, (W - box.x0) * rx, (H - box.y0) * ry] });
-      } else {
-        const d = band.data; for (let i = 0; i < d.length; i += 4) { d[i] = fill[0]; d[i + 1] = fill[1]; d[i + 2] = fill[2]; d[i + 3] = fill[3]; }
+  // The source-space bounding box { left, top, right, bottom } of output rows [top, bottom), or
+  // null. Projective maps send lines to lines, so points along the band's edges bound its
+  // preimage, unless it straddles the horizon (then it's the whole photo).
+  function bandSourceBox(outputToSource, outputWidth, top, bottom, sourceWidth, sourceHeight) {
+    const points = [];
+    const steps = 8;
+    for (let i = 0; i <= steps; i++) {
+      points.push([outputWidth * i / steps, top]);
+      points.push([outputWidth * i / steps, bottom]);
+    }
+    for (const x of [0, outputWidth]) {
+      for (let i = 1; i < steps; i++) points.push([x, top + (bottom - top) * i / steps]);
+    }
+    let left = Infinity;
+    let upper = Infinity;
+    let right = -Infinity;
+    let lower = -Infinity;
+    for (const point of points) {
+      if (Mat3.homogeneousW(outputToSource, point[0], point[1]) <= 1e-12) {
+        left = 0;
+        upper = 0;
+        right = sourceWidth;
+        lower = sourceHeight;
+        continue;
       }
-      octx.putImageData(band, 0, y);
-      y += bh;
-      onProgress && onProgress(y / outH);
+      const source = Mat3.apply(outputToSource, point[0], point[1]);
+      left = Math.min(left, source[0]);
+      upper = Math.min(upper, source[1]);
+      right = Math.max(right, source[0]);
+      lower = Math.max(lower, source[1]);
+    }
+    left = Math.max(0, Math.floor(left) - BAND_MARGIN_PX);
+    upper = Math.max(0, Math.floor(upper) - BAND_MARGIN_PX);
+    right = Math.min(sourceWidth, Math.ceil(right) + BAND_MARGIN_PX);
+    lower = Math.min(sourceHeight, Math.ceil(lower) + BAND_MARGIN_PX);
+    if (right <= left || lower <= upper) return null;
+    return { left, top: upper, right, bottom: lower };
+  }
+
+  // Source px covered by one output px, at an output point (the local sampling density).
+  function samplingDensity(outputToSource, x, y) {
+    const center = Mat3.apply(outputToSource, x, y);
+    const acrossX = Mat3.apply(outputToSource, x + 1, y);
+    const acrossY = Mat3.apply(outputToSource, x, y + 1);
+    const area = Vec2.distance(center, acrossX) * Vec2.distance(center, acrossY);
+    return Math.sqrt(Math.max(1e-9, area));
+  }
+
+  /**
+   * renderFull(state, onProgress) → { canvas, geometry }: the export at full resolution,
+   * rendered from the original photo. Deterministic for a given state. Renders in row bands so
+   * a phone never holds the whole source and output as raw pixels at once.
+   */
+  async function renderFull(state, onProgress) {
+    const geometry = CardEngine.computeGeometry(state, geometryConfig());
+    if (!geometry.ok) throw new Error(geometry.reason);
+    const sourceWidth = state.source.width;
+    const sourceHeight = state.source.height;
+    const { width: outputWidth, height: outputHeight } = geometry.output;
+    const outputToSource = geometry.outputToSource;
+    const isTransparent = state.export.fill === 'transparent';
+    const isJpegOnTransparent = state.export.format === 'jpeg' && isTransparent;
+    const fill = CF.fillRgba(isJpegOnTransparent ? '#ffffff' : state.export.fill);
+    const output = makeCanvas(outputWidth, outputHeight);
+    const outputContext = context2d(output);
+    const lut = CardEngine.levelsLut(state.levels, CONFIG.levels);
+    const region = makeCanvas(1, 1);
+    const regionContext = context2d(region, true);
+    let bandRows = Math.max(MIN_BAND_ROWS, Math.floor(CONFIG.export.bandPx / outputWidth));
+    let y = 0;
+    while (y < outputHeight) {
+      const rows = Math.min(bandRows, outputHeight - y);
+      const box = bandSourceBox(
+        outputToSource,
+        outputWidth,
+        y,
+        y + rows,
+        sourceWidth,
+        sourceHeight,
+      );
+      const band = new ImageData(outputWidth, rows);
+      if (box) {
+        const density = samplingDensity(outputToSource, outputWidth / 2, y + rows / 2);
+        // When shrinking a lot, the browser's area-filtered resampler pre-shrinks the region
+        // first (a mip level), since bilinear alone only reads 4 texels and aliases.
+        const regionScale = isFinite(density) && density > 1.5 ? Math.min(1, 1.25 / density) : 1;
+        const boxWidth = box.right - box.left;
+        const boxHeight = box.bottom - box.top;
+        const regionPixels = boxWidth * boxHeight * regionScale * regionScale;
+        const isTooBig = regionPixels > CONFIG.export.maxBandSrcPx;
+        if (isTooBig && bandRows > MIN_BAND_ROWS) {
+          bandRows = Math.max(MIN_BAND_ROWS, bandRows >> 1);
+          continue;
+        }
+        const regionWidth = Math.max(1, Math.round(boxWidth * regionScale));
+        const regionHeight = Math.max(1, Math.round(boxHeight * regionScale));
+        const scaleX = regionWidth / boxWidth;
+        const scaleY = regionHeight / boxHeight;
+        region.width = regionWidth;
+        region.height = regionHeight;
+        regionContext.imageSmoothingEnabled = true;
+        regionContext.imageSmoothingQuality = 'high';
+        regionContext.drawImage(
+          app.img.el,
+          box.left, box.top, boxWidth, boxHeight,
+          0, 0, regionWidth, regionHeight,
+        );
+        const source = regionContext.getImageData(0, 0, regionWidth, regionHeight);
+        // Levels are per pixel, so applying them before the warp leaves the fill color untouched.
+        if (lut) CardEngine.applyLut(source, lut);
+        const outputToRegion = Mat3.chain(
+          Mat3.scale(scaleX, scaleY),
+          Mat3.translate(-box.left, -box.top),
+          outputToSource,
+        );
+        CardEngine.warp(band, source, outputToRegion, {
+          fill,
+          interp: state.export.interp,
+          rowOffset: y,
+          bounds: [
+            -box.left * scaleX,
+            -box.top * scaleY,
+            (sourceWidth - box.left) * scaleX,
+            (sourceHeight - box.top) * scaleY,
+          ],
+        });
+      } else {
+        for (let offset = 0; offset < band.data.length; offset += 4) band.data.set(fill, offset);
+      }
+      outputContext.putImageData(band, 0, y);
+      y += rows;
+      if (onProgress) onProgress(y / outputHeight);
       await nextFrame();
     }
-    reg.width = reg.height = 0;
-    CF.compositeOverlay(octx, st, outW, outH); // the overlay goes on last, before encoding (no levels on it)
-    return { canvas: out, geo: g };
+    region.width = 0;
+    region.height = 0;
+    // The overlay goes on last, before encoding (Levels never touches it).
+    CF.compositeOverlay(outputContext, state, outputWidth, outputHeight);
+    return { canvas: output, geometry };
   }
 
+  // A copy of the canvas flattened onto white (JPEG can't hold alpha, and transparent turns
+  // black). Frees the original.
+  function flattenOnWhite(canvas) {
+    const flat = makeCanvas(canvas.width, canvas.height);
+    const ctx = context2d(flat);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, flat.width, flat.height);
+    ctx.drawImage(canvas, 0, 0);
+    canvas.width = 0;
+    return flat;
+  }
+
+  // Renders and encodes the export → a Promise of the file's Blob.
+  function encodeExport(state, type, onProgress) {
+    return renderFull(state, onProgress).then(async ({ canvas }) => {
+      const needsFlattening = type === 'image/jpeg' && state.export.fill === 'transparent';
+      const image = needsFlattening ? flattenOnWhite(canvas) : canvas;
+      const quality = state.export.format === 'png' ? undefined : state.export.quality;
+      const blob = await toBlob(image, type, quality);
+      // Free the big buffer now (it matters on iOS).
+      image.width = 0;
+      image.height = 0;
+      return blob;
+    });
+  }
+
+  // Delivers a finished export by Download or Share, with a toast saying how it went.
+  async function deliverExport(kind, blob, state, type, startTime) {
+    const extension = EXTENSIONS[blob.type] || 'png';
+    if (blob.type !== type) {
+      const format = state.export.format.toUpperCase();
+      const savedAs = extension.toUpperCase();
+      toast(`${format} isn’t supported by this browser — saved as ${savedAs}.`, 'warn', 5000);
+    }
+    const baseName = (state.source.name || 'photo').replace(/\.[^.]+$/, '');
+    const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
+    const name = `${baseName}${CONFIG.export.suffix}.${extension}`;
+    const output = app.geometry.output;
+    const done = `Exported ${output.width} × ${output.height} px in ${seconds} s.`;
+    if (kind === 'download') {
+      CF.Session.flush();
+      Exporter.download(blob, name);
+      toast(done);
+      return;
+    }
+    const outcome = await shareFile(new File([blob], name, { type: blob.type }));
+    if (outcome === 'pending') toast(done + ' Tap Share now to open the share sheet.', '', 6000);
+    else if (outcome === 'shared') toast(done);
+  }
+
+  // Exports the current edits. kind: 'download', 'share' or 'copy' (PNG to the clipboard).
   async function doExport(kind) {
     if (!app.img || app.exporting) return;
-    const st = clone(app.state);
-    const fmt = kind === 'copy' ? 'image/png' : MIME[st.export.format];
-    const prog = $('progress'), bar = prog.firstElementChild;
-    app.exporting = true; prog.hidden = false; bar.style.width = '0%'; CF.syncReadouts();
-    const t0 = performance.now();
-    const work = renderFull(st, f => { bar.style.width = Math.round(f * 100) + '%'; })
-      .then(async ({ canvas }) => {
-        // JPEG can't hold alpha; flatten onto white so transparent fill doesn't turn black.
-        if (fmt === 'image/jpeg' && st.export.fill === 'transparent') {
-          const c2 = makeCanvas(canvas.width, canvas.height), x = ctx2d(c2);
-          x.fillStyle = '#fff'; x.fillRect(0, 0, c2.width, c2.height); x.drawImage(canvas, 0, 0); canvas.width = 0; canvas = c2;
-        }
-        const blob = await toBlob(canvas, fmt, st.export.format === 'png' ? undefined : st.export.quality);
-        canvas.width = canvas.height = 0; // free the big buffer now (matters on iOS)
-        return blob;
-      });
+    const state = clone(app.state);
+    const type = kind === 'copy' ? 'image/png' : MIME_TYPES[state.export.format];
+    const progress = byId('progress');
+    const bar = progress.firstElementChild;
+    app.exporting = true;
+    progress.hidden = false;
+    bar.style.width = '0%';
+    CF.syncReadouts();
+    const startTime = performance.now();
+    const encoding = encodeExport(state, type, fraction => {
+      bar.style.width = Math.round(fraction * 100) + '%';
+    });
     try {
       if (kind === 'copy') {
-        await Exporter.copy(work);
+        await Exporter.copy(encoding);
         toast('Copied to clipboard (PNG).');
       } else {
-        const blob = await work;
-        const ext = EXT[blob.type] || 'png';
-        if (blob.type !== fmt) toast(`${st.export.format.toUpperCase()} isn’t supported by this browser — saved as ${ext.toUpperCase()}.`, 'warn', 5000);
-        const base = (st.source.name || 'photo').replace(/\.[^.]+$/, '');
-        const secs = ((performance.now() - t0) / 1000).toFixed(1);
-        const name = `${base}${CONFIG.export.suffix}.${ext}`, done = `Exported ${app.geo.out.w} × ${app.geo.out.h} px in ${secs} s.`;
-        if (kind === 'download') { CF.Session.flush(); Exporter.download(blob, name); toast(done); }
-        else {
-          const how = await shareFile(new File([blob], name, { type: blob.type }));
-          if (how === 'pending') toast(done + ' Tap Share now to open the share sheet.', '', 6000);
-          else if (how === 'shared') toast(done);
-        }
+        await deliverExport(kind, await encoding, state, type, startTime);
       }
-    } catch (e) {
-      console.error(e); toast((kind === 'copy' ? 'Copy failed: ' : 'Export failed: ') + e.message, 'err', 6000);
+    } catch (error) {
+      console.error(error);
+      toast((kind === 'copy' ? 'Copy failed: ' : 'Export failed: ') + error.message, 'error', 6000);
     } finally {
-      app.exporting = false; prog.hidden = true; CF.syncReadouts();
+      app.exporting = false;
+      progress.hidden = true;
+      CF.syncReadouts();
     }
   }
 
-  // Opens the share sheet for a finished file. Returns 'shared', 'cancelled', 'pending' or 'failed'.
-  // 'pending': the browser refused because the tap was too long ago (a slow export), so the Share
-  // button becomes "Share now" and a fresh tap opens the sheet. Any edit cancels it.
+  // Opens the share sheet for a finished file. Returns 'shared', 'cancelled', 'pending' or
+  // 'failed'. 'pending': the browser refused because the tap was too long ago (a slow export),
+  // so the Share button becomes "Share now" and a fresh tap opens the sheet. Any edit cancels it.
   async function shareFile(file) {
-    try { await navigator.share({ files: [file] }); app.pendingSave = null; return 'shared'; }
-    catch (e) {
-      if (e.name === 'AbortError') return 'cancelled';
-      if (e.name === 'NotAllowedError' && !app.pendingSave) { app.pendingSave = file; return 'pending'; }
-      app.pendingSave = null; toast('Share failed: ' + e.message, 'err', 6000); return 'failed';
-    } finally { CF.syncReadouts(); }
+    try {
+      await navigator.share({ files: [file] });
+      app.pendingSave = null;
+      return 'shared';
+    } catch (error) {
+      if (error.name === 'AbortError') return 'cancelled';
+      if (error.name === 'NotAllowedError' && !app.pendingSave) {
+        app.pendingSave = file;
+        return 'pending';
+      }
+      app.pendingSave = null;
+      toast('Share failed: ' + error.message, 'error', 6000);
+      return 'failed';
+    } finally {
+      CF.syncReadouts();
+    }
   }
 
-  /* ---------- save / load edits (the serializable edit state) ---------- */
+  /* ---------- saving and loading edits (the serializable edit state) ---------- */
   function saveEdits() {
     if (!app.state) return;
     // The overlay image travels inside the edits file, so loading it rebuilds the export exactly.
-    const data = Object.assign(clone(app.state), { overlayImage: CF.overlayForEdits(app.state) || undefined });
+    const overlayImage = CF.overlayForEdits(app.state) || undefined;
+    const data = Object.assign(clone(app.state), { overlayImage });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    CF.Session.flush(); Exporter.download(blob, (app.state.source.name || 'photo').replace(/\.[^.]+$/, '') + '-edits.json');
+    const baseName = (app.state.source.name || 'photo').replace(/\.[^.]+$/, '');
+    CF.Session.flush();
+    Exporter.download(blob, baseName + '-edits.json');
   }
-  // The file is untrusted: its size is checked before reading, and the fields the messages below show
-  // (source name and size) before they're used. Everything else goes through cleanState.
-  const isObj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
-  const isDim = x => Number.isInteger(x) && x > 0;
+
+  // An edits file is untrusted: its size is checked before reading, and the fields the messages
+  // below show (source name and size) before they're used. Everything else goes through
+  // cleanState.
+  const isPlainObject = value => value !== null
+    && typeof value === 'object'
+    && !Array.isArray(value);
+  const isDimension = value => Number.isInteger(value) && value > 0;
+
+  function looksLikeEdits(edits) {
+    return isPlainObject(edits)
+      && [1, 2].includes(edits.version)
+      && isPlainObject(edits.source)
+      && isDimension(edits.source.width)
+      && isDimension(edits.source.height)
+      && Array.isArray(edits.corners);
+  }
+
+  // Brings older files up to date: v1 had separate Square up / Flatten modes and a Card / Case
+  // target (square up = 0% flatten); files before crop.orient follow the swap.
+  function upgradeEdits(edits) {
+    if (edits.version === 1) {
+      if (edits.mode === 'square') edits.strength = 0;
+      edits.aspect = CF.cardAspect(edits.aspect && edits.aspect.orientation);
+      delete edits.mode;
+      delete edits.target;
+      edits.version = 2;
+    }
+    if (isPlainObject(edits.crop) && edits.crop.orient === undefined) {
+      const crop = edits.crop;
+      const sourceRatio = edits.source.width / edits.source.height;
+      const ratio = crop.ratio === 'original' ? sourceRatio : crop.ratio;
+      const shown = crop.swapped ? 1 / ratio : ratio;
+      crop.orient = ratio && ratio !== 1 ? (shown < 1 ? 'portrait' : 'landscape') : null;
+    }
+  }
+
   async function loadEdits(file) {
-    if (file.size > CONFIG.export.editsMaxBytes) { toast('That file is too large to be a Card Finisher edits file.', 'err'); return; }
-    let st;
-    try { st = JSON.parse(await file.text()); } catch (e) { toast('That file isn’t valid JSON.', 'err'); return; }
-    if (!isObj(st) || ![1, 2].includes(st.version) || !isObj(st.source) || !isDim(st.source.width) || !isDim(st.source.height) || !Array.isArray(st.corners)) {
-      toast('That isn’t a Card Finisher edits file.', 'err'); return;
+    if (file.size > CONFIG.export.editsMaxBytes) {
+      toast('That file is too large to be a Card Finisher edits file.', 'error');
+      return;
     }
-    if (st.version === 1) {
-      // v1 had separate Square up / Flatten modes and a Card/Case target; square up = 0% flatten.
-      if (st.mode === 'square') st.strength = 0;
-      st.aspect = CF.cardAspect(st.aspect && st.aspect.orientation);
-      delete st.mode; delete st.target; st.version = 2;
+    let edits;
+    try {
+      edits = JSON.parse(await file.text());
+    } catch (error) {
+      toast('That file isn’t valid JSON.', 'error');
+      return;
     }
-    if (!app.img) { toast('Open the matching photo first, then load its edits.', 'warn', 5000); return; }
-    if (isObj(st.crop) && st.crop.orient === undefined) {
-      const r = st.crop.ratio === 'original' ? st.source.width / st.source.height : st.crop.ratio;
-      st.crop.orient = r && r !== 1 ? ((st.crop.swapped ? 1 / r : r) < 1 ? 'portrait' : 'landscape') : null;
+    if (!looksLikeEdits(edits)) {
+      toast('That isn’t a Card Finisher edits file.', 'error');
+      return;
     }
-    if (st.source.width !== app.img.width || st.source.height !== app.img.height) {
-      toast(`These edits are for a ${st.source.width}×${st.source.height} photo; this one is ${app.img.width}×${app.img.height}.`, 'err', 6000); return;
+    if (!app.img) {
+      toast('Open the matching photo first, then load its edits.', 'warn', 5000);
+      return;
     }
-    if (st.source.name !== app.img.name) toast(`Edits were saved for “${shortText(st.source.name) || 'another photo'}”. Applied anyway — sizes match.`, 'warn', 5000);
+    upgradeEdits(edits);
+    const { width, height } = edits.source;
+    if (width !== app.img.width || height !== app.img.height) {
+      const photoSize = `${app.img.width}×${app.img.height}`;
+      const message = `These edits are for a ${width}×${height} photo; this one is ${photoSize}.`;
+      toast(message, 'error', 6000);
+      return;
+    }
+    if (edits.source.name !== app.img.name) {
+      const savedFor = shortText(edits.source.name) || 'another photo';
+      toast(`Edits were saved for “${savedFor}”. Applied anyway — sizes match.`, 'warn', 5000);
+    }
     // Only well-formed fields are used; anything else in the file falls back to the default.
-    const clean = CF.cleanState(st, app.img), next = clean.state;
-    if (clean.invalid.length) toast(`Some settings in these edits weren’t valid and were reset: ${clean.invalid.join(', ')}.`, 'warn', 6000);
-    next.overlayImage = st.overlayImage;
-    if (!(await CF.overlayFromEdits(next))) { toast('The overlay in these edits couldn’t be read, so it was left out.', 'warn', 5000); next.overlay = null; }
-    CF.commit(s => { for (const k of Object.keys(s)) delete s[k]; Object.assign(s, next); });
+    const clean = CF.cleanState(edits, app.img);
+    const next = clean.state;
+    if (clean.invalid.length) {
+      const fields = clean.invalid.join(', ');
+      toast(`Some settings in these edits weren’t valid and were reset: ${fields}.`, 'warn', 6000);
+    }
+    next.overlayImage = edits.overlayImage;
+    if (!(await CF.overlayFromEdits(next))) {
+      toast('The overlay in these edits couldn’t be read, so it was left out.', 'warn', 5000);
+      next.overlay = null;
+    }
+    CF.commit(state => {
+      for (const key of Object.keys(state)) delete state[key];
+      Object.assign(state, next);
+    });
   }
 
   Object.assign(CF, { Exporter, renderFull, doExport, shareFile, saveEdits, loadEdits });

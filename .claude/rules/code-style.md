@@ -13,15 +13,20 @@ The test for every line is whether someone new to the codebase could review it w
 decoding it. Short code that needs decoding fails that test. These rules apply to new code and to
 any code you touch.
 
+`node tests/selftest.js` enforces the parts a tokenizer can see (`tests/style-check.js`): line
+length, short names, one statement per line and one declaration per `const` / `let` / `var`. The
+rest is for review.
+
 ## Names
 
 - **Say what it is.** `quad`, `corners`, `options`, `overlay`, `levels`, `state`, `geometry`,
   `points`, `score`. Never `q`, `o`, `ov`, `lv`, `st`, `geo`, `pts`, `sc`.
 - **One or two letters are allowed only for:**
   - `i`, `j`, `k`: integer loop indices, in loops short enough to see whole;
-  - `x`, `y`, `dx`, `dy`: a coordinate and its delta;
+  - `x`, `y`, `z`, `dx`, `dy`: a coordinate and its delta;
   - `id`, `ok`: real words;
-  - `CF` (the shell's namespace) and `fs` (Node's file-system module).
+  - `el` (a DOM element, as in the abbreviations below);
+  - `CF` (the shell's namespace), and `fs`, `os` and `vm` (Node's modules).
   Width and height are `width` and `height` (or `cropWidth`, `frameHeight`), never `w` / `h`.
 - **Abbreviations:** only the ones listed here. Spell out everything else.
   `ctx` (a canvas 2D context), `el` (a DOM element), `img` (an image), `src` / `dst` (the two
@@ -49,11 +54,14 @@ any code you touch.
 | CSS classes and custom properties | kebab-case | `.step-number`, `--panel-bg` |
 | HTML ids (JS handles) | camelCase | `stepMenu`, `btnOpen` |
 
+In HTML and CSS, `btn` is allowed as the button class and id prefix (`.btn`, `btnShare`).
+
 Acronyms are one word in camelCase: `levelsLut`, `toSrgb`, `parseSvg`, not `levelsLUT`.
 
 ## Layout
 
-- **Lines are at most 100 characters**, comments included.
+- **Lines are at most 100 characters**, comments included. The one exception is the Content
+  Security Policy `<meta>` in `index.html`, which stays on one line.
 - **One statement per line.** No `if (a) x(); if (b) y();` on one line, no `a = 1; b = 2;`.
   A guard clause that fits (`if (!quad) return null;`) stays on one line.
 - **One declaration per `const` / `let`.** A destructure is one declaration.
@@ -79,9 +87,11 @@ Acronyms are one word in camelCase: `levelsLut`, `toSrgb`, `parseSvg`, not `leve
 ## Hot loops
 
 Pixel loops (`warp`, blur, Canny, Hough, Levels) run on full-resolution photos on a phone.
-Keep them flat: no closures or array allocation per pixel. Long names cost nothing at run time;
-a function call per pixel can. If a loop needs a helper, measure the export and detection times
-before and after (the `verify` skill reports them).
+Keep them flat: no closures or array allocation per pixel. Long names cost nothing at run time.
+A small helper called per pixel (`clampIndex`, `writeBicubic`) measured no slower, but measure
+any change to these loops before and after: load each engine version in its own Node process and
+compare medians of several runs. Timing both versions in one process, or in the browser, is too
+noisy to trust (that once showed a 2× "slowdown" that wasn't there).
 
 ## Names you must not change
 
@@ -90,7 +100,9 @@ These are read from outside the code, so renaming them breaks saved data, links 
 - `CONFIG` keys (links in the wild set them) and `CONFIG_LIMITS` keys;
 - edit-state fields and the edits-file format (`docs/architecture.md`), including
   overlay placement `{id, aspect, cx, cy, w, opacity}`;
-- `storageKey`, IndexedDB and localStorage keys, `Session` keys (`'overlay'`, `'photoOverlay'`);
+- `storageKey`, IndexedDB and localStorage keys, `Session` keys (`'overlay'`, `'photoOverlay'`)
+  and the fields of what they store (`{ buf, type, name }`, a saved logo's `settings`);
+- the edits file's `overlayImage` (`{ id, type, name, data }`);
 - `window.__straightener` and its members, `CardEngineModule`, the `CardEngine` global, `CF`.
 
 Inside the code, a local name can differ from the stored key:

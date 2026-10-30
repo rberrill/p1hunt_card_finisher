@@ -1,259 +1,495 @@
 /* =====================================================================
-   js/app/adapters.js — Phase-two swap points: ImageSource, the engine Web Worker, Detector (JS), Prefs (localStorage), Session (IndexedDB).
+   js/app/adapters.js: the phase-two swap points. ImageSource, the engine Web Worker,
+   Detector (JS today), Prefs (localStorage) and Session (IndexedDB).
    Shell modules share one namespace, CF (created in core.js). Names from core are
    destructured below; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { E, Quad, clone, makeCanvas, ctx2d, app, toast } = CF;
+  const { Quad, clone, makeCanvas, context2d, app } = CF;
 
   /* =====================================================================
-     IMAGE I/O (shell adapters) — ImageSource: file picker, drag-drop, paste.
-     Phase two adds camera + photo library behind the same load(blob) call.
+     IMAGE I/O: ImageSource (file picker, drag and drop, paste).
+     Phase two adds the camera and photo library behind the same load(blob) call.
      ===================================================================== */
   const ImageSource = {
-    isHeic: f => /image\/hei[cf]/i.test(f.type || '') || /\.hei[cf]$/i.test(f.name || ''),
+    isHeic: file => /image\/hei[cf]/i.test(file.type || '') || /\.hei[cf]$/i.test(file.name || ''),
+
+    // Decodes a photo, honoring its EXIF orientation. Returns { el, width, height, name, close }.
     async load(blob, name) {
-      name = name || blob.name || 'photo';
+      const photoName = name || blob.name || 'photo';
       let bitmap = null;
       if (typeof createImageBitmap === 'function') {
-        try { bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' }); } catch (e) { bitmap = null; }
+        try {
+          bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+        } catch (error) {
+          bitmap = null;
+        }
       }
-      if (bitmap) return { el: bitmap, width: bitmap.width, height: bitmap.height, name, close() { try { bitmap.close(); } catch (e) {} } };
+      if (bitmap) {
+        const close = () => {
+          try {
+            bitmap.close();
+          } catch (error) { /* already closed */ }
+        };
+        return { el: bitmap, width: bitmap.width, height: bitmap.height, name: photoName, close };
+      }
       // Fallback: <img> honors EXIF orientation by default (CSS image-orientation: from-image).
       const url = URL.createObjectURL(blob);
       const img = new Image();
       img.src = url;
-      try { await img.decode(); } catch (e) {
+      try {
+        await img.decode();
+      } catch (error) {
         URL.revokeObjectURL(url);
-        if (ImageSource.isHeic(blob)) throw new Error('This browser can’t open HEIC. Save the photo as JPEG first (Safari opens HEIC directly).');
+        if (ImageSource.isHeic(blob)) {
+          throw new Error('This browser can’t open HEIC. Save the photo as JPEG first '
+            + '(Safari opens HEIC directly).');
+        }
         throw new Error('Couldn’t read that file as an image.');
       }
-      return { el: img, width: img.naturalWidth, height: img.naturalHeight, name, close() { URL.revokeObjectURL(url); img.src = ''; } };
+      const close = () => {
+        URL.revokeObjectURL(url);
+        img.src = '';
+      };
+      return {
+        el: img,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        name: photoName,
+        close,
+      };
     },
-    bindPicker(input, onFile) { input.addEventListener('change', () => { if (input.files[0]) onFile(input.files[0]); input.value = ''; }); },
-    bindDrop(el, onFile) {
-      el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
-      el.addEventListener('dragleave', () => el.classList.remove('dragover'));
-      el.addEventListener('drop', e => {
-        e.preventDefault(); el.classList.remove('dragover');
-        const f = [...(e.dataTransfer.files || [])].find(f => f.type.startsWith('image/') || ImageSource.isHeic(f));
-        if (f) onFile(f);
+
+    bindPicker(input, onFile) {
+      input.addEventListener('change', () => {
+        if (input.files[0]) onFile(input.files[0]);
+        input.value = '';
       });
     },
+
+    bindDrop(el, onFile) {
+      el.addEventListener('dragover', event => {
+        event.preventDefault();
+        el.classList.add('drag-over');
+      });
+      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+      el.addEventListener('drop', event => {
+        event.preventDefault();
+        el.classList.remove('drag-over');
+        const isPhoto = file => file.type.startsWith('image/') || ImageSource.isHeic(file);
+        const file = [...(event.dataTransfer.files || [])].find(isPhoto);
+        if (file) onFile(file);
+      });
+    },
+
     bindPaste(onFile) {
-      document.addEventListener('paste', e => {
-        const item = [...(e.clipboardData ? e.clipboardData.items : [])].find(i => i.type.startsWith('image/'));
-        if (item) { e.preventDefault(); onFile(item.getAsFile(), 'pasted-photo'); }
+      document.addEventListener('paste', event => {
+        const items = event.clipboardData ? event.clipboardData.items : [];
+        const item = [...items].find(candidate => candidate.type.startsWith('image/'));
+        if (!item) return;
+        event.preventDefault();
+        onFile(item.getAsFile(), 'pasted-photo');
       });
     },
   };
 
-  // Downscale with repeated halving (each step ≤ 2×) so large reductions don't alias.
-  function scaledCopy(src, sw, sh, maxPx) {
-    const k = Math.min(1, maxPx / Math.max(sw, sh));
-    const tw = Math.max(1, Math.round(sw * k)), th = Math.max(1, Math.round(sh * k));
-    let cur = src, cw = sw, ch = sh;
-    while (cw / 2 > tw) {
-      const nw = Math.max(tw, Math.round(cw / 2)), nh = Math.max(th, Math.round(ch / 2));
-      const c = makeCanvas(nw, nh), x = ctx2d(c);
-      x.imageSmoothingQuality = 'high'; x.drawImage(cur, 0, 0, cw, ch, 0, 0, nw, nh);
-      if (cur !== src) cur.width = 0;
-      cur = c; cw = nw; ch = nh;
+  // A downscaled copy at most maxPx on its long side → { canvas, data, scale }. Reduces by
+  // repeated halving (each step ≤ 2×) so large reductions don't alias.
+  function scaledCopy(source, sourceWidth, sourceHeight, maxPx) {
+    const scale = Math.min(1, maxPx / Math.max(sourceWidth, sourceHeight));
+    const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+    const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+    let current = source;
+    let currentWidth = sourceWidth;
+    let currentHeight = sourceHeight;
+    while (currentWidth / 2 > targetWidth) {
+      const nextWidth = Math.max(targetWidth, Math.round(currentWidth / 2));
+      const nextHeight = Math.max(targetHeight, Math.round(currentHeight / 2));
+      const canvas = makeCanvas(nextWidth, nextHeight);
+      const ctx = context2d(canvas);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(current, 0, 0, currentWidth, currentHeight, 0, 0, nextWidth, nextHeight);
+      if (current !== source) current.width = 0;
+      current = canvas;
+      currentWidth = nextWidth;
+      currentHeight = nextHeight;
     }
-    const out = makeCanvas(tw, th), x = ctx2d(out, true);
-    x.imageSmoothingQuality = 'high'; x.drawImage(cur, 0, 0, cw, ch, 0, 0, tw, th);
-    if (cur !== src) cur.width = 0;
-    return { canvas: out, data: x.getImageData(0, 0, tw, th), k: tw / sw };
+    const output = makeCanvas(targetWidth, targetHeight);
+    const ctx = context2d(output, true);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(current, 0, 0, currentWidth, currentHeight, 0, 0, targetWidth, targetHeight);
+    if (current !== source) current.width = 0;
+    const data = ctx.getImageData(0, 0, targetWidth, targetHeight);
+    return { canvas: output, data, scale: targetWidth / sourceWidth };
   }
 
-  // Full-resolution region read (for refinement), capped at maxPx pixels.
+  // A full-resolution region of the photo (for refinement), at most maxPx pixels in total.
+  // box: { left, top, right, bottom } in source px. Returns an ImageData-like object plus
+  // { originX, originY, scale } (region px = (source − origin) · scale), or null if tiny.
   function readRegion(box, maxPx) {
-    const img = app.img, W = img.width, H = img.height;
-    const x0 = Math.max(0, Math.floor(box.x0)), y0 = Math.max(0, Math.floor(box.y0));
-    const x1 = Math.min(W, Math.ceil(box.x1)), y1 = Math.min(H, Math.ceil(box.y1));
-    const w = x1 - x0, h = y1 - y0;
-    if (w < 8 || h < 8) return null;
-    const s = Math.min(1, Math.sqrt(maxPx / (w * h)));
-    const rw = Math.max(1, Math.round(w * s)), rh = Math.max(1, Math.round(h * s));
-    const c = makeCanvas(rw, rh), x = ctx2d(c, true);
-    x.imageSmoothingQuality = 'high'; x.drawImage(img.el, x0, y0, w, h, 0, 0, rw, rh);
-    const d = x.getImageData(0, 0, rw, rh);
-    c.width = 0;
-    return { data: d.data, width: rw, height: rh, ox: x0, oy: y0, scale: rw / w };
+    const img = app.img;
+    const left = Math.max(0, Math.floor(box.left));
+    const top = Math.max(0, Math.floor(box.top));
+    const right = Math.min(img.width, Math.ceil(box.right));
+    const bottom = Math.min(img.height, Math.ceil(box.bottom));
+    const width = right - left;
+    const height = bottom - top;
+    if (width < 8 || height < 8) return null;
+    const scale = Math.min(1, Math.sqrt(maxPx / (width * height)));
+    const regionWidth = Math.max(1, Math.round(width * scale));
+    const regionHeight = Math.max(1, Math.round(height * scale));
+    const canvas = makeCanvas(regionWidth, regionHeight);
+    const ctx = context2d(canvas, true);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img.el, left, top, width, height, 0, 0, regionWidth, regionHeight);
+    const pixels = ctx.getImageData(0, 0, regionWidth, regionHeight);
+    canvas.width = 0;
+    return {
+      data: pixels.data,
+      width: regionWidth,
+      height: regionHeight,
+      originX: left,
+      originY: top,
+      scale: regionWidth / width,
+    };
   }
 
   /* =====================================================================
-     DETECTION adapters — Detector.detect(imageData, options) → [{corners, confidence}]
-     corners are in source pixels. Phase two: Apple Vision / ML Kit return the same shape.
+     DETECTION: Detector.detect(imageData, options) → [{ corners, confidence, … }]
+     Corners are in source pixels. Phase two: Apple Vision / ML Kit return the same shape.
      ===================================================================== */
+
+  // Appended to the engine's source to make the worker: runs one engine call per message.
   const WORKER_GLUE = `
-;self.onmessage = function (e) {
-  var m = e.data, r;
+;self.onmessage = function (event) {
+  var message = event.data;
+  var payload = message.payload;
+  var result;
   try {
-    if (m.type === 'detect') r = CardEngine.detect(m.payload.image, m.payload.opts);
-    else if (m.type === 'refine') r = CardEngine.refineQuad(m.payload.roi, m.payload.corners, m.payload.opts);
-    else if (m.type === 'selftest') r = CardEngine.selfTest();
-    else throw new Error('Unknown message ' + m.type);
-    self.postMessage({ id: m.id, result: r });
-  } catch (err) { self.postMessage({ id: m.id, error: String(err && err.stack || err) }); }
+    if (message.type === 'detect') {
+      result = CardEngine.detect(payload.image, payload.options);
+    } else if (message.type === 'refine') {
+      result = CardEngine.refineQuad(payload.roi, payload.corners, payload.options);
+    } else if (message.type === 'selftest') {
+      result = CardEngine.selfTest();
+    } else {
+      throw new Error('Unknown message ' + message.type);
+    }
+    self.postMessage({ id: message.id, result: result });
+  } catch (error) {
+    self.postMessage({ id: message.id, error: String(error && error.stack || error) });
+  }
 };`;
+
+  // Runs engine calls in a Web Worker, or on the main thread if the worker can't start.
   const EngineWorker = {
-    worker: null, failed: false, seq: 0, pending: new Map(),
+    worker: null,
+    failed: false,
+    lastId: 0,
+    pending: new Map(),
+
     init() {
       try {
-        const src = '(' + CardEngineModule.toString() + ')(self);' + WORKER_GLUE;
-        this.worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
-        this.worker.onmessage = e => {
-          const p = this.pending.get(e.data.id); if (!p) return;
-          this.pending.delete(e.data.id);
-          e.data.error ? p.reject(new Error(e.data.error)) : p.resolve(e.data.result);
+        // Built from the engine's source text, not loaded by URL: Chrome blocks file-based
+        // workers from file://.
+        const source = '(' + CardEngineModule.toString() + ')(self);' + WORKER_GLUE;
+        const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+        this.worker = new Worker(url);
+        this.worker.onmessage = event => {
+          const call = this.pending.get(event.data.id);
+          if (!call) return;
+          this.pending.delete(event.data.id);
+          if (event.data.error) call.reject(new Error(event.data.error));
+          else call.resolve(event.data.result);
         };
-        this.worker.onerror = e => { e.preventDefault && e.preventDefault(); this.fail('worker error'); };
-      } catch (e) { this.fail(e.message); }
+        this.worker.onerror = event => {
+          if (event.preventDefault) event.preventDefault();
+          this.fail('worker error');
+        };
+      } catch (error) {
+        this.fail(error.message);
+      }
     },
-    fail(why) {
-      if (!this.failed) console.warn('[card-finisher] Web Worker unavailable, running on main thread:', why);
+
+    fail(reason) {
+      if (!this.failed) {
+        console.warn('[card-finisher] Web Worker unavailable, running on main thread:', reason);
+      }
       this.failed = true;
-      for (const p of this.pending.values()) p.reject(new Error('worker failed'));
+      for (const call of this.pending.values()) call.reject(new Error('worker failed'));
       this.pending.clear();
     },
-    local(type, p) {
-      if (type === 'detect') return E.detect(p.image, p.opts);
-      if (type === 'refine') return E.refineQuad(p.roi, p.corners, p.opts);
-      if (type === 'selftest') return E.selfTest();
+
+    // The same calls on the main thread.
+    local(type, payload) {
+      if (type === 'detect') return CardEngine.detect(payload.image, payload.options);
+      if (type === 'refine') {
+        return CardEngine.refineQuad(payload.roi, payload.corners, payload.options);
+      }
+      if (type === 'selftest') return CardEngine.selfTest();
+      return undefined;
     },
+
     call(type, payload) {
-      if (!this.worker || this.failed) return new Promise(r => setTimeout(() => r(this.local(type, payload)), 0));
-      const id = ++this.seq;
-      return new Promise((resolve, reject) => {
+      if (!this.worker || this.failed) {
+        return new Promise(resolve => setTimeout(() => resolve(this.local(type, payload)), 0));
+      }
+      const id = ++this.lastId;
+      const reply = new Promise((resolve, reject) => {
         this.pending.set(id, { resolve, reject });
         this.worker.postMessage({ id, type, payload });
-      }).catch(err => {
+      });
+      return reply.catch(error => {
         if (this.failed) return this.local(type, payload);
-        throw err;
+        throw error;
       });
     },
   };
 
+  // The number and on/off settings of CONFIG.detect, for the engine.
   function detectParams() {
-    const p = {};
-    for (const [k, v] of Object.entries(CONFIG.detect)) if (typeof v === 'number' || typeof v === 'boolean') p[k] = v;
-    return p;
+    const params = {};
+    for (const [key, value] of Object.entries(CONFIG.detect)) {
+      if (typeof value === 'number' || typeof value === 'boolean') params[key] = value;
+    }
+    return params;
   }
 
   const JSDetector = {
-    name: 'js', last: null,
+    name: 'js',
+    // The last run's lines, debug data and timing, with workingScale (working px per source px).
+    last: null,
+
+    // options: { sourceWidth, ratio, seed (source px), debug, quads, getRegion (for refinement) }.
     async detect(imageData, options) {
-      const ks = imageData.width / options.sourceWidth; // working px per source px
-      const res = await EngineWorker.call('detect', {
+      const workingScale = imageData.width / options.sourceWidth;
+      const toWorking = point => [point[0] * workingScale, point[1] * workingScale];
+      const seed = options.seed ? toWorking(options.seed) : null;
+      const result = await EngineWorker.call('detect', {
         image: imageData,
-        opts: { ratio: options.ratio, seed: options.seed ? [options.seed[0] * ks, options.seed[1] * ks] : null,
-          params: detectParams(), debug: !!options.debug, quads: options.quads },
+        options: {
+          ratio: options.ratio,
+          seed,
+          params: detectParams(),
+          debug: !!options.debug,
+          quads: options.quads,
+        },
       });
-      const searchPx = CONFIG.detect.refineSearchWorkingPx / ks;
-      const out = [];
-      for (const c of res.candidates) {
-        let corners = c.corners.map(p => [p[0] / ks, p[1] / ks]), refined = null;
+      const searchPx = CONFIG.detect.refineSearchWorkingPx / workingScale;
+      const toSource = point => [point[0] / workingScale, point[1] / workingScale];
+      const candidates = [];
+      for (const candidate of result.candidates) {
+        let corners = candidate.corners.map(toSource);
+        let refined = null;
         if (options.getRegion && CONFIG.detect.refine) {
-          const bb = Quad.bbox(corners), m = searchPx * 3;
-          const roi = options.getRegion({ x0: bb.x0 - m, y0: bb.y0 - m, x1: bb.x1 + m, y1: bb.y1 + m }, CONFIG.detect.refineMaxPx);
+          const box = Quad.boundingBox(corners);
+          const margin = searchPx * 3;
+          const region = {
+            left: box.left - margin,
+            top: box.top - margin,
+            right: box.right + margin,
+            bottom: box.bottom + margin,
+          };
+          const roi = options.getRegion(region, CONFIG.detect.refineMaxPx);
           if (roi) {
-            const r = await EngineWorker.call('refine', { roi, corners, opts: { params: detectParams(), searchPx } });
-            corners = r.corners; refined = r.refined;
+            const refinement = await EngineWorker.call('refine', {
+              roi,
+              corners,
+              options: { params: detectParams(), searchPx },
+            });
+            corners = refinement.corners;
+            refined = refinement.refined;
           }
         }
-        out.push({ corners, confidence: c.confidence, score: c.score, parts: c.parts, refined });
+        candidates.push({
+          corners,
+          confidence: candidate.confidence,
+          score: candidate.score,
+          parts: candidate.parts,
+          refined,
+        });
       }
-      JSDetector.last = { ks, lines: res.lines, debug: res.debug || null, timing: res.timing };
-      return out;
+      JSDetector.last = {
+        workingScale,
+        lines: result.lines,
+        debug: result.debug || null,
+        timing: result.timing,
+      };
+      return candidates;
     },
   };
 
-  // The swap point for native detection (Apple Vision / ML Kit) in phase two; today it's the JS engine.
+  // The swap point for native detection (Apple Vision / ML Kit) in phase two; today it's the
+  // JS engine.
   const Detector = {
-    detect(imageData, options) { return JSDetector.detect(imageData, options); },
+    detect(imageData, options) {
+      return JSDetector.detect(imageData, options);
+    },
   };
 
   /* ---------- preferences (localStorage, best-effort) ---------- */
   const Prefs = {
-    load() { try { return JSON.parse(localStorage.getItem(CONFIG.storageKey)) || {}; } catch (e) { return {}; } },
+    load() {
+      try {
+        return JSON.parse(localStorage.getItem(CONFIG.storageKey)) || {};
+      } catch (error) {
+        return {};
+      }
+    },
+
     save() {
       if (!app.state) return;
-      const s = app.state;
+      const { crop, export: exportState } = app.state;
+      const prefs = {
+        cropPreset: crop.preset,
+        export: {
+          format: exportState.format,
+          quality: exportState.quality,
+          longEdge: exportState.longEdge,
+          interp: exportState.interp,
+          fill: exportState.fill,
+        },
+      };
       try {
-        localStorage.setItem(CONFIG.storageKey, JSON.stringify({
-          cropPreset: s.crop.preset,
-          export: { format: s.export.format, quality: s.export.quality, longEdge: s.export.longEdge, interp: s.export.interp, fill: s.export.fill },
-        }));
-      } catch (e) { /* private mode / quota: ignore */ }
+        localStorage.setItem(CONFIG.storageKey, JSON.stringify(prefs));
+      } catch (error) { /* private mode or quota: ignore */ }
     },
   };
 
   /* ---------- session restore (IndexedDB, best-effort) ----------
-     Two records: 'photo' (the original file's bytes, written once per photo) and 'edits'
-     (the edit state, Levels draft and step, rewritten shortly after every change). */
+     Records: 'photo' (the original file's bytes, written once per photo), 'edits' (the edit
+     state, Levels draft and step, rewritten shortly after every change), 'overlay' (the saved
+     logo) and 'photoOverlay' (the current photo's logo, for Resume). */
   const Session = {
-    db: null, timer: 0, photoId: 0,
-    get enabled() { return CONFIG.session.enabled && typeof indexedDB !== 'undefined'; },
+    database: null,
+    timer: 0,
+    photoId: 0,
+
+    get enabled() {
+      return CONFIG.session.enabled && typeof indexedDB !== 'undefined';
+    },
+
     open() {
-      if (!this.db) this.db = new Promise((res, rej) => {
-        const r = indexedDB.open(CONFIG.session.dbName, 1);
-        r.onupgradeneeded = () => r.result.createObjectStore('session');
-        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
-      });
-      return this.db;
+      if (!this.database) {
+        this.database = new Promise((resolve, reject) => {
+          const request = indexedDB.open(CONFIG.session.dbName, 1);
+          request.onupgradeneeded = () => request.result.createObjectStore('session');
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+      return this.database;
     },
-    async tx(mode, fn) {
-      const db = await this.open();
-      return new Promise((res, rej) => {
-        const t = db.transaction('session', mode), req = fn(t.objectStore('session'));
-        t.oncomplete = () => res(req && req.result); t.onerror = t.onabort = () => rej(t.error);
+
+    // Runs `work(store)` in one transaction; resolves with the result of the request it returns.
+    async transaction(mode, work) {
+      const database = await this.open();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction('session', mode);
+        const request = work(transaction.objectStore('session'));
+        transaction.oncomplete = () => resolve(request && request.result);
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error);
       });
     },
+
     snapshot() {
-      const s = app.state;
-      return { name: app.img.name, width: app.img.width, height: app.img.height, state: clone(s),
-        draft: app.levelsPending ? clone(app.levelsDraft) : null, tab: app.tab, savedAt: Date.now() };
+      return {
+        name: app.img.name,
+        width: app.img.width,
+        height: app.img.height,
+        state: clone(app.state),
+        draft: app.levelsPending ? clone(app.levelsDraft) : null,
+        tab: app.tab,
+        savedAt: Date.now(),
+      };
     },
-    // Called once per newly opened photo; id guards against a slow read finishing after another photo opened.
+
+    // Called once per newly opened photo; `id` guards against a slow read finishing after
+    // another photo opened.
     async savePhoto(file, id) {
       if (!this.enabled) return;
       try {
-        const buf = await file.arrayBuffer();
+        const bytes = await file.arrayBuffer();
         if (id !== app.loadId || !app.img) return;
-        await this.tx('readwrite', st => { st.put({ buf, type: file.type, name: app.img.name }, 'photo'); return st.put(this.snapshot(), 'edits'); });
+        await this.transaction('readwrite', store => {
+          store.put({ buf: bytes, type: file.type, name: app.img.name }, 'photo');
+          return store.put(this.snapshot(), 'edits');
+        });
         this.photoId = id;
-      } catch (e) { console.warn('[card-finisher] session photo not saved:', e); }
+      } catch (error) {
+        console.warn('[card-finisher] session photo not saved:', error);
+      }
     },
+
     saveSoon() {
       if (!this.enabled || !app.img || this.photoId !== app.loadId) return;
-      clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), CONFIG.session.saveDelayMs);
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => this.flush(), CONFIG.session.saveDelayMs);
     },
+
     flush() {
       clearTimeout(this.timer);
       if (!this.enabled || !app.img || !app.state || this.photoId !== app.loadId) return;
-      this.tx('readwrite', st => st.put(this.snapshot(), 'edits')).catch(e => console.warn('[card-finisher] session edits not saved:', e));
+      this.transaction('readwrite', store => store.put(this.snapshot(), 'edits'))
+        .catch(error => console.warn('[card-finisher] session edits not saved:', error));
     },
+
+    // The saved edits if a whole session (edits and photo) is stored, else null.
     async peek() {
       if (!this.enabled) return null;
       try {
-        const [edits, n] = await Promise.all([this.tx('readonly', st => st.get('edits')), this.tx('readonly', st => st.count('photo'))]);
-        return edits && n ? edits : null;
-      } catch (e) { return null; }
+        const [edits, photoCount] = await Promise.all([
+          this.transaction('readonly', store => store.get('edits')),
+          this.transaction('readonly', store => store.count('photo')),
+        ]);
+        return edits && photoCount ? edits : null;
+      } catch (error) {
+        return null;
+      }
     },
-    loadPhoto() { return this.tx('readonly', st => st.get('photo')); },
+
+    loadPhoto() {
+      return this.transaction('readonly', store => store.get('photo'));
+    },
+
     // Start fresh clears the photo session only; the saved overlay ('overlay') survives it.
     clear() {
       this.photoId = 0;
-      return this.enabled ? this.tx('readwrite', st => { st.delete('photo'); st.delete('photoOverlay'); return st.delete('edits'); }).catch(() => {}) : Promise.resolve();
+      if (!this.enabled) return Promise.resolve();
+      return this.transaction('readwrite', store => {
+        store.delete('photo');
+        store.delete('photoOverlay');
+        return store.delete('edits');
+      }).catch(() => {});
     },
-    // Other records: 'overlay' (the saved logo, AC19) and 'photoOverlay' (the current photo's logo, for Resume).
-    get(key) { return this.enabled ? this.tx('readonly', st => st.get(key)) : Promise.reject(new Error('storage unavailable')); },
-    put(key, value) { return this.enabled ? this.tx('readwrite', st => st.put(value, key)) : Promise.reject(new Error('storage unavailable')); },
-    del(key) { return this.enabled ? this.tx('readwrite', st => st.delete(key)) : Promise.resolve(); },
+
+    get(key) {
+      if (!this.enabled) return Promise.reject(new Error('storage unavailable'));
+      return this.transaction('readonly', store => store.get(key));
+    },
+
+    put(key, value) {
+      if (!this.enabled) return Promise.reject(new Error('storage unavailable'));
+      return this.transaction('readwrite', store => store.put(value, key));
+    },
+
+    del(key) {
+      if (!this.enabled) return Promise.resolve();
+      return this.transaction('readwrite', store => store.delete(key));
+    },
   };
 
-  Object.assign(CF, { ImageSource, scaledCopy, readRegion, EngineWorker, JSDetector, Detector, Prefs, Session });
+  Object.assign(CF, {
+    ImageSource,
+    scaledCopy,
+    readRegion,
+    EngineWorker,
+    JSDetector,
+    Detector,
+    Prefs,
+    Session,
+  });
 })(window.CF);

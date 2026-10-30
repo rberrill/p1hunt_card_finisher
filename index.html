@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<!-- Content Security Policy: only this site's own scripts and styles run; photos and logos are local blob: URLs;
-     the engine worker is a blob: built from js/engine.js. Nothing is fetched from anywhere else. GitHub Pages can't
-     send headers, so this is a meta tag (which can't set frame-ancestors). Keep it before the first <link>/<script>. -->
+<!-- Content Security Policy: only this site's own scripts and styles run; photos and logos are
+     local blob: URLs; the engine worker is a blob: built from js/engine.js. Nothing is fetched
+     from anywhere else. GitHub Pages can't send headers, so this is a meta tag (which can't set
+     frame-ancestors). Keep it before the first <link>/<script>. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src blob:; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -18,17 +19,41 @@
 </head>
 <body>
 <div id="app">
-  <header class="topbar">
+  <header class="top-bar">
     <div class="brand"><b>P1</b>Hunt Card Finisher</div>
     <div class="actions">
-      <button class="btn" id="btnOpen" title="Open photo"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Open</span></button>
-      <button class="btn" id="btnUndo" title="Undo (Ctrl/Cmd+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
-      <button class="btn" id="btnRedo" title="Redo (Shift+Ctrl/Cmd+Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
-      <button class="btn" id="btnPreview" aria-pressed="false" title="Show the corrected card full size"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>Preview</span></button>
-      <button class="btn" id="btnFit" title="Fit to screen (F)" aria-label="Fit to screen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="btn" id="btnOpen" title="Open photo">
+        <svg viewBox="0 0 24 24">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        </svg>
+        <span>Open</span>
+      </button>
+      <button class="btn" id="btnUndo" title="Undo (Ctrl/Cmd+Z)" aria-label="Undo">
+        <svg viewBox="0 0 24 24">
+            <path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>
+        </svg>
+      </button>
+      <button class="btn" id="btnRedo" title="Redo (Shift+Ctrl/Cmd+Z)" aria-label="Redo">
+        <svg viewBox="0 0 24 24">
+            <path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>
+        </svg>
+      </button>
+      <button class="btn" id="btnPreview" aria-pressed="false"
+          title="Show the corrected card full size">
+        <svg viewBox="0 0 24 24">
+          <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span>Preview</span>
+      </button>
+      <button class="btn" id="btnFit" title="Fit to screen (F)" aria-label="Fit to screen">
+        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
     </div>
     <nav class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="perspective" aria-selected="true">Perspective</button>
+      <button class="tab" role="tab" data-tab="perspective" aria-selected="true">
+          Perspective
+      </button>
       <button class="tab" role="tab" data-tab="rotate" aria-selected="false">Rotate</button>
       <button class="tab" role="tab" data-tab="crop" aria-selected="false">Crop</button>
       <button class="tab" role="tab" data-tab="levels" aria-selected="false">Levels</button>
@@ -45,7 +70,10 @@
         <div>Open, drop, or paste a photo. Everything stays on this device.</div>
         <div class="resume" id="resume" hidden>
           <div>Resume <b id="resumeName"></b>? <span class="when" id="resumeWhen"></span></div>
-          <div class="row"><button class="btn primary" id="btnResume">Resume</button><button class="btn" id="btnFresh">Start fresh</button></div>
+          <div class="row">
+            <button class="btn primary" id="btnResume">Resume</button>
+            <button class="btn" id="btnFresh">Start fresh</button>
+          </div>
         </div>
         <button class="btn primary" id="btnOpenEmpty">Open photo</button>
       </div>
@@ -53,19 +81,26 @@
     </div>
 
     <aside class="panel" id="panel">
-      <!-- Each step: one compact control area (fixed height on phones), "More options", then the action bar.
-           The action bar's first button (phones) is the step menu; the last moves to the next step. -->
+      <!-- Each step: one compact control area (fixed height on phones), "More options", then the
+           action bar. The action bar's first button (phones) is the step menu; the last moves to
+           the next step. -->
       <section data-panel="perspective" class="active">
         <div class="controls">
           <div class="nudge" role="group" aria-label="Nudge the selected handle">
-            <button data-nudge="0,-1" aria-label="Nudge up">▲</button><button data-nudge="0,1" aria-label="Nudge down">▼</button><button data-nudge="-1,0" aria-label="Nudge left">◀</button><button data-nudge="1,0" aria-label="Nudge right">▶</button><button data-nudge="cycle" class="cycle" title="Select the next handle">Next handle</button>
+            <button data-nudge="0,-1" aria-label="Nudge up">▲</button>
+            <button data-nudge="0,1" aria-label="Nudge down">▼</button>
+            <button data-nudge="-1,0" aria-label="Nudge left">◀</button>
+            <button data-nudge="1,0" aria-label="Nudge right">▶</button>
+            <button data-nudge="cycle" class="cycle" title="Select the next handle">
+                Next handle
+            </button>
           </div>
           <div class="inline">
             <label for="strength">Flatten</label>
             <input type="range" id="strength" min="0" max="100" step="1">
-            <span class="val" id="strengthVal"></span>
+            <span class="value" id="strengthValue"></span>
           </div>
-          <div class="status" id="perspStatus"></div>
+          <div class="status" id="perspectiveStatus"></div>
           <div class="group result-group">
             <h3>Result</h3>
             <canvas class="mini" id="mini"></canvas>
@@ -74,34 +109,64 @@
             <summary>More options</summary>
             <div class="group">
               <h3>Detect</h3>
-              <div class="row"><button class="btn" id="btnSeed" aria-pressed="false" title="Tap inside the card, then Detect">Tap to seed</button><button class="btn" id="btnClearSeed">Clear seed</button></div>
+              <div class="row">
+                <button class="btn" id="btnSeed" aria-pressed="false"
+                    title="Tap inside the card, then Detect">
+                  Tap to seed
+                </button>
+                <button class="btn" id="btnClearSeed">Clear seed</button>
+              </div>
               <div class="readout" id="detectInfo"></div>
-              <div class="hint">Detection picks the wrong edge? Tap to seed, tap inside the card, then Detect.</div>
+              <div class="hint">
+                Detection picks the wrong edge? Tap to seed, tap inside the card, then Detect.
+              </div>
             </div>
             <div class="group">
               <h3>Flatten</h3>
-              <div class="hint">0% squares the card up but keeps the camera's depth (a symmetric trapezoid). 100% is a flat 5:7 rectangle, like a scan.</div>
+              <div class="hint">
+                0% squares the card up but keeps the camera's depth (a symmetric trapezoid).
+                100% is a
+                flat 5:7 rectangle, like a scan.
+              </div>
             </div>
             <div class="group">
               <h3>Card orientation</h3>
-              <div class="seg" data-seg="orientation"><button data-v="auto">Auto</button><button data-v="portrait">Portrait</button><button data-v="landscape">Landscape</button></div>
+              <div class="segmented" data-segment="orientation">
+                <button data-value="auto">Auto</button>
+                <button data-value="portrait">Portrait</button>
+                <button data-value="landscape">Landscape</button>
+              </div>
             </div>
             <div class="group">
               <h3>Handles</h3>
               <label class="toggle"><input type="checkbox" id="snap"> Snap to detected edges</label>
               <label class="toggle"><input type="checkbox" id="debugOverlay"> Debug overlay</label>
-              <div class="hint">Drag corners or edge midpoints. Double-tap a handle to zoom in on it (again to zoom out). On a phone, the arrows nudge the selected handle; on a keyboard, Tab selects a handle and arrows nudge 1 px (Shift = 10).</div>
+              <div class="hint">
+                Drag corners or edge midpoints. Double-tap a handle to zoom in on it (again to zoom
+                out). On a phone, the arrows nudge the selected handle; on a keyboard, Tab selects a
+                handle and arrows nudge 1 px (Shift = 10).
+              </div>
             </div>
             <div class="group">
               <h3>Fill outside photo</h3>
-              <div class="row"><select id="fill" class="grow"><option value="transparent">Transparent</option><option value="#ffffff">White</option><option value="#000000">Black</option><option value="custom">Custom…</option></select><input type="color" id="fillColor" value="#ffffff" aria-label="Custom fill color"></div>
+              <div class="row">
+                <select id="fill" class="grow">
+                  <option value="transparent">Transparent</option>
+                  <option value="#ffffff">White</option>
+                  <option value="#000000">Black</option>
+                  <option value="custom">Custom…</option>
+                </select>
+                <input type="color" id="fillColor" value="#ffffff" aria-label="Custom fill color">
+              </div>
             </div>
             <button class="btn wide" data-reset="perspective">Reset perspective</button>
           </details>
         </div>
-        <div class="actionbar">
+        <div class="action-bar">
           <button class="btn primary" id="btnDetect">Detect</button>
-          <button class="btn" id="btnNext" title="Try the next detected candidate">Candidate</button>
+          <button class="btn" id="btnNext" title="Try the next detected candidate">
+              Candidate
+          </button>
           <button class="btn" data-next="rotate">Rotate →</button>
         </div>
       </section>
@@ -111,7 +176,8 @@
           <div class="inline">
             <label for="fine">Fine</label>
             <input type="range" id="fine" min="-45" max="45" step="0.1">
-            <input type="number" id="fineNum" min="-45" max="45" step="0.1" aria-label="Fine rotation degrees">
+            <input type="number" id="fineNumber" min="-45" max="45" step="0.1"
+                aria-label="Fine rotation degrees">
             <button class="btn" id="btnFineZero">0°</button>
           </div>
           <details class="more">
@@ -119,20 +185,35 @@
             <div class="group">
               <h3>Flip</h3>
               <div class="row">
-                <button class="btn" id="btnFlipH" title="Flip horizontal"><svg viewBox="0 0 24 24"><path d="M12 3v18M8 7 3 12l5 5M16 7l5 5-5 5"/></svg>Flip H</button>
-                <button class="btn" id="btnFlipV" title="Flip vertical"><svg viewBox="0 0 24 24"><path d="M3 12h18M7 8l5-5 5 5M7 16l5 5 5-5"/></svg>Flip V</button>
+                <button class="btn" id="btnFlipH" title="Flip horizontal">
+                  <svg viewBox="0 0 24 24"><path d="M12 3v18M8 7 3 12l5 5M16 7l5 5-5 5"/></svg>
+                  Flip H
+                </button>
+                <button class="btn" id="btnFlipV" title="Flip vertical">
+                  <svg viewBox="0 0 24 24"><path d="M3 12h18M7 8l5-5 5 5M7 16l5 5 5-5"/></svg>Flip V
+                </button>
               </div>
             </div>
             <div class="group">
-              <label class="toggle"><input type="checkbox" id="fillFrame"> Fill frame (no empty corners)</label>
+              <label class="toggle">
+                  <input type="checkbox" id="fillFrame"> Fill frame (no empty corners)
+              </label>
               <label class="toggle"><input type="checkbox" id="showGrid" checked> Grid</label>
             </div>
             <button class="btn wide" data-reset="rotate">Reset rotation</button>
           </details>
         </div>
-        <div class="actionbar">
-          <button class="btn" id="btnRotL" title="Rotate 90° left"><svg viewBox="0 0 24 24"><path d="M3 4v6h6"/><path d="M3.5 15a8.5 8.5 0 1 0 2-8.5L3 10"/></svg>90°</button>
-          <button class="btn" id="btnRotR" title="Rotate 90° right"><svg viewBox="0 0 24 24"><path d="M21 4v6h-6"/><path d="M20.5 15a8.5 8.5 0 1 1-2-8.5L21 10"/></svg>90°</button>
+        <div class="action-bar">
+          <button class="btn" id="btnRotateLeft" title="Rotate 90° left">
+            <svg viewBox="0 0 24 24">
+                <path d="M3 4v6h6"/><path d="M3.5 15a8.5 8.5 0 1 0 2-8.5L3 10"/>
+            </svg>90°
+          </button>
+          <button class="btn" id="btnRotateRight" title="Rotate 90° right">
+            <svg viewBox="0 0 24 24">
+                <path d="M21 4v6h-6"/><path d="M20.5 15a8.5 8.5 0 1 1-2-8.5L21 10"/>
+            </svg>90°
+          </button>
           <button class="btn" data-next="crop">Crop →</button>
         </div>
       </section>
@@ -143,12 +224,15 @@
           <div class="readout" id="cropReadout"></div>
           <details class="more">
             <summary>More options</summary>
-            <div class="hint">Drag inside the box to move it, handles to resize. Shift keeps the aspect in Free mode.</div>
+            <div class="hint">
+              Drag inside the box to move it, handles to resize. Shift keeps the aspect in Free
+              mode.
+            </div>
             <button class="btn wide" data-reset="crop">Reset crop</button>
           </details>
         </div>
-        <div class="actionbar">
-          <button class="btn primary" id="btnFit2Card">Fit to card</button>
+        <div class="action-bar">
+          <button class="btn primary" id="btnFitToCard">Fit to card</button>
           <button class="btn" data-next="levels">Levels →</button>
         </div>
       </section>
@@ -156,20 +240,35 @@
       <section data-panel="levels">
         <div class="controls">
           <div class="row levels-row">
-            <button class="btn" id="btnAutoLevels" title="Estimate white and black points from the framed image">Auto</button>
-            <button class="btn" id="btnPickWhite" aria-pressed="false" title="Pick white: tap something that should be white"><span class="swatch unset" id="swWhite"></span>White</button>
-            <button class="btn" id="btnPickBlack" aria-pressed="false" title="Pick black (optional): tap something that should be black"><span class="swatch unset" id="swBlack"></span>Black</button>
-            <button class="btn" id="btnClearLevels" title="Clear both points (Apply to remove applied levels)">Clear</button>
+            <button class="btn" id="btnAutoLevels"
+                title="Estimate white and black points from the framed image">
+              Auto
+            </button>
+            <button class="btn" id="btnPickWhite" aria-pressed="false"
+                title="Pick white: tap something that should be white">
+              <span class="swatch unset" id="swatchWhite"></span>White
+            </button>
+            <button class="btn" id="btnPickBlack" aria-pressed="false"
+                title="Pick black (optional): tap something that should be black">
+              <span class="swatch unset" id="swatchBlack"></span>Black
+            </button>
+            <button class="btn" id="btnClearLevels"
+                title="Clear both points (Apply to remove applied levels)">
+              Clear
+            </button>
           </div>
-          <div class="status" id="levelsStatus"></div>
           <details class="more">
             <summary>More options</summary>
             <div class="hint">Press and hold the photo to compare with no levels (or hold C).</div>
-            <div class="hint">White: tap a grading label or the card's white border; avoid foil and reflections. Black is optional. Auto estimates both from the framed image; colored backdrops can fool it, so check the result.</div>
+            <div class="hint">
+              White: tap a grading label or the card's white border; avoid foil and reflections.
+              Black is optional. Auto estimates both from the framed image; colored backdrops can
+              fool it, so check the result.
+            </div>
             <div class="hint">Clear, then Apply, removes levels.</div>
           </details>
         </div>
-        <div class="actionbar">
+        <div class="action-bar">
           <button class="btn primary" id="btnApplyLevels">Apply</button>
           <button class="btn" id="btnDiscardLevels">Discard</button>
           <button class="btn" data-next="overlay">Overlay →</button>
@@ -178,30 +277,49 @@
 
       <section data-panel="overlay">
         <div class="controls">
-          <div id="ovEmpty">
-            <div class="row" id="ovSavedRow" hidden><img class="ov-thumb" id="ovThumb" alt="Saved overlay"><button class="btn" id="btnUseSaved">Use saved overlay</button></div>
-            <div class="readout" id="ovHint">Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.</div>
+          <div id="overlayEmpty">
+            <div class="row" id="overlaySavedRow" hidden>
+              <img class="overlay-thumb" id="overlayThumb" alt="Saved overlay">
+              <button class="btn" id="btnUseSaved">Use saved overlay</button>
+            </div>
+            <div class="readout" id="overlayHint">
+              Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.
+            </div>
           </div>
-          <div id="ovEdit" hidden>
+          <div id="overlayEdit" hidden>
             <div class="nudge" role="group" aria-label="Move or resize the overlay">
-              <button data-onudge="0,-1" aria-label="Move up">▲</button><button data-onudge="0,1" aria-label="Move down">▼</button><button data-onudge="-1,0" aria-label="Move left">◀</button><button data-onudge="1,0" aria-label="Move right">▶</button><button data-onudge="shrink" aria-label="Smaller">−</button><button data-onudge="grow" aria-label="Larger">+</button>
+              <button data-overlay-nudge="0,-1" aria-label="Move up">▲</button>
+              <button data-overlay-nudge="0,1" aria-label="Move down">▼</button>
+              <button data-overlay-nudge="-1,0" aria-label="Move left">◀</button>
+              <button data-overlay-nudge="1,0" aria-label="Move right">▶</button>
+              <button data-overlay-nudge="shrink" aria-label="Smaller">−</button>
+              <button data-overlay-nudge="grow" aria-label="Larger">+</button>
             </div>
             <div class="inline">
-              <label for="ovOpacity">Opacity</label>
-              <input type="range" id="ovOpacity" min="0" max="100" step="1">
-              <span class="val" id="ovOpacityVal"></span>
+              <label for="overlayOpacity">Opacity</label>
+              <input type="range" id="overlayOpacity" min="0" max="100" step="1">
+              <span class="value" id="overlayOpacityValue"></span>
             </div>
           </div>
           <div class="status" id="overlayStatus"></div>
           <details class="more">
             <summary>More options</summary>
-            <div class="row"><button class="btn" id="btnOvReset">Reset</button><button class="btn" id="btnOvRemove">Remove overlay</button></div>
-            <button class="btn wide" id="btnOvDeleteSaved">Delete saved overlay</button>
-            <div class="hint">Tap a ring on the photo to snap the overlay to that corner, the middle of that side, or the center. Drag to move it; drag a corner, pinch, or use − + to resize. On a keyboard, arrows move it (Shift for bigger steps) and + − resize it. On this step the photo stays framed as set in Crop. Your last overlay is kept in this browser for the next photo.</div>
+            <div class="row">
+              <button class="btn" id="btnOverlayReset">Reset</button>
+              <button class="btn" id="btnOverlayRemove">Remove overlay</button>
+            </div>
+            <button class="btn wide" id="btnOverlayDeleteSaved">Delete saved overlay</button>
+            <div class="hint">
+              Tap a ring on the photo to snap the overlay to that corner, the middle of that side,
+              or the center. Drag to move it; drag a corner, pinch, or use − + to resize. On a
+              keyboard, arrows move it (Shift for bigger steps) and + − resize it. On this step the
+              photo stays
+              framed as set in Crop. Your last overlay is kept in this browser for the next photo.
+            </div>
           </details>
         </div>
-        <div class="actionbar">
-          <button class="btn primary" id="btnOvUpload">Add logo</button>
+        <div class="action-bar">
+          <button class="btn primary" id="btnOverlayAdd">Add logo</button>
           <button class="btn" data-next="export">Export →</button>
         </div>
       </section>
@@ -209,49 +327,73 @@
       <section data-panel="export">
         <div class="controls">
           <div class="row">
-            <select id="format" aria-label="Format" class="grow"><option value="jpeg">JPEG</option><option value="png">PNG</option><option value="webp">WebP</option></select>
+            <select id="format" aria-label="Format" class="grow">
+              <option value="jpeg">JPEG</option>
+              <option value="png">PNG</option>
+              <option value="webp">WebP</option>
+            </select>
             <select id="size" aria-label="Size (long edge)" class="grow"></select>
           </div>
           <div class="readout" id="exportReadout"></div>
-          <div class="status" id="exportMsg"></div>
+          <div class="status" id="exportMessage"></div>
           <div class="progress" id="progress" hidden><div></div></div>
           <details class="more">
             <summary>More options</summary>
             <div class="group" id="qualityRow">
-              <label class="field" for="quality">Quality <span class="val" id="qualityVal"></span></label>
+              <label class="field" for="quality">
+                  Quality <span class="value" id="qualityValue"></span>
+              </label>
               <input type="range" id="quality" min="0.5" max="1" step="0.01">
             </div>
             <div class="group">
               <label class="field" for="interp">Interpolation</label>
-              <select id="interp"><option value="bilinear">Bilinear</option><option value="bicubic">Bicubic (sharper, slower)</option></select>
+              <select id="interp">
+                <option value="bilinear">Bilinear</option>
+                <option value="bicubic">Bicubic (sharper, slower)</option>
+              </select>
             </div>
             <div class="group">
               <h3>Edits</h3>
-              <div class="row"><button class="btn" id="btnSaveEdits">Save edits</button><button class="btn" id="btnLoadEdits">Load edits</button></div>
-              <div class="hint">Edits are a small JSON file. Re-open the same photo, load it, and the export is identical.</div>
+              <div class="row">
+                <button class="btn" id="btnSaveEdits">Save edits</button>
+                <button class="btn" id="btnLoadEdits">Load edits</button>
+              </div>
+              <div class="hint">
+                Edits are a small JSON file. Re-open the same photo, load it, and the export is
+                identical.
+              </div>
             </div>
             <button class="btn wide" data-reset="export">Reset export settings</button>
           </details>
         </div>
-        <div class="actionbar">
-          <button class="btn primary" id="btnShare" hidden title="Share or save the image (Save Image puts it in Photos)"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M8 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-2"/></svg><span>Share</span></button>
+        <div class="action-bar">
+          <button class="btn primary" id="btnShare" hidden
+              title="Share or save the image (Save Image puts it in Photos)">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 3v12"/><path d="m8 7 4-4 4 4"/>
+              <path d="M8 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-2"/>
+            </svg>
+            <span>Share</span>
+          </button>
           <button class="btn primary" id="btnDownload">Download</button>
           <button class="btn" id="btnCopy">Copy</button>
         </div>
       </section>
-      <div class="stepmenu" id="stepMenu" role="menu" hidden></div>
+      <div class="step-menu" id="stepMenu" role="menu" hidden></div>
     </aside>
   </main>
 
   <input type="file" id="fileInput" accept="image/*,.heic,.heif" hidden>
   <input type="file" id="editsInput" accept="application/json,.json" hidden>
-  <input type="file" id="overlayInput" accept="image/png,image/webp,image/jpeg,image/svg+xml,.png,.webp,.jpg,.jpeg,.svg" hidden>
+  <input type="file" id="overlayInput" hidden
+    accept="image/png,image/webp,image/jpeg,image/svg+xml,.png,.webp,.jpg,.jpeg,.svg">
   <div id="debugPanel" hidden></div>
 </div>
 
-<!-- Classic scripts, not ES modules, so the app also runs from file://. Order matters: config → engine → app modules
-     (core first: it creates the CF namespace; main last: it calls init()).
-     ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay relative. -->
+<!-- Classic scripts, not ES modules, so the app also runs from file://. Order matters: config →
+     engine → app modules (core first: it creates the CF namespace; main last: it calls init()).
+     ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay
+     relative. -->
 <script src="js/config.js?v=1.7.0-dev"></script>
 <script src="js/engine.js?v=1.7.0-dev"></script>
 <script src="js/app/core.js?v=1.7.0-dev"></script>

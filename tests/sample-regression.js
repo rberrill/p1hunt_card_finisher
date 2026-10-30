@@ -1,23 +1,34 @@
 // Sample-photo regression checks for P1Hunt Card Finisher.
 //
-// How to run (needs the page served over http so it can fetch samples/):
+// How to run (it needs the page served over http so it can fetch samples/):
 //   1. In this folder:  python -m http.server 8765
-//   2. Open http://localhost:8765/index.html and keep the tab visible (hidden tabs pause rendering).
+//   2. Open http://localhost:8765/index.html and keep the tab visible (hidden tabs pause
+//      rendering).
 //   3. Paste this whole file into the browser console. It prints a PASS/FAIL table and resolves
 //      to { passed, results }. Takes ~20 s.
-//      Or load it as a script (the page's Content Security Policy blocks eval, but allows its own files):
-//        document.head.append(Object.assign(document.createElement('script'), { src: 'tests/sample-regression.js' }))
+//      Or load it as a script (the page's Content Security Policy blocks eval, but allows its
+//      own files):
+//        document.head.append(Object.assign(document.createElement('script'),
+//          { src: 'tests/sample-regression.js' }))
 //      then await window.__regression.
 //
-// Ground truth below is hand-placed card corners (source px, TL TR BR BL) from 2026-10-24.
-// Thresholds are the v1.0 acceptance bar; "recorded" values are what v1.0 measured.
+// The ground truth below is hand-placed card corners (source px, TL TR BR BL) from 2026-10-24.
+// The thresholds are the v1.0 acceptance bar; "recorded" values are what v1.0 measured.
 window.__regression = (async () => {
   'use strict';
-  const S = window.__straightener, E = window.CardEngine, M3 = E.M3;
-  if (!S || !E) throw new Error('Open index.html first — window.__straightener / CardEngine not found.');
-  try { localStorage.clear(); } catch (e) { /* ignore */ }
+  const app = window.__straightener;
+  const engine = window.CardEngine;
+  const CF = window.CF;
+  if (!app || !engine) {
+    throw new Error('Open index.html first — window.__straightener / CardEngine not found.');
+  }
+  const { Mat3, Quad } = engine;
+  try {
+    localStorage.clear();
+  } catch (error) { /* storage unavailable */ }
 
-  const GT = {
+  const CARD_ASPECT = 63.5 / 88.9;
+  const GROUND_TRUTH = {
     IMG_9060: [[253, 260], [1275.5, 261], [1254, 1534], [305.5, 1535]],
     IMG_9074: [[388.5, 546], [1110, 545], [1104, 1520], [402.5, 1522.5]],
     IMG_9075: [[488, 563], [998, 565], [982, 1246], [491, 1246]],
@@ -25,177 +36,435 @@ window.__regression = (async () => {
     IMG_9142: [[127, 500], [1246, 515], [1221, 1265], [163, 1248]],
     IMG_9216: [[445.5, 627], [1146, 633], [1112, 1505], [466.5, 1501.5]],
   };
-  // v1.0 recorded top-1 error, % of image diagonal.
-  const RECORDED = { IMG_9060: 2.48, IMG_9074: 1.80, IMG_9075: 0.04, IMG_9136: 0.46, IMG_9142: 0.25, IMG_9216: 0.09 };
+  // The v1.0 recorded top-1 error, % of the image diagonal.
+  const RECORDED = {
+    IMG_9060: 2.48,
+    IMG_9074: 1.80,
+    IMG_9075: 0.04,
+    IMG_9136: 0.46,
+    IMG_9142: 0.25,
+    IMG_9216: 0.09,
+  };
 
   const results = [];
-  const rec = (name, pass, detail) => results.push({ name, pass: !!pass, detail });
-  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const record = (name, pass, detail) => results.push({ name, pass: !!pass, detail });
+  const wait = durationMs => new Promise(resolve => setTimeout(resolve, durationMs));
+  const clone = value => JSON.parse(JSON.stringify(value));
   const blobs = {};
-  const load = async name => {
+
+  // Opens a sample and waits for detection to finish.
+  async function load(name) {
     blobs[name] = blobs[name] || await (await fetch(`samples/${name}.JPEG`)).blob();
-    await S.openFile(blobs[name], `${name}.JPEG`);
-    while (!S.app.detection.last || S.app.detection.msg) await wait(50);
-  };
-  const cornerErrPct = (q, gt) => Math.max(...q.map((p, i) => Math.hypot(p[0] - gt[i][0], p[1] - gt[i][1]))) / Math.hypot(S.app.img.width, S.app.img.height) * 100;
+    await app.openFile(blobs[name], `${name}.JPEG`);
+    while (!app.app.detection.last || app.app.detection.message) await wait(50);
+  }
 
-  // ---- R1. Auto-detect accuracy (Card) ----
-  const top1 = {}, best3 = {};
-  for (const name of Object.keys(GT)) {
+  // A quad's worst corner error, as % of the image diagonal.
+  function cornerErrorPct(quad, truth) {
+    const errors = quad.map((point, i) => Math.hypot(
+      point[0] - truth[i][0],
+      point[1] - truth[i][1],
+    ));
+    const worst = Math.max(...errors);
+    return worst / Math.hypot(app.app.img.width, app.app.img.height) * 100;
+  }
+
+  // Renders the current state at full resolution → its ImageData (the canvas is freed).
+  async function renderPixels() {
+    const { canvas } = await app.renderFull(clone(app.app.state));
+    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+    canvas.width = 0;
+    return pixels;
+  }
+
+  // How many bytes differ between two pixel buffers, or −1 if their sizes differ.
+  function differingBytes(first, second) {
+    if (first.length !== second.length) return -1;
+    let count = 0;
+    for (let i = 0; i < first.length; i++) {
+      if (first[i] !== second[i]) count++;
+    }
+    return count;
+  }
+
+  /* ---- R1. Auto-detect accuracy (card) ---- */
+  const topPick = {};
+  const bestOfThree = {};
+  for (const name of Object.keys(GROUND_TRUTH)) {
     await load(name);
-    const errs = S.app.detection.candidates.map(c => cornerErrPct(c.corners, GT[name]));
-    top1[name] = errs[0] ?? 99; best3[name] = Math.min(99, ...errs);
-    rec(`R1 ${name}: top-1 no worse than v1.0 + 0.25`, top1[name] <= RECORDED[name] + 0.25, `top-1 ${top1[name].toFixed(2)}% (v1.0 ${RECORDED[name]}%), best of 3 ${best3[name].toFixed(2)}%`);
+    const errors = app.app.detection.candidates.map(
+      candidate => cornerErrorPct(candidate.corners, GROUND_TRUTH[name]),
+    );
+    topPick[name] = errors[0] ?? 99;
+    bestOfThree[name] = Math.min(99, ...errors);
+    record(`R1 ${name}: top-1 no worse than v1.0 + 0.25`, topPick[name] <= RECORDED[name] + 0.25,
+      `top-1 ${topPick[name].toFixed(2)}% (v1.0 ${RECORDED[name]}%), `
+      + `best of 3 ${bestOfThree[name].toFixed(2)}%`);
   }
-  const n1 = Object.values(top1).filter(v => v < 1).length, n3 = Object.values(best3).filter(v => v < 1).length;
-  rec('R1 top-1 within 1% of diagonal on ≥ 4 of 6', n1 >= 4, `${n1}/6`);
-  rec('R1 best-of-3 within 1% of diagonal on ≥ 5 of 6', n3 >= 5, `${n3}/6`);
+  const topWithin = Object.values(topPick).filter(error => error < 1).length;
+  const bestWithin = Object.values(bestOfThree).filter(error => error < 1).length;
+  record('R1 top-1 within 1% of diagonal on ≥ 4 of 6', topWithin >= 4, `${topWithin}/6`);
+  record('R1 best-of-3 within 1% of diagonal on ≥ 5 of 6', bestWithin >= 5, `${bestWithin}/6`);
 
-  // ---- R2/R3. Flatten 100% and 0%, measured on exported pixels (IMG_9216, hand-placed corners) ----
+  /* ---- R2 / R3. Flatten 100% and 0%, measured on exported pixels
+    (IMG_9216, hand-placed corners) ---- */
   await load('IMG_9216');
-  const measure = async strength => {
-    S.commit(s => {
-      s.corners = GT.IMG_9216.map(p => p.slice()); s.strength = strength; s.aspect = { ratio: 63.5 / 88.9, orientation: 'auto' };
-      s.rotation = { quarter: 0, fine: 0, fillFrame: false }; s.flip = { h: false, v: false };
-      s.crop = { mode: 'fit', preset: 'free', ratio: null, swapped: false, rect: null }; s.levels = null; s.export.longEdge = 0;
+  const degreesOf = (start, end) => (
+    Math.atan2(end[1] - start[1], end[0] - start[0]) * 180 / Math.PI
+  );
+  // Exports at `strength`, then finds the card's corners in the pixels (by refinement from where
+  // the geometry predicts them) and measures its shape.
+  async function measureFlatten(strength) {
+    app.commit(state => {
+      state.corners = GROUND_TRUTH.IMG_9216.map(point => point.slice());
+      state.strength = strength;
+      state.aspect = { ratio: CARD_ASPECT, orientation: 'auto' };
+      state.rotation = { quarter: 0, fine: 0, fillFrame: false };
+      state.flip = { h: false, v: false };
+      state.crop = { mode: 'fit', preset: 'free', ratio: null, swapped: false, rect: null };
+      state.levels = null;
+      state.export.longEdge = 0;
     });
-    const { canvas, geo } = await S.renderFull(JSON.parse(JSON.stringify(S.app.state)));
-    const d = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
-    const predicted = GT.IMG_9216.map(p => M3.apply(geo.Mout, p[0], p[1]));
-    const q = E.refineQuad({ data: d.data, width: d.width, height: d.height, ox: 0, oy: 0, scale: 1 }, predicted, { searchPx: 10 }).corners;
+    const { canvas, geometry } = await app.renderFull(clone(app.app.state));
+    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+    const toOutput = point => Mat3.apply(geometry.sourceToOutput, point[0], point[1]);
+    const predicted = GROUND_TRUTH.IMG_9216.map(toOutput);
+    const roi = {
+      data: pixels.data,
+      width: pixels.width,
+      height: pixels.height,
+      originX: 0,
+      originY: 0,
+      scale: 1,
+    };
+    const quad = engine.refineQuad(roi, predicted, { searchPx: 10 }).corners;
     canvas.width = 0;
-    const deg = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI, s = E.Quad.sides(q);
-    return { maxCornerDev: Math.max(...E.Quad.angles(q).map(a => Math.abs(a - 90))), aspect: (s.top + s.bottom) / (s.left + s.right),
-      top: deg(q[0], q[1]), bottom: deg(q[3], q[2]), mirror: Math.abs((90 - deg(q[0], q[3])) + (90 - deg(q[1], q[2]))) };
-  };
-  const f = await measure(1), aspErr = Math.abs(f.aspect / (63.5 / 88.9) - 1) * 100;
-  rec('R2 Flatten 100%: corners 90° ± 0.5°', f.maxCornerDev <= 0.5, `worst ${f.maxCornerDev.toFixed(3)}° (v1.0 0.334°)`);
-  rec('R2 Flatten 100%: aspect 5:7 ± 0.5%', aspErr <= 0.5, `${aspErr.toFixed(3)}% (v1.0 0.087%)`);
-  const sq = await measure(0);
-  rec('R3 Flatten 0%: top & bottom level within 0.3°', Math.abs(sq.top) <= 0.3 && Math.abs(sq.bottom) <= 0.3, `top ${sq.top.toFixed(3)}°, bottom ${sq.bottom.toFixed(3)}° (v1.0 0.031°, 0.239°)`);
-  rec('R3 Flatten 0%: sides mirror within 0.5°', sq.mirror <= 0.5, `${sq.mirror.toFixed(3)}° (v1.0 0.029°)`);
-
-  // ---- R4. Export size and JPEG quality ----
-  await load('IMG_9216');
-  S.commit(s => { s.crop = { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, rect: null }; s.export.longEdge = 0; s.export.format = 'jpeg'; });
-  const g4 = E.computeGeometry(S.app.state, {});
-  const enc = async (st, q) => { const { canvas } = await S.renderFull(st); const b = await new Promise(r => canvas.toBlob(r, 'image/jpeg', q)); const dims = [canvas.width, canvas.height]; canvas.width = 0; return { bytes: b.size, dims }; };
-  const st4 = JSON.parse(JSON.stringify(S.app.state));
-  const q92 = await enc(st4, 0.92), q50 = await enc(st4, 0.5);
-  rec('R4 Export is full resolution when no resize is set', q92.dims[0] === Math.round(g4.crop.w) && q92.dims[1] === Math.round(g4.crop.h), `${q92.dims.join('×')} vs crop ${Math.round(g4.crop.w)}×${Math.round(g4.crop.h)}`);
-  rec('R4 JPEG quality is respected (0.92 file > 0.50 file)', q92.bytes > q50.bytes * 1.5, `${q92.bytes} vs ${q50.bytes} bytes`);
-  const st600 = JSON.parse(JSON.stringify(st4)); st600.export.longEdge = 600;
-  const r600 = await enc(st600, 0.92);
-  rec('R4 Resize sets the long edge', Math.max(...r600.dims) === 600, r600.dims.join('×'));
-
-  // ---- R5. Levels: label white comes out neutral at whiteTarget (IMG_9136) ----
-  await load('IMG_9136');
-  const lv5 = { white: [210, 230.7, 226], black: null, whiteAt: [420, 230], blackAt: null }; // v1.0 dropper reading of the PSA label
-  S.commit(s => { s.crop = { mode: 'full', preset: 'free', ratio: null, swapped: false, rect: null }; s.levels = lv5; s.export.longEdge = 0; });
-  {
-    const { canvas, geo } = await S.renderFull(JSON.parse(JSON.stringify(S.app.state)));
-    const p = M3.apply(geo.Mout, 420, 230), R = 12;
-    const c = E.meanColor(canvas.getContext('2d').getImageData(Math.round(p[0]) - R, Math.round(p[1]) - R, 2 * R, 2 * R), CONFIG.levels.sampleTrim);
-    canvas.width = 0;
-    rec('R5 Levels: picked label exports neutral at 245 ± 2', c.every(v => Math.abs(v - CONFIG.levels.whiteTarget) <= 2), `exported ${c.join(', ')} (v1.0 245.7, 244.7, 245.0)`);
+    const sides = Quad.sides(quad);
+    return {
+      maxCornerDeviation: Math.max(...Quad.cornerAngles(quad).map(angle => Math.abs(angle - 90))),
+      aspect: (sides.top + sides.bottom) / (sides.left + sides.right),
+      top: degreesOf(quad[0], quad[1]),
+      bottom: degreesOf(quad[3], quad[2]),
+      mirror: Math.abs((90 - degreesOf(quad[0], quad[3])) + (90 - degreesOf(quad[1], quad[2]))),
+    };
   }
+  const flat = await measureFlatten(1);
+  const aspectErrorPct = Math.abs(flat.aspect / CARD_ASPECT - 1) * 100;
+  record('R2 Flatten 100%: corners 90° ± 0.5°', flat.maxCornerDeviation <= 0.5,
+    `worst ${flat.maxCornerDeviation.toFixed(3)}° (v1.0 0.334°)`);
+  record('R2 Flatten 100%: aspect 5:7 ± 0.5%', aspectErrorPct <= 0.5,
+    `${aspectErrorPct.toFixed(3)}% (v1.0 0.087%)`);
+  const squared = await measureFlatten(0);
+  record('R3 Flatten 0%: top & bottom level within 0.3°',
+    Math.abs(squared.top) <= 0.3 && Math.abs(squared.bottom) <= 0.3,
+    `top ${squared.top.toFixed(3)}°, bottom ${squared.bottom.toFixed(3)}° (v1.0 0.031°, 0.239°)`);
+  record('R3 Flatten 0%: sides mirror within 0.5°', squared.mirror <= 0.5,
+    `${squared.mirror.toFixed(3)}° (v1.0 0.029°)`);
 
-  // ---- R6. Edits round-trip is pixel-identical (rotation, flip, fill frame, bicubic, levels) ----
-  S.commit(s => {
-    s.rotation = { quarter: 1, fine: 2.3, fillFrame: true }; s.flip = { h: true, v: false };
-    s.crop = { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, rect: null }; s.export.interp = 'bicubic'; s.levels = lv5;
+  /* ---- R4. Export size and JPEG quality ---- */
+  await load('IMG_9216');
+  app.commit(state => {
+    state.crop = { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, rect: null };
+    state.export.longEdge = 0;
+    state.export.format = 'jpeg';
   });
-  const pixels = async () => { const { canvas } = await S.renderFull(JSON.parse(JSON.stringify(S.app.state))); const d = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data; canvas.width = 0; return d; };
-  const before = await pixels(), json = JSON.stringify(S.app.state);
+  const crop = engine.computeGeometry(app.app.state, {}).crop;
+  // Renders and encodes as JPEG → { bytes, dims }.
+  async function encodeJpeg(state, quality) {
+    const { canvas } = await app.renderFull(state);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+    const dims = [canvas.width, canvas.height];
+    canvas.width = 0;
+    return { bytes: blob.size, dims };
+  }
+  const fullState = clone(app.app.state);
+  const quality92 = await encodeJpeg(fullState, 0.92);
+  const quality50 = await encodeJpeg(fullState, 0.5);
+  const cropWidth = Math.round(crop.width);
+  const cropHeight = Math.round(crop.height);
+  record('R4 Export is full resolution when no resize is set',
+    quality92.dims[0] === cropWidth && quality92.dims[1] === cropHeight,
+    `${quality92.dims.join('×')} vs crop ${cropWidth}×${cropHeight}`);
+  record('R4 JPEG quality is respected (0.92 file > 0.50 file)',
+    quality92.bytes > quality50.bytes * 1.5,
+    `${quality92.bytes} vs ${quality50.bytes} bytes`);
+  const resizedState = clone(fullState);
+  resizedState.export.longEdge = 600;
+  const resized = await encodeJpeg(resizedState, 0.92);
+  record('R4 Resize sets the long edge', Math.max(...resized.dims) === 600, resized.dims.join('×'));
+
+  /* ---- R5. Levels: label white comes out neutral at whiteTarget (IMG_9136) ---- */
   await load('IMG_9136');
-  S.commit(s => { const o = JSON.parse(json); for (const k of Object.keys(s)) delete s[k]; Object.assign(s, o); });
-  const after = await pixels();
-  let diff = before.length === after.length ? 0 : -1;
-  if (diff === 0) for (let i = 0; i < before.length; i++) if (before[i] !== after[i]) diff++;
-  rec('R6 Save → reload → load edits exports pixel-identical', diff === 0, diff < 0 ? 'size mismatch' : `${diff} differing bytes of ${before.length}`);
-
-  // ---- R7. Undo/redo, including keyboard while a slider has focus ----
-  await load('IMG_9216');
-  S.setTab('rotate');
-  const fine = document.getElementById('fine');
-  fine.focus(); fine.value = 7.5; fine.dispatchEvent(new Event('input'));
-  const k = (key, shift) => fine.dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey: !!shift, bubbles: true }));
-  k('z'); const undone = S.app.state.rotation.fine; k('z', true); const redone = S.app.state.rotation.fine;
-  rec('R7 Ctrl+Z / Shift+Ctrl+Z work while a slider has focus', undone === 0 && redone === 7.5, `after undo ${undone}, after redo ${redone}`);
-  S.setTab('perspective');
-
-  // ---- R8. Self-tests inside the Web Worker ----
-  const w = await S.EngineWorker.call('selftest', {});
-  rec('R8 Engine self-tests pass inside the Web Worker', w.passed && !S.EngineWorker.failed, `${w.results.filter(r => r.pass).length}/${w.results.length}`);
-
-  // ---- R9–R13. Overlay step (1.5): compositing, opacity, resolution independence, remove, edits round-trip ----
+  // The v1.0 dropper reading of the PSA label.
+  const labelLevels = { white: [210, 230.7, 226], black: null, whiteAt: [420, 230], blackAt: null };
+  app.commit(state => {
+    state.crop = { mode: 'full', preset: 'free', ratio: null, swapped: false, rect: null };
+    state.levels = labelLevels;
+    state.export.longEdge = 0;
+  });
   {
-    const CF = window.CF;
-    await load('IMG_9136');
-    S.commit(s => { s.crop = { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, orient: null, rect: null }; s.levels = null; s.export.longEdge = 0; s.export.format = 'png'; });
-    // Test logo 200×100: left half opaque red, then a 50%-alpha blue band, then a fully transparent strip.
-    const lc = document.createElement('canvas'); lc.width = 200; lc.height = 100; const lx = lc.getContext('2d');
-    lx.fillStyle = 'rgb(255,0,0)'; lx.fillRect(0, 0, 100, 100); lx.fillStyle = 'rgba(0,0,255,0.5)'; lx.fillRect(100, 0, 80, 100);
-    const logo = new File([await new Promise(r => lc.toBlob(r, 'image/png'))], 'test-logo.png', { type: 'image/png' });
-    const render = async () => { const { canvas } = await S.renderFull(JSON.parse(JSON.stringify(S.app.state))); const d = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height); canvas.width = 0; return d; };
-    const px = (img, fx, fy) => { const x = Math.round(fx * img.width), y = Math.round(fy * img.height), o = (y * img.width + x) * 4; return [img.data[o], img.data[o + 1], img.data[o + 2]]; };
-    const near = (a, b, tol) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
-    const base = await render();
-    S.setTab('overlay');
-    await CF.addOverlayFile(logo);
-    S.commit(s => { s.overlay = Object.assign({}, s.overlay, { cx: 0.5, cy: 0.5, w: 0.4, opacity: 1 }); });
-    // Logo spans x 0.30–0.70, y 0.40–0.60 of the frame: red 0.30–0.50, blue 0.50–0.66, transparent 0.66–0.70.
-    const withOv = await render();
-    const red = px(withOv, 0.4, 0.5), blueB = px(base, 0.58, 0.5), blue = px(withOv, 0.58, 0.5), clearB = px(base, 0.68, 0.5), clear = px(withOv, 0.68, 0.5);
-    const expBlue = blueB.map((v, i) => Math.round(v * 0.5 + [0, 0, 255][i] * 0.5));
-    const outside = near(px(withOv, 0.1, 0.1), px(base, 0.1, 0.1), 0) && near(px(withOv, 0.9, 0.9), px(base, 0.9, 0.9), 0);
-    rec('R9 Overlay composites with its alpha (opaque, 50%, transparent, outside)',
-      near(red, [255, 0, 0], 2) && near(blue, expBlue, 4) && near(clear, clearB, 1) && outside,
-      `red ${red} · blue ${blue} (expected ≈${expBlue}) · clear ${clear} vs photo ${clearB} · outside untouched ${outside}`);
-    S.commit(s => { s.overlay.opacity = 0.5; });
-    const half = await render(), redH = px(half, 0.4, 0.5), redB = px(base, 0.4, 0.5), expH = redB.map((v, i) => Math.round(v * 0.5 + [255, 0, 0][i] * 0.5));
-    rec('R10 Overlay opacity 50% blends the opaque part half and half', near(redH, expH, 4), `${redH} (expected ≈${expH})`);
-    S.commit(s => { s.overlay.opacity = 1; });
-    // Resolution independence: the red/blue boundary sits at the same fraction of the width at 1080 px and at full size.
-    const edge = img => { const y = Math.round(img.height * 0.5); let x = 0; for (; x < img.width; x++) { const o = (y * img.width + x) * 4; if (img.data[o] > 200 && img.data[o + 1] < 40 && img.data[o + 2] < 40) break; } let e = x; for (; e < img.width; e++) { const o = (y * img.width + e) * 4; if (!(img.data[o] > 200 && img.data[o + 1] < 40)) break; } return [x / img.width, e / img.width]; };
-    const full = edge(withOv);
-    S.commit(s => { s.export.longEdge = 1080; });
-    const small = await render(), sm = edge(small);
-    rec('R11 Overlay lands in the same relative place at every export size', Math.abs(full[0] - sm[0]) < 2 / small.width && Math.abs(full[1] - sm[1]) < 2 / small.width,
-      `red spans ${full.map(v => v.toFixed(4)).join('–')} at ${withOv.width}px and ${sm.map(v => v.toFixed(4)).join('–')} at ${small.width}px`);
-    S.commit(s => { s.export.longEdge = 0; });
-    // Edits file round-trip with the logo embedded, then Remove restores the exact no-overlay export.
-    const payload = Object.assign(JSON.parse(JSON.stringify(S.app.state)), { overlayImage: CF.overlayForEdits(S.app.state) });
-    S.commit(s => { s.overlay = null; });
-    await CF.loadEdits(new File([JSON.stringify(payload)], 'IMG_9136-edits.json', { type: 'application/json' }));
-    const back = await render();
-    let diff = back.data.length === withOv.data.length ? 0 : -1; if (diff === 0) for (let i = 0; i < back.data.length; i++) if (back.data[i] !== withOv.data[i]) diff++;
-    rec('R12 Edits file with an embedded overlay rebuilds the export exactly', !!payload.overlayImage && diff === 0, diff < 0 ? 'size mismatch' : `${diff} differing bytes; embedded ${payload.overlayImage ? Math.round(payload.overlayImage.data.length / 1024) + ' KB base64' : 'nothing'}`);
-    S.commit(s => { s.overlay = null; });
-    const removed = await render();
-    let d2 = 0; for (let i = 0; i < removed.data.length; i++) if (removed.data[i] !== base.data[i]) d2++;
-    rec('R13 Without an overlay the export is unchanged (AC3)', d2 === 0, `${d2} differing bytes vs. the export before any overlay`);
-    S.setTab('perspective');
+    const { canvas, geometry } = await app.renderFull(clone(app.app.state));
+    const label = Mat3.apply(geometry.sourceToOutput, 420, 230);
+    const radius = 12;
+    const patch = canvas.getContext('2d').getImageData(
+      Math.round(label[0]) - radius, Math.round(label[1]) - radius, 2 * radius, 2 * radius,
+    );
+    const color = engine.meanColor(patch, CONFIG.levels.sampleTrim);
+    canvas.width = 0;
+    record('R5 Levels: picked label exports neutral at 245 ± 2',
+      color.every(value => Math.abs(value - CONFIG.levels.whiteTarget) <= 2),
+      `exported ${color.join(', ')} (v1.0 245.7, 244.7, 245.0)`);
   }
 
-  // ---- R14. Edits files / sessions are checked field by field (1.6): real edits pass unchanged ----
+  /* ---- R6. The edits round trip is pixel-identical
+    (rotation, flip, fill frame, bicubic, levels) ---- */
+  app.commit(state => {
+    state.rotation = { quarter: 1, fine: 2.3, fillFrame: true };
+    state.flip = { h: true, v: false };
+    state.crop = { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, rect: null };
+    state.export.interp = 'bicubic';
+    state.levels = labelLevels;
+  });
   {
+    const before = (await renderPixels()).data;
+    const saved = JSON.stringify(app.app.state);
     await load('IMG_9136');
-    S.commit(s => {
-      s.rotation = { quarter: 3, fine: -3.7, fillFrame: true }; s.flip = { h: true, v: false }; s.strength = 0.35;
-      s.crop = { mode: 'manual', preset: 'free', ratio: null, swapped: false, orient: 'portrait', rect: { cx: 0.013, cy: -0.02, w: 0.41, h: 0.52 } };
-      s.levels = { white: [234.6, 233.1, 220.4], black: [12.5, 9, 10.25], whiteAt: [812, 640], blackAt: null };
-      s.export = { format: 'webp', quality: 0.8, longEdge: 0, interp: 'bicubic', fill: 'transparent' };
+    app.commit(state => {
+      for (const key of Object.keys(state)) delete state[key];
+      Object.assign(state, JSON.parse(saved));
     });
-    const r = CF.cleanState(S.app.state, S.app.img), keys = Object.keys(S.app.state);
-    const uncovered = keys.filter(k => !r.fields.includes(k));
-    rec('R14 Edited state passes the edits-file check unchanged; every field has a rule',
-      JSON.stringify(r.state) === JSON.stringify(S.app.state) && !r.invalid.length && !uncovered.length,
-      uncovered.length ? `no rule for: ${uncovered.join(', ')} (add one in CardEngine.sanitizeState)` : r.invalid.length ? `reset: ${r.invalid.join(', ')}` : `${keys.length} fields`);
+    const after = (await renderPixels()).data;
+    const differing = differingBytes(before, after);
+    record('R6 Save → reload → load edits exports pixel-identical', differing === 0,
+      differing < 0 ? 'size mismatch' : `${differing} differing bytes of ${before.length}`);
   }
 
-  console.table(results.map(r => ({ result: r.pass ? 'PASS' : 'FAIL', check: r.name, detail: r.detail })));
-  const passed = results.every(r => r.pass);
-  console.log(passed ? `All ${results.length} regression checks passed.` : `${results.filter(r => !r.pass).length} of ${results.length} checks FAILED.`);
+  /* ---- R7. Undo and redo, including the keyboard while a slider has focus ---- */
+  await load('IMG_9216');
+  app.setTab('rotate');
+  {
+    const fine = document.getElementById('fine');
+    fine.focus();
+    fine.value = 7.5;
+    fine.dispatchEvent(new Event('input'));
+    const pressKey = (key, shift) => fine.dispatchEvent(
+      new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey: !!shift, bubbles: true }),
+    );
+    pressKey('z');
+    const undone = app.app.state.rotation.fine;
+    pressKey('z', true);
+    const redone = app.app.state.rotation.fine;
+    record('R7 Ctrl+Z / Shift+Ctrl+Z work while a slider has focus', undone === 0 && redone === 7.5,
+      `after undo ${undone}, after redo ${redone}`);
+  }
+  app.setTab('perspective');
+
+  /* ---- R8. The self-tests inside the Web Worker ---- */
+  {
+    const worker = await app.EngineWorker.call('selftest', {});
+    const passedCount = worker.results.filter(result => result.pass).length;
+    record('R8 Engine self-tests pass inside the Web Worker',
+      worker.passed && !app.EngineWorker.failed,
+      `${passedCount}/${worker.results.length}`);
+  }
+
+  /* ---- R9–R13. The Overlay step: compositing, opacity, resolution independence, remove,
+     edits round trip ---- */
+  {
+    await load('IMG_9136');
+    app.commit(state => {
+      state.crop = {
+        mode: 'fit',
+        preset: '1:1',
+        ratio: 1,
+        swapped: false,
+        orient: null,
+        rect: null,
+      };
+      state.levels = null;
+      state.export.longEdge = 0;
+      state.export.format = 'png';
+    });
+    // A test logo 200×100: the left half opaque red, then a 50%-alpha blue band, then a fully
+    // transparent strip.
+    const logoCanvas = document.createElement('canvas');
+    logoCanvas.width = 200;
+    logoCanvas.height = 100;
+    const logoContext = logoCanvas.getContext('2d');
+    logoContext.fillStyle = 'rgb(255,0,0)';
+    logoContext.fillRect(0, 0, 100, 100);
+    logoContext.fillStyle = 'rgba(0,0,255,0.5)';
+    logoContext.fillRect(100, 0, 80, 100);
+    const logoBlob = await new Promise(resolve => logoCanvas.toBlob(resolve, 'image/png'));
+    const logo = new File([logoBlob], 'test-logo.png', { type: 'image/png' });
+    // The RGB at a fraction of the image's width and height.
+    const colorAt = (img, fractionX, fractionY) => {
+      const x = Math.round(fractionX * img.width);
+      const y = Math.round(fractionY * img.height);
+      const offset = (y * img.width + x) * 4;
+      return [img.data[offset], img.data[offset + 1], img.data[offset + 2]];
+    };
+    const isNear = (first, second, tolerance) => first.every(
+      (value, i) => Math.abs(value - second[i]) <= tolerance,
+    );
+    const blend = (under, over) => under.map((value, i) => Math.round(value * 0.5 + over[i] * 0.5));
+    const base = await renderPixels();
+    app.setTab('overlay');
+    await CF.addOverlayFile(logo);
+    app.commit(state => {
+      state.overlay = Object.assign({}, state.overlay, { cx: 0.5, cy: 0.5, w: 0.4, opacity: 1 });
+    });
+    // The logo spans x 0.30–0.70, y 0.40–0.60 of the frame: red 0.30–0.50, blue 0.50–0.66,
+    // transparent 0.66–0.70.
+    const withOverlay = await renderPixels();
+    const red = colorAt(withOverlay, 0.4, 0.5);
+    const blueUnder = colorAt(base, 0.58, 0.5);
+    const blue = colorAt(withOverlay, 0.58, 0.5);
+    const clearUnder = colorAt(base, 0.68, 0.5);
+    const clear = colorAt(withOverlay, 0.68, 0.5);
+    const expectedBlue = blend(blueUnder, [0, 0, 255]);
+    const isOutsideUntouched = isNear(colorAt(withOverlay, 0.1, 0.1), colorAt(base, 0.1, 0.1), 0)
+      && isNear(colorAt(withOverlay, 0.9, 0.9), colorAt(base, 0.9, 0.9), 0);
+    record('R9 Overlay composites with its alpha (opaque, 50%, transparent, outside)',
+      isNear(red, [255, 0, 0], 2)
+        && isNear(blue, expectedBlue, 4)
+        && isNear(clear, clearUnder, 1)
+        && isOutsideUntouched,
+      `red ${red} · blue ${blue} (expected ≈${expectedBlue}) · `
+      + `clear ${clear} vs photo ${clearUnder} · `
+      + `outside untouched ${isOutsideUntouched}`);
+
+    app.commit(state => {
+      state.overlay.opacity = 0.5;
+    });
+    const halfOpacity = await renderPixels();
+    const halfRed = colorAt(halfOpacity, 0.4, 0.5);
+    const expectedHalf = blend(colorAt(base, 0.4, 0.5), [255, 0, 0]);
+    record('R10 Overlay opacity 50% blends the opaque part half and half',
+      isNear(halfRed, expectedHalf, 4),
+      `${halfRed} (expected ≈${expectedHalf})`);
+    app.commit(state => {
+      state.overlay.opacity = 1;
+    });
+
+    // Resolution independence: the red span sits at the same fractions of the width at 1080 px
+    // and at full size. Returns [start, end] of the red span along the middle row.
+    const redSpan = img => {
+      const y = Math.round(img.height * 0.5);
+      const isRed = x => {
+        const offset = (y * img.width + x) * 4;
+        return img.data[offset] > 200 && img.data[offset + 1] < 40 && img.data[offset + 2] < 40;
+      };
+      const isReddish = x => {
+        const offset = (y * img.width + x) * 4;
+        return img.data[offset] > 200 && img.data[offset + 1] < 40;
+      };
+      let start = 0;
+      while (start < img.width && !isRed(start)) start++;
+      let end = start;
+      while (end < img.width && isReddish(end)) end++;
+      return [start / img.width, end / img.width];
+    };
+    const fullSpan = redSpan(withOverlay);
+    app.commit(state => {
+      state.export.longEdge = 1080;
+    });
+    const small = await renderPixels();
+    const smallSpan = redSpan(small);
+    const tolerance = 2 / small.width;
+    const describeSpan = span => span.map(value => value.toFixed(4)).join('–');
+    record('R11 Overlay lands in the same relative place at every export size',
+      Math.abs(fullSpan[0] - smallSpan[0]) < tolerance
+        && Math.abs(fullSpan[1] - smallSpan[1]) < tolerance,
+      `red spans ${describeSpan(fullSpan)} at ${withOverlay.width}px and `
+      + `${describeSpan(smallSpan)} at ${small.width}px`);
+    app.commit(state => {
+      state.export.longEdge = 0;
+    });
+
+    // An edits file round trip with the logo embedded, then Remove restores the exact
+    // no-overlay export.
+    const overlayImage = CF.overlayForEdits(app.app.state);
+    const payload = Object.assign(clone(app.app.state), { overlayImage });
+    app.commit(state => {
+      state.overlay = null;
+    });
+    const editsFile = new File([JSON.stringify(payload)], 'IMG_9136-edits.json', {
+      type: 'application/json',
+    });
+    await CF.loadEdits(editsFile);
+    const reloaded = await renderPixels();
+    const reloadDiff = differingBytes(reloaded.data, withOverlay.data);
+    const embedded = payload.overlayImage
+      ? Math.round(payload.overlayImage.data.length / 1024) + ' KB base64'
+      : 'nothing';
+    record('R12 Edits file with an embedded overlay rebuilds the export exactly',
+      !!payload.overlayImage && reloadDiff === 0,
+      reloadDiff < 0 ? 'size mismatch' : `${reloadDiff} differing bytes; embedded ${embedded}`);
+    app.commit(state => {
+      state.overlay = null;
+    });
+    const removed = await renderPixels();
+    const removedDiff = differingBytes(removed.data, base.data);
+    record('R13 Without an overlay the export is unchanged (AC3)', removedDiff === 0,
+      `${removedDiff} differing bytes vs. the export before any overlay`);
+    app.setTab('perspective');
+  }
+
+  /* ---- R14. Edits files and sessions are checked field by field:
+    real edits pass unchanged ---- */
+  {
+    await load('IMG_9136');
+    app.commit(state => {
+      state.rotation = { quarter: 3, fine: -3.7, fillFrame: true };
+      state.flip = { h: true, v: false };
+      state.strength = 0.35;
+      state.crop = {
+        mode: 'manual',
+        preset: 'free',
+        ratio: null,
+        swapped: false,
+        orient: 'portrait',
+        rect: { cx: 0.013, cy: -0.02, w: 0.41, h: 0.52 },
+      };
+      state.levels = {
+        white: [234.6, 233.1, 220.4],
+        black: [12.5, 9, 10.25],
+        whiteAt: [812, 640],
+        blackAt: null,
+      };
+      state.export = {
+        format: 'webp',
+        quality: 0.8,
+        longEdge: 0,
+        interp: 'bicubic',
+        fill: 'transparent',
+      };
+    });
+    const checked = CF.cleanState(app.app.state, app.app.img);
+    const keys = Object.keys(app.app.state);
+    const uncovered = keys.filter(key => !checked.fields.includes(key));
+    let detail = `${keys.length} fields`;
+    if (checked.invalid.length) detail = `reset: ${checked.invalid.join(', ')}`;
+    if (uncovered.length) {
+      detail = `no rule for: ${uncovered.join(', ')} (add one in CardEngine.sanitizeState)`;
+    }
+    record('R14 Edited state passes the edits-file check unchanged; every field has a rule',
+      JSON.stringify(checked.state) === JSON.stringify(app.app.state)
+        && !checked.invalid.length
+        && !uncovered.length,
+      detail);
+  }
+
+  console.table(results.map(result => ({
+    result: result.pass ? 'PASS' : 'FAIL',
+    check: result.name,
+    detail: result.detail,
+  })));
+  const passed = results.every(result => result.pass);
+  const failedCount = results.filter(result => !result.pass).length;
+  console.log(passed
+    ? `All ${results.length} regression checks passed.`
+    : `${failedCount} of ${results.length} checks FAILED.`);
   return { passed, results };
 })();

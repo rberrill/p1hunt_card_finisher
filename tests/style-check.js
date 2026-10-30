@@ -10,8 +10,10 @@ const { tokenize, declaredNames } = require('./jstok.js');
 const MAX_LINE_LENGTH = 100;
 
 // One- and two-letter names that are allowed everywhere: loop indices, coordinates, real words,
-// the shell's namespace and Node's file-system module.
-const SHORT_NAMES_ALLOWED = new Set(['i', 'j', 'k', 'x', 'y', 'dx', 'dy', 'id', 'ok', 'CF', 'fs']);
+// the shell's namespace and Node's fs, os and vm modules.
+const SHORT_NAMES_ALLOWED = new Set([
+  'i', 'j', 'k', 'x', 'y', 'z', 'dx', 'dy', 'id', 'ok', 'el', 'CF', 'fs', 'os', 'vm',
+]);
 
 // A function that implements a published formula may use its symbols. The function's comment
 // lists them in a line like "Formula names: m1 m2 k2 n3", and only those are allowed in that file.
@@ -57,10 +59,16 @@ function lineNumberAt(source) {
   };
 }
 
+// The one line allowed to be longer: index.html's Content Security Policy. Its content stays on
+// one line so every browser parses it the same way (and tests/selftest.js reads it from there).
+const LONG_LINE_EXCEPTIONS = [/<meta http-equiv="Content-Security-Policy"/];
+
 function longLines(file, source) {
   const found = [];
   source.split('\n').forEach((line, index) => {
-    if (line.length > MAX_LINE_LENGTH) found.push(`${file}:${index + 1} (${line.length})`);
+    const isException = LONG_LINE_EXCEPTIONS.some(pattern => pattern.test(line));
+    if (line.length <= MAX_LINE_LENGTH || isException) return;
+    found.push(`${file}:${index + 1} (${line.length})`);
   });
   return found;
 }

@@ -1,71 +1,171 @@
 /* =====================================================================
-   js/app/core.js — Namespace (CF), URL overrides of CONFIG, theme, DOM handles, small helpers, the app state object, toasts.
-   Shell modules share one namespace, CF (created in core.js). Names from core are
-   destructured below; anything from another module is called as CF.name.
+   js/app/core.js: the namespace (CF), URL overrides of CONFIG, the theme, DOM handles,
+   small helpers, the app state object and toasts.
+   Shell modules share one namespace, CF (created here). Names from core are destructured at
+   the top of each module; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
    ===================================================================== */
 (function () {
   'use strict';
   const CF = window.CF = {};
 
-  const E = CardEngine, M3 = E.M3, Quad = E.Quad;
+  const Mat3 = CardEngine.Mat3;
+  const Vec2 = CardEngine.Vec2;
+  const Quad = CardEngine.Quad;
+  // A full turn in radians, for canvas arcs.
+  const FULL_CIRCLE = Math.PI * 2;
 
   /* ---------------- CONFIG overrides from the URL ----------------
-     Number and on/off settings only, inside CONFIG_LIMITS (the engine checks them); anything else in a link is ignored. */
+     Number and on/off settings only, inside CONFIG_LIMITS (the engine checks them); anything
+     else in a link is ignored. */
   const params = new URLSearchParams(location.search);
-  const overrides = [...params].filter(([k]) => k !== 'debug' && k !== 'selftest');
+  const overrides = [...params].filter(([key]) => key !== 'debug' && key !== 'selftest');
   if (params.has('debug')) CONFIG.debug = !['0', 'false'].includes(params.get('debug'));
-  const { rejected } = E.applyConfigOverrides(CONFIG, overrides, CONFIG_LIMITS);
-  if (rejected.length) console.warn('[card-finisher] URL settings ignored (unknown, not a number / on-off setting, or outside its safe range):', rejected.join(', '));
-  for (const [k, v] of Object.entries(CONFIG.theme)) document.documentElement.style.setProperty('--' + k, v);
+  const { rejected } = CardEngine.applyConfigOverrides(CONFIG, overrides, CONFIG_LIMITS);
+  if (rejected.length) {
+    console.warn('[card-finisher] URL settings ignored (unknown, not a number / on-off setting, '
+      + 'or outside its safe range):', rejected.join(', '));
+  }
+  for (const [name, value] of Object.entries(CONFIG.theme)) {
+    document.documentElement.style.setProperty('--' + name, value);
+  }
 
-  const $ = id => document.getElementById(id);
-  const els = {
-    stage: $('stage'), canvas: $('view'), empty: $('empty'), toast: $('toast'), panel: $('panel'), mini: $('mini'),
-    fileInput: $('fileInput'), editsInput: $('editsInput'), debugPanel: $('debugPanel'), root: $('app'),
+  const byId = id => document.getElementById(id);
+  const elements = {
+    stage: byId('stage'),
+    canvas: byId('view'),
+    empty: byId('empty'),
+    toast: byId('toast'),
+    panel: byId('panel'),
+    mini: byId('mini'),
+    fileInput: byId('fileInput'),
+    editsInput: byId('editsInput'),
+    debugPanel: byId('debugPanel'),
+    root: byId('app'),
   };
-  const clone = o => JSON.parse(JSON.stringify(o));
-  // Text from a file or storage shown in a message: a string, cut short. (textContent keeps it from being markup.)
-  const shortText = (s, max = 60) => typeof s !== 'string' ? '' : s.length > max ? s.slice(0, max - 1) + '…' : s;
-  const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
-  const makeCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
-  const ctx2d = (c, read) => c.getContext('2d', read ? { willReadFrequently: true } : undefined);
+  const clone = value => JSON.parse(JSON.stringify(value));
+
+  // Text from a file or storage shown in a message: a string, cut short. (textContent keeps it
+  // from being markup.)
+  function shortText(text, max = 60) {
+    if (typeof text !== 'string') return '';
+    return text.length > max ? text.slice(0, max - 1) + '…' : text;
+  }
+
+  const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => resolve()));
+
+  function makeCanvas(width, height) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    return canvas;
+  }
+
+  // A canvas's 2D context; `willRead` hints that getImageData will be called often.
+  function context2d(canvas, willRead) {
+    return canvas.getContext('2d', willRead ? { willReadFrequently: true } : undefined);
+  }
 
   /* =====================================================================
      UI / STATE
      ===================================================================== */
   const app = {
-    img: null, preview: null, thumb: null, work: null,
-    state: null, geo: null, pPreview: null,
-    tab: 'perspective', selected: 0,
+    img: null,
+    preview: null,
+    thumb: null,
+    work: null,
+    state: null,
+    geometry: null,
+    // The perspective-corrected preview canvas, cached by its inputs (view.js).
+    perspectivePreview: null,
+    tab: 'perspective',
+    selected: 0,
     views: { source: null, result: null, export: null },
-    detection: { candidates: [], index: 0, seed: null, last: null, running: 0, msg: '', snapPts: [], snapLines: [] },
-    seedMode: false, snap: false, debugOverlay: !!CONFIG.debug, showGrid: true,
-    dropper: null, compare: false, levelsPending: false, levelsDraft: null, ppLevels: null,
-    gesture: null, dpr: 1, cssW: 0, cssH: 0, edgeCanvas: null,
-    loadId: 0, pendingSave: null,
+    detection: {
+      candidates: [],
+      index: 0,
+      seed: null,
+      last: null,
+      running: 0,
+      message: '',
+      snapPoints: [],
+      snapLines: [],
+    },
+    seedMode: false,
+    snap: false,
+    debugOverlay: !!CONFIG.debug,
+    showGrid: true,
+    dropper: null,
+    compare: false,
+    levelsPending: false,
+    levelsDraft: null,
+    // perspectivePreview with the Levels draft applied, cached (levels.js).
+    perspectivePreviewLevels: null,
+    previewMode: false,
+    gesture: null,
+    devicePixelRatio: 1,
+    cssWidth: 0,
+    cssHeight: 0,
+    edgeCanvas: null,
+    loadId: 0,
+    pendingSave: null,
   };
-  const geoCfg = () => ({
-    maxOutputPx: CONFIG.maxOutputPx, maxOutputArea: CONFIG.maxOutputArea, maxBoundsFactor: CONFIG.maxBoundsFactor,
-    minCornerDistPx: CONFIG.minCornerDistPx, fitPaddingPct: CONFIG.crop.fitPaddingPct, allowUpscale: CONFIG.export.allowUpscale,
+
+  // The CONFIG settings CardEngine.computeGeometry reads.
+  const geometryConfig = () => ({
+    maxOutputPx: CONFIG.maxOutputPx,
+    maxOutputArea: CONFIG.maxOutputArea,
+    maxBoundsFactor: CONFIG.maxBoundsFactor,
+    minCornerDistPx: CONFIG.minCornerDistPx,
+    fitPaddingPct: CONFIG.crop.fitPaddingPct,
+    allowUpscale: CONFIG.export.allowUpscale,
     focalFactor: CONFIG.detect.focalFactor,
   });
 
   let toastTimer = 0;
-  function toast(text, kind = '', ms = 3000) {
-    const t = els.toast; t.textContent = text; t.className = 'toast show ' + kind;
-    clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, ms);
+  // Shows a short message; kind '' | 'warn' | 'error' sets its color.
+  function toast(text, kind = '', durationMs = 3000) {
+    const toastEl = elements.toast;
+    toastEl.textContent = text;
+    toastEl.className = 'toast show ' + kind;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, durationMs);
   }
-  function hideToast() { els.toast.classList.remove('show'); }
+  function hideToast() {
+    elements.toast.classList.remove('show');
+  }
 
-  // Builds an element without parsing HTML: h('button', { class: 'chip', 'data-crop': id }, label).
+  // Builds an element without parsing HTML:
+  //   makeEl('button', { class: 'chip', 'data-crop': id }, label).
   // Strings become text nodes, so data can never turn into markup (the self-test bans innerHTML).
-  function h(tag, attrs, ...kids) {
+  // An attribute that is null, undefined or false is left off; true sets it empty.
+  function makeEl(tag, attributes, ...children) {
     const el = document.createElement(tag);
-    for (const [k, v] of Object.entries(attrs || {})) if (v != null && v !== false) el.setAttribute(k, v === true ? '' : String(v));
-    el.append(...kids.flat().filter(k => k != null && k !== false));
+    for (const [name, value] of Object.entries(attributes || {})) {
+      if (value == null || value === false) continue;
+      el.setAttribute(name, value === true ? '' : String(value));
+    }
+    el.append(...children.flat().filter(child => child != null && child !== false));
     return el;
   }
 
-  Object.assign(CF, { E, M3, Quad, params, $, h, els, clone, shortText, nextFrame, makeCanvas, ctx2d, app, geoCfg, toast, hideToast });
+  Object.assign(CF, {
+    Mat3,
+    Vec2,
+    Quad,
+    FULL_CIRCLE,
+    params,
+    byId,
+    makeEl,
+    elements,
+    clone,
+    shortText,
+    nextFrame,
+    makeCanvas,
+    context2d,
+    app,
+    geometryConfig,
+    toast,
+    hideToast,
+  });
 })();

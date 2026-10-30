@@ -1,475 +1,905 @@
 /* =====================================================================
-   CardEngine — pure geometry + image processing. No DOM, no browser
-   globals beyond what a Web Worker also has (tests/selftest.js checks).
-   The whole engine is one named function, CardEngineModule: calling it
-   defines CardEngine, and the shell builds the Web Worker from its
-   source text (CardEngineModule.toString()), which also works from file://.
-   Sections: MATH → IMAGE I/O (pure pixel helpers) → DETECTION → RENDER PIPELINE → SELF-TEST
+   CardEngine: pure geometry and image processing.
+   No DOM and no browser globals beyond what a Web Worker also has
+   (tests/selftest.js checks). The whole engine is one named function,
+   CardEngineModule: calling it defines CardEngine, and the shell builds
+   the Web Worker from its source text (CardEngineModule.toString()),
+   which also works from file://.
+
+   Sections, in order:
+     MATH                 3×3 matrices, vectors, quads, lines, linear solve, homography
+     PERSPECTIVE TARGETS  where the four source corners should land
+     IMAGE HELPERS        pure pixel helpers over ImageData-like objects
+     DETECTION            Canny → Hough → paired line families → scored quads → refine
+     OVERLAY              logo placement relative to the crop
+     UNTRUSTED INPUT      URL overrides, edits files, stored sessions
+     RENDER PIPELINE      state → geometry → warp
+     LEVELS               white and black point correction in linear light
+     SELF-TEST            runs the same on the main thread and in the Worker
    ===================================================================== */
-function CardEngineModule(G) {
+function CardEngineModule(globalScope) {
   'use strict';
-  const EPS = 1e-12;
-  const DEG = Math.PI / 180;
+
+  // Below this, a determinant or homogeneous weight counts as zero.
+  const EPSILON = 1e-12;
+  // Below this, a pivot in the linear solve counts as zero (the system is singular).
+  const PIVOT_EPSILON = 1e-14;
+  // Below this, a turn or line crossing counts as straight (collinear or parallel).
+  const COLLINEAR_EPSILON = 1e-9;
+  const RADIANS_PER_DEGREE = Math.PI / 180;
+  // A standard trading card is 63.5 × 88.9 mm; this is its width ÷ height (5:7).
+  const CARD_ASPECT = 63.5 / 88.9;
+
   const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
+  // Limits value to [low, high].
+  function clamp(value, low, high) {
+    if (value < low) return low;
+    if (value > high) return high;
+    return value;
+  }
+
+  // Limits a pixel index to [0, size − 1] (clamp-to-edge sampling).
+  function clampIndex(index, size) {
+    return Math.min(Math.max(index, 0), size - 1);
+  }
+
   /* ===================================================================
-     MATH — 3×3 matrices (row-major arrays of 9), linear solve, homography, quads
+     MATH
      =================================================================== */
-  const M3 = {
+
+  // 3×3 matrices as row-major arrays of 9 numbers.
+  const Mat3 = {
     identity: () => [1, 0, 0, 0, 1, 0, 0, 0, 1],
-    mul(a, b) {
-      const r = new Array(9);
-      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++)
-        r[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
-      return r;
+
+    // left · right, so `right` is applied to a point first.
+    multiply(left, right) {
+      const product = new Array(9);
+      for (let row = 0; row < 3; row++) {
+        for (let column = 0; column < 3; column++) {
+          product[row * 3 + column] = left[row * 3] * right[column]
+            + left[row * 3 + 1] * right[3 + column]
+            + left[row * 3 + 2] * right[6 + column];
+        }
+      }
+      return product;
     },
-    // chain(A, B, C) = A·B·C, i.e. C is applied to a point first.
-    chain(...ms) { return ms.reduce((acc, m) => M3.mul(acc, m)); },
-    // Inverse via the adjugate (cofactor transpose) / determinant.
-    inv(m) {
-      const [a, b, c, d, e, f, g, h, i] = m;
-      const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g;
-      const det = a * A + b * B + c * C;
-      if (!isFinite(det) || Math.abs(det) < EPS) return null;
-      const s = 1 / det;
-      return [A * s, -(b * i - c * h) * s, (b * f - c * e) * s,
-              B * s, (a * i - c * g) * s, -(a * f - c * d) * s,
-              C * s, -(a * h - b * g) * s, (a * e - b * d) * s];
+
+    // chain(A, B, C) = A·B·C, so C is applied to a point first.
+    chain(...matrices) {
+      return matrices.reduce((product, matrix) => Mat3.multiply(product, matrix));
     },
-    // Projective apply: [x', y'] = (M·[x, y, 1]) / w
-    apply(m, x, y) {
-      const w = m[6] * x + m[7] * y + m[8];
-      return [(m[0] * x + m[1] * y + m[2]) / w, (m[3] * x + m[4] * y + m[5]) / w];
+
+    // Inverse via the adjugate (the transposed cofactors) ÷ the determinant; null if singular.
+    invert(matrix) {
+      const [m00, m01, m02, m10, m11, m12, m20, m21, m22] = matrix;
+      const cofactor00 = m11 * m22 - m12 * m21;
+      const cofactor01 = -(m10 * m22 - m12 * m20);
+      const cofactor02 = m10 * m21 - m11 * m20;
+      const determinant = m00 * cofactor00 + m01 * cofactor01 + m02 * cofactor02;
+      if (!isFinite(determinant) || Math.abs(determinant) < EPSILON) return null;
+      const scale = 1 / determinant;
+      return [
+        cofactor00 * scale,
+        -(m01 * m22 - m02 * m21) * scale,
+        (m01 * m12 - m02 * m11) * scale,
+        cofactor01 * scale,
+        (m00 * m22 - m02 * m20) * scale,
+        -(m00 * m12 - m02 * m10) * scale,
+        cofactor02 * scale,
+        -(m00 * m21 - m01 * m20) * scale,
+        (m00 * m11 - m01 * m10) * scale,
+      ];
     },
-    w: (m, x, y) => m[6] * x + m[7] * y + m[8],
-    translate: (tx, ty) => [1, 0, tx, 0, 1, ty, 0, 0, 1],
-    scale: (sx, sy = sx) => [sx, 0, 0, 0, sy, 0, 0, 0, 1],
-    rotate(rad) {
-      let c = Math.cos(rad), s = Math.sin(rad);
+
+    // Projective apply: [x', y'] = (M·[x, y, 1]) ÷ w.
+    apply(matrix, x, y) {
+      const homogeneous = matrix[6] * x + matrix[7] * y + matrix[8];
+      return [
+        (matrix[0] * x + matrix[1] * y + matrix[2]) / homogeneous,
+        (matrix[3] * x + matrix[4] * y + matrix[5]) / homogeneous,
+      ];
+    },
+
+    // The homogeneous w of M·[x, y, 1]. A point with w ≤ 0 maps through the horizon.
+    homogeneousW: (matrix, x, y) => matrix[6] * x + matrix[7] * y + matrix[8],
+
+    translate: (offsetX, offsetY) => [1, 0, offsetX, 0, 1, offsetY, 0, 0, 1],
+
+    scale: (scaleX, scaleY = scaleX) => [scaleX, 0, 0, 0, scaleY, 0, 0, 0, 1],
+
+    rotate(radians) {
+      let cos = Math.cos(radians);
+      let sin = Math.sin(radians);
       // Snap float noise so exact quarter turns give exact integer frames.
-      if (Math.abs(c) < 1e-12) c = 0; if (Math.abs(s) < 1e-12) s = 0;
-      return [c, -s, 0, s, c, 0, 0, 0, 1];
+      if (Math.abs(cos) < EPSILON) cos = 0;
+      if (Math.abs(sin) < EPSILON) sin = 0;
+      return [cos, -sin, 0, sin, cos, 0, 0, 0, 1];
     },
-    normalize(m) { const k = m[8]; return Math.abs(k) > EPS ? m.map(v => v / k) : m.slice(); },
+
+    // Scales the matrix so its bottom-right entry is 1.
+    normalize(matrix) {
+      const last = matrix[8];
+      return Math.abs(last) > EPSILON ? matrix.map(value => value / last) : matrix.slice();
+    },
   };
 
-  // Gaussian elimination with partial pivoting. A: n rows of n numbers, b: n numbers.
-  function solveLinear(A, b) {
-    const n = b.length;
-    const M = A.map((row, i) => row.concat([b[i]]));
-    for (let col = 0; col < n; col++) {
-      let piv = col, best = Math.abs(M[col][col]);
-      for (let r = col + 1; r < n; r++) { const v = Math.abs(M[r][col]); if (v > best) { best = v; piv = r; } }
-      if (best < 1e-14) return null; // singular: degenerate correspondences
-      if (piv !== col) { const t = M[piv]; M[piv] = M[col]; M[col] = t; }
-      for (let r = col + 1; r < n; r++) {
-        const f = M[r][col] / M[col][col];
-        if (f === 0) continue;
-        for (let c = col; c <= n; c++) M[r][c] -= f * M[col][c];
+  // 2D points as [x, y] arrays.
+  const Vec2 = {
+    distance: (first, second) => Math.hypot(first[0] - second[0], first[1] - second[1]),
+
+    midpoint: (first, second) => [(first[0] + second[0]) / 2, (first[1] + second[1]) / 2],
+
+    // The point a fraction `amount` of the way from `first` to `second`.
+    interpolate: (first, second, amount) => [
+      first[0] + (second[0] - first[0]) * amount,
+      first[1] + (second[1] - first[1]) * amount,
+    ],
+
+    // z of (first − origin) × (second − origin): > 0 for a clockwise turn in image space (y down).
+    cross: (origin, first, second) => (first[0] - origin[0]) * (second[1] - origin[1])
+      - (first[1] - origin[1]) * (second[0] - origin[0]),
+  };
+
+  // Quads are always [topLeft, topRight, bottomRight, bottomLeft] in image pixels (y down).
+  const Quad = {
+    centroid(points) {
+      let sumX = 0;
+      let sumY = 0;
+      for (const point of points) {
+        sumX += point[0];
+        sumY += point[1];
+      }
+      return [sumX / points.length, sumY / points.length];
+    },
+
+    // Shoelace formula.
+    area(quad) {
+      let twiceArea = 0;
+      for (let i = 0; i < quad.length; i++) {
+        const point = quad[i];
+        const next = quad[(i + 1) % quad.length];
+        twiceArea += point[0] * next[1] - next[0] * point[1];
+      }
+      return Math.abs(twiceArea) / 2;
+    },
+
+    // Convex and simple ⇔ every consecutive turn has the same (non-zero) sign. A bow-tie
+    // (self-intersecting) quad always mixes signs, so this rejects both failure modes.
+    isConvex(quad) {
+      let turnSign = 0;
+      for (let i = 0; i < 4; i++) {
+        const turn = Vec2.cross(quad[i], quad[(i + 1) % 4], quad[(i + 2) % 4]);
+        if (Math.abs(turn) < COLLINEAR_EPSILON) return false;
+        const sign = turn > 0 ? 1 : -1;
+        if (turnSign === 0) turnSign = sign;
+        else if (sign !== turnSign) return false;
+      }
+      return true;
+    },
+
+    // Sorts 4 points into TL, TR, BR, BL: clockwise by angle around the centroid (y down),
+    // then starting at the point nearest the top-left (smallest x + y).
+    sortCorners(points) {
+      const center = Quad.centroid(points);
+      const angleOf = point => Math.atan2(point[1] - center[1], point[0] - center[0]);
+      const clockwise = points.slice().sort((first, second) => angleOf(first) - angleOf(second));
+      let topLeft = 0;
+      for (let i = 1; i < 4; i++) {
+        const sum = clockwise[i][0] + clockwise[i][1];
+        const bestSum = clockwise[topLeft][0] + clockwise[topLeft][1];
+        const isHigherLeft = sum < bestSum;
+        if (isHigherLeft) topLeft = i;
+      }
+      return [0, 1, 2, 3].map(i => clockwise[(i + topLeft) % 4].slice());
+    },
+
+    // True when the point is inside the convex polygon or on its edge.
+    contains(polygon, point) {
+      let turnSign = 0;
+      for (let i = 0; i < polygon.length; i++) {
+        const turn = Vec2.cross(polygon[i], polygon[(i + 1) % polygon.length], point);
+        const sign = Math.sign(turn) || 0;
+        if (sign === 0) continue;
+        if (turnSign === 0) turnSign = sign;
+        else if (sign !== turnSign) return false;
+      }
+      return true;
+    },
+
+    // Interior angle at each corner, in degrees.
+    cornerAngles(quad) {
+      return quad.map((corner, i) => {
+        const previous = quad[(i + 3) % 4];
+        const next = quad[(i + 1) % 4];
+        const toPrevious = [previous[0] - corner[0], previous[1] - corner[1]];
+        const toNext = [next[0] - corner[0], next[1] - corner[1]];
+        const dot = toPrevious[0] * toNext[0] + toPrevious[1] * toNext[1];
+        const cosine = dot / (Math.hypot(...toPrevious) * Math.hypot(...toNext));
+        return Math.acos(Math.max(-1, Math.min(1, cosine))) / RADIANS_PER_DEGREE;
+      });
+    },
+
+    sides(quad) {
+      return {
+        top: Vec2.distance(quad[0], quad[1]),
+        right: Vec2.distance(quad[1], quad[2]),
+        bottom: Vec2.distance(quad[3], quad[2]),
+        left: Vec2.distance(quad[0], quad[3]),
+      };
+    },
+
+    // { left, top, right, bottom, width, height } around the points.
+    boundingBox(points) {
+      let left = Infinity;
+      let top = Infinity;
+      let right = -Infinity;
+      let bottom = -Infinity;
+      for (const point of points) {
+        left = Math.min(left, point[0]);
+        top = Math.min(top, point[1]);
+        right = Math.max(right, point[0]);
+        bottom = Math.max(bottom, point[1]);
+      }
+      return { left, top, right, bottom, width: right - left, height: bottom - top };
+    },
+
+    // Checks that a quad is usable for the perspective solve; { ok } or { ok: false, reason }.
+    validate(quad, minDistance) {
+      const isBadPoint = point => !point || !isFinite(point[0]) || !isFinite(point[1]);
+      if (!Array.isArray(quad) || quad.length !== 4 || quad.some(isBadPoint)) {
+        return { ok: false, reason: 'Corners are missing or invalid.' };
+      }
+      for (let i = 0; i < 4; i++) {
+        for (let j = i + 1; j < 4; j++) {
+          if (Vec2.distance(quad[i], quad[j]) < minDistance) {
+            return { ok: false, reason: 'Two corners are too close together.' };
+          }
+        }
+      }
+      if (!Quad.isConvex(quad)) {
+        return {
+          ok: false,
+          reason: 'Corners cross or fold inward — drag them back into a convex shape.',
+        };
+      }
+      return { ok: true };
+    },
+  };
+
+  // A line in normal form: normal · point = offset, with |normal| = 1.
+  function lineThrough(start, end) {
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    const length = Math.hypot(dx, dy) || 1;
+    const normalX = -dy / length;
+    const normalY = dx / length;
+    return { normalX, normalY, offset: normalX * start[0] + normalY * start[1] };
+  }
+
+  // Where two normal-form lines cross, or null if they are parallel.
+  function intersectLines(first, second) {
+    const determinant = first.normalX * second.normalY - first.normalY * second.normalX;
+    if (Math.abs(determinant) < COLLINEAR_EPSILON) return null;
+    return [
+      (first.offset * second.normalY - first.normalY * second.offset) / determinant,
+      (first.normalX * second.offset - first.offset * second.normalX) / determinant,
+    ];
+  }
+
+  // Solves coefficients · solution = constants by Gaussian elimination with partial pivoting.
+  // coefficients: n rows of n numbers; constants: n numbers. Returns null when singular.
+  function solveLinear(coefficients, constants) {
+    const size = constants.length;
+    const augmented = coefficients.map((row, index) => row.concat([constants[index]]));
+    for (let column = 0; column < size; column++) {
+      let pivotRow = column;
+      let pivotSize = Math.abs(augmented[column][column]);
+      for (let row = column + 1; row < size; row++) {
+        const candidateSize = Math.abs(augmented[row][column]);
+        if (candidateSize > pivotSize) {
+          pivotSize = candidateSize;
+          pivotRow = row;
+        }
+      }
+      if (pivotSize < PIVOT_EPSILON) return null; // singular: degenerate correspondences
+      if (pivotRow !== column) {
+        const swap = augmented[pivotRow];
+        augmented[pivotRow] = augmented[column];
+        augmented[column] = swap;
+      }
+      for (let row = column + 1; row < size; row++) {
+        const factor = augmented[row][column] / augmented[column][column];
+        if (factor === 0) continue;
+        for (let entry = column; entry <= size; entry++) {
+          augmented[row][entry] -= factor * augmented[column][entry];
+        }
       }
     }
-    const x = new Array(n);
-    for (let r = n - 1; r >= 0; r--) {
-      let s = M[r][n];
-      for (let c = r + 1; c < n; c++) s -= M[r][c] * x[c];
-      x[r] = s / M[r][r];
+    const solution = new Array(size);
+    for (let row = size - 1; row >= 0; row--) {
+      let sum = augmented[row][size];
+      for (let column = row + 1; column < size; column++) {
+        sum -= augmented[row][column] * solution[column];
+      }
+      solution[row] = sum / augmented[row][row];
     }
-    return x;
+    return solution;
   }
 
   // Hartley normalization: move the points' centroid to the origin and scale so the mean
   // distance is √2. Solving in this frame keeps the 8×8 system well conditioned even with
   // 8000-px coordinates (x·u terms would otherwise reach ~1e7 next to 1s).
-  function normTransform(pts) {
-    let cx = 0, cy = 0;
-    for (const p of pts) { cx += p[0]; cy += p[1]; }
-    cx /= pts.length; cy /= pts.length;
-    let d = 0;
-    for (const p of pts) d += Math.hypot(p[0] - cx, p[1] - cy);
-    d /= pts.length;
-    const s = d > EPS ? Math.SQRT2 / d : 1;
-    return [s, 0, -s * cx, 0, s, -s * cy, 0, 0, 1];
-  }
-
-  // Homography H (3×3, h33 = 1) with H·src[k] ∝ dst[k] for the 4 correspondences.
-  // Each pair (x,y)→(u,v) gives, after multiplying out u = (h0x+h1y+h2)/(h6x+h7y+1):
-  //   h0x + h1y + h2 − h6·x·u − h7·y·u = u
-  //   h3x + h4y + h5 − h6·x·v − h7·y·v = v
-  // Four pairs → an 8×8 linear system in h0..h7.
-  function solveHomography(src, dst) {
-    const Ts = normTransform(src), Td = normTransform(dst);
-    const s = src.map(p => M3.apply(Ts, p[0], p[1]));
-    const d = dst.map(p => M3.apply(Td, p[0], p[1]));
-    const A = [], b = [];
-    for (let k = 0; k < 4; k++) {
-      const [x, y] = s[k], [u, v] = d[k];
-      A.push([x, y, 1, 0, 0, 0, -x * u, -y * u]); b.push(u);
-      A.push([0, 0, 0, x, y, 1, -x * v, -y * v]); b.push(v);
+  function hartleyNormalization(points) {
+    let centerX = 0;
+    let centerY = 0;
+    for (const point of points) {
+      centerX += point[0];
+      centerY += point[1];
     }
-    const h = solveLinear(A, b);
-    if (!h) return null;
-    const Hn = [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
-    const Tdi = M3.inv(Td);
-    if (!Tdi) return null;
-    // src → normalized src → normalized dst → dst
-    return M3.normalize(M3.chain(Tdi, Hn, Ts));
+    centerX /= points.length;
+    centerY /= points.length;
+    let meanDistance = 0;
+    for (const point of points) meanDistance += Math.hypot(point[0] - centerX, point[1] - centerY);
+    meanDistance /= points.length;
+    const scale = meanDistance > EPSILON ? Math.SQRT2 / meanDistance : 1;
+    return [scale, 0, -scale * centerX, 0, scale, -scale * centerY, 0, 0, 1];
   }
 
-  const V = {
-    dist: (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]),
-    mid: (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
-    lerp: (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
-    cross: (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]),
-  };
-
-  // Quads are always [TL, TR, BR, BL] in image pixels (y down).
-  const Quad = {
-    centroid(q) { let x = 0, y = 0; for (const p of q) { x += p[0]; y += p[1]; } return [x / q.length, y / q.length]; },
-    area(q) {
-      let a = 0;
-      for (let i = 0; i < q.length; i++) { const p = q[i], n = q[(i + 1) % q.length]; a += p[0] * n[1] - n[0] * p[1]; }
-      return Math.abs(a) / 2;
-    },
-    // Convex and simple ⇔ every consecutive turn has the same (non-zero) sign. A bow-tie
-    // (self-intersecting) quad always mixes signs, so this rejects both failure modes.
-    isConvex(q) {
-      let sign = 0;
-      for (let i = 0; i < 4; i++) {
-        const c = V.cross(q[i], q[(i + 1) % 4], q[(i + 2) % 4]);
-        if (Math.abs(c) < 1e-9) return false;
-        const s = c > 0 ? 1 : -1;
-        if (sign === 0) sign = s; else if (s !== sign) return false;
-      }
-      return true;
-    },
-    // Sort 4 points into TL, TR, BR, BL: clockwise by angle around the centroid (y down),
-    // then start at the point nearest the top-left (min x + y).
-    order(pts) {
-      const c = Quad.centroid(pts);
-      const s = pts.slice().sort((a, b) => Math.atan2(a[1] - c[1], a[0] - c[0]) - Math.atan2(b[1] - c[1], b[0] - c[0]));
-      let k = 0;
-      for (let i = 1; i < 4; i++) if (s[i][0] + s[i][1] < s[k][0] + s[k][1]) k = i;
-      return [0, 1, 2, 3].map(i => s[(i + k) % 4].slice());
-    },
-    contains(q, p) {
-      let sign = 0;
-      for (let i = 0; i < q.length; i++) {
-        const c = V.cross(q[i], q[(i + 1) % q.length], p);
-        const s = c > 0 ? 1 : c < 0 ? -1 : 0;
-        if (s === 0) continue;
-        if (sign === 0) sign = s; else if (s !== sign) return false;
-      }
-      return true;
-    },
-    // Interior angle at each corner, degrees.
-    angles(q) {
-      return q.map((p, i) => {
-        const a = q[(i + 3) % 4], b = q[(i + 1) % 4];
-        const v1 = [a[0] - p[0], a[1] - p[1]], v2 = [b[0] - p[0], b[1] - p[1]];
-        const c = (v1[0] * v2[0] + v1[1] * v2[1]) / (Math.hypot(...v1) * Math.hypot(...v2));
-        return Math.acos(Math.max(-1, Math.min(1, c))) / DEG;
-      });
-    },
-    sides(q) {
-      return { top: V.dist(q[0], q[1]), right: V.dist(q[1], q[2]), bottom: V.dist(q[3], q[2]), left: V.dist(q[0], q[3]) };
-    },
-    bbox(pts) {
-      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-      for (const p of pts) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }
-      return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 };
-    },
-    validate(q, minDist) {
-      if (!Array.isArray(q) || q.length !== 4 || q.some(p => !p || !isFinite(p[0]) || !isFinite(p[1])))
-        return { ok: false, reason: 'Corners are missing or invalid.' };
-      for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++)
-        if (V.dist(q[i], q[j]) < minDist) return { ok: false, reason: 'Two corners are too close together.' };
-      if (!Quad.isConvex(q)) return { ok: false, reason: 'Corners cross or fold inward — drag them back into a convex shape.' };
-      return { ok: true };
-    },
-  };
-
-  // Line in normal form: n·p = c with |n| = 1.
-  function lineThrough(a, b) {
-    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
-    const nx = -dy / L, ny = dx / L;
-    return { nx, ny, c: nx * a[0] + ny * a[1] };
-  }
-  function intersect(l1, l2) {
-    const det = l1.nx * l2.ny - l1.ny * l2.nx;
-    if (Math.abs(det) < 1e-9) return null;
-    return [(l1.c * l2.ny - l1.ny * l2.c) / det, (l1.nx * l2.c - l1.c * l2.nx) / det];
+  /**
+   * solveHomography(source, target) → H (3×3, h33 = 1) with H·source[k] ∝ target[k] for the
+   * 4 correspondences, or null. Each pair (x, y) → (u, v) gives, after multiplying out
+   * u = (h0x + h1y + h2) / (h6x + h7y + 1):
+   *   h0x + h1y + h2 − h6·x·u − h7·y·u = u
+   *   h3x + h4y + h5 − h6·x·v − h7·y·v = v
+   * Four pairs → an 8×8 linear system in h0..h7, solved in Hartley-normalized frames.
+   * Formula names: u v
+   */
+  function solveHomography(source, target) {
+    const normalizeSource = hartleyNormalization(source);
+    const normalizeTarget = hartleyNormalization(target);
+    const sourceNormalized = source.map(point => Mat3.apply(normalizeSource, point[0], point[1]));
+    const targetNormalized = target.map(point => Mat3.apply(normalizeTarget, point[0], point[1]));
+    const coefficients = [];
+    const constants = [];
+    for (let k = 0; k < 4; k++) {
+      const [x, y] = sourceNormalized[k];
+      const [u, v] = targetNormalized[k];
+      coefficients.push([x, y, 1, 0, 0, 0, -x * u, -y * u]);
+      constants.push(u);
+      coefficients.push([0, 0, 0, x, y, 1, -x * v, -y * v]);
+      constants.push(v);
+    }
+    const solution = solveLinear(coefficients, constants);
+    if (!solution) return null;
+    const normalizedHomography = [...solution.slice(0, 8), 1];
+    const denormalizeTarget = Mat3.invert(normalizeTarget);
+    if (!denormalizeTarget) return null;
+    // source → normalized source → normalized target → target
+    return Mat3.normalize(Mat3.chain(denormalizeTarget, normalizedHomography, normalizeSource));
   }
 
   /* ===================================================================
-     PERSPECTIVE TARGETS — where the four source corners should land
+     PERSPECTIVE TARGETS: where the four source corners should land
+     0% (squared up): a symmetric trapezoid, horizontal top and bottom, mirrored sides,
+       widths = the measured top and bottom lengths, centered on the quad's centroid.
+     100% (flat): a true rectangle at the card's aspect, area-matched to the quad so the
+       pixel resolution is preserved.
+     Strength blends the two corner by corner, so every value is an isosceles trapezoid.
      =================================================================== */
-  // 0% (squared up): symmetric trapezoid, horizontal top/bottom, mirrored sides,
-  //   widths = measured top/bottom lengths, centered on the quad's centroid.
-  // 100% (flat): true rectangle at the card's aspect, area-matched to the quad
-  //   so pixel resolution is preserved.
-  // strength t blends the two corner-by-corner, so every value is an isosceles trapezoid.
 
   /**
-   * rectAspect(q, center, focal) → true W/H of the physical rectangle seen as quad q.
-   * Zhang & He, "Whiteboard scanning and image enhancement" (2007). With the rectangle's
-   * corners M1..M4 = (0,0),(w,0),(0,h),(w,h) and image points m1..m4 (homogeneous):
+   * rectAspect(quad, center, focal) → the true width ÷ height of the physical rectangle seen
+   * as `quad`. Zhang & He, "Whiteboard scanning and image enhancement" (2007). With the
+   * rectangle's corners M1..M4 = (0,0),(w,0),(0,h),(w,h) and image points m1..m4 (homogeneous):
    *   k2 = ((m1×m4)·m3)/((m2×m4)·m3),  k3 = ((m1×m4)·m2)/((m3×m4)·m2)
    *   n2 = k2·m2 − m1 ∝ A·r1·w,        n3 = k3·m3 − m1 ∝ A·r2·h
    * r1 ⊥ r2 gives the focal length f (when both vanishing points are finite);
    * |r1| = |r2| gives (w/h)² = (n2ᵀA⁻ᵀA⁻¹n2)/(n3ᵀA⁻ᵀA⁻¹n3), A = [[f,0,u0],[0,f,v0],[0,0,1]].
-   * f is only estimable with two finite vanishing points; otherwise the fallback is used.
+   * f is only estimable with two finite vanishing points; otherwise focal.fallback is used.
    * In a near-frontal view n·z → 0 and the result tends to the plain side-length ratio.
+   * Formula names: m1 m2 m3 m4 k2 k3 n2 n3 u0 v0
    */
-  function rectAspect(q, center, focal) {
-    const cr = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-    const dt = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-    const m1 = [q[0][0], q[0][1], 1], m2 = [q[1][0], q[1][1], 1], m4 = [q[2][0], q[2][1], 1], m3 = [q[3][0], q[3][1], 1];
-    const k2 = dt(cr(m1, m4), m3) / dt(cr(m2, m4), m3), k3 = dt(cr(m1, m4), m2) / dt(cr(m3, m4), m2);
-    const n2 = m2.map((v, i) => k2 * v - m1[i]), n3 = m3.map((v, i) => k3 * v - m1[i]);
+  function rectAspect(quad, center, focal) {
+    const cross3 = (first, second) => [
+      first[1] * second[2] - first[2] * second[1],
+      first[2] * second[0] - first[0] * second[2],
+      first[0] * second[1] - first[1] * second[0],
+    ];
+    const dot3 = (first, second) => first[0] * second[0]
+      + first[1] * second[1]
+      + first[2] * second[2];
+    // The paper numbers the corners in reading order, so m3 is bottom-left and m4 bottom-right.
+    const m1 = [quad[0][0], quad[0][1], 1];
+    const m2 = [quad[1][0], quad[1][1], 1];
+    const m4 = [quad[2][0], quad[2][1], 1];
+    const m3 = [quad[3][0], quad[3][1], 1];
+    const k2 = dot3(cross3(m1, m4), m3) / dot3(cross3(m2, m4), m3);
+    const k3 = dot3(cross3(m1, m4), m2) / dot3(cross3(m3, m4), m2);
+    const n2 = m2.map((value, i) => k2 * value - m1[i]);
+    const n3 = m3.map((value, i) => k3 * value - m1[i]);
     const [u0, v0] = center;
-    let f = focal.fallback;
-    const den = n2[2] * n3[2];
-    if (Math.abs(den) > 1e-12) {
-      const f2 = -((n2[0] - u0 * n2[2]) * (n3[0] - u0 * n3[2]) + (n2[1] - v0 * n2[2]) * (n3[1] - v0 * n3[2])) / den;
-      if (f2 > 0 && Math.sqrt(f2) >= focal.min && Math.sqrt(f2) <= focal.max) f = Math.sqrt(f2);
+    let focalLength = focal.fallback;
+    const denominator = n2[2] * n3[2];
+    if (Math.abs(denominator) > EPSILON) {
+      const focalSquared = -(
+        (n2[0] - u0 * n2[2]) * (n3[0] - u0 * n3[2])
+        + (n2[1] - v0 * n2[2]) * (n3[1] - v0 * n3[2])
+      ) / denominator;
+      const estimate = Math.sqrt(focalSquared);
+      const isPlausible = focalSquared > 0 && estimate >= focal.min && estimate <= focal.max;
+      if (isPlausible) focalLength = estimate;
     }
-    const a = n => [(n[0] - u0 * n[2]) / f, (n[1] - v0 * n[2]) / f, n[2]];
-    const A2 = a(n2), A3 = a(n3), r = Math.sqrt(dt(A2, A2) / dt(A3, A3));
-    if (isFinite(r) && r > 0) return r;
-    const s = Quad.sides(q);
-    return (s.top + s.bottom) / (s.left + s.right);
+    const direction = vector => [
+      (vector[0] - u0 * vector[2]) / focalLength,
+      (vector[1] - v0 * vector[2]) / focalLength,
+      vector[2],
+    ];
+    const direction2 = direction(n2);
+    const direction3 = direction(n3);
+    const aspect = Math.sqrt(dot3(direction2, direction2) / dot3(direction3, direction3));
+    if (isFinite(aspect) && aspect > 0) return aspect;
+    const sides = Quad.sides(quad);
+    return (sides.top + sides.bottom) / (sides.left + sides.right);
   }
-  // Focal model in pixels: estimate when possible, else focalFactor × long side.
-  function focalModel(w, h, factor) { const L = Math.max(w, h); return { fallback: (factor || 2.5) * L, min: 0.6 * L, max: 6 * L }; }
 
-  function perspectiveTargets(q, opts) {
-    const { strength = 1, ratio = 63.5 / 88.9, orientation = 'auto', heightMode = 'preserveEdges' } = opts;
-    const s = Quad.sides(q);
-    const [cx, cy] = Quad.centroid(q);
-    const wt = s.top, wb = s.bottom, side = (s.left + s.right) / 2;
-    let h;
-    if (heightMode === 'meanEdge') h = side;
-    else if (heightMode === 'visual') h = V.dist(V.mid(q[0], q[1]), V.mid(q[3], q[2]));
-    else {
-      // preserveEdges: choose the vertical height so each mirrored slanted side keeps the
-      // mean measured side length: side² = h² + ((wb − wt)/2)².
-      const d = (wb - wt) / 2;
-      h = Math.sqrt(Math.max(side * side - d * d, (side * 0.1) ** 2));
+  // Focal-length model in pixels: estimated when possible, else focalFactor × the long side.
+  function focalModel(width, height, factor) {
+    const longSide = Math.max(width, height);
+    return { fallback: (factor || 2.5) * longSide, min: 0.6 * longSide, max: 6 * longSide };
+  }
+
+  // The corners of a trapezoid centered on (centerX, centerY) with horizontal top and bottom.
+  function centeredTrapezoid(centerX, centerY, topWidth, bottomWidth, height) {
+    return [
+      [centerX - topWidth / 2, centerY - height / 2],
+      [centerX + topWidth / 2, centerY - height / 2],
+      [centerX + bottomWidth / 2, centerY + height / 2],
+      [centerX - bottomWidth / 2, centerY + height / 2],
+    ];
+  }
+
+  // The squared-up trapezoid's height, by CONFIG.squareUpHeight:
+  //   meanEdge: the mean side length; visual: the distance between the top and bottom midpoints;
+  //   preserveEdges: the height at which each mirrored slanted side keeps the mean side length,
+  //   side² = height² + ((bottomWidth − topWidth) / 2)².
+  function squaredUpHeight(quad, sides, heightMode) {
+    const sideLength = (sides.left + sides.right) / 2;
+    if (heightMode === 'meanEdge') return sideLength;
+    if (heightMode === 'visual') {
+      return Vec2.distance(Vec2.midpoint(quad[0], quad[1]), Vec2.midpoint(quad[3], quad[2]));
     }
-    const A = [[cx - wt / 2, cy - h / 2], [cx + wt / 2, cy - h / 2], [cx + wb / 2, cy + h / 2], [cx - wb / 2, cy + h / 2]];
-    const wMean = (wt + wb) / 2, hMean = side;
-    const portrait = Math.min(ratio, 1 / ratio);
-    const land = orientation === 'landscape' || (orientation === 'auto' && wMean > hMean);
-    const r = land ? 1 / portrait : portrait; // target W/H
-    const H = Math.sqrt((wMean * hMean) / r), W = r * H;
-    const B = [[cx - W / 2, cy - H / 2], [cx + W / 2, cy - H / 2], [cx + W / 2, cy + H / 2], [cx - W / 2, cy + H / 2]];
-    const t = Math.max(0, Math.min(1, strength));
-    return A.map((a, i) => V.lerp(a, B[i], t));
+    const slant = (sides.bottom - sides.top) / 2;
+    return Math.sqrt(Math.max(sideLength * sideLength - slant * slant, (sideLength * 0.1) ** 2));
+  }
+
+  /**
+   * perspectiveTargets(quad, options) → the 4 corners `quad` should map to, in its own pixels.
+   * options: { strength 0–1, ratio (card width ÷ height), orientation 'auto' | 'portrait' |
+   * 'landscape', heightMode (see squaredUpHeight) }.
+   */
+  function perspectiveTargets(quad, options) {
+    const {
+      strength = 1,
+      ratio = CARD_ASPECT,
+      orientation = 'auto',
+      heightMode = 'preserveEdges',
+    } = options;
+    const sides = Quad.sides(quad);
+    const [centerX, centerY] = Quad.centroid(quad);
+    const topWidth = sides.top;
+    const bottomWidth = sides.bottom;
+    const height = squaredUpHeight(quad, sides, heightMode);
+    const squaredUp = centeredTrapezoid(centerX, centerY, topWidth, bottomWidth, height);
+
+    const meanWidth = (topWidth + bottomWidth) / 2;
+    const meanHeight = (sides.left + sides.right) / 2;
+    const portraitAspect = Math.min(ratio, 1 / ratio);
+    const isLandscape = orientation === 'landscape'
+      || (orientation === 'auto' && meanWidth > meanHeight);
+    const targetAspect = isLandscape ? 1 / portraitAspect : portraitAspect;
+    const flatHeight = Math.sqrt((meanWidth * meanHeight) / targetAspect);
+    const flatWidth = targetAspect * flatHeight;
+    const flat = centeredTrapezoid(centerX, centerY, flatWidth, flatWidth, flatHeight);
+
+    const blend = Math.max(0, Math.min(1, strength));
+    return squaredUp.map((corner, i) => Vec2.interpolate(corner, flat[i], blend));
   }
 
   /* ===================================================================
-     IMAGE I/O — pure pixel helpers over ImageData-like {data, width, height}
+     IMAGE HELPERS: pure pixel helpers over ImageData-like { data, width, height }
      =================================================================== */
+
+  // Luma (Rec. 601 weights) as one float per pixel.
   function toGray(img) {
-    const { data, width, height } = img, n = width * height, g = new Float32Array(n);
-    for (let i = 0, j = 0; i < n; i++, j += 4) g[i] = 0.299 * data[j] + 0.587 * data[j + 1] + 0.114 * data[j + 2];
-    return g;
+    const { data, width, height } = img;
+    const pixelCount = width * height;
+    const gray = new Float32Array(pixelCount);
+    for (let pixel = 0, offset = 0; pixel < pixelCount; pixel++, offset += 4) {
+      gray[pixel] = 0.299 * data[offset] + 0.587 * data[offset + 1] + 0.114 * data[offset + 2];
+    }
+    return gray;
   }
-  function channel(img, c) {
-    const { data, width, height } = img, n = width * height, g = new Float32Array(n);
-    for (let i = 0, j = c; i < n; i++, j += 4) g[i] = data[j];
-    return g;
+
+  // One RGBA channel (0 red, 1 green, 2 blue) as one float per pixel.
+  function channelValues(img, channel) {
+    const { data, width, height } = img;
+    const pixelCount = width * height;
+    const values = new Float32Array(pixelCount);
+    for (let pixel = 0, offset = channel; pixel < pixelCount; pixel++, offset += 4) {
+      values[pixel] = data[offset];
+    }
+    return values;
   }
-  // Separable Gaussian blur, clamp-to-edge.
-  function gaussianBlur(src, w, h, sigma) {
-    if (!(sigma > 0)) return src;
-    const r = Math.max(1, Math.ceil(sigma * 3)), k = new Float32Array(2 * r + 1);
-    let sum = 0;
-    for (let i = -r; i <= r; i++) { k[i + r] = Math.exp(-(i * i) / (2 * sigma * sigma)); sum += k[i + r]; }
-    for (let i = 0; i < k.length; i++) k[i] /= sum;
-    const tmp = new Float32Array(w * h), out = new Float32Array(w * h);
-    for (let y = 0; y < h; y++) {
-      const row = y * w;
-      for (let x = 0; x < w; x++) {
-        let acc = 0;
-        for (let i = -r; i <= r; i++) { const xx = x + i < 0 ? 0 : x + i >= w ? w - 1 : x + i; acc += src[row + xx] * k[i + r]; }
-        tmp[row + x] = acc;
+
+  // Separable Gaussian blur of a one-channel float image, clamp-to-edge.
+  function gaussianBlur(values, width, height, sigma) {
+    if (!(sigma > 0)) return values;
+    const radius = Math.max(1, Math.ceil(sigma * 3));
+    const kernel = new Float32Array(2 * radius + 1);
+    let kernelSum = 0;
+    for (let offset = -radius; offset <= radius; offset++) {
+      kernel[offset + radius] = Math.exp(-(offset * offset) / (2 * sigma * sigma));
+      kernelSum += kernel[offset + radius];
+    }
+    for (let i = 0; i < kernel.length; i++) kernel[i] /= kernelSum;
+
+    const horizontal = new Float32Array(width * height);
+    const blurred = new Float32Array(width * height);
+    for (let y = 0; y < height; y++) {
+      const row = y * width;
+      for (let x = 0; x < width; x++) {
+        let total = 0;
+        for (let offset = -radius; offset <= radius; offset++) {
+          const sourceX = clampIndex(x + offset, width);
+          total += values[row + sourceX] * kernel[offset + radius];
+        }
+        horizontal[row + x] = total;
       }
     }
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        let acc = 0;
-        for (let i = -r; i <= r; i++) { const yy = y + i < 0 ? 0 : y + i >= h ? h - 1 : y + i; acc += tmp[yy * w + x] * k[i + r]; }
-        out[y * w + x] = acc;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let total = 0;
+        for (let offset = -radius; offset <= radius; offset++) {
+          const sourceY = clampIndex(y + offset, height);
+          total += horizontal[sourceY * width + x] * kernel[offset + radius];
+        }
+        blurred[y * width + x] = total;
       }
     }
-    return out;
+    return blurred;
   }
-  function sobel(g, w, h) {
-    const gx = new Float32Array(w * h), gy = new Float32Array(w * h), mag = new Float32Array(w * h);
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const i = y * w + x;
-        const a = g[i - w - 1], b = g[i - w], c = g[i - w + 1], d = g[i - 1], f = g[i + 1], p = g[i + w - 1], q = g[i + w], r = g[i + w + 1];
-        const sx = (c + 2 * f + r) - (a + 2 * d + p), sy = (p + 2 * q + r) - (a + 2 * b + c);
-        gx[i] = sx; gy[i] = sy; mag[i] = Math.hypot(sx, sy);
+
+  // Sobel gradients of a one-channel image → { gradientX, gradientY, magnitude }.
+  // The one-pixel border is left at 0.
+  function sobel(values, width, height) {
+    const gradientX = new Float32Array(width * height);
+    const gradientY = new Float32Array(width * height);
+    const magnitude = new Float32Array(width * height);
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const i = y * width + x;
+        const topLeft = values[i - width - 1];
+        const top = values[i - width];
+        const topRight = values[i - width + 1];
+        const left = values[i - 1];
+        const right = values[i + 1];
+        const bottomLeft = values[i + width - 1];
+        const bottom = values[i + width];
+        const bottomRight = values[i + width + 1];
+        const horizontal = (topRight + 2 * right + bottomRight) - (topLeft + 2 * left + bottomLeft);
+        const vertical = (bottomLeft + 2 * bottom + bottomRight) - (topLeft + 2 * top + topRight);
+        gradientX[i] = horizontal;
+        gradientY[i] = vertical;
+        magnitude[i] = Math.hypot(horizontal, vertical);
       }
     }
-    return { gx, gy, mag };
+    return { gradientX, gradientY, magnitude };
   }
-  // Bilinear sample of a single-channel float image with clamp-to-edge.
-  function sampleGray(g, w, h, x, y) {
-    x -= 0.5; y -= 0.5; // pixel centers at +0.5
-    if (x < 0) x = 0; if (y < 0) y = 0; if (x > w - 1) x = w - 1; if (y > h - 1) y = h - 1;
-    const x0 = Math.floor(x), y0 = Math.floor(y), x1 = Math.min(x0 + 1, w - 1), y1 = Math.min(y0 + 1, h - 1);
-    const fx = x - x0, fy = y - y0;
-    const a = g[y0 * w + x0], b = g[y0 * w + x1], c = g[y1 * w + x0], d = g[y1 * w + x1];
-    return (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy;
+
+  // Bilinear sample of a one-channel float image at (x, y), clamp-to-edge.
+  function sampleBilinear(values, width, height, x, y) {
+    // Pixel centers sit at +0.5.
+    const sampleX = clamp(x - 0.5, 0, width - 1);
+    const sampleY = clamp(y - 0.5, 0, height - 1);
+    const leftColumn = Math.floor(sampleX);
+    const topRow = Math.floor(sampleY);
+    const rightColumn = Math.min(leftColumn + 1, width - 1);
+    const bottomRow = Math.min(topRow + 1, height - 1);
+    const fractionX = sampleX - leftColumn;
+    const fractionY = sampleY - topRow;
+    const topLeft = values[topRow * width + leftColumn];
+    const topRight = values[topRow * width + rightColumn];
+    const bottomLeft = values[bottomRow * width + leftColumn];
+    const bottomRight = values[bottomRow * width + rightColumn];
+    return (topLeft * (1 - fractionX) + topRight * fractionX) * (1 - fractionY)
+      + (bottomLeft * (1 - fractionX) + bottomRight * fractionX) * fractionY;
   }
 
   /* ===================================================================
-     DETECTION — Canny → Hough → paired line families → scored quads → refine
+     DETECTION: Canny → Hough → paired line families → scored quads → refine
      All detection coordinates are in the working image's pixels unless noted.
      =================================================================== */
+
+  // The built-in defaults. They mirror CONFIG.detect (js/config.js says what each does), and
+  // tests/selftest.js checks that the two match.
   const DETECT_DEFAULTS = {
-    blurSigma: 1.6, colorEdges: true, cannyLow: 20, cannyHigh: 55,
-    angleStepDeg: 0.5, houghGradWinDeg: 6, houghThreshold: 45, houghMaxLines: 48, mergeAngleDeg: 2, mergeRhoPx: 6,
-    maxPerspectiveDeg: 25, perpTolDeg: 30, minSideFrac: 0.08, minAreaFrac: 0.03, maxAreaFrac: 0.9, edgeMarginFrac: 0.02,
-    supportRadiusPx: 2, cornerTrim: 0.12, aspectDeadband: 0.06, aspectTol: 0.10, angleTolDeg: 22, focalFactor: 2.5,
-    wSupport: 1.0, wAspect: 0.4, wAngle: 0.35, wCenter: 0.25, wArea: -0.45,
-    seedMissFactor: 0.3, dupCornerFrac: 0.02, maxCandidates: 3, minConfidence: 0.5,
-    refineSearchWorkingPx: 3, refineSamples: 48, refineBlur: 1.0, refineMinGrad: 6, refineInlierPx: 1.5,
+    blurSigma: 1.6,
+    colorEdges: true,
+    cannyLow: 20,
+    cannyHigh: 55,
+    angleStepDeg: 0.5,
+    houghGradWinDeg: 6,
+    houghThreshold: 45,
+    houghMaxLines: 48,
+    mergeAngleDeg: 2,
+    mergeRhoPx: 6,
+    maxPerspectiveDeg: 25,
+    perpTolDeg: 30,
+    minSideFrac: 0.08,
+    minAreaFrac: 0.03,
+    maxAreaFrac: 0.9,
+    edgeMarginFrac: 0.02,
+    supportRadiusPx: 2,
+    cornerTrim: 0.12,
+    aspectDeadband: 0.06,
+    aspectTol: 0.10,
+    angleTolDeg: 22,
+    focalFactor: 2.5,
+    wSupport: 1.0,
+    wAspect: 0.4,
+    wAngle: 0.35,
+    wCenter: 0.25,
+    wArea: -0.45,
+    seedMissFactor: 0.3,
+    dupCornerFrac: 0.02,
+    maxCandidates: 3,
+    minConfidence: 0.5,
+    refineSearchWorkingPx: 3,
+    refineSamples: 48,
+    refineBlur: 1.0,
+    refineMinGrad: 6,
+    refineInlierPx: 1.5,
   };
 
-  function edgeImage(img, o) {
-    const w = img.width, h = img.height;
-    if (!o.colorEdges) {
-      const s = sobel(gaussianBlur(toGray(img), w, h, o.blurSigma), w, h);
-      return s;
+  // tan(22.5°): splits gradient directions into 4 bins without atan2.
+  const TAN_22_5_DEG = 0.41421356;
+  // Gradient orientations are binned into this many 15° bins for the support map.
+  const ORIENTATION_BINS = 12;
+  // A Hough peak must beat its neighbors this many angle and rho cells away.
+  const PEAK_WINDOW = { angleCells: 2, rhoCells: 3 };
+  // Samples per side when scoring a quad's edge support.
+  const SIDE_SAMPLES = { min: 8, max: 80 };
+
+  // Edge gradients of an RGBA image after a Gaussian blur.
+  function edgeGradients(img, params) {
+    const width = img.width;
+    const height = img.height;
+    if (!params.colorEdges) {
+      return sobel(gaussianBlur(toGray(img), width, height, params.blurSigma), width, height);
     }
-    // Per-channel gradients, keep the strongest channel at each pixel. Catches red-on-black
+    // Per-channel gradients, keeping the strongest channel at each pixel. Catches red-on-black
     // and chroma-only edges that luminance alone flattens (red playmats, colored slab labels).
-    let best = null;
-    for (let c = 0; c < 3; c++) {
-      const s = sobel(gaussianBlur(channel(img, c), w, h, o.blurSigma), w, h);
-      if (!best) { best = s; continue; }
-      for (let i = 0; i < w * h; i++) if (s.mag[i] > best.mag[i]) { best.mag[i] = s.mag[i]; best.gx[i] = s.gx[i]; best.gy[i] = s.gy[i]; }
+    let strongest = null;
+    for (let channel = 0; channel < 3; channel++) {
+      const blurred = gaussianBlur(channelValues(img, channel), width, height, params.blurSigma);
+      const gradients = sobel(blurred, width, height);
+      if (!strongest) {
+        strongest = gradients;
+        continue;
+      }
+      for (let i = 0; i < width * height; i++) {
+        if (gradients.magnitude[i] > strongest.magnitude[i]) {
+          strongest.magnitude[i] = gradients.magnitude[i];
+          strongest.gradientX[i] = gradients.gradientX[i];
+          strongest.gradientY[i] = gradients.gradientY[i];
+        }
+      }
     }
-    return best;
+    return strongest;
   }
 
-  function canny(gx, gy, mag, w, h, low, high) {
-    const nms = new Float32Array(w * h);
-    const T = 0.41421356; // tan(22.5°): quantize the gradient direction into 4 bins without atan2
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const i = y * w + x, m = mag[i];
-        if (m < low) continue;
-        const ax = Math.abs(gx[i]), ay = Math.abs(gy[i]);
-        let n1, n2;
-        if (ay <= ax * T) { n1 = mag[i - 1]; n2 = mag[i + 1]; }
-        else if (ax <= ay * T) { n1 = mag[i - w]; n2 = mag[i + w]; }
-        else if (gx[i] * gy[i] > 0) { n1 = mag[i - w - 1]; n2 = mag[i + w + 1]; }
-        else { n1 = mag[i - w + 1]; n2 = mag[i + w - 1]; }
-        if (m >= n1 && m > n2) nms[i] = m;
+  // Canny edge map (1 = edge): non-maximum suppression along the gradient, then hysteresis.
+  function canny(gradients, width, height, lowThreshold, highThreshold) {
+    const { gradientX, gradientY, magnitude } = gradients;
+    const suppressed = new Float32Array(width * height);
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const i = y * width + x;
+        const strength = magnitude[i];
+        if (strength < lowThreshold) continue;
+        const absX = Math.abs(gradientX[i]);
+        const absY = Math.abs(gradientY[i]);
+        let before;
+        let after;
+        if (absY <= absX * TAN_22_5_DEG) {
+          before = magnitude[i - 1];
+          after = magnitude[i + 1];
+        } else if (absX <= absY * TAN_22_5_DEG) {
+          before = magnitude[i - width];
+          after = magnitude[i + width];
+        } else if (gradientX[i] * gradientY[i] > 0) {
+          before = magnitude[i - width - 1];
+          after = magnitude[i + width + 1];
+        } else {
+          before = magnitude[i - width + 1];
+          after = magnitude[i + width - 1];
+        }
+        if (strength >= before && strength > after) suppressed[i] = strength;
       }
     }
     // Hysteresis: grow from strong pixels through weak ones.
-    const edges = new Uint8Array(w * h), stack = [];
-    for (let i = 0; i < w * h; i++) if (nms[i] >= high) { edges[i] = 1; stack.push(i); }
+    const edges = new Uint8Array(width * height);
+    const stack = [];
+    for (let i = 0; i < width * height; i++) {
+      if (suppressed[i] >= highThreshold) {
+        edges[i] = 1;
+        stack.push(i);
+      }
+    }
     while (stack.length) {
-      const i = stack.pop(), x = i % w;
-      for (let dy = -w; dy <= w; dy += w) for (let dx = -1; dx <= 1; dx++) {
-        if ((x === 0 && dx < 0) || (x === w - 1 && dx > 0)) continue;
-        const j = i + dy + dx;
-        if (j < 0 || j >= w * h || edges[j]) continue;
-        if (nms[j] >= low) { edges[j] = 1; stack.push(j); }
+      const i = stack.pop();
+      const x = i % width;
+      for (let rowStep = -width; rowStep <= width; rowStep += width) {
+        for (let columnStep = -1; columnStep <= 1; columnStep++) {
+          if ((x === 0 && columnStep < 0) || (x === width - 1 && columnStep > 0)) continue;
+          const neighbor = i + rowStep + columnStep;
+          if (neighbor < 0 || neighbor >= width * height || edges[neighbor]) continue;
+          if (suppressed[neighbor] >= lowThreshold) {
+            edges[neighbor] = 1;
+            stack.push(neighbor);
+          }
+        }
       }
     }
     return edges;
   }
 
-  // Hough transform, line model x·cosθ + y·sinθ = ρ about the image center.
-  // Each edge pixel votes only for θ within ±houghGradWinDeg of its own gradient
-  // direction, which cuts texture/text clutter and is ~30× faster than voting all θ.
-  function hough(edges, gx, gy, w, h, o) {
-    const step = o.angleStepDeg * DEG, nT = Math.round(Math.PI / step);
-    const cosT = new Float32Array(nT), sinT = new Float32Array(nT);
-    for (let t = 0; t < nT; t++) { cosT[t] = Math.cos(t * step); sinT[t] = Math.sin(t * step); }
-    const cx = w / 2, cy = h / 2, rMax = Math.ceil(Math.hypot(w, h) / 2), nR = 2 * rMax + 1;
-    const acc = new Uint32Array(nT * nR);
-    const win = Math.ceil(o.houghGradWinDeg / o.angleStepDeg);
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
+  // The direction of a gradient as an angle in [0, π).
+  function gradientAngle(gradientX, gradientY, i) {
+    const angle = Math.atan2(gradientY[i], gradientX[i]);
+    return angle < 0 ? angle + Math.PI : angle;
+  }
+
+  // Hough voting, line model x·cosθ + y·sinθ = ρ about the image center.
+  // Each edge pixel votes only for θ within ±houghGradWinDeg of its own gradient direction,
+  // which cuts texture and text clutter and is ~30× faster than voting for every θ.
+  function houghVotes(edges, gradients, width, height, params) {
+    const angleStep = params.angleStepDeg * RADIANS_PER_DEGREE;
+    const angleCount = Math.round(Math.PI / angleStep);
+    const cosines = new Float32Array(angleCount);
+    const sines = new Float32Array(angleCount);
+    for (let angle = 0; angle < angleCount; angle++) {
+      cosines[angle] = Math.cos(angle * angleStep);
+      sines[angle] = Math.sin(angle * angleStep);
+    }
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const rhoMax = Math.ceil(Math.hypot(width, height) / 2);
+    const rhoCount = 2 * rhoMax + 1;
+    const votes = new Uint32Array(angleCount * rhoCount);
+    const voteSpread = Math.ceil(params.houghGradWinDeg / params.angleStepDeg);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = y * width + x;
         if (!edges[i]) continue;
-        let phi = Math.atan2(gy[i], gx[i]);
-        if (phi < 0) phi += Math.PI;
-        const t0 = Math.round(phi / step), xc = x + 0.5 - cx, yc = y + 0.5 - cy;
-        for (let dt = -win; dt <= win; dt++) {
-          const t = ((t0 + dt) % nT + nT) % nT;
-          acc[t * nR + Math.round(xc * cosT[t] + yc * sinT[t]) + rMax]++;
+        const direction = gradientAngle(gradients.gradientX, gradients.gradientY, i);
+        const ownAngle = Math.round(direction / angleStep);
+        const fromCenterX = x + 0.5 - centerX;
+        const fromCenterY = y + 0.5 - centerY;
+        for (let step = -voteSpread; step <= voteSpread; step++) {
+          const angle = ((ownAngle + step) % angleCount + angleCount) % angleCount;
+          const rho = Math.round(fromCenterX * cosines[angle] + fromCenterY * sines[angle]);
+          votes[angle * rhoCount + rho + rhoMax]++;
         }
       }
     }
-    const peaks = [], tw = 2, rw = 3;
-    for (let t = 0; t < nT; t++) {
-      for (let r = 0; r < nR; r++) {
-        const v = acc[t * nR + r];
-        if (v < o.houghThreshold) continue;
-        let isMax = true;
-        for (let dt = -tw; dt <= tw && isMax; dt++) {
-          let tt = t + dt, rr0 = r;
-          // Wrapping θ past π flips the sign of ρ.
-          if (tt < 0) { tt += nT; rr0 = nR - 1 - r; } else if (tt >= nT) { tt -= nT; rr0 = nR - 1 - r; }
-          for (let dr = -rw; dr <= rw; dr++) {
-            const rr = rr0 + dr;
-            if ((dt === 0 && dr === 0) || rr < 0 || rr >= nR) continue;
-            const u = acc[tt * nR + rr];
-            if (u > v || (u === v && (tt * nR + rr) < (t * nR + r))) { isMax = false; break; }
-          }
+    return { votes, angleCount, rhoCount, rhoMax, angleStep, centerX, centerY };
+  }
+
+  // True when no cell within PEAK_WINDOW of (angle, rho) beats it. Ties go to the lower index.
+  // Wrapping θ past π flips the sign of ρ.
+  function isHoughPeak(accumulator, angle, rho) {
+    const { votes, angleCount, rhoCount } = accumulator;
+    const index = angle * rhoCount + rho;
+    const count = votes[index];
+    const { angleCells, rhoCells } = PEAK_WINDOW;
+    for (let angleStep = -angleCells; angleStep <= angleCells; angleStep++) {
+      let neighborAngle = angle + angleStep;
+      let mirroredRho = rho;
+      if (neighborAngle < 0) {
+        neighborAngle += angleCount;
+        mirroredRho = rhoCount - 1 - rho;
+      } else if (neighborAngle >= angleCount) {
+        neighborAngle -= angleCount;
+        mirroredRho = rhoCount - 1 - rho;
+      }
+      for (let rhoStep = -rhoCells; rhoStep <= rhoCells; rhoStep++) {
+        const neighborRho = mirroredRho + rhoStep;
+        const isSelf = angleStep === 0 && rhoStep === 0;
+        if (isSelf || neighborRho < 0 || neighborRho >= rhoCount) continue;
+        const neighborIndex = neighborAngle * rhoCount + neighborRho;
+        const neighborCount = votes[neighborIndex];
+        const beatsPeak = neighborCount > count
+          || (neighborCount === count && neighborIndex < index);
+        if (beatsPeak) return false;
+      }
+    }
+    return true;
+  }
+
+  // Local maxima of the Hough votes at or above houghThreshold, most votes first.
+  function houghPeaks(accumulator, params) {
+    const { votes, angleCount, rhoCount, rhoMax, angleStep } = accumulator;
+    const peaks = [];
+    for (let angle = 0; angle < angleCount; angle++) {
+      for (let rho = 0; rho < rhoCount; rho++) {
+        const count = votes[angle * rhoCount + rho];
+        if (count < params.houghThreshold) continue;
+        if (isHoughPeak(accumulator, angle, rho)) {
+          peaks.push({ theta: angle * angleStep, rho: rho - rhoMax, votes: count });
         }
-        if (isMax) peaks.push({ theta: t * step, rho: r - rMax, votes: v });
       }
     }
-    peaks.sort((a, b) => b.votes - a.votes);
-    const out = [], mA = o.mergeAngleDeg * DEG;
-    for (const p of peaks) {
-      let dup = false;
-      for (const q of out) {
-        let dA = Math.abs(p.theta - q.theta), dR = Math.abs(p.rho - q.rho);
-        if (dA > Math.PI / 2) { dA = Math.PI - dA; dR = Math.abs(p.rho + q.rho); }
-        if (dA < mA && dR < o.mergeRhoPx) { dup = true; break; }
-      }
-      if (!dup) out.push(p);
-      if (out.length >= o.houghMaxLines) break;
+    peaks.sort((first, second) => second.votes - first.votes);
+    return peaks;
+  }
+
+  // Drops peaks within mergeAngleDeg and mergeRhoPx of a stronger one; keeps houghMaxLines.
+  function mergeNearbyPeaks(peaks, params) {
+    const kept = [];
+    const mergeAngle = params.mergeAngleDeg * RADIANS_PER_DEGREE;
+    for (const peak of peaks) {
+      const isDuplicate = kept.some(other => {
+        let angleGap = Math.abs(peak.theta - other.theta);
+        let rhoGap = Math.abs(peak.rho - other.rho);
+        // Lines near θ = 0 and θ = π are the same line with ρ negated.
+        if (angleGap > Math.PI / 2) {
+          angleGap = Math.PI - angleGap;
+          rhoGap = Math.abs(peak.rho + other.rho);
+        }
+        return angleGap < mergeAngle && rhoGap < params.mergeRhoPx;
+      });
+      if (!isDuplicate) kept.push(peak);
+      if (kept.length >= params.houghMaxLines) break;
     }
-    // Convert to image-coordinate normal form n·p = c.
-    return out.map(p => {
-      const nx = Math.cos(p.theta), ny = Math.sin(p.theta);
-      return { theta: p.theta, rho: p.rho, votes: p.votes, nx, ny, c: p.rho + nx * cx + ny * cy };
+    return kept;
+  }
+
+  // The strongest straight lines in the edge map, in image normal form (normal · point = offset).
+  function houghLines(edges, gradients, width, height, params) {
+    const accumulator = houghVotes(edges, gradients, width, height, params);
+    const lines = mergeNearbyPeaks(houghPeaks(accumulator, params), params);
+    return lines.map(peak => {
+      const normalX = Math.cos(peak.theta);
+      const normalY = Math.sin(peak.theta);
+      const offset = peak.rho + normalX * accumulator.centerX + normalY * accumulator.centerY;
+      return { theta: peak.theta, rho: peak.rho, votes: peak.votes, normalX, normalY, offset };
     });
   }
 
-  // Orientation-tagged support map: bit b of map[i] is set when an edge pixel within
-  // supportRadius of i has a gradient normal in orientation bin b (or a neighbor bin).
-  // Lets quad scoring check "is there an edge here running this way?" in O(1).
-  const N_BINS = 12;
-  function supportMap(edges, gx, gy, w, h, radius) {
-    const map = new Uint16Array(w * h), binW = Math.PI / N_BINS;
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
+  // Orientation-tagged support map: bit b of map[i] is set when an edge pixel within `radius`
+  // of i has a gradient normal in orientation bin b (or a neighboring bin). Lets quad scoring
+  // ask "is there an edge here running this way?" in O(1).
+  function supportMap(edges, gradients, width, height, radius) {
+    const map = new Uint16Array(width * height);
+    const binWidth = Math.PI / ORIENTATION_BINS;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = y * width + x;
         if (!edges[i]) continue;
-        let phi = Math.atan2(gy[i], gx[i]);
-        if (phi < 0) phi += Math.PI;
-        const b = Math.min(N_BINS - 1, Math.floor(phi / binW));
-        const bits = (1 << b) | (1 << ((b + 1) % N_BINS)) | (1 << ((b + N_BINS - 1) % N_BINS));
-        for (let dy = -radius; dy <= radius; dy++) {
-          const yy = y + dy; if (yy < 0 || yy >= h) continue;
-          for (let dx = -radius; dx <= radius; dx++) {
-            const xx = x + dx; if (xx < 0 || xx >= w) continue;
-            map[yy * w + xx] |= bits;
+        const angle = gradientAngle(gradients.gradientX, gradients.gradientY, i);
+        const bin = Math.min(ORIENTATION_BINS - 1, Math.floor(angle / binWidth));
+        const nextBin = (bin + 1) % ORIENTATION_BINS;
+        const previousBin = (bin + ORIENTATION_BINS - 1) % ORIENTATION_BINS;
+        const bits = (1 << bin) | (1 << nextBin) | (1 << previousBin);
+        for (let rowOffset = -radius; rowOffset <= radius; rowOffset++) {
+          const neighborY = y + rowOffset;
+          if (neighborY < 0 || neighborY >= height) continue;
+          for (let columnOffset = -radius; columnOffset <= radius; columnOffset++) {
+            const neighborX = x + columnOffset;
+            if (neighborX < 0 || neighborX >= width) continue;
+            map[neighborY * width + neighborX] |= bits;
           }
         }
       }
@@ -477,759 +907,1758 @@ function CardEngineModule(G) {
     return map;
   }
 
-  function sideSupport(a, b, ctx) {
-    const { map, w, h, trim } = ctx;
-    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
-    let phi = Math.atan2(dx, -dy); // normal of the side (perpendicular to (dx, dy))
-    if (phi < 0) phi += Math.PI; if (phi >= Math.PI) phi -= Math.PI;
-    const bit = 1 << Math.min(N_BINS - 1, Math.floor(phi / (Math.PI / N_BINS)));
-    const n = Math.max(8, Math.min(80, Math.round(len * (1 - 2 * trim) / 2)));
-    let hits = 0, valid = 0;
-    for (let k = 0; k < n; k++) {
-      const t = trim + (1 - 2 * trim) * (k + 0.5) / n;
-      const x = Math.floor(a[0] + dx * t), y = Math.floor(a[1] + dy * t);
-      if (x < 0 || y < 0 || x >= w || y >= h) continue; // off-image parts neither help nor hurt
-      valid++;
-      if (map[y * w + x] & bit) hits++;
+  // The share (0–1) of points along a quad side with an edge running the side's way.
+  // The corner ends (cornerTrim of the length) are skipped: card corners are rounded.
+  function sideSupport(start, end, context) {
+    const { supportBits, width, height, cornerTrim } = context;
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    const length = Math.hypot(dx, dy);
+    // The side's normal, perpendicular to (dx, dy), as an angle in [0, π).
+    let normalAngle = Math.atan2(dx, -dy);
+    if (normalAngle < 0) normalAngle += Math.PI;
+    if (normalAngle >= Math.PI) normalAngle -= Math.PI;
+    const binWidth = Math.PI / ORIENTATION_BINS;
+    const bin = Math.min(ORIENTATION_BINS - 1, Math.floor(normalAngle / binWidth));
+    const bit = 1 << bin;
+    const wanted = Math.round(length * (1 - 2 * cornerTrim) / 2);
+    const sampleCount = Math.max(SIDE_SAMPLES.min, Math.min(SIDE_SAMPLES.max, wanted));
+    let hits = 0;
+    let onImage = 0;
+    for (let sample = 0; sample < sampleCount; sample++) {
+      const along = cornerTrim + (1 - 2 * cornerTrim) * (sample + 0.5) / sampleCount;
+      const x = Math.floor(start[0] + dx * along);
+      const y = Math.floor(start[1] + dy * along);
+      // Off-image parts neither help nor hurt.
+      if (x < 0 || y < 0 || x >= width || y >= height) continue;
+      onImage++;
+      if (supportBits[y * width + x] & bit) hits++;
     }
-    return valid >= n * 0.5 ? hits / valid : (valid ? hits / n : 0);
+    if (onImage >= sampleCount * 0.5) return hits / onImage;
+    if (onImage) return hits / sampleCount;
+    return 0;
   }
 
-  // Score one quad. Shared by the Hough path and any external quad source (e.g. native detection in phase two).
-  function scoreQuad(q, ctx) {
-    const { w, h, o, ratio, seed } = ctx;
-    const sup = [0, 1, 2, 3].map(k => sideSupport(q[k], q[(k + 1) % 4], ctx));
-    const supMean = (sup[0] + sup[1] + sup[2] + sup[3]) / 4, supMin = Math.min(...sup);
-    const support = 0.5 * supMean + 0.5 * supMin;
-    let aspect = 1, rAsp = null;
+  // Scores one quad. Shared by the Hough path and any external quad source (such as native
+  // detection in phase two). Returns { score, confidence, parts } (parts for the debug panel).
+  function scoreQuad(quad, context) {
+    const { width, height, params, ratio, seed } = context;
+    const sideScores = [0, 1, 2, 3].map(k => sideSupport(quad[k], quad[(k + 1) % 4], context));
+    const supportMean = (sideScores[0] + sideScores[1] + sideScores[2] + sideScores[3]) / 4;
+    const supportMin = Math.min(...sideScores);
+    const support = 0.5 * supportMean + 0.5 * supportMin;
+
+    let aspect = 1;
+    let correctedAspect = null;
     if (ratio) {
       // Compare the perspective-corrected aspect, with a dead band: cards on stands are
       // foreshortened a few percent even after correction, so near-misses aren't penalized.
-      rAsp = rectAspect(q, [w / 2, h / 2], ctx.focal);
-      const r = Math.min(rAsp, 1 / rAsp), tr = Math.min(ratio, 1 / ratio);
-      const err = Math.max(0, Math.abs(Math.log(r / tr)) - o.aspectDeadband);
-      aspect = Math.exp(-((err / o.aspectTol) ** 2));
+      correctedAspect = rectAspect(quad, [width / 2, height / 2], context.focal);
+      const measured = Math.min(correctedAspect, 1 / correctedAspect);
+      const expected = Math.min(ratio, 1 / ratio);
+      const error = Math.max(0, Math.abs(Math.log(measured / expected)) - params.aspectDeadband);
+      aspect = Math.exp(-((error / params.aspectTol) ** 2));
     }
-    const maxDev = Math.max(...Quad.angles(q).map(a => Math.abs(a - 90)));
-    const angle = Math.exp(-((maxDev / o.angleTolDeg) ** 2));
-    const areaFrac = Quad.area(q) / (w * h);
-    const c = Quad.centroid(q);
-    const center = 1 - Math.min(1, Math.hypot(c[0] - w / 2, c[1] - h / 2) / (Math.hypot(w, h) / 2));
-    let score = o.wSupport * support + o.wAspect * aspect + o.wAngle * angle + o.wCenter * center + o.wArea * Math.sqrt(areaFrac);
-    const seedHit = seed ? Quad.contains(q, seed) : null;
-    if (seed && !seedHit) score *= o.seedMissFactor;
-    const confidence = Math.max(0, Math.min(1, Math.pow(support, 0.75) * Math.sqrt(aspect) * Math.sqrt(angle)));
-    return { score, confidence, parts: { support, supMin, aspect, rAsp, angle, areaFrac, center, seedHit } };
+
+    const maxDeviation = Math.max(...Quad.cornerAngles(quad).map(angle => Math.abs(angle - 90)));
+    const angle = Math.exp(-((maxDeviation / params.angleTolDeg) ** 2));
+    const areaFrac = Quad.area(quad) / (width * height);
+    const centroid = Quad.centroid(quad);
+    const offCenter = Math.hypot(centroid[0] - width / 2, centroid[1] - height / 2);
+    const center = 1 - Math.min(1, offCenter / (Math.hypot(width, height) / 2));
+
+    let score = params.wSupport * support
+      + params.wAspect * aspect
+      + params.wAngle * angle
+      + params.wCenter * center
+      + params.wArea * Math.sqrt(areaFrac);
+    const containsSeed = seed ? Quad.contains(quad, seed) : null;
+    if (seed && !containsSeed) score *= params.seedMissFactor;
+    const evidence = Math.pow(support, 0.75) * Math.sqrt(aspect) * Math.sqrt(angle);
+    const confidence = Math.max(0, Math.min(1, evidence));
+    return {
+      score,
+      confidence,
+      parts: {
+        support,
+        supportMin,
+        aspect,
+        correctedAspect,
+        angle,
+        areaFrac,
+        center,
+        containsSeed,
+      },
+    };
   }
 
-  function angDiff(a, b) { let d = Math.abs(a - b) % Math.PI; return d > Math.PI / 2 ? Math.PI - d : d; }
+  // The angle between two line directions, folded into [0, π/2].
+  function angleBetweenLines(first, second) {
+    const difference = Math.abs(first - second) % Math.PI;
+    return difference > Math.PI / 2 ? Math.PI - difference : difference;
+  }
 
-  // Build and score every quad formed by two near-parallel line pairs that are roughly
-  // perpendicular to each other. Corners come from line intersections, so rounded
-  // corners (where no straight edge exists) don't matter.
-  function quadsFromLines(lines, ctx) {
-    const { w, h, o } = ctx, minSep = o.minSideFrac * Math.min(w, h);
-    const maxP = o.maxPerspectiveDeg * DEG, perpTol = o.perpTolDeg * DEG, margin = o.edgeMarginFrac * Math.max(w, h);
+  // Pairs of near-parallel lines far enough apart to be opposite sides of a card.
+  function parallelLinePairs(lines, context) {
+    const { width, height, params } = context;
+    const minSeparation = params.minSideFrac * Math.min(width, height);
+    const maxSkew = params.maxPerspectiveDeg * RADIANS_PER_DEGREE;
     const pairs = [];
-    for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {
-      const a = lines[i], b = lines[j];
-      if (angDiff(a.theta, b.theta) > maxP) continue;
-      // Separation: distance from the point of `a` nearest the image center to line `b`.
-      const t = a.nx * (w / 2) + a.ny * (h / 2) - a.c, p = [w / 2 - a.nx * t, h / 2 - a.ny * t];
-      if (Math.abs(b.nx * p[0] + b.ny * p[1] - b.c) < minSep) continue;
-      pairs.push([a, b]);
+    for (let i = 0; i < lines.length; i++) {
+      for (let j = i + 1; j < lines.length; j++) {
+        const first = lines[i];
+        const second = lines[j];
+        if (angleBetweenLines(first.theta, second.theta) > maxSkew) continue;
+        // Separation: the distance from the point of `first` nearest the image center to `second`.
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const fromCenter = first.normalX * centerX + first.normalY * centerY - first.offset;
+        const nearest = [
+          centerX - first.normalX * fromCenter,
+          centerY - first.normalY * fromCenter,
+        ];
+        const separation = second.normalX * nearest[0]
+          + second.normalY * nearest[1]
+          - second.offset;
+        if (Math.abs(separation) < minSeparation) continue;
+        pairs.push([first, second]);
+      }
     }
-    const out = [];
-    for (let p = 0; p < pairs.length; p++) for (let r = p + 1; r < pairs.length; r++) {
-      const [a1, a2] = pairs[p], [b1, b2] = pairs[r];
-      if (Math.abs(Math.PI / 2 - angDiff(a1.theta, b1.theta)) > perpTol) continue;
-      if (a1 === b1 || a1 === b2 || a2 === b1 || a2 === b2) continue;
-      const pts = [intersect(a1, b1), intersect(a1, b2), intersect(a2, b2), intersect(a2, b1)];
-      if (pts.some(x => !x || x[0] < -margin || x[1] < -margin || x[0] > w + margin || x[1] > h + margin)) continue;
-      const q = Quad.order(pts);
-      if (!Quad.isConvex(q)) continue;
-      const af = Quad.area(q) / (w * h);
-      if (af < o.minAreaFrac || af > o.maxAreaFrac) continue;
-      const sc = scoreQuad(q, ctx);
-      out.push(Object.assign({ corners: q, lines: [a1, a2, b1, b2] }, sc));
-    }
-    return out;
+    return pairs;
   }
 
-  // Keep the best few candidates whose corners differ meaningfully.
-  function pickCandidates(quads, o, diag, n) {
-    quads.sort((a, b) => b.score - a.score);
-    const keep = [], dupD = o.dupCornerFrac * diag;
-    for (const q of quads) {
-      if (keep.some(k => Math.max(...k.corners.map((c, i) => V.dist(c, q.corners[i]))) < dupD)) continue;
-      keep.push(q);
-      if (keep.length >= n) break;
+  // Builds and scores every quad formed by two line pairs that are roughly perpendicular to
+  // each other. Corners come from line intersections, so rounded corners (where no straight
+  // edge exists) don't matter.
+  function quadsFromLines(lines, context) {
+    const { width, height, params } = context;
+    const perpendicularTolerance = params.perpTolDeg * RADIANS_PER_DEGREE;
+    const margin = params.edgeMarginFrac * Math.max(width, height);
+    const isOffImage = point => !point
+      || point[0] < -margin
+      || point[1] < -margin
+      || point[0] > width + margin
+      || point[1] > height + margin;
+    const pairs = parallelLinePairs(lines, context);
+    const quads = [];
+    for (let i = 0; i < pairs.length; i++) {
+      for (let j = i + 1; j < pairs.length; j++) {
+        const [sideA1, sideA2] = pairs[i];
+        const [sideB1, sideB2] = pairs[j];
+        const crossing = angleBetweenLines(sideA1.theta, sideB1.theta);
+        if (Math.abs(Math.PI / 2 - crossing) > perpendicularTolerance) continue;
+        const sharesLine = sideA1 === sideB1
+          || sideA1 === sideB2
+          || sideA2 === sideB1
+          || sideA2 === sideB2;
+        if (sharesLine) continue;
+        const corners = [
+          intersectLines(sideA1, sideB1),
+          intersectLines(sideA1, sideB2),
+          intersectLines(sideA2, sideB2),
+          intersectLines(sideA2, sideB1),
+        ];
+        if (corners.some(isOffImage)) continue;
+        const quad = Quad.sortCorners(corners);
+        if (!Quad.isConvex(quad)) continue;
+        const areaFrac = Quad.area(quad) / (width * height);
+        if (areaFrac < params.minAreaFrac || areaFrac > params.maxAreaFrac) continue;
+        const scored = scoreQuad(quad, context);
+        const sides = [sideA1, sideA2, sideB1, sideB2];
+        quads.push(Object.assign({ corners: quad, lines: sides }, scored));
+      }
     }
-    return keep;
+    return quads;
+  }
+
+  // Keeps the best `count` candidates whose corners differ meaningfully. Sorts `quads` in place.
+  function pickCandidates(quads, params, diagonal, count) {
+    quads.sort((first, second) => second.score - first.score);
+    const kept = [];
+    const duplicateDistance = params.dupCornerFrac * diagonal;
+    const cornerGap = (first, second) => Math.max(
+      ...first.corners.map((corner, i) => Vec2.distance(corner, second.corners[i])),
+    );
+    for (const quad of quads) {
+      if (kept.some(other => cornerGap(other, quad) < duplicateDistance)) continue;
+      kept.push(quad);
+      if (kept.length >= count) break;
+    }
+    return kept;
   }
 
   // Shared preprocessing: edge map, Hough lines, support map.
-  function analyze(img, params) {
-    const o = Object.assign({}, DETECT_DEFAULTS, params || {});
-    const w = img.width, h = img.height;
-    const { gx, gy, mag } = edgeImage(img, o);
-    const edges = canny(gx, gy, mag, w, h, o.cannyLow, o.cannyHigh);
-    const lines = hough(edges, gx, gy, w, h, o);
-    const map = supportMap(edges, gx, gy, w, h, Math.round(o.supportRadiusPx));
-    return { o, w, h, edges, lines, map };
+  function analyze(img, paramOverrides) {
+    const params = Object.assign({}, DETECT_DEFAULTS, paramOverrides || {});
+    const width = img.width;
+    const height = img.height;
+    const gradients = edgeGradients(img, params);
+    const edges = canny(gradients, width, height, params.cannyLow, params.cannyHigh);
+    const lines = houghLines(edges, gradients, width, height, params);
+    const radius = Math.round(params.supportRadiusPx);
+    const supportBits = supportMap(edges, gradients, width, height, radius);
+    return { params, width, height, edges, lines, supportBits };
   }
 
   /**
-   * detect(img, opts) → { candidates: [{corners, confidence, score, parts}], debug }
-   * img: ImageData-like at working size. opts: { ratio (card W/H, default 5:7),
-   * seed: [x,y] working px or null, params: overrides of DETECT_DEFAULTS, debug: bool,
-   * quads: optional external candidate quads (e.g. from native detection in phase two) scored alongside the Hough quads }.
+   * detect(img, options) → { candidates: [{ corners, confidence, score, parts }], lines, timing,
+   * debug }. img: ImageData-like at working size. options: { ratio (card width ÷ height, default
+   * 5:7), seed: [x, y] working px or null, params: overrides of DETECT_DEFAULTS, debug: bool,
+   * quads: optional external candidate quads (such as native detection in phase two), scored
+   * alongside the Hough quads }.
    */
-  function detect(img, opts = {}) {
-    const t0 = now();
-    const A = analyze(img, opts.params);
-    const { o, w, h, lines, map } = A;
-    const ctx = { w, h, o, map, trim: o.cornerTrim, ratio: opts.ratio || 63.5 / 88.9,
-      seed: opts.seed || null, focal: focalModel(w, h, o.focalFactor) };
-    const diag = Math.hypot(w, h);
-    const t1 = now();
-    let quads = quadsFromLines(lines, ctx);
-    // External proposals (e.g. from native detection) are added to the Hough quads, never replace them.
-    if (opts.quads) for (const q of opts.quads) { const c = Quad.order(q); if (Quad.isConvex(c)) quads.push(Object.assign({ corners: c }, scoreQuad(c, ctx))); }
-    const cands = pickCandidates(quads, o, diag, o.maxCandidates);
-    const result = {
-      candidates: cands.map(c => ({ corners: c.corners, confidence: c.confidence, score: c.score, parts: c.parts })),
-      lines: lines.map(l => ({ nx: l.nx, ny: l.ny, c: l.c, votes: l.votes })), // used for snap-to-edge
-      timing: { analyze: t1 - t0, quads: now() - t1, total: now() - t0, lines: lines.length, quadCount: quads.length },
+  function detect(img, options = {}) {
+    const startTime = now();
+    const analysis = analyze(img, options.params);
+    const { params, width, height, lines, supportBits } = analysis;
+    const context = {
+      width,
+      height,
+      params,
+      supportBits,
+      cornerTrim: params.cornerTrim,
+      ratio: options.ratio || CARD_ASPECT,
+      seed: options.seed || null,
+      focal: focalModel(width, height, params.focalFactor),
     };
-    if (opts.debug) {
+    const diagonal = Math.hypot(width, height);
+    const analyzedTime = now();
+    const quads = quadsFromLines(lines, context);
+    // External proposals are added to the Hough quads, never replace them.
+    for (const external of options.quads || []) {
+      const corners = Quad.sortCorners(external);
+      if (!Quad.isConvex(corners)) continue;
+      quads.push(Object.assign({ corners }, scoreQuad(corners, context)));
+    }
+    const candidates = pickCandidates(quads, params, diagonal, params.maxCandidates);
+    const result = {
+      candidates: candidates.map(candidate => ({
+        corners: candidate.corners,
+        confidence: candidate.confidence,
+        score: candidate.score,
+        parts: candidate.parts,
+      })),
+      // Used for snap-to-edge.
+      lines: lines.map(line => ({
+        normalX: line.normalX,
+        normalY: line.normalY,
+        offset: line.offset,
+        votes: line.votes,
+      })),
+      timing: {
+        analyze: analyzedTime - startTime,
+        quads: now() - analyzedTime,
+        total: now() - startTime,
+        lines: lines.length,
+        quadCount: quads.length,
+      },
+    };
+    if (options.debug) {
       result.debug = {
-        width: w, height: h, edges: A.edges,
-        quads: pickCandidates(quads.slice(), o, diag, 30).map(q => ({ corners: q.corners, score: q.score, confidence: q.confidence })),
+        width,
+        height,
+        edges: analysis.edges,
+        quads: pickCandidates(quads.slice(), params, diagonal, 30).map(quad => ({
+          corners: quad.corners,
+          score: quad.score,
+          confidence: quad.confidence,
+        })),
       };
     }
     return result;
   }
 
-  // Score externally-proposed quads (external path) with the same edge evidence.
-  function scoreQuads(img, quads, opts = {}) { return detect(img, Object.assign({}, opts, { quads })); }
-
-  /**
-   * refineQuad(roi, corners, opts) → { corners, refined: [bool×4] }
-   * Sub-pixel edge refinement on a high-resolution crop. roi: ImageData-like plus
-   * { ox, oy, scale }: roi pixel = (source − o) · scale. corners in source px.
-   * For each side, sample points along it, search along the side's normal for the
-   * strongest gradient of the dominant polarity, fit a robust line, re-intersect.
-   */
-  function refineQuad(roi, corners, opts = {}) {
-    const o = Object.assign({}, DETECT_DEFAULTS, opts.params || {});
-    const w = roi.width, h = roi.height, s = roi.scale;
-    const g = gaussianBlur(toGray(roi), w, h, o.refineBlur);
-    const toR = p => [(p[0] - roi.ox) * s, (p[1] - roi.oy) * s];
-    const toS = p => [p[0] / s + roi.ox, p[1] / s + roi.oy];
-    const q = corners.map(toR);
-    const R = Math.max(2, (opts.searchPx || 12) * s), trim = o.cornerTrim;
-    const lines = [], refined = [];
-    for (let k = 0; k < 4; k++) {
-      const a = q[k], b = q[(k + 1) % 4];
-      const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
-      const nx = -dy / L, ny = dx / L;
-      const prof = [];
-      for (let i = 0; i < o.refineSamples; i++) {
-        const t = trim + (1 - 2 * trim) * (i + 0.5) / o.refineSamples;
-        const bx = a[0] + dx * t, by = a[1] + dy * t;
-        const vals = [];
-        for (let d = -R; d <= R; d += 0.5) {
-          // Directional derivative along the normal (central difference, ±0.75 px).
-          const g1 = sampleGray(g, w, h, bx + nx * (d + 0.75), by + ny * (d + 0.75));
-          const g0 = sampleGray(g, w, h, bx + nx * (d - 0.75), by + ny * (d - 0.75));
-          vals.push((g1 - g0) / 1.5);
-        }
-        prof.push({ bx, by, vals });
-      }
-      // Dominant polarity = sign of the strongest response summed over samples.
-      let pos = 0, neg = 0;
-      for (const p of prof) { let m = 0; for (const v of p.vals) if (Math.abs(v) > Math.abs(m)) m = v; if (m > 0) pos += m; else neg -= m; }
-      const sign = pos >= neg ? 1 : -1;
-      const pts = [];
-      for (const p of prof) {
-        let bi = -1, bv = 0;
-        for (let i = 0; i < p.vals.length; i++) { const v = sign * p.vals[i]; if (v > bv) { bv = v; bi = i; } }
-        if (bi < 1 || bi >= p.vals.length - 1 || bv < o.refineMinGrad) continue;
-        // Parabolic sub-sample peak.
-        const y0 = sign * p.vals[bi - 1], y1 = bv, y2 = sign * p.vals[bi + 1];
-        const den = y0 - 2 * y1 + y2, off = den < 0 ? 0.5 * (y0 - y2) / den : 0;
-        const d = -R + (bi + off) * 0.5;
-        pts.push({ x: p.bx + nx * d, y: p.by + ny * d, wt: bv });
-      }
-      const fit = robustLine(pts, o.refineInlierPx * Math.max(1, s));
-      if (fit && fit.inliers >= o.refineSamples * 0.3) { lines.push(fit.line); refined.push(true); }
-      else { lines.push(lineThrough(a, b)); refined.push(false); }
-    }
-    const out = [];
-    for (let k = 0; k < 4; k++) {
-      const p = intersect(lines[(k + 3) % 4], lines[k]);
-      // Fall back to the input corner if the refined lines blow up.
-      out.push(p && V.dist(p, q[k]) <= 2.5 * R ? toS(p) : corners[k].slice());
-    }
-    return { corners: out, refined };
+  // Scores externally proposed quads with the same edge evidence as detection.
+  function scoreQuads(img, quads, options = {}) {
+    return detect(img, Object.assign({}, options, { quads }));
   }
 
-  // Weighted total-least-squares line with iterative outlier rejection.
-  function robustLine(pts, inlierTol) {
-    let cur = pts.slice();
-    let line = null;
-    for (let iter = 0; iter < 4 && cur.length >= 4; iter++) {
-      let sw = 0, mx = 0, my = 0;
-      for (const p of cur) { sw += p.wt; mx += p.wt * p.x; my += p.wt * p.y; }
-      mx /= sw; my /= sw;
-      let sxx = 0, sxy = 0, syy = 0;
-      for (const p of cur) { const dx = p.x - mx, dy = p.y - my; sxx += p.wt * dx * dx; sxy += p.wt * dx * dy; syy += p.wt * dy * dy; }
-      // Principal direction of the 2×2 covariance; the line normal is perpendicular to it.
-      const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
-      const nx = -Math.sin(ang), ny = Math.cos(ang);
-      line = { nx, ny, c: nx * mx + ny * my };
-      const res = cur.map(p => Math.abs(nx * p.x + ny * p.y - line.c));
-      const sorted = res.slice().sort((a, b) => a - b), mad = sorted[sorted.length >> 1] * 1.4826;
-      const tol = Math.max(inlierTol, 2.5 * mad);
-      const next = cur.filter((p, i) => res[i] <= tol);
-      if (next.length === cur.length) break;
-      cur = next;
+  // The strongest edge response along the normal of one quad side, at refineSamples points.
+  // Returns [{ baseX, baseY, responses }]: responses[step] is the directional derivative at
+  // distance −searchRadius + step·0.5 along the normal.
+  function normalProfiles(blurred, size, start, end, normal, searchRadius, params) {
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    const trim = params.cornerTrim;
+    const profiles = [];
+    for (let sample = 0; sample < params.refineSamples; sample++) {
+      const along = trim + (1 - 2 * trim) * (sample + 0.5) / params.refineSamples;
+      const baseX = start[0] + dx * along;
+      const baseY = start[1] + dy * along;
+      const responses = [];
+      for (let distance = -searchRadius; distance <= searchRadius; distance += 0.5) {
+        // Central difference along the normal, ±0.75 px.
+        const ahead = sampleBilinear(blurred, size.width, size.height,
+          baseX + normal[0] * (distance + 0.75), baseY + normal[1] * (distance + 0.75));
+        const behind = sampleBilinear(blurred, size.width, size.height,
+          baseX + normal[0] * (distance - 0.75), baseY + normal[1] * (distance - 0.75));
+        responses.push((ahead - behind) / 1.5);
+      }
+      profiles.push({ baseX, baseY, responses });
     }
-    return line ? { line, inliers: cur.length } : null;
+    return profiles;
+  }
+
+  // +1 when the side's edge goes dark → light along the normal, −1 for light → dark: the sign of
+  // the strongest response, summed over the samples.
+  function dominantPolarity(profiles) {
+    let positive = 0;
+    let negative = 0;
+    for (const profile of profiles) {
+      let strongest = 0;
+      for (const response of profile.responses) {
+        if (Math.abs(response) > Math.abs(strongest)) strongest = response;
+      }
+      if (strongest > 0) positive += strongest;
+      else negative -= strongest;
+    }
+    return positive >= negative ? 1 : -1;
+  }
+
+  // The sub-pixel edge point on each profile (parabolic peak), weighted by its strength.
+  function edgePoints(profiles, polarity, normal, searchRadius, params) {
+    const points = [];
+    for (const profile of profiles) {
+      const { responses } = profile;
+      let peak = -1;
+      let peakValue = 0;
+      for (let i = 0; i < responses.length; i++) {
+        const value = polarity * responses[i];
+        if (value > peakValue) {
+          peakValue = value;
+          peak = i;
+        }
+      }
+      if (peak < 1 || peak >= responses.length - 1 || peakValue < params.refineMinGrad) continue;
+      // Parabolic sub-sample peak.
+      const before = polarity * responses[peak - 1];
+      const after = polarity * responses[peak + 1];
+      const curvature = before - 2 * peakValue + after;
+      const shift = curvature < 0 ? 0.5 * (before - after) / curvature : 0;
+      const distance = -searchRadius + (peak + shift) * 0.5;
+      points.push({
+        x: profile.baseX + normal[0] * distance,
+        y: profile.baseY + normal[1] * distance,
+        weight: peakValue,
+      });
+    }
+    return points;
+  }
+
+  /**
+   * refineQuad(roi, corners, options) → { corners, refined: [bool × 4] }
+   * Sub-pixel edge refinement on a high-resolution crop. roi: ImageData-like plus
+   * { originX, originY, scale }: roi pixel = (source − origin) · scale. corners in source px.
+   * For each side, sample points along it, search along the side's normal for the strongest
+   * gradient of the dominant polarity, fit a robust line, then re-intersect the four lines.
+   */
+  function refineQuad(roi, corners, options = {}) {
+    const params = Object.assign({}, DETECT_DEFAULTS, options.params || {});
+    const size = { width: roi.width, height: roi.height };
+    const scale = roi.scale;
+    const blurred = gaussianBlur(toGray(roi), size.width, size.height, params.refineBlur);
+    const toRoi = point => [(point[0] - roi.originX) * scale, (point[1] - roi.originY) * scale];
+    const toSource = point => [point[0] / scale + roi.originX, point[1] / scale + roi.originY];
+    const quad = corners.map(toRoi);
+    const searchRadius = Math.max(2, (options.searchPx || 12) * scale);
+    const lines = [];
+    const refined = [];
+    for (let k = 0; k < 4; k++) {
+      const start = quad[k];
+      const end = quad[(k + 1) % 4];
+      const dx = end[0] - start[0];
+      const dy = end[1] - start[1];
+      const length = Math.hypot(dx, dy);
+      const normal = [-dy / length, dx / length];
+      const profiles = normalProfiles(blurred, size, start, end, normal, searchRadius, params);
+      const polarity = dominantPolarity(profiles);
+      const points = edgePoints(profiles, polarity, normal, searchRadius, params);
+      const fit = robustLine(points, params.refineInlierPx * Math.max(1, scale));
+      const isGoodFit = fit && fit.inliers >= params.refineSamples * 0.3;
+      lines.push(isGoodFit ? fit.line : lineThrough(start, end));
+      refined.push(Boolean(isGoodFit));
+    }
+    const refinedCorners = [];
+    for (let k = 0; k < 4; k++) {
+      const corner = intersectLines(lines[(k + 3) % 4], lines[k]);
+      // Fall back to the input corner if the refined lines blow up.
+      const isClose = corner && Vec2.distance(corner, quad[k]) <= 2.5 * searchRadius;
+      refinedCorners.push(isClose ? toSource(corner) : corners[k].slice());
+    }
+    return { corners: refinedCorners, refined };
+  }
+
+  // Weighted total-least-squares line through { x, y, weight } points, with iterative
+  // outlier rejection. Returns { line, inliers } or null.
+  function robustLine(points, inlierTolerance) {
+    let current = points.slice();
+    let line = null;
+    for (let iteration = 0; iteration < 4 && current.length >= 4; iteration++) {
+      let totalWeight = 0;
+      let meanX = 0;
+      let meanY = 0;
+      for (const point of current) {
+        totalWeight += point.weight;
+        meanX += point.weight * point.x;
+        meanY += point.weight * point.y;
+      }
+      meanX /= totalWeight;
+      meanY /= totalWeight;
+      let covarianceXX = 0;
+      let covarianceXY = 0;
+      let covarianceYY = 0;
+      for (const point of current) {
+        const dx = point.x - meanX;
+        const dy = point.y - meanY;
+        covarianceXX += point.weight * dx * dx;
+        covarianceXY += point.weight * dx * dy;
+        covarianceYY += point.weight * dy * dy;
+      }
+      // Principal direction of the 2×2 covariance; the line's normal is perpendicular to it.
+      const direction = 0.5 * Math.atan2(2 * covarianceXY, covarianceXX - covarianceYY);
+      const normalX = -Math.sin(direction);
+      const normalY = Math.cos(direction);
+      line = { normalX, normalY, offset: normalX * meanX + normalY * meanY };
+      const offset = line.offset;
+      const distanceTo = point => Math.abs(normalX * point.x + normalY * point.y - offset);
+      const residuals = current.map(distanceTo);
+      // Median absolute deviation, scaled to a standard deviation for normal noise.
+      const sorted = residuals.slice().sort((first, second) => first - second);
+      const deviation = sorted[sorted.length >> 1] * 1.4826;
+      const tolerance = Math.max(inlierTolerance, 2.5 * deviation);
+      const inliers = current.filter((point, i) => residuals[i] <= tolerance);
+      if (inliers.length === current.length) break;
+      current = inliers;
+    }
+    return line ? { line, inliers: current.length } : null;
   }
 
   /* ===================================================================
-     RENDER PIPELINE — state → geometry → warp
-     Frames: S (source px) —H→ P (perspective-corrected) —MR→ R (rotated/flipped) —crop/scale→ O (output)
+     OVERLAY: logo placement, in the output frame (the crop)
+     overlay = { cx, cy, w, aspect, opacity }: the center as fractions of the frame, the width
+     as a fraction of the frame width, aspect = logo width ÷ height. Being relative to the
+     frame, the same overlay lands in the same place at every export size.
      =================================================================== */
-  const GEOMETRY_DEFAULTS = { maxOutputPx: 12000, maxOutputArea: 16777216, maxBoundsFactor: 3, minCornerDistPx: 8, fitPaddingPct: 8, allowUpscale: false };
-
-  function cropRatio(crop, srcW, srcH) {
-    if (!crop || crop.ratio == null) return null;
-    let r = crop.ratio === 'original' ? srcW / srcH : crop.ratio;
-    return crop.swapped ? 1 / r : r;
-  }
-
-  /* ---- Overlay placement (logo / watermark), in the output frame = the crop.
-     ov = { cx, cy, w, aspect, opacity }: center as fractions of the frame, width as a
-     fraction of the frame width, aspect = logo width ÷ height. Being relative to the frame,
-     the same ov lands in the same place at every export size. ---- */
   const OVERLAY_DEFAULTS = { width: 0.25, minWidthPx: 8, snapMargin: 0.03 };
-  function overlayRect(ov, fw, fh) {
-    const w = ov.w * fw, h = w / ov.aspect;
-    return { x: ov.cx * fw - w / 2, y: ov.cy * fh - h / 2, w, h };
-  }
-  // Keep the whole overlay inside the frame: shrink it if it can't fit, then pull its center in.
-  function clampOverlay(ov, fw, fh, minWidthPx = OVERLAY_DEFAULTS.minWidthPx) {
-    const maxW = Math.min(fw, fh * ov.aspect);
-    const w = Math.max(Math.min(ov.w * fw, maxW), Math.min(minWidthPx, maxW)), h = w / ov.aspect;
-    return Object.assign({}, ov, { w: w / fw, cx: clamp(ov.cx * fw, w / 2, fw - w / 2) / fw, cy: clamp(ov.cy * fh, h / 2, fh - h / 2) / fh });
-  }
-  // Snap presets: corners 'tl' 'tr' 'bl' 'br', side middles 't' 'b' 'l' 'r', or 'c'; the margin is a fraction of the frame width.
-  // A preset without 'l' or 'r' is centered across; one without 't' or 'b' is centered down.
-  function snapOverlay(ov, where, fw, fh, margin = OVERLAY_DEFAULTS.snapMargin) {
-    const r = overlayRect(ov, fw, fh), m = margin * fw;
-    const x = where.includes('l') ? m + r.w / 2 : where.includes('r') ? fw - m - r.w / 2 : fw / 2;
-    const y = where.includes('t') ? m + r.h / 2 : where.includes('b') ? fh - m - r.h / 2 : fh / 2;
-    return clampOverlay(Object.assign({}, ov, { cx: x / fw, cy: y / fh }), fw, fh);
+
+  // The overlay's rectangle in pixels of a frameWidth × frameHeight frame.
+  function overlayRect(overlay, frameWidth, frameHeight) {
+    const width = overlay.w * frameWidth;
+    const height = width / overlay.aspect;
+    return {
+      x: overlay.cx * frameWidth - width / 2,
+      y: overlay.cy * frameHeight - height / 2,
+      width,
+      height,
+    };
   }
 
-  /* ---------------- untrusted input: URL overrides, edits files, stored sessions ----------------
-     These arrive from outside the app (a link, a file someone sent, storage another page on the
-     same origin could write), so only known keys with well-formed values get through. */
+  // Keeps the whole overlay inside the frame: shrinks it if it can't fit, then pulls its
+  // center in. Never smaller than minWidthPx (unless the frame is).
+  function clampOverlay(
+    overlay,
+    frameWidth,
+    frameHeight,
+    minWidthPx = OVERLAY_DEFAULTS.minWidthPx,
+  ) {
+    const maxWidth = Math.min(frameWidth, frameHeight * overlay.aspect);
+    const wanted = Math.min(overlay.w * frameWidth, maxWidth);
+    const width = Math.max(wanted, Math.min(minWidthPx, maxWidth));
+    const height = width / overlay.aspect;
+    return Object.assign({}, overlay, {
+      w: width / frameWidth,
+      cx: clamp(overlay.cx * frameWidth, width / 2, frameWidth - width / 2) / frameWidth,
+      cy: clamp(overlay.cy * frameHeight, height / 2, frameHeight - height / 2) / frameHeight,
+    });
+  }
+
+  // Where a snapped overlay's center lands along one axis: at the start margin, the end margin,
+  // or centered, depending on which of the two letters `where` contains.
+  function snapCenter(where, startLetter, endLetter, frameSize, marginPx, size) {
+    if (where.includes(startLetter)) return marginPx + size / 2;
+    if (where.includes(endLetter)) return frameSize - marginPx - size / 2;
+    return frameSize / 2;
+  }
+
+  // Snap presets: corners 'tl' 'tr' 'bl' 'br', side middles 't' 'b' 'l' 'r', or 'c'. The margin
+  // is a fraction of the frame width. A preset without 'l' or 'r' is centered across; one
+  // without 't' or 'b' is centered down.
+  function snapOverlay(
+    overlay,
+    where,
+    frameWidth,
+    frameHeight,
+    margin = OVERLAY_DEFAULTS.snapMargin,
+  ) {
+    const rect = overlayRect(overlay, frameWidth, frameHeight);
+    const marginPx = margin * frameWidth;
+    const x = snapCenter(where, 'l', 'r', frameWidth, marginPx, rect.width);
+    const y = snapCenter(where, 't', 'b', frameHeight, marginPx, rect.height);
+    const snapped = Object.assign({}, overlay, { cx: x / frameWidth, cy: y / frameHeight });
+    return clampOverlay(snapped, frameWidth, frameHeight);
+  }
+
+  /* ===================================================================
+     UNTRUSTED INPUT: URL overrides, edits files, stored sessions
+     These arrive from outside the app (a link, a file someone sent, storage another page on
+     the same origin could write), so only known keys with well-formed values get through.
+     =================================================================== */
   const BLOCKED_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
-  const isPlainObj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
-  const ownKey = (o, k) => isPlainObj(o) && !BLOCKED_KEYS.has(k) && Object.prototype.hasOwnProperty.call(o, k);
+  const isPlainObject = value => value !== null
+    && typeof value === 'object'
+    && !Array.isArray(value);
+  const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+  const ownKey = (object, key) => isPlainObject(object)
+    && !BLOCKED_KEYS.has(key)
+    && hasOwn(object, key);
 
-  // URL overrides of CONFIG ("?detect.cannyHigh=90"): only existing number and on/off settings.
-  // Text, lists and objects can't be set from a link, so a link can't inject markup or a script URL.
-  // limits: { 'dotted.key': [min, max] }; a number outside its range is rejected (a link can't lift a memory cap).
-  function applyConfigOverrides(cfg, entries, limits = {}) {
-    const applied = [], rejected = [];
-    const inRange = (k, n) => !Object.prototype.hasOwnProperty.call(limits, k) || (n >= limits[k][0] && n <= limits[k][1]);
-    for (const [k, v] of entries) {
-      const path = String(k).split('.'), last = path.pop();
-      let o = cfg;
-      for (const p of path) o = ownKey(o, p) && isPlainObj(o[p]) ? o[p] : null;
-      const cur = ownKey(o, last) ? o[last] : undefined;
-      if (typeof cur === 'number' && String(v).trim() !== '' && Number.isFinite(Number(v)) && inRange(String(k), Number(v))) { o[last] = Number(v); applied.push(k); }
-      else if (typeof cur === 'boolean' && /^(1|0|true|false)$/.test(v)) { o[last] = v === '1' || v === 'true'; applied.push(k); }
-      else rejected.push(k);
+  /**
+   * applyConfigOverrides(config, entries, limits) → { applied, rejected } (keys).
+   * URL overrides of CONFIG ("?detect.cannyHigh=90"): only existing number and on/off settings.
+   * Text, lists and objects can't be set from a link, so a link can't inject markup or a script
+   * URL. limits: { 'dotted.key': [min, max] }; a number outside its range is rejected, so a link
+   * can't lift a memory cap.
+   */
+  function applyConfigOverrides(config, entries, limits = {}) {
+    const applied = [];
+    const rejected = [];
+    const isInRange = (key, number) => !hasOwn(limits, key)
+      || (number >= limits[key][0] && number <= limits[key][1]);
+    for (const [key, value] of entries) {
+      const path = String(key).split('.');
+      const lastKey = path.pop();
+      let target = config;
+      for (const part of path) {
+        target = ownKey(target, part) && isPlainObject(target[part]) ? target[part] : null;
+      }
+      const current = ownKey(target, lastKey) ? target[lastKey] : undefined;
+      const isNumberSetting = typeof current === 'number'
+        && String(value).trim() !== ''
+        && Number.isFinite(Number(value))
+        && isInRange(String(key), Number(value));
+      const isSwitchSetting = typeof current === 'boolean' && /^(1|0|true|false)$/.test(value);
+      if (isNumberSetting) {
+        target[lastKey] = Number(value);
+        applied.push(key);
+      } else if (isSwitchSetting) {
+        target[lastKey] = value === '1' || value === 'true';
+        applied.push(key);
+      } else {
+        rejected.push(key);
+      }
     }
     return { applied, rejected };
   }
 
-  // Edits files and resumed sessions: the state is rebuilt field by field on top of `base` (a fresh
-  // state for this photo). A malformed field keeps the base value and is listed in `invalid`; a
-  // missing sub-field takes the base value (older files); unknown fields are dropped.
-  // opts: { presetIds: crop preset ids, maxPx: largest export long edge }.
-  function sanitizeState(input, base, opts = {}) {
-    const st = JSON.parse(JSON.stringify(base)), invalid = [];
-    const fin = x => typeof x === 'number' && Number.isFinite(x);
-    const pos = x => fin(x) && x > 0, unit = x => fin(x) && x >= 0 && x <= 1, bool = x => typeof x === 'boolean';
-    const oneOf = (...vals) => x => vals.includes(x);
-    const point = p => Array.isArray(p) && p.length === 2 && p.every(fin);
-    const rgb = c => c === null || (Array.isArray(c) && c.length === 3 && c.every(v => fin(v) && v >= 0 && v <= 255)); // Auto gives fractions
-    const opt = rule => Object.assign(x => x === undefined || x === null || rule(x), { keys: rule.keys }); // may be null
+  // The checks sanitizeState applies to each state field. Each check is a function returning
+  // true for a good value; `shape` and `optional` checks also carry the nested keys to keep.
+  function stateRules(options) {
+    const isFiniteNumber = value => typeof value === 'number' && Number.isFinite(value);
+    const isPositive = value => isFiniteNumber(value) && value > 0;
+    const isUnit = value => isFiniteNumber(value) && value >= 0 && value <= 1;
+    const isBoolean = value => typeof value === 'boolean';
+    const oneOf = (...allowed) => value => allowed.includes(value);
+    const isPoint = value => Array.isArray(value)
+      && value.length === 2
+      && value.every(isFiniteNumber);
+    // A color pick: 3 channels 0–255 (Auto gives fractions), or null.
+    const isRgb = value => value === null || (
+      Array.isArray(value)
+      && value.length === 3
+      && value.every(channel => isFiniteNumber(channel) && channel >= 0 && channel <= 255)
+    );
+    // The value may also be missing or null.
+    const optional = rule => Object.assign(
+      value => value === undefined || value === null || rule(value),
+      { keys: rule.keys },
+    );
     // A nested object: every listed key must pass; on output only the listed keys are kept.
-    const shape = rules => Object.assign(x => isPlainObj(x) && Object.keys(rules).every(k => rules[k](x[k])), { keys: Object.keys(rules) });
-    const keep = (rule, v) => rule.keys && isPlainObj(v) ? Object.fromEntries(rule.keys.filter(k => v[k] !== undefined).map(k => [k, v[k]])) : v;
-    const RULES = {
-      corners: x => Array.isArray(x) && x.length === 4 && x.every(point),
-      strength: unit,
-      aspect: { ratio: pos, orientation: oneOf('auto', 'portrait', 'landscape') },
-      squareUpHeight: oneOf('preserveEdges', 'meanEdge', 'visual'),
-      rotation: { quarter: oneOf(0, 1, 2, 3), fine: x => fin(x) && Math.abs(x) <= 180, fillFrame: bool },
-      flip: { h: bool, v: bool },
-      crop: {
-        mode: oneOf('fit', 'manual', 'full'), preset: x => (opts.presetIds || []).includes(x),
-        ratio: x => x === null || x === 'original' || pos(x), swapped: bool, orient: oneOf(null, 'portrait', 'landscape'),
-        rect: opt(shape({ cx: fin, cy: fin, w: pos, h: pos })),
-      },
-      levels: opt(shape({ white: rgb, black: rgb, whiteAt: opt(point), blackAt: opt(point) })),
-      overlay: opt(shape({ id: s => typeof s === 'string' && s.length <= 64, aspect: pos, cx: unit, cy: unit, w: x => pos(x) && x <= 1, opacity: unit })),
-      export: {
-        format: oneOf('jpeg', 'png', 'webp'), quality: unit,
-        longEdge: x => Number.isInteger(x) && x >= 0 && x <= (opts.maxPx || 12000),
-        interp: oneOf('bilinear', 'bicubic'), fill: x => x === 'transparent' || /^#[0-9a-f]{6}$/i.test(x),
-      },
-    };
-    const fields = ['version', 'source', ...Object.keys(RULES)]; // every state field this checks (regression R14 compares)
-    if (!isPlainObj(input)) return { state: st, invalid: Object.keys(RULES), fields };
-    for (const [k, rule] of Object.entries(RULES)) {
-      const v = input[k];
-      if (v === undefined) continue;
-      let val = v, ok;
-      if (typeof rule === 'function') { ok = rule(v); val = keep(rule, v); }
-      else {
-        ok = isPlainObj(v);
-        if (ok) { val = {}; for (const sk of Object.keys(rule)) { val[sk] = v[sk] === undefined ? st[k][sk] : keep(rule[sk], v[sk]); if (!rule[sk](val[sk])) ok = false; } }
-      }
-      if (ok) st[k] = JSON.parse(JSON.stringify(val)); else invalid.push(k);
-    }
-    return { state: st, invalid, fields };
-  }
-
-  function fitCrop(quad, ratio, padPct, Rw, Rh) {
-    const bb = Quad.bbox(quad), pad = (padPct / 100) * Math.max(bb.w, bb.h);
-    let w = bb.w + 2 * pad, h = bb.h + 2 * pad;
-    const cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2;
-    if (ratio) { if (w / h < ratio) w = h * ratio; else h = w / ratio; }
-    const s = Math.min(1, Rw / w, Rh / h); w *= s; h *= s;
-    return { x: clamp(cx - w / 2, 0, Rw - w), y: clamp(cy - h / 2, 0, Rh - h), w, h };
-  }
-  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
-
-  function rectCorners(r) { return [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.h], [r.x, r.y + r.h]]; }
-
-  // Shrink a crop about its center until all four corners sit inside every polygon.
-  function shrinkToValid(crop, polys) {
-    const inside = r => rectCorners(r).every(p => polys.every(poly => Quad.contains(poly, p)));
-    if (inside(crop)) return crop;
-    let cx = crop.x + crop.w / 2, cy = crop.y + crop.h / 2;
-    if (!polys.every(poly => Quad.contains(poly, [cx, cy]))) [cx, cy] = Quad.centroid(polys[0]);
-    let lo = 0, hi = 1;
-    for (let i = 0; i < 40; i++) {
-      const m = (lo + hi) / 2;
-      if (inside({ x: cx - crop.w * m / 2, y: cy - crop.h * m / 2, w: crop.w * m, h: crop.h * m })) lo = m; else hi = m;
-    }
-    return { x: cx - crop.w * lo / 2, y: cy - crop.h * lo / 2, w: crop.w * lo, h: crop.h * lo };
-  }
-
-  /**
-   * computeGeometry(state, cfg) → every transform needed to render `state`.
-   * Pure function of (state, cfg); preview and export both derive from it.
-   */
-  function computeGeometry(st, cfgIn) {
-    const cfg = Object.assign({}, GEOMETRY_DEFAULTS, cfgIn || {});
-    const W = st.source.width, Hs = st.source.height, c = st.corners;
-    const v = Quad.validate(c, cfg.minCornerDistPx);
-    if (!v.ok) return { ok: false, reason: v.reason };
-    const dst = perspectiveTargets(c, {
-      strength: st.strength, ratio: (st.aspect && st.aspect.ratio) || 63.5 / 88.9,
-      orientation: st.aspect ? st.aspect.orientation : 'auto', heightMode: st.squareUpHeight || 'preserveEdges',
-    });
-    const H0 = solveHomography(c, dst);
-    if (!H0) return { ok: false, reason: 'Could not solve the perspective for these corners.' };
-
-    // P-frame bounds: forward-map the source image's corners, but never further than
-    // maxBoundsFactor card-sizes beyond the card (protects against near-horizon blowups).
-    const qb = Quad.bbox(dst), F = cfg.maxBoundsFactor;
-    const lim = { x0: qb.x0 - qb.w * F, y0: qb.y0 - qb.h * F, x1: qb.x1 + qb.w * F, y1: qb.y1 + qb.h * F };
-    const src4 = [[0, 0], [W, 0], [W, Hs], [0, Hs]];
-    let b, limited = false;
-    if (src4.every(p => M3.w(H0, p[0], p[1]) > EPS)) {
-      const m = Quad.bbox(src4.map(p => M3.apply(H0, p[0], p[1])));
-      b = { x0: Math.max(m.x0, lim.x0), y0: Math.max(m.y0, lim.y0), x1: Math.min(m.x1, lim.x1), y1: Math.min(m.y1, lim.y1) };
-      limited = b.x0 > m.x0 || b.y0 > m.y0 || b.x1 < m.x1 || b.y1 < m.y1;
-    } else { b = lim; limited = true; }
-    const bw = b.x1 - b.x0, bh = b.y1 - b.y0;
-    const sP = Math.min(1, cfg.maxOutputPx / Math.max(bw, bh));
-    const HP = M3.chain(M3.scale(sP), M3.translate(-b.x0, -b.y0), H0);
-    const Pw = bw * sP, Ph = bh * sP;
-    const cardP = dst.map(p => [(p[0] - b.x0) * sP, (p[1] - b.y0) * sP]);
-
-    // R frame: flip, then rotate about the P center; R is the rotated P rect's bbox.
-    const rot = st.rotation || { quarter: 0, fine: 0 };
-    const deg = ((rot.quarter || 0) * 90 + (rot.fine || 0));
-    const Rm = M3.rotate(deg * DEG), cs = Math.abs(Rm[0]), sn = Math.abs(Rm[3]);
-    const Rw = cs * Pw + sn * Ph, Rh = sn * Pw + cs * Ph;
-    const flip = st.flip || {};
-    const MR = M3.chain(M3.translate(Rw / 2, Rh / 2), Rm, M3.scale(flip.h ? -1 : 1, flip.v ? -1 : 1), M3.translate(-Pw / 2, -Ph / 2));
-    const SR = M3.mul(MR, HP);
-    const cardR = cardP.map(p => M3.apply(MR, p[0], p[1]));
-    const frameR = Quad.order([[0, 0], [Pw, 0], [Pw, Ph], [0, Ph]].map(p => M3.apply(MR, p[0], p[1])));
-    const validR = src4.every(p => M3.w(SR, p[0], p[1]) > EPS) ? Quad.order(src4.map(p => M3.apply(SR, p[0], p[1]))) : null;
-
-    // Crop, in R px. Manual rects are stored relative to the R center in units of the P
-    // frame's long side, so they stay proportionally placed when earlier steps change.
-    const L = Math.max(Pw, Ph), cr = st.crop || { mode: 'full' };
-    const ratio = cropRatio(cr, W, Hs);
-    let crop;
-    if (cr.mode === 'fit') crop = fitCrop(cardR, ratio, cfg.fitPaddingPct, Rw, Rh);
-    else if (cr.mode === 'manual' && cr.rect) {
-      const r = cr.rect;
-      crop = { x: Rw / 2 + (r.cx - r.w / 2) * L, y: Rh / 2 + (r.cy - r.h / 2) * L, w: r.w * L, h: r.h * L };
-      const x0 = clamp(crop.x, 0, Rw), y0 = clamp(crop.y, 0, Rh);
-      crop = { x: x0, y: y0, w: clamp(crop.x + crop.w, 0, Rw) - x0, h: clamp(crop.y + crop.h, 0, Rh) - y0 };
-    } else {
-      crop = { x: 0, y: 0, w: Rw, h: Rh };
-      if (ratio) { let w = Rw, h = w / ratio; if (h > Rh) { h = Rh; w = h * ratio; } crop = { x: (Rw - w) / 2, y: (Rh - h) / 2, w, h }; }
-    }
-    if (rot.fillFrame) crop = shrinkToValid(crop, validR ? [frameR, validR] : [frameR]);
-    if (!(crop.w >= 1 && crop.h >= 1)) return { ok: false, reason: 'Crop is empty.' };
-
-    // Output size: optional long-edge resize, then hard clamps against huge canvases.
-    const ex = st.export || {};
-    const long = Math.max(crop.w, crop.h);
-    let e = 1;
-    if (ex.longEdge) e = cfg.allowUpscale ? ex.longEdge / long : Math.min(1, ex.longEdge / long);
-    let outW = Math.max(1, Math.round(crop.w * e)), outH = Math.max(1, Math.round(crop.h * e)), outClamped = false;
-    const k = Math.min(1, cfg.maxOutputPx / Math.max(outW, outH), Math.sqrt(cfg.maxOutputArea / (outW * outH)));
-    if (k < 1) { outW = Math.max(1, Math.floor(outW * k)); outH = Math.max(1, Math.floor(outH * k)); outClamped = true; }
-    const Mout = M3.chain(M3.scale(outW / crop.w, outH / crop.h), M3.translate(-crop.x, -crop.y), SR);
-    const MoutInv = M3.inv(Mout);
-    if (!MoutInv) return { ok: false, reason: 'Transform is not invertible.' };
+    const shape = rules => Object.assign(
+      value => isPlainObject(value) && Object.keys(rules).every(key => rules[key](value[key])),
+      { keys: Object.keys(rules) },
+    );
+    const presetIds = options.presetIds || [];
+    const maxLongEdge = options.maxPx || 12000;
     return {
-      ok: true, dst, H0, HP, MR, SR, Mout, MoutInv,
-      P: { w: Pw, h: Ph, scale: sP, clamped: sP < 1, limited },
-      R: { w: Rw, h: Rh }, L, cardP, cardR, frameR, validR, crop,
-      out: { w: outW, h: outH, scale: e, clamped: outClamped },
+      corners: value => Array.isArray(value) && value.length === 4 && value.every(isPoint),
+      strength: isUnit,
+      aspect: { ratio: isPositive, orientation: oneOf('auto', 'portrait', 'landscape') },
+      squareUpHeight: oneOf('preserveEdges', 'meanEdge', 'visual'),
+      rotation: {
+        quarter: oneOf(0, 1, 2, 3),
+        fine: value => isFiniteNumber(value) && Math.abs(value) <= 180,
+        fillFrame: isBoolean,
+      },
+      flip: { h: isBoolean, v: isBoolean },
+      crop: {
+        mode: oneOf('fit', 'manual', 'full'),
+        preset: value => presetIds.includes(value),
+        ratio: value => value === null || value === 'original' || isPositive(value),
+        swapped: isBoolean,
+        orient: oneOf(null, 'portrait', 'landscape'),
+        rect: optional(shape({
+          cx: isFiniteNumber,
+          cy: isFiniteNumber,
+          w: isPositive,
+          h: isPositive,
+        })),
+      },
+      levels: optional(shape({
+        white: isRgb,
+        black: isRgb,
+        whiteAt: optional(isPoint),
+        blackAt: optional(isPoint),
+      })),
+      overlay: optional(shape({
+        id: value => typeof value === 'string' && value.length <= 64,
+        aspect: isPositive,
+        cx: isUnit,
+        cy: isUnit,
+        w: value => isPositive(value) && value <= 1,
+        opacity: isUnit,
+      })),
+      export: {
+        format: oneOf('jpeg', 'png', 'webp'),
+        quality: isUnit,
+        longEdge: value => Number.isInteger(value) && value >= 0 && value <= maxLongEdge,
+        interp: oneOf('bilinear', 'bicubic'),
+        fill: value => value === 'transparent' || /^#[0-9a-f]{6}$/i.test(value),
+      },
     };
   }
 
+  // Of an object value, only the keys a shape rule lists; any other value as it is.
+  function keepListedKeys(rule, value) {
+    if (!rule.keys || !isPlainObject(value)) return value;
+    const listed = rule.keys.filter(key => value[key] !== undefined);
+    return Object.fromEntries(listed.map(key => [key, value[key]]));
+  }
+
   /**
-   * warp(dst, src, Minv, opts) — inverse-map every dst pixel through Minv into src and sample.
-   * dst/src: ImageData-like RGBA. Minv maps dst pixel coords (+rowOffset) → src pixel coords.
-   * opts.bounds [x0,y0,x1,y1]: valid source area in src coords; outside → opts.fill (RGBA 0–255).
+   * sanitizeState(input, base, options) → { state, invalid, fields }.
+   * Edits files and resumed sessions: the state is rebuilt field by field on top of `base` (a
+   * fresh state for this photo). A malformed field keeps the base value and is listed in
+   * `invalid`; a missing sub-field takes the base value (older files); unknown fields are
+   * dropped. options: { presetIds: crop preset ids, maxPx: the largest export long edge }.
+   * `fields` lists every state field this checks (regression R14 compares).
    */
-  function warp(dst, src, Minv, opts = {}) {
-    const interp = opts.interp === 'bicubic' ? 'bicubic' : 'bilinear';
-    const fill = opts.fill || [0, 0, 0, 0], rowOffset = opts.rowOffset || 0;
-    const [bx0, by0, bx1, by1] = opts.bounds || [0, 0, src.width, src.height];
-    const sw = src.width, sh = src.height, sd = src.data, dd = dst.data, dw = dst.width, dh = dst.height;
-    const [a, b, c, d, e, f, g, h, i] = Minv;
-    const f0 = fill[0], f1 = fill[1], f2 = fill[2], f3 = fill[3];
-    const cub = new Float32Array(4), cubY = new Float32Array(4);
-    for (let y = 0; y < dh; y++) {
-      const oy = y + rowOffset + 0.5;
-      let X = a * 0.5 + b * oy + c, Y = d * 0.5 + e * oy + f, Wd = g * 0.5 + h * oy + i;
-      let o = y * dw * 4;
-      for (let x = 0; x < dw; x++, X += a, Y += d, Wd += g, o += 4) {
-        if (Wd <= EPS) { dd[o] = f0; dd[o + 1] = f1; dd[o + 2] = f2; dd[o + 3] = f3; continue; }
-        const u = X / Wd, v = Y / Wd;
-        if (u < bx0 || v < by0 || u >= bx1 || v >= by1) { dd[o] = f0; dd[o + 1] = f1; dd[o + 2] = f2; dd[o + 3] = f3; continue; }
-        const fx = u - 0.5, fy = v - 0.5;
-        const x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0;
-        if (interp === 'bilinear') {
-          const xa = x0 < 0 ? 0 : x0 >= sw ? sw - 1 : x0, xb = x0 + 1 < 0 ? 0 : x0 + 1 >= sw ? sw - 1 : x0 + 1;
-          const ya = y0 < 0 ? 0 : y0 >= sh ? sh - 1 : y0, yb = y0 + 1 < 0 ? 0 : y0 + 1 >= sh ? sh - 1 : y0 + 1;
-          const p00 = (ya * sw + xa) * 4, p10 = (ya * sw + xb) * 4, p01 = (yb * sw + xa) * 4, p11 = (yb * sw + xb) * 4;
-          const w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty), w01 = (1 - tx) * ty, w11 = tx * ty;
-          dd[o] = sd[p00] * w00 + sd[p10] * w10 + sd[p01] * w01 + sd[p11] * w11;
-          dd[o + 1] = sd[p00 + 1] * w00 + sd[p10 + 1] * w10 + sd[p01 + 1] * w01 + sd[p11 + 1] * w11;
-          dd[o + 2] = sd[p00 + 2] * w00 + sd[p10 + 2] * w10 + sd[p01 + 2] * w01 + sd[p11 + 2] * w11;
-          dd[o + 3] = sd[p00 + 3] * w00 + sd[p10 + 3] * w10 + sd[p01 + 3] * w01 + sd[p11 + 3] * w11;
-        } else {
-          keys(tx, cub); keys(ty, cubY);
-          let r = 0, gg = 0, bb = 0, aa = 0;
-          for (let m = 0; m < 4; m++) {
-            let yy = y0 - 1 + m; yy = yy < 0 ? 0 : yy >= sh ? sh - 1 : yy;
-            const wy = cubY[m], row = yy * sw;
-            for (let n = 0; n < 4; n++) {
-              let xx = x0 - 1 + n; xx = xx < 0 ? 0 : xx >= sw ? sw - 1 : xx;
-              const wgt = cub[n] * wy, p = (row + xx) * 4;
-              r += sd[p] * wgt; gg += sd[p + 1] * wgt; bb += sd[p + 2] * wgt; aa += sd[p + 3] * wgt;
-            }
+  function sanitizeState(input, base, options = {}) {
+    const state = JSON.parse(JSON.stringify(base));
+    const invalid = [];
+    const rules = stateRules(options);
+    const fields = ['version', 'source', ...Object.keys(rules)];
+    if (!isPlainObject(input)) return { state, invalid: Object.keys(rules), fields };
+    for (const [field, rule] of Object.entries(rules)) {
+      const value = input[field];
+      if (value === undefined) continue;
+      let cleaned = value;
+      let ok;
+      if (typeof rule === 'function') {
+        ok = rule(value);
+        cleaned = keepListedKeys(rule, value);
+      } else {
+        // An object of sub-rules: check each sub-field, filling missing ones from the base.
+        ok = isPlainObject(value);
+        if (ok) {
+          cleaned = {};
+          for (const subField of Object.keys(rule)) {
+            const subValue = value[subField];
+            cleaned[subField] = subValue === undefined
+              ? state[field][subField]
+              : keepListedKeys(rule[subField], subValue);
+            if (!rule[subField](cleaned[subField])) ok = false;
           }
-          dd[o] = r; dd[o + 1] = gg; dd[o + 2] = bb; dd[o + 3] = aa; // Uint8ClampedArray clamps overshoot
         }
+      }
+      if (ok) state[field] = JSON.parse(JSON.stringify(cleaned));
+      else invalid.push(field);
+    }
+    return { state, invalid, fields };
+  }
+
+  /* ===================================================================
+     RENDER PIPELINE: state → geometry → warp
+     Frames, as in docs/architecture.md:
+       source (photo px) —homography→ perspective (corrected) —flip, rotate→ rotated
+       —crop, scale→ output
+     =================================================================== */
+  const GEOMETRY_DEFAULTS = {
+    maxOutputPx: 12000,
+    maxOutputArea: 16777216,
+    maxBoundsFactor: 3,
+    minCornerDistPx: 8,
+    fitPaddingPct: 8,
+    allowUpscale: false,
+  };
+  // shrinkToValid's bisection halves the scale range this many times (≈1e-12 precision).
+  const BISECTION_STEPS = 40;
+
+  // The crop's width ÷ height from crop state, or null for a free crop.
+  function cropRatio(crop, sourceWidth, sourceHeight) {
+    if (!crop || crop.ratio == null) return null;
+    const ratio = crop.ratio === 'original' ? sourceWidth / sourceHeight : crop.ratio;
+    return crop.swapped ? 1 / ratio : ratio;
+  }
+
+  // A crop around the card quad, padded by paddingPct of its long side, widened or heightened
+  // to `ratio`, and shrunk and moved to fit inside the frame.
+  function fitCrop(quad, ratio, paddingPct, frameWidth, frameHeight) {
+    const box = Quad.boundingBox(quad);
+    const padding = (paddingPct / 100) * Math.max(box.width, box.height);
+    let width = box.width + 2 * padding;
+    let height = box.height + 2 * padding;
+    const centerX = (box.left + box.right) / 2;
+    const centerY = (box.top + box.bottom) / 2;
+    if (ratio) {
+      if (width / height < ratio) width = height * ratio;
+      else height = width / ratio;
+    }
+    const scale = Math.min(1, frameWidth / width, frameHeight / height);
+    width *= scale;
+    height *= scale;
+    return {
+      x: clamp(centerX - width / 2, 0, frameWidth - width),
+      y: clamp(centerY - height / 2, 0, frameHeight - height),
+      width,
+      height,
+    };
+  }
+
+  function rectCorners(rect) {
+    return [
+      [rect.x, rect.y],
+      [rect.x + rect.width, rect.y],
+      [rect.x + rect.width, rect.y + rect.height],
+      [rect.x, rect.y + rect.height],
+    ];
+  }
+
+  // Shrinks a crop about its center until all four corners sit inside every polygon.
+  function shrinkToValid(crop, polygons) {
+    const isInside = rect => rectCorners(rect).every(
+      point => polygons.every(polygon => Quad.contains(polygon, point)),
+    );
+    if (isInside(crop)) return crop;
+    let centerX = crop.x + crop.width / 2;
+    let centerY = crop.y + crop.height / 2;
+    if (!polygons.every(polygon => Quad.contains(polygon, [centerX, centerY]))) {
+      [centerX, centerY] = Quad.centroid(polygons[0]);
+    }
+    const scaledAboutCenter = scale => ({
+      x: centerX - crop.width * scale / 2,
+      y: centerY - crop.height * scale / 2,
+      width: crop.width * scale,
+      height: crop.height * scale,
+    });
+    let low = 0;
+    let high = 1;
+    for (let i = 0; i < BISECTION_STEPS; i++) {
+      const middle = (low + high) / 2;
+      if (isInside(scaledAboutCenter(middle))) low = middle;
+      else high = middle;
+    }
+    return scaledAboutCenter(low);
+  }
+
+  // The perspective frame: the source photo mapped through the homography, bounded to
+  // maxBoundsFactor card sizes around the card (protects against near-horizon blow-ups) and
+  // scaled down to maxOutputPx. Returns its size and the source → perspective matrix.
+  function perspectiveFrame(homography, cardTargets, sourceCorners, config) {
+    const cardBox = Quad.boundingBox(cardTargets);
+    const factor = config.maxBoundsFactor;
+    const limit = {
+      left: cardBox.left - cardBox.width * factor,
+      top: cardBox.top - cardBox.height * factor,
+      right: cardBox.right + cardBox.width * factor,
+      bottom: cardBox.bottom + cardBox.height * factor,
+    };
+    let bounds = limit;
+    let isLimited = true;
+    const isInFront = point => Mat3.homogeneousW(homography, point[0], point[1]) > EPSILON;
+    if (sourceCorners.every(isInFront)) {
+      const mappedCorners = sourceCorners.map(point => Mat3.apply(homography, point[0], point[1]));
+      const mapped = Quad.boundingBox(mappedCorners);
+      bounds = {
+        left: Math.max(mapped.left, limit.left),
+        top: Math.max(mapped.top, limit.top),
+        right: Math.min(mapped.right, limit.right),
+        bottom: Math.min(mapped.bottom, limit.bottom),
+      };
+      isLimited = bounds.left > mapped.left
+        || bounds.top > mapped.top
+        || bounds.right < mapped.right
+        || bounds.bottom < mapped.bottom;
+    }
+    const boundsWidth = bounds.right - bounds.left;
+    const boundsHeight = bounds.bottom - bounds.top;
+    const scale = Math.min(1, config.maxOutputPx / Math.max(boundsWidth, boundsHeight));
+    return {
+      width: boundsWidth * scale,
+      height: boundsHeight * scale,
+      scale,
+      isClamped: scale < 1,
+      isLimited,
+      sourceToPerspective: Mat3.chain(
+        Mat3.scale(scale),
+        Mat3.translate(-bounds.left, -bounds.top),
+        homography,
+      ),
+      cardPerspective: cardTargets.map(point => [
+        (point[0] - bounds.left) * scale,
+        (point[1] - bounds.top) * scale,
+      ]),
+    };
+  }
+
+  // The rotated frame: flip, then rotate about the perspective frame's center. The rotated
+  // frame is the bounding box of the rotated perspective frame.
+  function rotatedFrame(perspective, rotation, flip) {
+    const degrees = ((rotation.quarter || 0) * 90 + (rotation.fine || 0));
+    const rotate = Mat3.rotate(degrees * RADIANS_PER_DEGREE);
+    const cos = Math.abs(rotate[0]);
+    const sin = Math.abs(rotate[3]);
+    const width = cos * perspective.width + sin * perspective.height;
+    const height = sin * perspective.width + cos * perspective.height;
+    const perspectiveToRotated = Mat3.chain(
+      Mat3.translate(width / 2, height / 2),
+      rotate,
+      Mat3.scale(flip.h ? -1 : 1, flip.v ? -1 : 1),
+      Mat3.translate(-perspective.width / 2, -perspective.height / 2),
+    );
+    return { width, height, perspectiveToRotated };
+  }
+
+  // The crop in rotated-frame px. Manual rects are stored relative to the rotated frame's
+  // center in units of the perspective frame's long side, so they stay proportionally placed
+  // when earlier steps change.
+  function cropInRotated(cropState, ratio, rotated, longSide, cardRotated, config) {
+    const frameWidth = rotated.width;
+    const frameHeight = rotated.height;
+    if (cropState.mode === 'fit') {
+      return fitCrop(cardRotated, ratio, config.fitPaddingPct, frameWidth, frameHeight);
+    }
+    if (cropState.mode === 'manual' && cropState.rect) {
+      const rect = cropState.rect;
+      const left = frameWidth / 2 + (rect.cx - rect.w / 2) * longSide;
+      const top = frameHeight / 2 + (rect.cy - rect.h / 2) * longSide;
+      const clampedLeft = clamp(left, 0, frameWidth);
+      const clampedTop = clamp(top, 0, frameHeight);
+      return {
+        x: clampedLeft,
+        y: clampedTop,
+        width: clamp(left + rect.w * longSide, 0, frameWidth) - clampedLeft,
+        height: clamp(top + rect.h * longSide, 0, frameHeight) - clampedTop,
+      };
+    }
+    if (!ratio) return { x: 0, y: 0, width: frameWidth, height: frameHeight };
+    // The whole frame, trimmed to the ratio and centered.
+    let width = frameWidth;
+    let height = width / ratio;
+    if (height > frameHeight) {
+      height = frameHeight;
+      width = height * ratio;
+    }
+    return { x: (frameWidth - width) / 2, y: (frameHeight - height) / 2, width, height };
+  }
+
+  // The export size: the optional long-edge resize, then hard clamps against huge canvases
+  // (maxOutputPx on the long side, maxOutputArea in total).
+  function outputSize(crop, exportState, config) {
+    const longSide = Math.max(crop.width, crop.height);
+    let scale = 1;
+    if (exportState.longEdge) {
+      const resize = exportState.longEdge / longSide;
+      scale = config.allowUpscale ? resize : Math.min(1, resize);
+    }
+    let width = Math.max(1, Math.round(crop.width * scale));
+    let height = Math.max(1, Math.round(crop.height * scale));
+    let isClamped = false;
+    const cap = Math.min(
+      1,
+      config.maxOutputPx / Math.max(width, height),
+      Math.sqrt(config.maxOutputArea / (width * height)),
+    );
+    if (cap < 1) {
+      width = Math.max(1, Math.floor(width * cap));
+      height = Math.max(1, Math.floor(height * cap));
+      isClamped = true;
+    }
+    return { width, height, scale, isClamped };
+  }
+
+  /**
+   * computeGeometry(state, config) → every transform needed to render `state`, or
+   * { ok: false, reason }. A pure function of (state, config); preview and export both use it.
+   */
+  function computeGeometry(state, configIn) {
+    const config = Object.assign({}, GEOMETRY_DEFAULTS, configIn || {});
+    const sourceWidth = state.source.width;
+    const sourceHeight = state.source.height;
+    const corners = state.corners;
+    const check = Quad.validate(corners, config.minCornerDistPx);
+    if (!check.ok) return { ok: false, reason: check.reason };
+    const cardTargets = perspectiveTargets(corners, {
+      strength: state.strength,
+      ratio: (state.aspect && state.aspect.ratio) || CARD_ASPECT,
+      orientation: state.aspect ? state.aspect.orientation : 'auto',
+      heightMode: state.squareUpHeight || 'preserveEdges',
+    });
+    const homography = solveHomography(corners, cardTargets);
+    if (!homography) {
+      return { ok: false, reason: 'Could not solve the perspective for these corners.' };
+    }
+
+    const sourceCorners = [
+      [0, 0],
+      [sourceWidth, 0],
+      [sourceWidth, sourceHeight],
+      [0, sourceHeight],
+    ];
+    const perspective = perspectiveFrame(homography, cardTargets, sourceCorners, config);
+    const { sourceToPerspective, cardPerspective } = perspective;
+
+    const rotation = state.rotation || { quarter: 0, fine: 0 };
+    const rotated = rotatedFrame(perspective, rotation, state.flip || {});
+    const { perspectiveToRotated } = rotated;
+    const sourceToRotated = Mat3.multiply(perspectiveToRotated, sourceToPerspective);
+    const toRotated = matrix => point => Mat3.apply(matrix, point[0], point[1]);
+    const cardRotated = cardPerspective.map(toRotated(perspectiveToRotated));
+    const perspectiveCorners = [
+      [0, 0],
+      [perspective.width, 0],
+      [perspective.width, perspective.height],
+      [0, perspective.height],
+    ];
+    const frameRotated = Quad.sortCorners(perspectiveCorners.map(toRotated(perspectiveToRotated)));
+    const isSourceInFront = sourceCorners.every(
+      point => Mat3.homogeneousW(sourceToRotated, point[0], point[1]) > EPSILON,
+    );
+    // The photo's own outline in the rotated frame (null when part of it maps past the horizon).
+    const validRotated = isSourceInFront
+      ? Quad.sortCorners(sourceCorners.map(toRotated(sourceToRotated)))
+      : null;
+
+    const perspectiveLongSide = Math.max(perspective.width, perspective.height);
+    const cropState = state.crop || { mode: 'full' };
+    const ratio = cropRatio(cropState, sourceWidth, sourceHeight);
+    let crop = cropInRotated(cropState, ratio, rotated, perspectiveLongSide, cardRotated, config);
+    if (rotation.fillFrame) {
+      const polygons = validRotated ? [frameRotated, validRotated] : [frameRotated];
+      crop = shrinkToValid(crop, polygons);
+    }
+    if (!(crop.width >= 1 && crop.height >= 1)) return { ok: false, reason: 'Crop is empty.' };
+
+    const output = outputSize(crop, state.export || {}, config);
+    const sourceToOutput = Mat3.chain(
+      Mat3.scale(output.width / crop.width, output.height / crop.height),
+      Mat3.translate(-crop.x, -crop.y),
+      sourceToRotated,
+    );
+    const outputToSource = Mat3.invert(sourceToOutput);
+    if (!outputToSource) return { ok: false, reason: 'Transform is not invertible.' };
+    return {
+      ok: true,
+      cardTargets,
+      homography,
+      sourceToPerspective,
+      perspectiveToRotated,
+      sourceToRotated,
+      sourceToOutput,
+      outputToSource,
+      perspective: {
+        width: perspective.width,
+        height: perspective.height,
+        scale: perspective.scale,
+        isClamped: perspective.isClamped,
+        isLimited: perspective.isLimited,
+      },
+      rotated: { width: rotated.width, height: rotated.height },
+      perspectiveLongSide,
+      cardPerspective,
+      cardRotated,
+      frameRotated,
+      validRotated,
+      crop,
+      output,
+    };
+  }
+
+  // Writes one RGBA fill color at a byte offset.
+  function fillPixel(data, offset, fill) {
+    data[offset] = fill[0];
+    data[offset + 1] = fill[1];
+    data[offset + 2] = fill[2];
+    data[offset + 3] = fill[3];
+  }
+
+  // Bilinear RGBA sample of `source` at grid position (column + fractionX, row + fractionY),
+  // clamp-to-edge, written to `data` at `offset`.
+  function writeBilinear(source, column, row, fractionX, fractionY, data, offset) {
+    const { width, height } = source;
+    const pixels = source.data;
+    const left = clampIndex(column, width);
+    const right = clampIndex(column + 1, width);
+    const top = clampIndex(row, height);
+    const bottom = clampIndex(row + 1, height);
+    const topLeft = (top * width + left) * 4;
+    const topRight = (top * width + right) * 4;
+    const bottomLeft = (bottom * width + left) * 4;
+    const bottomRight = (bottom * width + right) * 4;
+    const weightTopLeft = (1 - fractionX) * (1 - fractionY);
+    const weightTopRight = fractionX * (1 - fractionY);
+    const weightBottomLeft = (1 - fractionX) * fractionY;
+    const weightBottomRight = fractionX * fractionY;
+    for (let channel = 0; channel < 4; channel++) {
+      data[offset + channel] = pixels[topLeft + channel] * weightTopLeft
+        + pixels[topRight + channel] * weightTopRight
+        + pixels[bottomLeft + channel] * weightBottomLeft
+        + pixels[bottomRight + channel] * weightBottomRight;
+    }
+  }
+
+  // Bicubic (Keys) RGBA sample over the 4×4 neighborhood starting one pixel up and left of
+  // (column, row), clamp-to-edge, written to `data` at `offset`. weightsX / weightsY come from
+  // keysWeights. The Uint8ClampedArray clamps any overshoot.
+  function writeBicubic(source, column, row, weightsX, weightsY, data, offset) {
+    const { width, height } = source;
+    const pixels = source.data;
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+    let alpha = 0;
+    for (let rowStep = 0; rowStep < 4; rowStep++) {
+      const sourceRow = clampIndex(row - 1 + rowStep, height) * width;
+      const weightY = weightsY[rowStep];
+      for (let columnStep = 0; columnStep < 4; columnStep++) {
+        const sourceColumn = clampIndex(column - 1 + columnStep, width);
+        const weight = weightsX[columnStep] * weightY;
+        const pixel = (sourceRow + sourceColumn) * 4;
+        red += pixels[pixel] * weight;
+        green += pixels[pixel + 1] * weight;
+        blue += pixels[pixel + 2] * weight;
+        alpha += pixels[pixel + 3] * weight;
+      }
+    }
+    data[offset] = red;
+    data[offset + 1] = green;
+    data[offset + 2] = blue;
+    data[offset + 3] = alpha;
+  }
+
+  /**
+   * warp(dst, src, outputToSource, options): inverse-maps every dst pixel through
+   * outputToSource into src and samples it. dst and src: ImageData-like RGBA.
+   * outputToSource maps dst pixel coordinates (+ options.rowOffset, for row bands) to src
+   * pixel coordinates. options.bounds [left, top, right, bottom]: the valid source area in src
+   * coordinates; outside it, options.fill (RGBA 0–255). options.interp: 'bilinear' | 'bicubic'.
+   */
+  function warp(dst, src, outputToSource, options = {}) {
+    const isBicubic = options.interp === 'bicubic';
+    const fill = options.fill || [0, 0, 0, 0];
+    const rowOffset = options.rowOffset || 0;
+    const bounds = options.bounds || [0, 0, src.width, src.height];
+    const [boundsLeft, boundsTop, boundsRight, boundsBottom] = bounds;
+    const data = dst.data;
+    const [m00, m01, m02, m10, m11, m12, m20, m21, m22] = outputToSource;
+    const weightsX = new Float32Array(4);
+    const weightsY = new Float32Array(4);
+    for (let y = 0; y < dst.height; y++) {
+      const outputY = y + rowOffset + 0.5;
+      // M·[x + 0.5, outputY, 1], stepped by one column per pixel.
+      let homogeneousX = m00 * 0.5 + m01 * outputY + m02;
+      let homogeneousY = m10 * 0.5 + m11 * outputY + m12;
+      let homogeneousW = m20 * 0.5 + m21 * outputY + m22;
+      let offset = y * dst.width * 4;
+      for (let x = 0; x < dst.width; x++) {
+        const sourceX = homogeneousX / homogeneousW;
+        const sourceY = homogeneousY / homogeneousW;
+        const isOutside = homogeneousW <= EPSILON
+          || sourceX < boundsLeft
+          || sourceY < boundsTop
+          || sourceX >= boundsRight
+          || sourceY >= boundsBottom;
+        if (isOutside) {
+          fillPixel(data, offset, fill);
+        } else {
+          // Pixel centers sit at +0.5.
+          const gridX = sourceX - 0.5;
+          const gridY = sourceY - 0.5;
+          const column = Math.floor(gridX);
+          const row = Math.floor(gridY);
+          const fractionX = gridX - column;
+          const fractionY = gridY - row;
+          if (isBicubic) {
+            keysWeights(fractionX, weightsX);
+            keysWeights(fractionY, weightsY);
+            writeBicubic(src, column, row, weightsX, weightsY, data, offset);
+          } else {
+            writeBilinear(src, column, row, fractionX, fractionY, data, offset);
+          }
+        }
+        homogeneousX += m00;
+        homogeneousY += m10;
+        homogeneousW += m20;
+        offset += 4;
       }
     }
     return dst;
   }
-  // Keys cubic convolution weights (a = −0.5, Catmull-Rom) for offsets −1, 0, 1, 2.
-  function keys(t, out) {
-    const A = -0.5;
-    const k = x => { x = Math.abs(x); return x <= 1 ? (A + 2) * x * x * x - (A + 3) * x * x + 1 : x < 2 ? A * x * x * x - 5 * A * x * x + 8 * A * x - 4 * A : 0; };
-    out[0] = k(1 + t); out[1] = k(t); out[2] = k(1 - t); out[3] = k(2 - t);
+
+  // Keys cubic convolution with a = −0.5 (Catmull-Rom).
+  const KEYS_A = -0.5;
+  function keysKernel(distance) {
+    const x = Math.abs(distance);
+    if (x <= 1) return (KEYS_A + 2) * x * x * x - (KEYS_A + 3) * x * x + 1;
+    if (x < 2) return KEYS_A * x * x * x - 5 * KEYS_A * x * x + 8 * KEYS_A * x - 4 * KEYS_A;
+    return 0;
+  }
+  // Keys weights for the pixels at offsets −1, 0, 1, 2 from a sample `fraction` past a pixel.
+  function keysWeights(fraction, weights) {
+    weights[0] = keysKernel(1 + fraction);
+    weights[1] = keysKernel(fraction);
+    weights[2] = keysKernel(1 - fraction);
+    weights[3] = keysKernel(2 - fraction);
   }
 
   /* ===================================================================
-     LEVELS — white/black point correction in linear light
+     LEVELS: white and black point correction in linear light
      =================================================================== */
-  const LEVELS_DEFAULTS = { whiteTarget: 245, blackTarget: 8, autoWhitePct: 1, autoBlackPct: 0.5, autoClipAt: 250 };
-  const SRGB_LIN = new Float64Array(256);
-  for (let i = 0; i < 256; i++) { const v = i / 255; SRGB_LIN[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
-  const toLin = v => { v = Math.max(0, Math.min(255, v)) / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-  const toSrgb = l => { l = Math.max(0, Math.min(1, l)); return 255 * (l <= 0.0031308 ? l * 12.92 : 1.055 * Math.pow(l, 1 / 2.4) - 0.055); };
+  const LEVELS_DEFAULTS = {
+    whiteTarget: 245,
+    blackTarget: 8,
+    autoWhitePct: 1,
+    autoBlackPct: 0.5,
+    autoClipAt: 250,
+  };
+  // Rec. 709 luminance weights, for brightness on sRGB values.
+  const LUMA = [0.2126, 0.7152, 0.0722];
+
+  // sRGB 0–255 → linear 0–1 (the sRGB transfer function).
+  function srgbToLinear(value) {
+    const encoded = Math.max(0, Math.min(255, value)) / 255;
+    return encoded <= 0.04045 ? encoded / 12.92 : Math.pow((encoded + 0.055) / 1.055, 2.4);
+  }
+  // Linear 0–1 → sRGB 0–255 (not rounded).
+  function linearToSrgb(value) {
+    const linear = Math.max(0, Math.min(1, value));
+    return 255 * (linear <= 0.0031308 ? linear * 12.92 : 1.055 * Math.pow(linear, 1 / 2.4) - 0.055);
+  }
+  // srgbToLinear for every byte value, for pixel loops.
+  const SRGB_TO_LINEAR = new Float64Array(256);
+  for (let i = 0; i < 256; i++) SRGB_TO_LINEAR[i] = srgbToLinear(i);
+
+  const luminanceAt = (data, offset) => LUMA[0] * data[offset]
+    + LUMA[1] * data[offset + 1]
+    + LUMA[2] * data[offset + 2];
 
   /**
-   * levelsLUT(levels, opts) → [lutR, lutG, lutB] (Uint8ClampedArray 256 each), or null for no change.
-   * levels: { white: [r,g,b] | null, black: [r,g,b] | null } in sRGB 0–255.
-   * Per channel, in linear light, the white pick maps to whiteTarget and the black pick to
-   * blackTarget, so both come out neutral. Scaling linear light is what a camera's white
-   * balance does; doing it on gamma-encoded values would shift midtone hues.
+   * levelsLut(levels, options) → [lutRed, lutGreen, lutBlue] (256-entry Uint8ClampedArrays),
+   * or null for no change. levels: { white: [r, g, b] | null, black: [r, g, b] | null } in
+   * sRGB 0–255. Per channel, in linear light, the white pick maps to whiteTarget and the black
+   * pick to blackTarget, so both come out neutral. Scaling linear light is what a camera's
+   * white balance does; doing it on gamma-encoded values would shift midtone hues.
    */
-  function levelsLUT(lv, opts) {
-    if (!lv || (!lv.white && !lv.black)) return null;
-    const o = Object.assign({}, LEVELS_DEFAULTS, opts || {});
-    const tw = toLin(lv.white ? o.whiteTarget : 255), tb = toLin(lv.black ? o.blackTarget : 0);
-    return [0, 1, 2].map(c => {
-      const w = lv.white ? toLin(lv.white[c]) : 1, b = lv.black ? toLin(lv.black[c]) : 0;
-      const span = Math.max(w - b, 0.02);
-      const t = new Uint8ClampedArray(256);
-      for (let i = 0; i < 256; i++) t[i] = Math.round(toSrgb(tb + (SRGB_LIN[i] - b) / span * (tw - tb)));
-      return t;
+  function levelsLut(levels, options) {
+    if (!levels || (!levels.white && !levels.black)) return null;
+    const settings = Object.assign({}, LEVELS_DEFAULTS, options || {});
+    const targetWhite = srgbToLinear(levels.white ? settings.whiteTarget : 255);
+    const targetBlack = srgbToLinear(levels.black ? settings.blackTarget : 0);
+    return [0, 1, 2].map(channel => {
+      const white = levels.white ? srgbToLinear(levels.white[channel]) : 1;
+      const black = levels.black ? srgbToLinear(levels.black[channel]) : 0;
+      const span = Math.max(white - black, 0.02);
+      const table = new Uint8ClampedArray(256);
+      for (let i = 0; i < 256; i++) {
+        const targetRange = targetWhite - targetBlack;
+        const linear = targetBlack + (SRGB_TO_LINEAR[i] - black) / span * targetRange;
+        table[i] = Math.round(linearToSrgb(linear));
+      }
+      return table;
     });
   }
-  function applyLUT(img, lut) {
-    const d = img.data, [r, g, b] = lut;
-    for (let i = 0; i < d.length; i += 4) { d[i] = r[d[i]]; d[i + 1] = g[d[i + 1]]; d[i + 2] = b[d[i + 2]]; }
+
+  // Applies per-channel lookup tables to an RGBA image in place (alpha untouched).
+  function applyLut(img, lut) {
+    const data = img.data;
+    const [red, green, blue] = lut;
+    for (let offset = 0; offset < data.length; offset += 4) {
+      data[offset] = red[data[offset]];
+      data[offset + 1] = green[data[offset + 1]];
+      data[offset + 2] = blue[data[offset + 2]];
+    }
     return img;
   }
-  // Mean color of the opaque pixels, averaged in linear light, returned as sRGB 0–255.
-  // With trim > 0, only the (1 − 2·trim) share of pixels closest in brightness to the patch's
-  // median brightness are averaged. A dropper patch that is mostly label with some text (or a
-  // speck of glare) then reads the surface it is mostly on, not a blend.
-  function meanColor(img, trim = 0) {
-    const d = img.data, idx = [];
-    for (let i = 0; i < d.length; i += 4) if (d[i + 3] !== 0) idx.push(i);
-    if (!idx.length) return null;
-    const lum = i => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
-    if (trim > 0) {
-      const sorted = idx.map(lum).sort((a, b) => a - b), med = sorted[sorted.length >> 1];
-      idx.sort((a, b) => Math.abs(lum(a) - med) - Math.abs(lum(b) - med));
-    }
-    const lo = 0, hi = Math.max(1, Math.ceil(idx.length * (1 - 2 * trim)));
-    let r = 0, g = 0, b = 0;
-    for (let k = lo; k < hi; k++) { const i = idx[k]; r += SRGB_LIN[d[i]]; g += SRGB_LIN[d[i + 1]]; b += SRGB_LIN[d[i + 2]]; }
-    const n = hi - lo;
-    return [r / n, g / n, b / n].map(v => Math.round(toSrgb(v) * 10) / 10);
-  }
+
   /**
-   * autoLevels(img, opts) → { white, black } starting point from an image (transparent pixels ignored).
-   * White = mean of the brightest autoWhitePct% of pixels that aren't clipped (a white-patch
-   * estimate; clipped pixels carry no color information). Black = mean of the darkest autoBlackPct%.
+   * meanColor(img, trim) → the mean color of the opaque pixels, averaged in linear light,
+   * as sRGB 0–255 (one decimal), or null. With trim > 0, only the (1 − 2·trim) share of pixels
+   * closest in brightness to the patch's median are averaged. A dropper patch that is mostly
+   * label with some text (or a speck of glare) then reads the surface it is mostly on.
    */
-  function autoLevels(img, opts) {
-    const o = Object.assign({}, LEVELS_DEFAULTS, opts || {});
-    const d = img.data, N = d.length / 4, L = new Uint8Array(N), ok = new Uint8Array(N);
-    const hw = new Uint32Array(256), hb = new Uint32Array(256);
-    let nw = 0, nb = 0;
-    for (let j = 0, i = 0; j < N; j++, i += 4) {
-      if (d[i + 3] === 0) continue;
-      const l = Math.round(0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]);
-      L[j] = l; ok[j] = 1; hb[l]++; nb++;
-      if (Math.max(d[i], d[i + 1], d[i + 2]) < o.autoClipAt) { ok[j] = 2; hw[l]++; nw++; }
+  function meanColor(img, trim = 0) {
+    const data = img.data;
+    const opaque = [];
+    for (let offset = 0; offset < data.length; offset += 4) {
+      if (data[offset + 3] !== 0) opaque.push(offset);
     }
-    if (!nw) return null;
-    let tw = 255, acc = 0;
-    const needW = Math.max(1, nw * o.autoWhitePct / 100);
-    for (; tw > 0; tw--) { acc += hw[tw]; if (acc >= needW) break; }
-    let tb = 0; acc = 0;
-    const needB = Math.max(1, nb * o.autoBlackPct / 100);
-    for (; tb < 255; tb++) { acc += hb[tb]; if (acc >= needB) break; }
-    const sw = [0, 0, 0], sb = [0, 0, 0]; let cw = 0, cb = 0;
-    for (let j = 0, i = 0; j < N; j++, i += 4) {
-      if (ok[j] === 2 && L[j] >= tw) { sw[0] += SRGB_LIN[d[i]]; sw[1] += SRGB_LIN[d[i + 1]]; sw[2] += SRGB_LIN[d[i + 2]]; cw++; }
-      if (ok[j] && L[j] <= tb) { sb[0] += SRGB_LIN[d[i]]; sb[1] += SRGB_LIN[d[i + 1]]; sb[2] += SRGB_LIN[d[i + 2]]; cb++; }
+    if (!opaque.length) return null;
+    if (trim > 0) {
+      const levels = opaque.map(offset => luminanceAt(data, offset));
+      const sorted = levels.sort((first, second) => first - second);
+      const median = sorted[sorted.length >> 1];
+      const gap = offset => Math.abs(luminanceAt(data, offset) - median);
+      opaque.sort((first, second) => gap(first) - gap(second));
     }
-    const enc = (sum, n) => sum.map(v => Math.round(toSrgb(v / n) * 10) / 10);
-    const white = enc(sw, cw), black = cb ? enc(sb, cb) : null;
-    const lum = c => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-    // A "black" that is more than half as bright as white is a low-contrast scene, not a black point.
-    return { white, black: black && lum(black) < lum(white) * 0.5 ? black : null };
+    const count = Math.max(1, Math.ceil(opaque.length * (1 - 2 * trim)));
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+    for (let k = 0; k < count; k++) {
+      const offset = opaque[k];
+      red += SRGB_TO_LINEAR[data[offset]];
+      green += SRGB_TO_LINEAR[data[offset + 1]];
+      blue += SRGB_TO_LINEAR[data[offset + 2]];
+    }
+    const toOneDecimal = value => Math.round(linearToSrgb(value) * 10) / 10;
+    return [red / count, green / count, blue / count].map(toOneDecimal);
+  }
+
+  // Brightness level (0–255) at which the running count, from `start` stepping by `step`,
+  // first reaches `needed`.
+  function histogramThreshold(histogram, start, step, needed) {
+    let level = start;
+    let count = 0;
+    for (; step < 0 ? level > 0 : level < 255; level += step) {
+      count += histogram[level];
+      if (count >= needed) break;
+    }
+    return level;
+  }
+
+  /**
+   * autoLevels(img, options) → { white, black } as a starting point, or null (transparent
+   * pixels ignored). White = the mean of the brightest autoWhitePct% of pixels that aren't
+   * clipped (a white-patch estimate; clipped pixels carry no color). Black = the mean of the
+   * darkest autoBlackPct%. A black more than half as bright as the white is dropped.
+   */
+  function autoLevels(img, options) {
+    const settings = Object.assign({}, LEVELS_DEFAULTS, options || {});
+    const data = img.data;
+    const pixelCount = data.length / 4;
+    const brightness = new Uint8Array(pixelCount);
+    // 0 transparent, 1 opaque, 2 opaque and unclipped (usable for white).
+    const status = new Uint8Array(pixelCount);
+    const OPAQUE = 1;
+    const UNCLIPPED = 2;
+    const unclippedHistogram = new Uint32Array(256);
+    const opaqueHistogram = new Uint32Array(256);
+    let unclippedCount = 0;
+    let opaqueCount = 0;
+    for (let pixel = 0, offset = 0; pixel < pixelCount; pixel++, offset += 4) {
+      if (data[offset + 3] === 0) continue;
+      const level = Math.round(luminanceAt(data, offset));
+      brightness[pixel] = level;
+      status[pixel] = OPAQUE;
+      opaqueHistogram[level]++;
+      opaqueCount++;
+      if (Math.max(data[offset], data[offset + 1], data[offset + 2]) < settings.autoClipAt) {
+        status[pixel] = UNCLIPPED;
+        unclippedHistogram[level]++;
+        unclippedCount++;
+      }
+    }
+    if (!unclippedCount) return null;
+    const whiteNeeded = Math.max(1, unclippedCount * settings.autoWhitePct / 100);
+    const whiteThreshold = histogramThreshold(unclippedHistogram, 255, -1, whiteNeeded);
+    const blackNeeded = Math.max(1, opaqueCount * settings.autoBlackPct / 100);
+    const blackThreshold = histogramThreshold(opaqueHistogram, 0, 1, blackNeeded);
+
+    const whiteSums = [0, 0, 0];
+    const blackSums = [0, 0, 0];
+    let whiteCount = 0;
+    let blackCount = 0;
+    for (let pixel = 0, offset = 0; pixel < pixelCount; pixel++, offset += 4) {
+      if (status[pixel] === UNCLIPPED && brightness[pixel] >= whiteThreshold) {
+        for (let channel = 0; channel < 3; channel++) {
+          whiteSums[channel] += SRGB_TO_LINEAR[data[offset + channel]];
+        }
+        whiteCount++;
+      }
+      if (status[pixel] && brightness[pixel] <= blackThreshold) {
+        for (let channel = 0; channel < 3; channel++) {
+          blackSums[channel] += SRGB_TO_LINEAR[data[offset + channel]];
+        }
+        blackCount++;
+      }
+    }
+    const encode = (sums, count) => sums.map(
+      sum => Math.round(linearToSrgb(sum / count) * 10) / 10,
+    );
+    const white = encode(whiteSums, whiteCount);
+    const black = blackCount ? encode(blackSums, blackCount) : null;
+    const luminanceOf = color => LUMA[0] * color[0] + LUMA[1] * color[1] + LUMA[2] * color[2];
+    // A "black" more than half as bright as white is a low-contrast scene, not a black point.
+    const isRealBlack = black && luminanceOf(black) < luminanceOf(white) * 0.5;
+    return { white, black: isRealBlack ? black : null };
   }
 
   /* ===================================================================
-     SELF-TEST — runs identically on the main thread and in a Worker
+     SELF-TEST: runs the same on the main thread and in a Worker
+     Each test records { name, pass, detail }; the details carry the measured errors.
      =================================================================== */
-  function selfTest() {
-    const results = [];
-    const rec = (name, pass, detail) => results.push({ name, pass: !!pass, detail });
+
+  // Random convex-ish card quads in a 4032×3024 frame (a base rectangle plus jitter), from a
+  // fixed seed so every run tests the same quads.
+  function randomTestQuads() {
     let seed = 12345;
-    const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const random = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
     const quads = [];
-    for (let n = 0; n < 50; n++) {
-      // Random convex-ish card quads in a 4032×3024 frame: base rectangle + jitter.
-      const cx = 1000 + rnd() * 2000, cy = 800 + rnd() * 1400, w = 600 + rnd() * 900, h = w * (1.2 + rnd() * 0.4), j = 0.18;
-      const q = [[cx - w / 2, cy - h / 2], [cx + w / 2, cy - h / 2], [cx + w / 2, cy + h / 2], [cx - w / 2, cy + h / 2]]
-        .map(p => [p[0] + (rnd() - 0.5) * w * j, p[1] + (rnd() - 0.5) * h * j]);
-      if (Quad.isConvex(q)) quads.push(q);
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const centerX = 1000 + random() * 2000;
+      const centerY = 800 + random() * 1400;
+      const width = 600 + random() * 900;
+      const height = width * (1.2 + random() * 0.4);
+      const jitter = 0.18;
+      const rectangle = centeredTrapezoid(centerX, centerY, width, width, height);
+      const quad = rectangle.map(point => [
+        point[0] + (random() - 0.5) * width * jitter,
+        point[1] + (random() - 0.5) * height * jitter,
+      ]);
+      if (Quad.isConvex(quad)) quads.push(quad);
     }
-    // 1. Homography round-trip: corners map within 0.01 px, and back through the inverse.
-    let worst = 0;
-    for (const q of quads) {
-      const dst = perspectiveTargets(q, { strength: 1, ratio: 63.5 / 88.9 });
-      const H = solveHomography(q, dst), Hi = M3.inv(H);
-      q.forEach((p, i) => {
-        worst = Math.max(worst, V.dist(M3.apply(H, p[0], p[1]), dst[i]));
-        worst = Math.max(worst, V.dist(M3.apply(Hi, dst[i][0], dst[i][1]), p));
-      });
-    }
-    rec('Homography round-trips corners within 0.01 px', worst < 0.01, `max error ${worst.toExponential(2)} px over ${quads.length} quads`);
-    // 2. Flatten 0% (squared up): top/bottom horizontal, left/right edge angles mirrored.
-    let worstA = 0, worstH = 0;
-    for (const q of quads) {
-      const t = perspectiveTargets(q, { strength: 0 });
-      worstH = Math.max(worstH, Math.abs(t[0][1] - t[1][1]), Math.abs(t[3][1] - t[2][1]));
-      const left = Math.atan2(t[3][0] - t[0][0], t[3][1] - t[0][1]), right = Math.atan2(t[2][0] - t[1][0], t[2][1] - t[1][1]);
-      worstA = Math.max(worstA, Math.abs(left + right) / DEG);
-      const H = solveHomography(q, t);
-      q.forEach((p, i) => { worst = Math.max(worst, V.dist(M3.apply(H, p[0], p[1]), t[i])); });
-    }
-    rec('Flatten 0%: top/bottom horizontal, left/right angles mirror', worstA < 1e-6 && worstH < 1e-6, `angle mismatch ${worstA.toExponential(2)}°, edge tilt ${worstH.toExponential(2)} px`);
-    // 3. Flatten 100%: four 90° corners at 5:7 (portrait) and correct landscape pick.
-    let worstB = 0, worstR = 0;
-    for (const q of quads) {
-      const t = perspectiveTargets(q, { strength: 1, ratio: 63.5 / 88.9 });
-      worstB = Math.max(worstB, ...Quad.angles(t).map(a => Math.abs(a - 90)));
-      const s = Quad.sides(t);
-      worstR = Math.max(worstR, Math.abs(Math.min(s.top, s.left) / Math.max(s.top, s.left) - 63.5 / 88.9));
-    }
-    rec('Flatten 100%: corners are 90° at 5:7', worstB < 1e-9 && worstR < 1e-9, `angle error ${worstB.toExponential(2)}°, aspect error ${worstR.toExponential(2)}`);
-    // 3b. Perspective-corrected aspect: project a 5:7 card tilted 25°/12° through a pinhole camera.
-    const fpx = 1500, u0 = 750, v0 = 1000, tx = 25 * DEG, ty = 12 * DEG;
-    const proj = ([x, y, z]) => {
-      const y1 = y * Math.cos(tx) - z * Math.sin(tx), z1 = y * Math.sin(tx) + z * Math.cos(tx);
-      const x2 = x * Math.cos(ty) + z1 * Math.sin(ty), z2 = -x * Math.sin(ty) + z1 * Math.cos(ty) + 400;
-      return [u0 + fpx * (x2 + 10) / z2, v0 + fpx * (y1 - 20) / z2];
-    };
-    const pq = [[-31.75, -44.45, 0], [31.75, -44.45, 0], [31.75, 44.45, 0], [-31.75, 44.45, 0]].map(proj);
-    const rA = rectAspect(pq, [u0, v0], { fallback: 3000, min: 100, max: 10000 }), s0 = Quad.sides(pq);
-    rec('Perspective-corrected aspect recovers 5:7', Math.abs(rA - 63.5 / 88.9) < 1e-6,
-      `recovered ${rA.toFixed(5)} vs naive ${((s0.top + s0.bottom) / (s0.left + s0.right)).toFixed(4)}`);
-    // 4. Degenerate input is rejected.
-    const bow = [[0, 0], [100, 100], [100, 0], [0, 100]];
-    rec('Degenerate quads rejected', !Quad.validate(bow, 8).ok && !Quad.validate([[0, 0], [2, 0], [100, 100], [0, 100]], 8).ok, 'bow-tie and near-duplicate corners');
-    // 5. Pipeline: exported card corners land on a 5:7 rectangle with 90° corners.
-    const st = { source: { width: 4032, height: 3024 }, corners: quads[0], strength: 1, aspect: { ratio: 63.5 / 88.9, orientation: 'auto' }, rotation: { quarter: 1, fine: 3.5 }, flip: { h: true }, crop: { mode: 'fit', ratio: 1 }, export: {} };
-    const geo = computeGeometry(st, {});
-    const outQ = quads[0].map(p => M3.apply(geo.Mout, p[0], p[1]));
-    const angErr = Math.max(...Quad.angles(outQ).map(a => Math.abs(a - 90)));
-    const sd = Quad.sides(outQ), asp = Math.min(sd.top, sd.left) / Math.max(sd.top, sd.left);
-    rec('Pipeline (rotate+flip+crop) keeps card rectangular at 5:7', geo.ok && angErr < 1e-6 && Math.abs(asp - 63.5 / 88.9) < 1e-6, `angle error ${angErr.toExponential(2)}°, aspect ${asp.toFixed(6)}`);
-    // 6. Warp: identity reproduces the source; a synthetic card is detected.
-    const W = 480, H = 640, img = { width: W, height: H, data: new Uint8ClampedArray(W * H * 4) };
-    const card = [[120, 140], [370, 128], [384, 470], [110, 486]];
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      // 4×4 supersampled fill for anti-aliased edges, like a real photo.
-      let cov = 0;
-      for (let sy = 0; sy < 4; sy++) for (let sx = 0; sx < 4; sx++) if (Quad.contains(card, [x + (sx + 0.5) / 4, y + (sy + 0.5) / 4])) cov++;
-      const v = 50 + (200 - 50) * cov / 16, o = (y * W + x) * 4;
-      img.data[o] = v; img.data[o + 1] = v * 0.9; img.data[o + 2] = v * 0.8; img.data[o + 3] = 255;
-    }
-    const copy = warp({ width: W, height: H, data: new Uint8ClampedArray(W * H * 4) }, img, M3.identity());
-    let maxDiff = 0; for (let k = 0; k < copy.data.length; k++) maxDiff = Math.max(maxDiff, Math.abs(copy.data[k] - img.data[k]));
-    rec('Identity warp reproduces source', maxDiff === 0, `max channel diff ${maxDiff}`);
-    const det = detect(img, {});
-    const got = det.candidates[0];
-    const err = got ? Math.max(...got.corners.map((p, i) => V.dist(p, card[i]))) : Infinity;
-    rec('Detects a synthetic card within 2 px', err < 2, got ? `max corner error ${err.toFixed(2)} px, confidence ${got.confidence.toFixed(2)}` : 'no candidate');
-    const ref = refineQuad(Object.assign({ ox: 0, oy: 0, scale: 1 }, img), got ? got.corners : card, { searchPx: 4 });
-    const errR = Math.max(...ref.corners.map((p, i) => V.dist(p, card[i])));
-    rec('Refinement lands within 0.5 px', errR < 0.5, `max corner error ${errR.toFixed(3)} px`);
-    // 8. Levels: the white pick comes out neutral at whiteTarget, the black pick at blackTarget.
-    const lv = { white: [200, 180, 150], black: [40, 30, 20] }, lut = levelsLUT(lv, {});
-    const wOut = [0, 1, 2].map(c => lut[c][lv.white[c]]), bOut = [0, 1, 2].map(c => lut[c][lv.black[c]]);
-    rec('Levels: white pick → neutral 245, black pick → neutral 8',
-      wOut.every(v => Math.abs(v - 245) <= 1) && bOut.every(v => Math.abs(v - 8) <= 1), `white → ${wOut.join(',')}, black → ${bOut.join(',')}`);
-    // 9. Auto levels finds a warm white patch covering 5% of the image.
-    const ai = { width: 100, height: 100, data: new Uint8ClampedArray(40000) };
-    for (let i = 0; i < 10000; i++) {
-      const o = i * 4, k = i < 500 ? 1 : (i % 97) / 120 + 0.1;
-      ai.data[o] = 230 * k; ai.data[o + 1] = 215 * k; ai.data[o + 2] = 190 * k; ai.data[o + 3] = 255;
-    }
-    // 8b. Dropper patch that is 70% white label, 30% black text still reads the white.
-    const lp = { width: 10, height: 10, data: new Uint8ClampedArray(400) };
-    for (let i = 0; i < 100; i++) { const v = i % 10 < 3 ? 20 : 232; lp.data.set([v, v - 6, v - 14, 255], i * 4); }
-    const pc = meanColor(lp, 0.25);
-    rec('Dropper ignores text inside a white patch', pc && Math.abs(pc[0] - 232) < 1 && Math.abs(pc[2] - 218) < 1, pc ? `read ${pc.join(',')} (plain mean ${meanColor(lp).map(Math.round).join(',')})` : 'none');
-    const al = autoLevels(ai, {});
-    rec('Auto levels finds the white patch', al && al.white.every((v, c) => Math.abs(v - [230, 215, 190][c]) < 1), al ? `white ${al.white.join(',')}` : 'none');
-    // 10. Overlay placement scales with the frame (resolution-independent) and is kept fully inside it.
-    const ov = { cx: 0.7, cy: 0.2, w: 0.3, aspect: 2, opacity: 1 };
-    const oa = overlayRect(ov, 1000, 800), ob = overlayRect(ov, 2500, 2000);
-    const scales = ['x', 'y', 'w', 'h'].every(k => Math.abs(ob[k] - oa[k] * 2.5) < 1e-9);
-    const big = overlayRect(clampOverlay({ cx: 0.95, cy: 0.02, w: 1.6, aspect: 0.5, opacity: 1 }, 1000, 800), 1000, 800);
-    const inside = big.x >= -1e-9 && big.y >= -1e-9 && big.x + big.w <= 1000 + 1e-9 && big.y + big.h <= 800 + 1e-9 && Math.abs(big.w / big.h - 0.5) < 1e-9;
-    rec('Overlay placement scales with the frame and stays inside it', scales && inside,
-      `same relative rect at 2.5×: ${scales}; oversized logo clamped to ${big.w.toFixed(0)}×${big.h.toFixed(0)} at ${big.x.toFixed(0)},${big.y.toFixed(0)}`);
-    // 11. Snap presets sit at the margin (3% of the frame width).
-    const sr = overlayRect(snapOverlay(ov, 'br', 1000, 800), 1000, 800), sc = overlayRect(snapOverlay(ov, 'c', 1000, 800), 1000, 800);
-    const sb = overlayRect(snapOverlay(ov, 'b', 1000, 800), 1000, 800), sl = overlayRect(snapOverlay(ov, 'l', 1000, 800), 1000, 800);
-    const sides = Math.abs(sb.x + sb.w / 2 - 500) < 1e-6 && Math.abs(800 - sb.y - sb.h - 30) < 1e-6 && Math.abs(sl.x - 30) < 1e-6 && Math.abs(sl.y + sl.h / 2 - 400) < 1e-6;
-    rec('Overlay snap presets keep a margin', sides && Math.abs(1000 - sr.x - sr.w - 30) < 1e-6 && Math.abs(800 - sr.y - sr.h - 30) < 1e-6 && Math.abs(sc.x + sc.w / 2 - 500) < 1e-6,
-      `bottom-right gap ${(1000 - sr.x - sr.w).toFixed(1)}, ${(800 - sr.y - sr.h).toFixed(1)} px; bottom-middle gap ${(800 - sb.y - sb.h).toFixed(1)} px, centered: ${sides}`);
-    // 12. URL overrides: only existing number / on-off settings; never text, lists or prototype keys.
-    {
-      const cfg = { a: 1, b: true, s: 'x', list: [{ label: 'L' }], o: { n: 2, url: 'u' } };
-      const r = applyConfigOverrides(cfg, [['a', '5'], ['b', '0'], ['o.n', '3'], ['s', '<b>'], ['list.0.label', '<img>'], ['o.url', 'https://x'],
-        ['__proto__.toString', '1'], ['constructor.name', '1'], ['a', 'NaN'], ['b', 'yes'], ['nope', '1']]);
-      const ok = cfg.a === 5 && cfg.b === false && cfg.o.n === 3 && cfg.s === 'x' && cfg.list[0].label === 'L' && cfg.o.url === 'u'
-        && typeof Object.prototype.toString === 'function' && r.applied.length === 3 && r.rejected.length === 8;
-      rec('URL overrides accept only number and on/off settings', ok, `applied ${r.applied.join(', ')}; rejected ${r.rejected.length}`);
-      // 12b. Limited settings: inside the range is applied; above the cap, below the floor or 0 is rejected.
-      const lc = { cap: 100, o: { n: 10 }, free: 1 }, lim = { cap: [10, 100], 'o.n': [1, 50] };
-      const lr = applyConfigOverrides(lc, [['cap', '40'], ['o.n', '50'], ['cap', '1e9'], ['cap', '0'], ['o.n', '51'], ['free', '1e9']], lim);
-      const lok = lc.cap === 40 && lc.o.n === 50 && lc.free === 1e9 && lr.applied.length === 3 && lr.rejected.join() === 'cap,cap,o.n';
-      rec('URL overrides stay inside safe ranges', lok, `applied ${lr.applied.join(', ')}; rejected ${lr.rejected.join(', ')}`);
-    }
-    // 13. Edits / sessions: a valid state passes unchanged; malformed fields fall back; unknown fields are dropped.
-    {
-      const base = { version: 2, source: { name: 'a.jpg', width: 100, height: 80 }, corners: [[0, 0], [100, 0], [100, 80], [0, 80]], strength: 1,
-        aspect: { ratio: 0.71, orientation: 'auto' }, squareUpHeight: 'preserveEdges', rotation: { quarter: 0, fine: 0, fillFrame: false },
-        flip: { h: false, v: false }, crop: { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, orient: null, rect: null },
-        levels: null, overlay: null, export: { format: 'jpeg', quality: 0.92, longEdge: 2000, interp: 'bilinear', fill: '#ffffff' } };
-      const opts = { presetIds: ['free', '1:1', 'original'], maxPx: 12000 };
-      const good = JSON.parse(JSON.stringify(base));
-      Object.assign(good, { strength: 0.4, rotation: { quarter: 3, fine: -2.5, fillFrame: true }, levels: { white: [237.9, 241.5, 231.8], black: [46.9, 33.6, 61.7], whiteAt: [120, 88], blackAt: null },
-        overlay: { id: 'abc-12', aspect: 2, cx: 0.5, cy: 0.9, w: 0.25, opacity: 0.6 }, crop: { mode: 'manual', preset: 'free', ratio: null, swapped: false, orient: 'portrait', rect: { cx: 0, cy: 0, w: 0.5, h: 0.6 } } });
-      const g = sanitizeState(good, base, opts);
-      const bad = JSON.parse(JSON.stringify(good));
-      Object.assign(bad, { extra: '<x>', export: Object.assign({}, good.export, { format: '<img src=x onerror=alert(1)>' }), crop: Object.assign({}, good.crop, { preset: '"]x' }),
-        levels: { white: [300, 0, 0], black: null }, overlay: 'nope', corners: [[0, 0], [1, 1]] });
-      const b = sanitizeState(bad, base, opts);
-      const nested = sanitizeState(Object.assign(JSON.parse(JSON.stringify(good)), { overlay: Object.assign({ evil: '<x>' }, good.overlay) }), base, opts);
-      const ok = JSON.stringify(g.state) === JSON.stringify(good) && !g.invalid.length
-        && b.state.export.format === 'jpeg' && b.state.crop.preset === '1:1' && b.state.levels === null && b.state.overlay === null && !('extra' in b.state)
-        && b.state.strength === 0.4 && b.invalid.sort().join() === 'corners,crop,export,levels,overlay'
-        && !nested.invalid.length && !('evil' in nested.state.overlay) && nested.state.overlay.opacity === 0.6;
-      rec('Edits files are checked field by field', ok, `valid state unchanged: ${JSON.stringify(g.state) === JSON.stringify(good)}; reset: ${b.invalid.join(', ')}`);
-    }
-    return { passed: results.every(r => r.pass), results };
+    return quads;
   }
 
-  G.CardEngine = {
-    version: 1, M3, V, Quad, solveLinear, solveHomography, perspectiveTargets, rectAspect, focalModel, lineThrough, intersect,
-    toGray, gaussianBlur, sobel,
-    DETECT_DEFAULTS, analyze, detect, scoreQuads, refineQuad,
-    GEOMETRY_DEFAULTS, computeGeometry, fitCrop, shrinkToValid, cropRatio, warp,
-    OVERLAY_DEFAULTS, overlayRect, clampOverlay, snapOverlay,
-    applyConfigOverrides, sanitizeState,
-    LEVELS_DEFAULTS, levelsLUT, applyLUT, meanColor, autoLevels,
+  // 1. Homography round trip: corners map within 0.01 px, and back through the inverse.
+  function testHomography(record, quads) {
+    let worst = 0;
+    for (const quad of quads) {
+      const targets = perspectiveTargets(quad, { strength: 1, ratio: CARD_ASPECT });
+      const homography = solveHomography(quad, targets);
+      const inverse = Mat3.invert(homography);
+      quad.forEach((point, i) => {
+        const forward = Mat3.apply(homography, point[0], point[1]);
+        const back = Mat3.apply(inverse, targets[i][0], targets[i][1]);
+        worst = Math.max(worst, Vec2.distance(forward, targets[i]));
+        worst = Math.max(worst, Vec2.distance(back, point));
+      });
+    }
+    record('Homography round-trips corners within 0.01 px', worst < 0.01,
+      `max error ${worst.toExponential(2)} px over ${quads.length} quads`);
+  }
+
+  // 2. Flatten 0% (squared up): top and bottom horizontal, left and right edge angles mirrored.
+  function testFlattenZero(record, quads) {
+    let worstAngle = 0;
+    let worstTilt = 0;
+    for (const quad of quads) {
+      const targets = perspectiveTargets(quad, { strength: 0 });
+      const topTilt = Math.abs(targets[0][1] - targets[1][1]);
+      const bottomTilt = Math.abs(targets[3][1] - targets[2][1]);
+      worstTilt = Math.max(worstTilt, topTilt, bottomTilt);
+      const left = Math.atan2(targets[3][0] - targets[0][0], targets[3][1] - targets[0][1]);
+      const right = Math.atan2(targets[2][0] - targets[1][0], targets[2][1] - targets[1][1]);
+      worstAngle = Math.max(worstAngle, Math.abs(left + right) / RADIANS_PER_DEGREE);
+    }
+    const pass = worstAngle < 1e-6 && worstTilt < 1e-6;
+    record('Flatten 0%: top/bottom horizontal, left/right angles mirror', pass,
+      `angle mismatch ${worstAngle.toExponential(2)}°, edge tilt ${worstTilt.toExponential(2)} px`);
+  }
+
+  // 3. Flatten 100%: four 90° corners at 5:7 (portrait), and the landscape pick.
+  function testFlattenFull(record, quads) {
+    let worstAngle = 0;
+    let worstAspect = 0;
+    for (const quad of quads) {
+      const targets = perspectiveTargets(quad, { strength: 1, ratio: CARD_ASPECT });
+      const deviations = Quad.cornerAngles(targets).map(angle => Math.abs(angle - 90));
+      worstAngle = Math.max(worstAngle, ...deviations);
+      const sides = Quad.sides(targets);
+      const aspect = Math.min(sides.top, sides.left) / Math.max(sides.top, sides.left);
+      worstAspect = Math.max(worstAspect, Math.abs(aspect - CARD_ASPECT));
+    }
+    record('Flatten 100%: corners are 90° at 5:7', worstAngle < 1e-9 && worstAspect < 1e-9,
+      `angle error ${worstAngle.toExponential(2)}°, aspect error ${worstAspect.toExponential(2)}`);
+  }
+
+  // 3b. Perspective-corrected aspect: project a 5:7 card tilted 25° and 12° through a pinhole
+  // camera, then recover its aspect.
+  function testCorrectedAspect(record) {
+    const focalPx = 1500;
+    const centerU = 750;
+    const centerV = 1000;
+    const tiltX = 25 * RADIANS_PER_DEGREE;
+    const tiltY = 12 * RADIANS_PER_DEGREE;
+    const project = ([x, y, z]) => {
+      const rotatedY = y * Math.cos(tiltX) - z * Math.sin(tiltX);
+      const rotatedZ = y * Math.sin(tiltX) + z * Math.cos(tiltX);
+      const turnedX = x * Math.cos(tiltY) + rotatedZ * Math.sin(tiltY);
+      const depth = -x * Math.sin(tiltY) + rotatedZ * Math.cos(tiltY) + 400;
+      return [
+        centerU + focalPx * (turnedX + 10) / depth,
+        centerV + focalPx * (rotatedY - 20) / depth,
+      ];
+    };
+    const cardMm = [[-31.75, -44.45, 0], [31.75, -44.45, 0], [31.75, 44.45, 0], [-31.75, 44.45, 0]];
+    const projected = cardMm.map(project);
+    const focal = { fallback: 3000, min: 100, max: 10000 };
+    const recovered = rectAspect(projected, [centerU, centerV], focal);
+    const sides = Quad.sides(projected);
+    const naive = (sides.top + sides.bottom) / (sides.left + sides.right);
+    record('Perspective-corrected aspect recovers 5:7', Math.abs(recovered - CARD_ASPECT) < 1e-6,
+      `recovered ${recovered.toFixed(5)} vs naive ${naive.toFixed(4)}`);
+  }
+
+  // 4. Degenerate input is rejected: a bow-tie, and two corners nearly on top of each other.
+  function testDegenerateQuads(record) {
+    const bowTie = [[0, 0], [100, 100], [100, 0], [0, 100]];
+    const nearDuplicate = [[0, 0], [2, 0], [100, 100], [0, 100]];
+    const bothRejected = !Quad.validate(bowTie, 8).ok && !Quad.validate(nearDuplicate, 8).ok;
+    record('Degenerate quads rejected', bothRejected,
+      'bow-tie and near-duplicate corners');
+  }
+
+  // 5. Pipeline: the exported card corners land on a 5:7 rectangle with 90° corners.
+  function testPipeline(record, quad) {
+    const state = {
+      source: { width: 4032, height: 3024 },
+      corners: quad,
+      strength: 1,
+      aspect: { ratio: CARD_ASPECT, orientation: 'auto' },
+      rotation: { quarter: 1, fine: 3.5 },
+      flip: { h: true },
+      crop: { mode: 'fit', ratio: 1 },
+      export: {},
+    };
+    const geometry = computeGeometry(state, {});
+    const cardOutput = quad.map(point => Mat3.apply(geometry.sourceToOutput, point[0], point[1]));
+    const deviations = Quad.cornerAngles(cardOutput).map(angle => Math.abs(angle - 90));
+    const angleError = Math.max(...deviations);
+    const sides = Quad.sides(cardOutput);
+    const aspect = Math.min(sides.top, sides.left) / Math.max(sides.top, sides.left);
+    record('Pipeline (rotate+flip+crop) keeps card rectangular at 5:7',
+      geometry.ok && angleError < 1e-6 && Math.abs(aspect - CARD_ASPECT) < 1e-6,
+      `angle error ${angleError.toExponential(2)}°, aspect ${aspect.toFixed(6)}`);
+  }
+
+  // A synthetic photo: a warm card on a dark background, 4×4 supersampled for anti-aliased
+  // edges like a real photo.
+  function syntheticCardImage(width, height, card) {
+    const img = { width, height, data: new Uint8ClampedArray(width * height * 4) };
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let coverage = 0;
+        for (let subY = 0; subY < 4; subY++) {
+          for (let subX = 0; subX < 4; subX++) {
+            if (Quad.contains(card, [x + (subX + 0.5) / 4, y + (subY + 0.5) / 4])) coverage++;
+          }
+        }
+        const value = 50 + (200 - 50) * coverage / 16;
+        const offset = (y * width + x) * 4;
+        img.data[offset] = value;
+        img.data[offset + 1] = value * 0.9;
+        img.data[offset + 2] = value * 0.8;
+        img.data[offset + 3] = 255;
+      }
+    }
+    return img;
+  }
+
+  // 6–7. Warp: identity reproduces the source; a synthetic card is detected, then refined.
+  function testWarpAndDetection(record) {
+    const width = 480;
+    const height = 640;
+    const card = [[120, 140], [370, 128], [384, 470], [110, 486]];
+    const img = syntheticCardImage(width, height, card);
+    const blank = { width, height, data: new Uint8ClampedArray(width * height * 4) };
+    const copy = warp(blank, img, Mat3.identity());
+    let maxDiff = 0;
+    for (let k = 0; k < copy.data.length; k++) {
+      maxDiff = Math.max(maxDiff, Math.abs(copy.data[k] - img.data[k]));
+    }
+    record('Identity warp reproduces source', maxDiff === 0, `max channel diff ${maxDiff}`);
+
+    const found = detect(img, {}).candidates[0];
+    const cornerError = corners => Math.max(
+      ...corners.map((point, i) => Vec2.distance(point, card[i])),
+    );
+    const detectError = found ? cornerError(found.corners) : Infinity;
+    record('Detects a synthetic card within 2 px', detectError < 2, found
+      ? `max corner error ${detectError.toFixed(2)} px, confidence ${found.confidence.toFixed(2)}`
+      : 'no candidate');
+
+    const roi = Object.assign({ originX: 0, originY: 0, scale: 1 }, img);
+    const refined = refineQuad(roi, found ? found.corners : card, { searchPx: 4 });
+    const refineError = cornerError(refined.corners);
+    record('Refinement lands within 0.5 px', refineError < 0.5,
+      `max corner error ${refineError.toFixed(3)} px`);
+  }
+
+  // 8. Levels: the white pick comes out neutral at whiteTarget, the black pick at blackTarget.
+  function testLevelsTargets(record) {
+    const levels = { white: [200, 180, 150], black: [40, 30, 20] };
+    const lut = levelsLut(levels, {});
+    const whiteOut = [0, 1, 2].map(channel => lut[channel][levels.white[channel]]);
+    const blackOut = [0, 1, 2].map(channel => lut[channel][levels.black[channel]]);
+    const isNear = target => value => Math.abs(value - target) <= 1;
+    record('Levels: white pick → neutral 245, black pick → neutral 8',
+      whiteOut.every(isNear(245)) && blackOut.every(isNear(8)),
+      `white → ${whiteOut.join(',')}, black → ${blackOut.join(',')}`);
+  }
+
+  // 8b. A dropper patch that is 70% white label and 30% black text still reads the white.
+  function testDropperTrim(record) {
+    const patch = { width: 10, height: 10, data: new Uint8ClampedArray(400) };
+    for (let i = 0; i < 100; i++) {
+      const value = i % 10 < 3 ? 20 : 232;
+      patch.data.set([value, value - 6, value - 14, 255], i * 4);
+    }
+    const color = meanColor(patch, 0.25);
+    const plainMean = meanColor(patch).map(Math.round).join(',');
+    record('Dropper ignores text inside a white patch',
+      color && Math.abs(color[0] - 232) < 1 && Math.abs(color[2] - 218) < 1,
+      color ? `read ${color.join(',')} (plain mean ${plainMean})` : 'none');
+  }
+
+  // 9. Auto levels finds a warm white patch covering 5% of the image.
+  function testAutoLevels(record) {
+    const img = { width: 100, height: 100, data: new Uint8ClampedArray(40000) };
+    for (let i = 0; i < 10000; i++) {
+      const offset = i * 4;
+      const shade = i < 500 ? 1 : (i % 97) / 120 + 0.1;
+      img.data[offset] = 230 * shade;
+      img.data[offset + 1] = 215 * shade;
+      img.data[offset + 2] = 190 * shade;
+      img.data[offset + 3] = 255;
+    }
+    const found = autoLevels(img, {});
+    const expected = [230, 215, 190];
+    record('Auto levels finds the white patch',
+      found && found.white.every((value, channel) => Math.abs(value - expected[channel]) < 1),
+      found ? `white ${found.white.join(',')}` : 'none');
+  }
+
+  // 10. Overlay placement scales with the frame (resolution-independent) and stays fully inside.
+  function testOverlayPlacement(record) {
+    const overlay = { cx: 0.7, cy: 0.2, w: 0.3, aspect: 2, opacity: 1 };
+    const small = overlayRect(overlay, 1000, 800);
+    const large = overlayRect(overlay, 2500, 2000);
+    const scalesUp = key => Math.abs(large[key] - small[key] * 2.5) < 1e-9;
+    const scales = ['x', 'y', 'width', 'height'].every(scalesUp);
+    const oversized = { cx: 0.95, cy: 0.02, w: 1.6, aspect: 0.5, opacity: 1 };
+    const clamped = overlayRect(clampOverlay(oversized, 1000, 800), 1000, 800);
+    const isInside = clamped.x >= -1e-9
+      && clamped.y >= -1e-9
+      && clamped.x + clamped.width <= 1000 + 1e-9
+      && clamped.y + clamped.height <= 800 + 1e-9
+      && Math.abs(clamped.width / clamped.height - 0.5) < 1e-9;
+    const clampedSize = `${clamped.width.toFixed(0)}×${clamped.height.toFixed(0)}`;
+    const clampedAt = `${clamped.x.toFixed(0)},${clamped.y.toFixed(0)}`;
+    record('Overlay placement scales with the frame and stays inside it', scales && isInside,
+      `same relative rect at 2.5×: ${scales}; `
+        + `oversized logo clamped to ${clampedSize} at ${clampedAt}`);
+  }
+
+  // 11. Snap presets sit at the margin (3% of the frame width).
+  function testOverlaySnap(record) {
+    const overlay = { cx: 0.7, cy: 0.2, w: 0.3, aspect: 2, opacity: 1 };
+    const snapped = where => overlayRect(snapOverlay(overlay, where, 1000, 800), 1000, 800);
+    const bottomRight = snapped('br');
+    const center = snapped('c');
+    const bottom = snapped('b');
+    const left = snapped('l');
+    const isNear = (value, target) => Math.abs(value - target) < 1e-6;
+    const bottomRightGapX = 1000 - bottomRight.x - bottomRight.width;
+    const bottomRightGapY = 800 - bottomRight.y - bottomRight.height;
+    const bottomGap = 800 - bottom.y - bottom.height;
+    const sides = isNear(bottom.x + bottom.width / 2, 500)
+      && isNear(bottomGap, 30)
+      && isNear(left.x, 30)
+      && isNear(left.y + left.height / 2, 400);
+    const pass = sides
+      && isNear(bottomRightGapX, 30)
+      && isNear(bottomRightGapY, 30)
+      && isNear(center.x + center.width / 2, 500);
+    record('Overlay snap presets keep a margin', pass,
+      `bottom-right gap ${bottomRightGapX.toFixed(1)}, ${bottomRightGapY.toFixed(1)} px; `
+      + `bottom-middle gap ${bottomGap.toFixed(1)} px, centered: ${sides}`);
+  }
+
+  // 12. URL overrides: only existing number and on/off settings; never text, lists or prototype
+  // keys. 12b: limited settings accept values inside their range only.
+  function testConfigOverrides(record) {
+    const config = { a: 1, b: true, s: 'x', list: [{ label: 'L' }], o: { n: 2, url: 'u' } };
+    const result = applyConfigOverrides(config, [
+      ['a', '5'],
+      ['b', '0'],
+      ['o.n', '3'],
+      ['s', '<b>'],
+      ['list.0.label', '<img>'],
+      ['o.url', 'https://x'],
+      ['__proto__.toString', '1'],
+      ['constructor.name', '1'],
+      ['a', 'NaN'],
+      ['b', 'yes'],
+      ['nope', '1'],
+    ]);
+    const ok = config.a === 5
+      && config.b === false
+      && config.o.n === 3
+      && config.s === 'x'
+      && config.list[0].label === 'L'
+      && config.o.url === 'u'
+      && typeof Object.prototype.toString === 'function'
+      && result.applied.length === 3
+      && result.rejected.length === 8;
+    record('URL overrides accept only number and on/off settings', ok,
+      `applied ${result.applied.join(', ')}; rejected ${result.rejected.length}`);
+
+    const limited = { cap: 100, o: { n: 10 }, free: 1 };
+    const limits = { cap: [10, 100], 'o.n': [1, 50] };
+    const limitedResult = applyConfigOverrides(limited, [
+      ['cap', '40'], ['o.n', '50'], ['cap', '1e9'], ['cap', '0'], ['o.n', '51'], ['free', '1e9'],
+    ], limits);
+    const limitedOk = limited.cap === 40
+      && limited.o.n === 50
+      && limited.free === 1e9
+      && limitedResult.applied.length === 3
+      && limitedResult.rejected.join() === 'cap,cap,o.n';
+    record('URL overrides stay inside safe ranges', limitedOk,
+      `applied ${limitedResult.applied.join(', ')}; rejected ${limitedResult.rejected.join(', ')}`);
+  }
+
+  // 13. Edits files and sessions: a valid state passes unchanged; malformed fields fall back;
+  // unknown fields are dropped.
+  function testSanitizeState(record) {
+    const clone = value => JSON.parse(JSON.stringify(value));
+    const base = {
+      version: 2,
+      source: { name: 'a.jpg', width: 100, height: 80 },
+      corners: [[0, 0], [100, 0], [100, 80], [0, 80]],
+      strength: 1,
+      aspect: { ratio: 0.71, orientation: 'auto' },
+      squareUpHeight: 'preserveEdges',
+      rotation: { quarter: 0, fine: 0, fillFrame: false },
+      flip: { h: false, v: false },
+      crop: { mode: 'fit', preset: '1:1', ratio: 1, swapped: false, orient: null, rect: null },
+      levels: null,
+      overlay: null,
+      export: {
+        format: 'jpeg',
+        quality: 0.92,
+        longEdge: 2000,
+        interp: 'bilinear',
+        fill: '#ffffff',
+      },
+    };
+    const options = { presetIds: ['free', '1:1', 'original'], maxPx: 12000 };
+    const good = Object.assign(clone(base), {
+      strength: 0.4,
+      rotation: { quarter: 3, fine: -2.5, fillFrame: true },
+      levels: {
+        white: [237.9, 241.5, 231.8],
+        black: [46.9, 33.6, 61.7],
+        whiteAt: [120, 88],
+        blackAt: null,
+      },
+      overlay: { id: 'abc-12', aspect: 2, cx: 0.5, cy: 0.9, w: 0.25, opacity: 0.6 },
+      crop: {
+        mode: 'manual',
+        preset: 'free',
+        ratio: null,
+        swapped: false,
+        orient: 'portrait',
+        rect: { cx: 0, cy: 0, w: 0.5, h: 0.6 },
+      },
+    });
+    const goodResult = sanitizeState(good, base, options);
+    const bad = Object.assign(clone(good), {
+      extra: '<x>',
+      export: Object.assign({}, good.export, { format: '<img src=x onerror=alert(1)>' }),
+      crop: Object.assign({}, good.crop, { preset: '"]x' }),
+      levels: { white: [300, 0, 0], black: null },
+      overlay: 'nope',
+      corners: [[0, 0], [1, 1]],
+    });
+    const badResult = sanitizeState(bad, base, options);
+    const overlayWithExtra = Object.assign({ evil: '<x>' }, good.overlay);
+    const withExtraKey = Object.assign(clone(good), { overlay: overlayWithExtra });
+    const nested = sanitizeState(withExtraKey, base, options);
+    const isGoodUnchanged = JSON.stringify(goodResult.state) === JSON.stringify(good);
+    const ok = isGoodUnchanged
+      && !goodResult.invalid.length
+      && badResult.state.export.format === 'jpeg'
+      && badResult.state.crop.preset === '1:1'
+      && badResult.state.levels === null
+      && badResult.state.overlay === null
+      && !('extra' in badResult.state)
+      && badResult.state.strength === 0.4
+      && badResult.invalid.sort().join() === 'corners,crop,export,levels,overlay'
+      && !nested.invalid.length
+      && !('evil' in nested.state.overlay)
+      && nested.state.overlay.opacity === 0.6;
+    record('Edits files are checked field by field', ok,
+      `valid state unchanged: ${isGoodUnchanged}; reset: ${badResult.invalid.join(', ')}`);
+  }
+
+  function selfTest() {
+    const results = [];
+    const record = (name, pass, detail) => results.push({ name, pass: !!pass, detail });
+    const quads = randomTestQuads();
+    testHomography(record, quads);
+    testFlattenZero(record, quads);
+    testFlattenFull(record, quads);
+    testCorrectedAspect(record);
+    testDegenerateQuads(record);
+    testPipeline(record, quads[0]);
+    testWarpAndDetection(record);
+    testLevelsTargets(record);
+    testDropperTrim(record);
+    testAutoLevels(record);
+    testOverlayPlacement(record);
+    testOverlaySnap(record);
+    testConfigOverrides(record);
+    testSanitizeState(record);
+    return { passed: results.every(result => result.pass), results };
+  }
+
+  globalScope.CardEngine = {
+    version: 1,
+    Mat3,
+    Vec2,
+    Quad,
+    solveLinear,
+    solveHomography,
+    perspectiveTargets,
+    rectAspect,
+    focalModel,
+    lineThrough,
+    intersectLines,
+    toGray,
+    gaussianBlur,
+    sobel,
+    DETECT_DEFAULTS,
+    analyze,
+    detect,
+    scoreQuads,
+    refineQuad,
+    GEOMETRY_DEFAULTS,
+    computeGeometry,
+    fitCrop,
+    shrinkToValid,
+    cropRatio,
+    warp,
+    OVERLAY_DEFAULTS,
+    overlayRect,
+    clampOverlay,
+    snapOverlay,
+    applyConfigOverrides,
+    sanitizeState,
+    LEVELS_DEFAULTS,
+    levelsLut,
+    applyLut,
+    meanColor,
+    autoLevels,
     selfTest,
   };
 }
