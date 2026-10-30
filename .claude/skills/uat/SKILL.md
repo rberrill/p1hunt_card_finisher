@@ -5,13 +5,17 @@ description: Maintain Rich's manual acceptance tests - the catalog of every case
 
 # UAT: catalog, smoke test, version script
 
-All three files are local only (gitignored), so they may hold the LAN address. Rich runs the version script on desktop Chrome and iPhone Safari, on the live HTTPS site, before every release.
+All three files are local only (gitignored), so they may hold the LAN address.
+
+**Where it runs.** GitHub Pages only serves `main`, so there is no HTTPS copy of a build before release.
+- **Before release:** Rich runs the version script on the dev build: desktop Chrome on `localhost` (treated as secure, so Share and Copy work there) and iPhone Safari over the LAN on plain HTTP (Share and Copy hidden).
+- **After release:** once the release is pushed, he re-runs the smoke test and any **(HTTPS)** rows on the live site.
 
 | File | What it is | Run |
 |---|---|---|
 | `tests/uat/catalog.md` | Every test case, by feature, with permanent IDs. The master | Only as a full run (see triggers) |
-| `tests/uat/smoke.md` | One quick pass per device touching every step, leaning on iPhone-only risks. The master | Every release, copied into the version script |
-| `tests/UAT-X.Y.md` | This version's new and connected cases, then the smoke test, then the sign-off | Every release |
+| `tests/uat/smoke.md` | One quick pass per device touching every step, leaning on iPhone-only risks. The master | Every release: pre-release on the dev build, then live after deploy |
+| `tests/UAT-X.Y.md` | This version's new and connected cases, the smoke test, the after-deploy check, the sign-off | Every release |
 
 ## Shared structure
 
@@ -26,7 +30,8 @@ All three files are local only (gitignored), so they may hold the LAN address. R
 - **Test** is a short name for the behavior. **Expected** must be visible without DevTools, except in Security.
 - **Both devices:** a behavior that applies to both gets a row in each table, with that device's steps and outcome.
 - **One device:** device-only behavior (keyboard, wheel, drag-and-drop, paste; pinch, nudge strip, iOS long-press, share sheet) goes only in that device's table.
-- Cite AC and question numbers when a feature has them (`(AC14, Q5)`). Mark share rows `(HTTPS)`.
+- Cite AC and question numbers when a feature has them (`(AC14, Q5)`).
+- **(HTTPS) rows:** start the Test cell with `(HTTPS)` only when the row needs the phone's Share sheet or Copy. These are recorded ➖ before release and run after deploy. If a row only needs the exported file, use **Download** instead, so it runs before release.
 
 ## In a feature proposal (before building)
 
@@ -47,10 +52,17 @@ List in the proposal, for Rich to agree along with the ACs:
 3. **New in X.Y**, at the lead: an `ID | Test | Section` table of every 🆕 row.
 4. **Setup**, copied from the catalog.
 5. **Feature sections:** only the sections with rows this version. New rows are marked 🆕; connected rows are copied from the catalog unchanged. For a full run, copy every catalog section.
-6. **Smoke test:** the Desktop and Phone tables copied from `tests/uat/smoke.md`.
-7. **Sign-off:** a row per included section plus "Smoke test" (Desktop / Phone / Blocking issues); the decision line `☐ Ship ☐ Fix first`; the previous release's one-line result.
+6. **Smoke test:** the Desktop and Phone tables copied from `tests/uat/smoke.md`, with **Pre-release** and **Live** result columns.
+7. **After deploy:**
+   - re-run the smoke test on the live site (Live column);
+   - list this version's (HTTPS) rows by ID, or say there are none;
+   - the line `☐ Keep ☐ Roll back`.
+8. **Sign-off:**
+   - a row per included section, plus "Smoke test (pre-release)" and "Smoke test (live)", with Desktop / Phone / Blocking issues columns;
+   - the decision line `☐ Ship ☐ Fix first`, decided on the pre-release results;
+   - the previous release's one-line result.
 
-**Start a version:** create the file with the header, an empty Scope ("none yet"), Setup and the smoke test, and move the previous version's file to `archive/`.
+**Start a version:** create the file with the header, an empty Scope ("none yet"), Setup, the smoke test and the after-deploy section. Move the previous version's file to `archive/`.
 
 ## At release (the `release` skill calls this)
 

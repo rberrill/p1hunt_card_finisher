@@ -19,7 +19,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
    - **the release smoke test;**
    - **each version's script:** its new and connected cases plus the smoke test.
 
-   Rich runs the version script on the live HTTPS site before each release.
+   Rich runs the version script on the dev build before release: desktop on `localhost`, iPhone over the LAN on plain HTTP. Pages only serves `main`, so the smoke test and any (HTTPS) rows (the phone's Share and Copy) run again on the live site right after deploy.
 4. **Release only on Rich's go-ahead.** He runs `/release X.Y.Z`. Pushing `main` updates the live site.
 5. **Record as you go:**
    - user-visible changes in `CHANGELOG.md` under `## [X.Y.0] - Unreleased`;

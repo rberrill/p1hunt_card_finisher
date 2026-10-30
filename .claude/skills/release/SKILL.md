@@ -7,7 +7,7 @@ argument-hint: "[X.Y.Z]"
 
 # Release $ARGUMENTS
 
-Pushing `main` updates the live site at https://rberrill.github.io/p1hunt_card_finisher/. **Stop and ask** if Rich hasn't said go in this conversation, or if `tests/UAT-X.Y.md` (its cases and the smoke test) isn't signed off as Ship.
+Pushing `main` updates the live site at https://rberrill.github.io/p1hunt_card_finisher/. **Stop and ask** if Rich hasn't said go in this conversation, or if `tests/UAT-X.Y.md` isn't signed off as Ship. That sign-off covers its cases and the pre-release smoke test, run on the dev build; (HTTPS) rows wait for step 4.
 
 Branches: `main` is the release branch (served by Pages). Work happens on `dev/X.Y`, or on `fix/<name>` for a patch. Both are branched from `main`.
 
@@ -16,7 +16,7 @@ Branches: `main` is the release branch (served by Pages). Work happens on `dev/X
 - `git fetch origin`. Rich sometimes edits on GitHub (CNAME, settings). If `git log HEAD..origin/main` shows anything, merge `origin/main` in first.
 - The working tree is clean.
 - Run the `verify` skill at full scope. Everything passes.
-- Privacy audit: `git diff --stat vPREV..HEAD` and `git ls-files`. Nothing local-only is tracked (`CLAUDE.local.md`, `tests/UAT-*.md`, `archive/`, `.claude/settings.local.json`), and every new file is meant to be public.
+- Privacy audit: `git diff --stat vPREV..HEAD` and `git ls-files`. Nothing local-only is tracked (`CLAUDE.local.md`, `tests/UAT-*.md`, `tests/uat/`, `archive/`, `.claude/settings.local.json`), and every new file is meant to be public.
 
 ## 2. Version commit
 
@@ -46,7 +46,8 @@ Release X.Y.Z
 <one line: what this release is>
 
 Verified: selftest n/n; regression n/n; file:// (main n/n, worker n/n, no off-site requests);
-subfolder; 390×844, 375×667, 1280×800. UAT passed on desktop + iPhone Safari (Rich, YYYY-MM-DD).
+subfolder; 390×844, 375×667, 1280×800. UAT and smoke passed on the dev build
+(desktop localhost + iPhone Safari over the LAN; Rich, YYYY-MM-DD).
 
 Caught during the work:
 - <bug found before release, and the test that now guards it>
@@ -58,10 +59,25 @@ Co-Authored-By: …
 
 ## 4. Live check
 
-Pages takes a minute or two to deploy, and caches files for about 10 minutes. Open `https://rberrill.github.io/p1hunt_card_finisher/?selftest=1` in the preview, refreshing the assets with `fetch(url, {cache: 'reload'})` as needed. Check that:
-- the console reads `vX.Y.Z`;
-- the toast shows main and worker self-tests passing;
-- there are no CSP errors.
+Pages takes a minute or two to deploy, and caches files for about 10 minutes.
+
+1. **Claude:** open `https://rberrill.github.io/p1hunt_card_finisher/?selftest=1` in the preview, refreshing the assets with `fetch(url, {cache: 'reload'})` as needed. Check that:
+   - the console reads `vX.Y.Z`;
+   - the toast shows main and worker self-tests passing;
+   - there are no CSP errors.
+
+   Then tell Rich it's ready for his live check.
+2. **Rich:** follow the "After deploy" section of `tests/UAT-X.Y.md`:
+   - the smoke test again, filling in the **Live** column, on desktop and iPhone;
+   - the version's (HTTPS) rows;
+   - Keep or Roll back.
+
+**Roll back** only on Rich's go-ahead:
+1. On `main`, run `git revert -m 1 <release merge>`, then `git push origin main`. Pages redeploys the previous version.
+2. Leave the `vX.Y.Z` tag; it records what was released.
+3. Fix on `fix/<name>` from `main`. That branch must first `git revert` the revert commit, or the release's changes won't come back when it merges.
+4. Release the fix as `X.Y.Z+1`.
+5. Log the rollback in `decision-log.md`.
 
 ## 5. Start the next version
 
