@@ -8,9 +8,18 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 ## How we work
 
-1. **Agree before building.** When Rich describes a feature or a batch of changes, reply with a proposal: what changes, how, open questions and gaps in the ACs. Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away.
+1. **Agree before building.** When Rich describes a feature or a batch of changes, reply with a proposal:
+   - what changes, how, open questions and gaps in the ACs;
+   - its new UAT cases, the connected catalog cases it could affect, and whether a full UAT run is triggered (the `uat` skill).
+
+   Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away.
 2. **Build, then verify yourself** with the `verify` skill. Report measured results, not assumptions. The only thing a browser can't check is the real iOS share sheet.
-3. **UAT:** add test cases for every new or changed behavior with the `uat` skill. The script is organised by feature, with a Desktop table and a Phone table per feature, one behavior per row, and new cases marked 🆕 and listed at the top. Rich runs the whole script on the live HTTPS site before each release.
+3. **UAT** (the `uat` skill) has three files, all local:
+   - **the catalog** of every case, by feature, with Desktop and Phone tables and one behavior per row;
+   - **the release smoke test;**
+   - **each version's script:** its new and connected cases plus the smoke test.
+
+   Rich runs the version script on the live HTTPS site before each release.
 4. **Release only on Rich's go-ahead.** He runs `/release X.Y.Z`. Pushing `main` updates the live site.
 5. **Record as you go:**
    - user-visible changes in `CHANGELOG.md` under `## [X.Y.0] - Unreleased`;
@@ -73,7 +82,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 | `.claude/skills/` | `verify` (end-to-end checks), `uat` (Rich's acceptance script), `release` (Rich-triggered) |
 | `.claude/hooks/` | SessionStart: project state. Stop: runs selftest when app code changed |
 | `CHANGELOG.md`, `README.md`, `SECURITY.md` | Public docs (see `.claude/rules/public-docs.md`) |
-| `tests/UAT-X.Y.md`, `archive/`, `CLAUDE.local.md` | Local only (gitignored) |
+| `tests/uat/` (catalog, smoke), `tests/UAT-X.Y.md`, `archive/`, `CLAUDE.local.md` | Local only (gitignored) |
 
 **Branches:**
 - `main` is the release branch, served by Pages.

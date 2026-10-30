@@ -1,52 +1,60 @@
 ---
 name: uat
-description: Write or update Rich's manual UAT script (tests/UAT-X.Y.md) - add test cases for every new or changed behavior in the right feature section, for desktop and phone, start a new version's script. Use whenever a feature or behavior change is agreed or built.
+description: Maintain Rich's manual acceptance tests - the catalog of every case, the release smoke test, and each version's UAT script (new and connected cases + smoke). Use when proposing or building a feature or behavior change, when starting a version, and at release.
 ---
 
-# UAT script
+# UAT: catalog, smoke test, version script
 
-Rich runs the **whole** script on desktop Chrome and iPhone Safari before every release, on the live HTTPS site. `tests/UAT-X.Y.md` is local only (gitignored), so it may hold the LAN address.
+All three files are local only (gitignored), so they may hold the LAN address. Rich runs the version script on desktop Chrome and iPhone Safari, on the live HTTPS site, before every release.
 
-## Layout of `tests/UAT-X.Y.md`
+| File | What it is | Run |
+|---|---|---|
+| `tests/uat/catalog.md` | Every test case, by feature, with permanent IDs. The master | Only as a full run (see triggers) |
+| `tests/uat/smoke.md` | One quick pass per device touching every step, leaning on iPhone-only risks. The master | Every release, copied into the version script |
+| `tests/UAT-X.Y.md` | This version's new and connected cases, then the smoke test, then the sign-off | Every release |
 
-1. **Header:** the version under test; "automated tests first" (point to `tests/README.md`; no pass counts); the ID and recording conventions; a tester table.
-2. **New in X.Y**, at the lead. It has two parts:
-   - **New behavior:** a short list of what changed.
-   - **New test cases:** a table of `ID | Test | Section` for every 🆕 row.
-3. **Setup:** the hosted site, the local alternative, phone prep, and the files the tests need.
-4. **Feature sections**, numbered in pipeline order:
-   1 Start and layout · 2 Navigation · 3 Perspective · 4 Rotate · 5 Crop · 6 Levels · 7 Overlay · 8 Export · 9 Session restore · 10 Security · 11 Real-use run · 12 Environments.
-   - Each section has a `### Desktop` table and a `### Phone` table, each opened by one italic *Setup:* line.
-   - If a device has no cases in a section, say so in one line; don't drop the heading.
-   - Section 12 is a single table, run once.
-   - A new feature gets a new section in pipeline order. Renumber the later sections, their IDs and the sign-off.
-5. **Sign-off:** one row per section, with Desktop / Phone / Blocking issues columns; the decision line `☐ Ship ☐ Fix first`; the previous release's one-line result.
+## Shared structure
+
+- **Feature sections in pipeline order:** 1 Start and layout · 2 Navigation · 3 Perspective · 4 Rotate · 5 Crop · 6 Levels · 7 Overlay · 8 Export · 9 Session restore · 10 Security · 11 Real-use run · 12 Environments. A new feature gets a new section in pipeline order (renumber the later sections and their IDs in the catalog).
+- **Each section** has a `### Desktop` and a `### Phone` table, each opened by one italic *Setup:* line. If a device has no cases, say so in one line. Section 12 is a single table.
+- **Columns:** `| ID | Test | Steps | Expected | Result | Notes |`.
+- **IDs are permanent:** a device letter (`D`, `P`, `E`), then section.row, e.g. `P5.4`. A new case takes the next free number in its catalog table; a retired ID isn't reused. The version script uses catalog IDs, so gaps are normal. Smoke IDs are `SD1…` and `SP1…`.
 
 ## Writing test cases
 
-- Columns: `| ID | Test | Steps | Expected | Result | Notes |`.
-- **IDs:** a device letter (`D`, `P`, `E`), then section.row, e.g. `P5.4`. Rows are numbered within each table. Desktop and phone versions of a test don't need matching numbers.
-- **One behavior per row.** Steps may set things up, but Expected is a single outcome to judge. If Expected reads "…; then…" or covers two features, split the row.
-- Rows run top to bottom, so a row may build on the rows above it in the same table. Say so when it depends on a specific earlier row ("After P8.4, …").
-- **Test** is a short name for the behavior ("Swap holds across presets"). **Expected** must be visible without DevTools, except in Security.
-- **Both devices:** a behavior that applies to both gets a row in each table, with that device's steps and outcome (click vs tap, loupe up-right vs pinned away from the finger).
-- **One device:** device-only behavior (keyboard shortcuts, wheel, drag-and-drop, paste; pinch, nudge strip, iOS long-press, share sheet) goes only in that device's table.
-- Cite the spec's AC and question numbers when a feature has them (`(AC14, Q5)`). Mark share rows `(HTTPS)`.
-- **New cases:** mark the row's Test cell with `🆕`, put it in its feature section, and add it to the "New test cases" table at the top.
-- **Changed behavior:** edit the existing row in place.
-- **Removed behavior:** delete its rows, and add one 🆕 row confirming it's gone.
+- **One behavior per row.** Steps may set things up, but Expected is a single outcome to judge. If Expected reads "…; then…" or covers two features, split the row. Rows may build on the rows above them in the same table; name the row when it depends on a specific one ("After P8.4, …").
+- **Test** is a short name for the behavior. **Expected** must be visible without DevTools, except in Security.
+- **Both devices:** a behavior that applies to both gets a row in each table, with that device's steps and outcome.
+- **One device:** device-only behavior (keyboard, wheel, drag-and-drop, paste; pinch, nudge strip, iOS long-press, share sheet) goes only in that device's table.
+- Cite AC and question numbers when a feature has them (`(AC14, Q5)`). Mark share rows `(HTTPS)`.
 
-## Start a version
+## In a feature proposal (before building)
 
-Copy the previous `tests/UAT-X.Y.md` to the new version's file, then:
-- clear every Result and Notes cell;
-- remove every 🆕 marker;
-- reset "New in X.Y" to "none yet";
-- reset the sign-off, keeping only the last release's line;
-- move the old file to `archive/`.
+List in the proposal, for Rich to agree along with the ACs:
+1. **New cases:** the rows the feature needs, per device.
+2. **Connected cases:** the catalog rows the change could affect, with one line each on why. Look across features: Levels → "Levels don't touch the logo" (Overlay), the unapplied warning (Export), the unapplied draft on Resume (Session restore).
+3. **Full-run trigger:** say whether one applies:
+   - the change touches every module (a refactor, security hardening, a dependency, the engine's render or export pipeline, `css/app.css` layout rules);
+   - phase two (PWA);
+   - three releases without a full run.
+
+   Rich decides.
+
+## Version script `tests/UAT-X.Y.md`
+
+1. **Header:** the version under test; "automated tests first" (`tests/README.md`; no counts); the ID and recording conventions; a tester table.
+2. **Scope:** new behavior; connected cases and why; whether a full run was triggered and why.
+3. **New in X.Y**, at the lead: an `ID | Test | Section` table of every 🆕 row.
+4. **Setup**, copied from the catalog.
+5. **Feature sections:** only the sections with rows this version. New rows are marked 🆕; connected rows are copied from the catalog unchanged. For a full run, copy every catalog section.
+6. **Smoke test:** the Desktop and Phone tables copied from `tests/uat/smoke.md`.
+7. **Sign-off:** a row per included section plus "Smoke test" (Desktop / Phone / Blocking issues); the decision line `☐ Ship ☐ Fix first`; the previous release's one-line result.
+
+**Start a version:** create the file with the header, an empty Scope ("none yet"), Setup and the smoke test, and move the previous version's file to `archive/`.
 
 ## At release (the `release` skill calls this)
 
-Record Rich's sign-off and decision. Nothing moves: new cases already live in their sections.
-
-If a full run starts taking much over an hour, suggest pruning to Rich: rows the `verify` checks fully cover and that carry no device-specific risk. Don't prune without his OK.
+- Record Rich's sign-off and decision.
+- **Merge into the catalog:** add each 🆕 row (without the marker) to its catalog table; replace changed rows; delete retired ones.
+- If a smoke row found a real regression, or a step stops making sense, update `tests/uat/smoke.md` too.
+- Keep the smoke test at about 15 rows per device: one per step plus the iPhone-only risks. If it grows, propose what to drop.

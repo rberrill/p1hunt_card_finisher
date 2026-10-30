@@ -3,6 +3,7 @@
 CLAUDE.local.md
 archive/
 tests/UAT-*.md
+tests/uat/
 .claude/settings.local.json
 .claude/worktrees/
 

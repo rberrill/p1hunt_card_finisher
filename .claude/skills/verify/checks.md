@@ -1,6 +1,6 @@
 # Behavior and layout checks
 
-The sections match Rich's UAT script (`tests/UAT-X.Y.md`), so a failure here points to the UAT rows it would break. Run the sections a change touches; run them all for a release. "Phone" means 390×844 (and 375×667 for layout rows) with touch emulation; "Desktop" means 1280×800.
+The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure here points to the catalog rows it would break. Those rows are the connected cases to add to the version's UAT. Run the sections a change touches; run them all for a release. "Phone" means 390×844 (and 375×667 for layout rows) with touch emulation; "Desktop" means 1280×800.
 
 ## 1. Start and layout
 

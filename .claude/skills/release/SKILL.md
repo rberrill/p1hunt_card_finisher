@@ -7,7 +7,7 @@ argument-hint: "[X.Y.Z]"
 
 # Release $ARGUMENTS
 
-Pushing `main` updates the live site at https://rberrill.github.io/p1hunt_card_finisher/. **Stop and ask** if Rich hasn't said go in this conversation, or if `tests/UAT-X.Y.md` isn't signed off as Ship.
+Pushing `main` updates the live site at https://rberrill.github.io/p1hunt_card_finisher/. **Stop and ask** if Rich hasn't said go in this conversation, or if `tests/UAT-X.Y.md` (its cases and the smoke test) isn't signed off as Ship.
 
 Branches: `main` is the release branch (served by Pages). Work happens on `dev/X.Y`, or on `fix/<name>` for a patch. Both are branched from `main`.
 
@@ -22,7 +22,7 @@ Branches: `main` is the release branch (served by Pages). Work happens on `dev/X
 
 - `node .claude/skills/release/set-version.js X.Y.Z` sets `appVersion` in `js/config.js` and every `?v=` in `index.html`.
 - CHANGELOG: `## [X.Y.0] - Unreleased` becomes `## [X.Y.Z] - YYYY-MM-DD`. Update the README if features or usage changed.
-- Local: record Rich's sign-off and decision in `tests/UAT-X.Y.md` (the `uat` skill).
+- Local (the `uat` skill): record Rich's sign-off in `tests/UAT-X.Y.md`, then merge its 🆕, changed and retired cases into `tests/uat/catalog.md`.
 - `node tests/selftest.js`, then commit `X.Y.Z: version, changelog date`.
 
 ## 3. Merge, push, tag
@@ -69,7 +69,7 @@ Pages takes a minute or two to deploy, and caches files for about 10 minutes. Op
 - `node .claude/skills/release/set-version.js X.Y+1.0-dev`.
 - Add `## [X.Y+1.0] - Unreleased` above the release in the CHANGELOG.
 - Commit `Start X.Y+1.0-dev`. Push `dev/X.Y+1` for backup (`git push -u origin dev/X.Y+1`).
-- Local: start `tests/UAT-X.Y+1.md` (the `uat` skill: clear the results, drop the 🆕 markers, reset "New in").
+- Local: start `tests/UAT-X.Y+1.md` (the `uat` skill: header, empty scope, setup, smoke test) and move the released version's file to `archive/`.
 
 For a **patch** from `fix/<name>`: merge it into `main` as above, then merge `main` into the open `dev/` branch so the fix isn't lost.
 
