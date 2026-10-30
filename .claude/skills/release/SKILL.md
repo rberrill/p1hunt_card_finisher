@@ -44,7 +44,7 @@ git push origin vX.Y.Z^{commit}:refs/heads/release
 
 The last push is a fast-forward of `release` to the tag; Pages redeploys from it. If git refuses it as non-fast-forward, stop and ask.
 
-**Never `git push --tags`**; push one tag at a time.
+**Never `git push --tags`**; push one tag at a time. A pushed `v*` tag can't be moved or deleted (a GitHub ruleset), so check the tag points at the right commit before pushing it. A wrong tag that's already pushed is fixed by releasing the next patch, not by re-tagging.
 
 The annotated tag's message is the release's **technical record** (`git show vX.Y.Z`):
 
