@@ -4,7 +4,6 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 - **Who uses it:** Rich, mostly on his iPhone (Safari). The phone is the primary device and desktop is secondary.
 - **Phase two (not started):** an installable PWA, then Capacitor store apps with camera capture, save to Photos and native rectangle detection. Phase one is built so phase two is mostly additive. It would be 2.0.
-- **Where things stand:** a SessionStart hook prints the branch, last tag, `appVersion` and the CHANGELOG's Unreleased section. What we're waiting on is in `CLAUDE.local.md` (local only, with machine notes).
 
 ## How we work
 
@@ -107,7 +106,7 @@ Claude maintains these files without being asked. Each kind of fact has one home
 | What changed, for users | `CHANGELOG.md` |
 | Why we decided it | `../../decision-log.md` |
 | How a release was verified | the release's annotated tag message (`git show vX.Y.Z`) |
-| Current status | git + CHANGELOG (the hook prints it) + the "Waiting on" line |
+| What's current (version, what's unreleased, what's blocked and on whom) | Not this file. At the start of every session a script shows Claude the branch, last release, version and the CHANGELOG's unreleased entries; what's blocked is under **Waiting on** in `CLAUDE.local.md` |
 
 - When Rich settles a product decision, add one line under "Settled product decisions" and log the detail in the decision-log.
 - When something trips us up, fix the cause if you can (as with the preview port). Otherwise add one line to the nearest rule, skill or `CLAUDE.local.md`.
