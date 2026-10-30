@@ -1,13 +1,15 @@
 // Sets CONFIG.appVersion in js/config.js and every ?v= asset link in index.html to one version.
-//   node .claude/skills/release/set-version.js 1.7.0        (or 1.8.0-dev)
+//   node .claude/skills/release/set-version.js 1.7.0        (or 1.8.0-dev, 1.8.0-dev.2)
+// A dev build's number goes up whenever a changed build goes to the phone, so every ?v= changes
+// and the browser can't mix cached files with new ones.
 'use strict';
 const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '../../..');
 const version = process.argv[2];
-if (!/^\d+\.\d+\.\d+(-dev)?$/.test(version || '')) {
-  console.error('Usage: set-version.js X.Y.Z or X.Y.Z-dev');
+if (!/^\d+\.\d+\.\d+(-dev(\.\d+)?)?$/.test(version || '')) {
+  console.error('Usage: set-version.js X.Y.Z, X.Y.Z-dev or X.Y.Z-dev.N');
   process.exit(1);
 }
 

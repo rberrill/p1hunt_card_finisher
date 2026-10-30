@@ -9,6 +9,7 @@ All three files are local only (gitignored), so they may hold the LAN address.
 
 **Where it runs.** GitHub Pages only serves the `release` branch, so there is no HTTPS copy of a build before release.
 - **Before release:** Rich runs the version script on the dev build: desktop Chrome on `localhost` (treated as secure, so Share and Copy work there) and iPhone Safari over the LAN on plain HTTP (Share and Copy hidden).
+- **A fresh dev number for every changed build.** Before handing Rich a build whose code changed since he last tested, bump the dev number (`node .claude/skills/release/set-version.js X.Y.0-dev.N`, N + 1). The asset links' `?v=` then changes, so the phone can't mix cached old scripts with new ones (it happened in 1.7). Say the new number in the handover so he can check the console or the logo tooltip.
 - **After release:** once the release is pushed, he re-runs the smoke test and any **(HTTPS)** rows on the live site.
 
 | File | What it is | Run |
