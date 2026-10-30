@@ -1,10 +1,10 @@
-# Working files from building the app with Claude. They stay on this machine and are never pushed.
-CLAUDE.md
+# Local only, never pushed: personal and machine notes, the UAT scripts (they hold sign-offs and the
+# LAN address), retired docs, and per-machine Claude settings. CLAUDE.md and the rest of .claude/ are public.
+CLAUDE.local.md
 archive/
-brief.md
-VERSION-*.md
 tests/UAT-*.md
-.claude/
+.claude/settings.local.json
+.claude/worktrees/
 
 # OS / editor clutter
 .DS_Store

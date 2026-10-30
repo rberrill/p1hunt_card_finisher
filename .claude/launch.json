@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "straightener",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8766", "--bind", "127.0.0.1"],
+      "port": 8766,
+      "autoPort": false
+    },
+    {
+      "name": "subfolder",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8771", "--bind", "127.0.0.1", "--directory", ".."],
+      "port": 8771,
+      "autoPort": false
+    }
+  ]
+}
