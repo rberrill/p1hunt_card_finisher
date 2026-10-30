@@ -4,7 +4,7 @@ All notable changes to P1Hunt Card Finisher are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is shown in the logo tooltip and logged to the browser console.
 
-## [1.7.0] - Unreleased
+## [1.7.0] - 2026-10-30
 
 ### Added
 - Contributor docs: `docs/architecture.md` (how the app is built, the edits-file format) and `tests/README.md` (how to run the tests and what each one guards).
