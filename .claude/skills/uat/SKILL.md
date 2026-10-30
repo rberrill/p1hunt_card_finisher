@@ -32,7 +32,7 @@ All three files are local only (gitignored), so they may hold the LAN address.
 - **Both devices:** a behavior that applies to both gets a row in each table, with that device's steps and outcome.
 - **One device:** device-only behavior (keyboard, wheel, drag-and-drop, paste; pinch, nudge strip, iOS long-press, share sheet) goes only in that device's table.
 - Cite AC and question numbers when a feature has them (`(AC14, Q5)`).
-- **(HTTPS) rows:** start the Test cell with `(HTTPS)` only when the row needs the phone's Share sheet or Copy. There is no HTTPS before release, so when you build a version script, pre-fill their Result (and the smoke test's Pre-release cell) with ➖; Rich skips them and runs them after deploy. A row that follows on from one (as P8.5 follows P8.4) is (HTTPS) too. If a row only needs the exported file, use **Download** instead, so it runs before release.
+- **(HTTPS) rows:** start the Test cell with `(HTTPS)` only when the row needs the phone's Share sheet or Copy. There is no HTTPS before release, so when you build a version script, pre-fill their Result (and the smoke test's Pre-release cell) with ➖; Rich skips them and runs them after deploy. A row that follows on from one (as P8.5 follows P8.4) is (HTTPS) too. An (HTTPS) row left ➖ after deploy is closed with that version; never carry it into the next version's script. If a row only needs the exported file, use **Download** instead, so it runs before release.
 
 ## In a feature proposal (before building)
 
