@@ -1,5 +1,5 @@
 // Node checks, no dependencies: engine purity, asset cache-busting, shell module boundaries,
-// and the CardEngine self-tests (from js/engine.js).
+// security and privacy rules, and the CardEngine self-tests (from js/engine.js).
 //   node tests/selftest.js
 // Exit code 0 = everything passed, 1 = a test failed or the engine broke a structural rule.
 'use strict';
@@ -102,6 +102,35 @@ report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersi
   if (/\son[a-z]+="/i.test(body)) problems.push('on…="" handler attribute');
   if (/(?:src|href)="(?:https?:)?\/\//.test(body)) problems.push('off-site asset');
   report(!problems.length, 'Security: index.html has a strict CSP and nothing inline or off-site', problems.length ? problems.join('; ') : csp.split(';').length + ' CSP directives');
+}
+
+// Privacy rules (1.7). The repository is public: sample photos may not carry a GPS location, and the
+// published text files may not contain private network addresses or local drive paths (those belong in
+// the gitignored CLAUDE.local.md).
+{
+  const hasGps = b => { // walks the JPEG segments to the EXIF IFD0 and looks for the GPS pointer (tag 0x8825)
+    for (let i = 2; i + 4 < b.length && b[i] === 0xFF && b[i + 1] !== 0xDA; i += 2 + b.readUInt16BE(i + 2)) {
+      if (b[i + 1] !== 0xE1 || b.toString('latin1', i + 4, i + 8) !== 'Exif') continue;
+      const t = i + 10, le = b.toString('latin1', t, t + 2) === 'II';
+      const r16 = o => le ? b.readUInt16LE(o) : b.readUInt16BE(o), r32 = o => le ? b.readUInt32LE(o) : b.readUInt32BE(o);
+      const ifd = t + r32(t + 4);
+      for (let k = 0; k < r16(ifd); k++) if (r16(ifd + 2 + k * 12) === 0x8825) return true;
+    }
+    return false;
+  };
+  const photos = fs.readdirSync(path.join(root, 'samples')).filter(f => /\.jpe?g$/i.test(f));
+  const located = photos.filter(f => hasGps(fs.readFileSync(path.join(root, 'samples', f))));
+  report(photos.length && !located.length, 'Privacy: sample photos carry no GPS location', located.length ? located.join(', ') : `${photos.length} photos checked`);
+
+  const walk = d => fs.existsSync(path.join(root, d)) ? fs.readdirSync(path.join(root, d), { withFileTypes: true })
+    .flatMap(e => e.isDirectory() ? walk(`${d}/${e.name}`) : [`${d}/${e.name}`]) : [];
+  const published = ['README.md', 'CHANGELOG.md', 'SECURITY.md', 'CLAUDE.md', 'index.html', ...['css', 'docs', 'js', 'tests', '.claude'].flatMap(walk)]
+    .filter(f => /\.(?:md|js|json|html|css)$/.test(f) && fs.existsSync(path.join(root, f)))
+    .filter(f => !/^tests\/UAT-|^\.claude\/settings\.local\.json$/.test(f)); // gitignored, local only
+  const PRIVATE = /\b10(?:\.\d{1,3}){3}\b|\b192\.168(?:\.\d{1,3}){2}\b|\b172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2}\b|(?<!\w)[A-Za-z]:[\\/]{1,2}(?:Users|P1HUNT)\b/i;
+  const leaks = [];
+  for (const f of published) read(f).split('\n').forEach((line, i) => { if (PRIVATE.test(line)) leaks.push(`${f}:${i + 1}`); });
+  report(!leaks.length, 'Privacy: no private network addresses or local paths in published files', leaks.length ? leaks.join(', ') : `${published.length} files clean`);
 }
 
 new Function(engine)(); // defines globalThis.CardEngine

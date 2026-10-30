@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.7.0] - Unreleased
 
+### Added
+- Contributor docs: `docs/architecture.md` (how the app is built, the edits-file format) and `tests/README.md` (how to run the tests and what each one guards).
+- Two privacy checks in `node tests/selftest.js`: sample photos may not carry a GPS location, and the published files may not contain private network addresses or local paths.
+- The project's Claude Code setup is now in the repository (`CLAUDE.md`, `.claude/`): path-scoped rules, the verify / UAT / release workflows, and hooks. It doesn't change the app.
+
 ## [1.6.0] - 2026-10-28
 
 A security and best-practices release. No new features.
