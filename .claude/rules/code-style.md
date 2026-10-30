@@ -20,7 +20,8 @@ any code you touch.
 - **One or two letters are allowed only for:**
   - `i`, `j`, `k`: integer loop indices, in loops short enough to see whole;
   - `x`, `y`, `dx`, `dy`: a coordinate and its delta;
-  - `id`, `ok`: real words.
+  - `id`, `ok`: real words;
+  - `CF` (the shell's namespace) and `fs` (Node's file-system module).
   Width and height are `width` and `height` (or `cropWidth`, `frameHeight`), never `w` / `h`.
 - **Abbreviations:** only the ones listed here. Spell out everything else.
   `ctx` (a canvas 2D context), `el` (a DOM element), `img` (an image), `src` / `dst` (the two
@@ -35,7 +36,8 @@ any code you touch.
   they return (`quadArea`, `cropRatio`).
 - **Formula notation (engine only).** Where a function implements a published formula, its doc
   comment writes the formula, and the local names match its symbols (`k2`, `n3`, `u0`), those
-  short names are allowed **inside that function only**. Everywhere else, spell it out.
+  short names are allowed **inside that function only**. The comment lists them on a line
+  starting `Formula names:`, which is what the style check reads. Everywhere else, spell it out.
 
 ## Case
 

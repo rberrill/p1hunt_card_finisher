@@ -152,6 +152,15 @@ new Function(engine)(); // defines globalThis.CardEngine
   report(!badLimits.length, 'CONFIG: every URL limit names a CONFIG number with its default in range', badLimits.length ? badLimits.join(', ') : `${Object.keys(ctx.CONFIG_LIMITS).length} limits`);
 }
 
+// Code style (.claude/rules/code-style.md). Report-only until the codebase is brought into line.
+{
+  const { checkStyle } = require('./style-check.js');
+  for (const [rule, problems] of Object.entries(checkStyle(root))) {
+    const sample = problems.slice(0, 5).join(', ');
+    console.log(`STYLE  ${rule}  |  ${problems.length} to fix${problems.length ? ': ' + sample : ''}`);
+  }
+}
+
 const t0 = Date.now();
 const result = globalThis.CardEngine.selfTest();
 for (const r of result.results) report(r.pass, r.name, r.detail);
