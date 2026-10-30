@@ -13,15 +13,16 @@ A static web app that straightens, crops and color-corrects phone photos of trad
    - its new UAT cases, the connected catalog cases it could affect, and whether a full UAT run is triggered (the `uat` skill).
 
    Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away.
-2. **Build, then verify yourself** with the `verify` skill. Report measured results, not assumptions. The only thing a browser can't check is the real iOS share sheet.
-3. **UAT** (the `uat` skill) has three files, all local:
+2. **Write for the reviewer.** Code is read more than it's run: whole-word names, one statement per line, lines of 100 characters at most, a comment on every function. The detail is in `.claude/rules/code-style.md` (it loads with any code file). Apply it to everything you touch, and don't add to the debt.
+3. **Build, then verify yourself** with the `verify` skill. Report measured results, not assumptions. The only thing a browser can't check is the real iOS share sheet.
+4. **UAT** (the `uat` skill) has three files, all local:
    - **the catalog** of every case, by feature, with Desktop and Phone tables and one behavior per row;
    - **the release smoke test;**
    - **each version's script:** its new and connected cases plus the smoke test.
 
    Rich runs the version script on the dev build before release: desktop on `localhost`, iPhone over the LAN on plain HTTP. Pages only serves the `release` branch, so the smoke test and any (HTTPS) rows (the phone's Share and Copy) run again on the live site right after deploy.
-4. **Release only on Rich's go-ahead.** He runs `/release X.Y.Z`, which tags `main` and moves the `release` branch (the live site) to the tag.
-5. **Record as you go:**
+5. **Release only on Rich's go-ahead.** He runs `/release X.Y.Z`, which tags `main` and moves the `release` branch (the live site) to the tag.
+6. **Record as you go:**
    - user-visible changes in `CHANGELOG.md` under `## [X.Y.0] - Unreleased`;
    - decisions, and files changed in the background, in `../../decision-log.md` (dated, newest first, with the *why*);
    - the "Waiting on" line in `CLAUDE.local.md`.
