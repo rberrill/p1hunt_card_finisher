@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A check in `node tests/selftest.js` that the engine's built-in defaults match `CONFIG`.
 
 ### Changed
+- The code was rewritten for readability: whole-word names, one statement per line, short lines, and a comment on every function, following a written code style (`.claude/rules/code-style.md`) that `node tests/selftest.js` now checks. Nothing you see in the app changes; exports are pixel-identical to before.
 - The Overlay step's button reads **Add logo** (then **Replace logo**) instead of **Upload**. Nothing is ever uploaded; the logo stays on your device.
 
 ### Security
