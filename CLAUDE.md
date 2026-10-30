@@ -87,7 +87,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 **Branches:**
 - `main` holds all work. Commit and push it as you go; that never changes the live site.
-- `release` is what Pages serves. Never commit to it. Only the `release` skill moves it, and only to a release tag (rollback moves it back one tag).
+- `release` is what Pages serves. Never commit to it. Only the `release` skill moves it, and only to a release tag (rollback moves it back one tag). A GitHub ruleset blocks deleting or force-pushing it; Rich is the bypass for rollback.
 - `fix/<name>`, from the live tag, is only for a hotfix while `main` has unreleased work.
 - Releases are annotated tags on `main` (`vX.Y.Z`). Moving `release` needs Rich's go-ahead.
 - Commits end with the `Co-Authored-By` trailer.

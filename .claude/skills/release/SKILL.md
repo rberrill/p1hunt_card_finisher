@@ -84,6 +84,7 @@ Pages takes a minute or two to deploy, and caches files for about 10 minutes.
    git push --force-with-lease=release:vX.Y.Z^{commit} origin vPREV^{commit}:refs/heads/release
    ```
    The lease makes the push fail if `release` isn't where we left it. Pages redeploys the previous version.
+   The `release` ruleset blocks force pushes for everyone not on its bypass list. If GitHub refuses the push with a rule violation, stop: Rich adds himself (Repository admin) to the ruleset's bypass list, then retry. Never disable the ruleset to get round it without his say.
 2. `main` and the `vX.Y.Z` tag stay as they are; the tag records what was released.
 3. Fix on `main`, then release `X.Y.Z+1` the normal way.
 4. Log the rollback in `decision-log.md`.
