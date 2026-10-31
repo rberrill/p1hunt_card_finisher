@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<!-- The app icon: a red P and a white 1 on matte black. Drawn on a 32-unit grid with even
+     coordinates, so the 16, 32 and 48 px renders land on whole pixels. favicon.ico and
+     apple-touch-icon.png are rendered from this file; change it, then regenerate them. -->
+<rect width="32" height="32" fill="#161618"/>
+<path fill="#e5322d" fill-rule="evenodd"
+    d="M4 6H15A3 3 0 0 1 18 9V15A3 3 0 0 1 15 18H10V26H4ZM10 10V14H14V10Z"/>
+<path fill="#ffffff" d="M20 8L22 6H28V26H22V12H20Z"/>
+</svg>

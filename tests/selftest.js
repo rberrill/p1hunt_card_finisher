@@ -28,11 +28,13 @@ function report(pass, name, detail) {
   report(references === 0, 'Engine has no window/document references', `${references} found`);
 }
 
-// Cache-busting: every ?v= on index.html's asset links must equal CONFIG.appVersion.
+// Cache-busting: every ?v= on index.html's asset links must equal CONFIG.appVersion, and every
+// linked file (scripts, styles, icons) must exist.
 {
   const version = (read('js/config.js').match(/appVersion:\s*'([^']+)'/) || [])[1];
-  const ASSET_LINK = /(?:href|src)="([^"]+\.(?:css|js))(?:\?v=([^"]*))?"/g;
-  const links = [...read('index.html').matchAll(ASSET_LINK)];
+  const ASSET_LINK = /(?:href|src)="([^"]+\.(?:css|js|svg|png|ico))(?:\?v=([^"]*))?"/g;
+  const markup = read('index.html').replace(/<!--[\s\S]*?-->/g, '');
+  const links = [...markup.matchAll(ASSET_LINK)];
   const stale = links
     .filter(match => match[2] !== version)
     .map(match => `${match[1]}?v=${match[2] || '(none)'}`);
@@ -40,6 +42,11 @@ function report(pass, name, detail) {
     ? `appVersion ${version}; mismatched: ${stale.join(', ')}`
     : `${links.length} links at ${version}`;
   report(version && links.length && !stale.length, 'Asset links carry ?v=<appVersion>', detail);
+  const missing = links
+    .map(match => match[1])
+    .filter(file => !fs.existsSync(path.join(root, file)));
+  report(!missing.length, 'Every linked asset file exists',
+    missing.length ? `missing: ${missing.join(', ')}` : `${links.length} files`);
 }
 
 // Shell module boundaries (js/app/*.js share the CF namespace; see the header of each module).

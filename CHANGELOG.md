@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.9.0] - Unreleased
 
+### Added
+- An app icon: a red P and a white 1 on black. It shows in browser tabs and bookmarks, and on the iPhone home screen when you use **Add to Home Screen**.
+
 ## [1.8.0] - 2026-10-31
 
 ### Added

@@ -80,6 +80,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 | Where | What |
 |---|---|
 | `index.html`, `css/`, `js/` | The app. Rules for each load from `.claude/rules/` when you open the files |
+| `icons/` | The app icon: `icon.svg` is the source of the `.ico` and the touch icon (see the `index.html` rule) |
 | `docs/architecture.md` | Engine, shell, adapters, coordinate frames, memory budget, edits-file format |
 | `tests/README.md` | How to run the tests, what each guards, the detection baseline |
 | `.claude/skills/` | `verify` (end-to-end checks), `uat` (Rich's acceptance script), `release` (Rich-triggered) |

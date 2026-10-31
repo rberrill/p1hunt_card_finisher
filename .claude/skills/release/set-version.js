@@ -27,5 +27,6 @@ function replaceIn(file, pattern, replacement) {
 }
 
 replaceIn('js/config.js', /(appVersion:\s*')[^']+(')/g, `$1${version}$2`);
-replaceIn('index.html', /((?:href|src)="[^"]+\.(?:css|js))\?v=[^"]*"/g, `$1?v=${version}"`);
+replaceIn('index.html', /((?:href|src)="[^"]+\.(?:css|js|svg|png|ico))\?v=[^"]*"/g,
+    `$1?v=${version}"`);
 console.log(`Version ${version}. Run node tests/selftest.js to confirm.`);

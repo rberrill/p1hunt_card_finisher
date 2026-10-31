@@ -18,6 +18,7 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 | `js/config.js` | `CONFIG`: every tunable, commented in place. Loaded first |
 | `js/engine.js` | `CardEngine`: pure functions, wrapped in `function CardEngineModule(globalScope)` |
 | `js/app/*.js` | The shell: ten modules sharing the `CF` namespace, loaded in order `core → adapters → state → view → levels → overlay → input → ui → export → main` |
+| `icons/` | The app icon. `icon.svg` is the source; `favicon.ico` (16, 32, 48 px) and `apple-touch-icon.png` (180 px) are rendered from it |
 | `tests/` | Node and browser tests (see [tests/README.md](../tests/README.md)) |
 | `samples/` | Real phone photos with hand-placed ground truth for the regression test |
 
