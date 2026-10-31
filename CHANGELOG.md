@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 - **Front + back pairs.** On the Export step, **Add back** keeps the photo you're on as the card's front and opens the photo picker for its back, which then goes through every step like any photo. While a pair is open:
-  - a **Front | Back** switch in the header takes you to the other side, on the step you last used there, with its own edits and its own Undo and Redo;
+  - a **Front | Back** switch in the header takes you to the other side on the step you're on (Crop on the back opens Crop on the front), with its own edits and its own Undo and Redo;
   - **×** in the header ends the pair; a card over the photo, like the Resume question, asks which side to keep as a single photo;
   - both sides are cropped to the 5:7 card shape, and **Swap** turns both at once;
   - format, size and the other export settings apply to both sides;

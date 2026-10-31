@@ -86,7 +86,7 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 |---|---|---|
 | Phone | Paired header on every step (Preview shows on Perspective) | every header target ≥ 44 px and the last ends inside `innerWidth`, at 390 and 375 px |
 | Both | Add back (`CF.receivePhoto(file, name, 'addBack')`) | back opens on Perspective at 5:7 in the front's orientation; the front's crop is 5:7 fit; chip and ⨯ show |
-| Both | Switch sides | lands on that side's last step with its own edits and Undo; `app.switchDurationMs` logged |
+| Both | Switch sides | lands on the same step, with that side's own edits and Undo; `app.switchDurationMs` logged |
 | Both | Crop while paired | only 5:7 enabled; Swap turns both sides' crops and adds no undo step; a quarter turn keeps the orientation |
 | Both | Together and Separately (capture `CF.Exporter.download`) | one `-pair` file at the readout's size, front left (portrait) or top (landscape); two `-front` / `-back` files, each byte-identical to `renderFull` + `encodeCanvas` of that side |
 | Both | Logo on one side | it appears only in that side's half of the Together image |

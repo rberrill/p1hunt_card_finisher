@@ -192,8 +192,9 @@
     savePairSession(true);
   }
 
-  // Switches to the other side, on the step last used there. Its photo is decoded before the
-  // open one is released, so a failed read leaves everything as it was.
+  // Switches to the other side, on the step you're on (Crop on the back opens Crop on the front),
+  // so the two sides can be compared step by step. Its photo is decoded before the open one is
+  // released, so a failed read leaves everything as it was.
   async function switchSide() {
     const pair = app.pair;
     if (!pair || app.exporting || app.isSwitching) return;
@@ -215,6 +216,7 @@
       return;
     }
     CF.Session.flush();
+    const step = app.tab;
     const leaving = captureSide();
     app.img.close();
     // Work still running for the side being left (detection, a session save) is now stale.
@@ -224,7 +226,7 @@
     pair.current = otherSide(pair.current);
     app.isSwitching = false;
     CF.stateChanged();
-    CF.setTab(app.tab);
+    CF.setTab(step);
     hideToast();
     app.switchDurationMs = performance.now() - startTime;
     console.info(`[card-finisher] switched to the ${pair.current} in `
