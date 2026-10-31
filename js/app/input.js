@@ -107,7 +107,9 @@
 
   const hasGeometry = () => app.geometry && app.geometry.ok;
 
-  // Starts the gesture a press begins: pinch (second finger), handle, crop, dropper or pan.
+  // Starts the gesture a press begins. In order: the Overlay step takes every press; a second
+  // finger starts a pinch; the step's own gesture (a handle, the crop box, the dropper); else
+  // a pan.
   function onPointerDown(event) {
     if (!app.img) return;
     elements.canvas.focus({ preventScroll: true });
@@ -123,15 +125,7 @@
       return;
     }
     if (pointers.size === 2) {
-      // A second finger turns any drag into a pinch.
-      endGesture();
-      const [first, second] = [...pointers.values()];
-      app.gesture = {
-        type: 'pinch',
-        startDistance: Vec2.distance(first, second),
-        startMidpoint: Vec2.midpoint(first, second),
-        startView: { ...view },
-      };
+      startPinch(view);
       return;
     }
     if (pointers.size > 2) return;
@@ -142,63 +136,81 @@
       pointerType: event.pointerType,
       moved: false,
     };
+    app.gesture = stepGesture(view, point, base, event.shiftKey) || panGesture(view, base);
+  }
+
+  // A second finger turns any drag into a pinch.
+  function startPinch(view) {
+    endGesture();
+    const [first, second] = [...pointers.values()];
+    app.gesture = {
+      type: 'pinch',
+      startDistance: Vec2.distance(first, second),
+      startMidpoint: Vec2.midpoint(first, second),
+      startView: { ...view },
+    };
+  }
+
+  // The gesture a press starts on the current step, built on `base`, or null when the press
+  // is a pan: Perspective (a Find-card tap, or a handle), Crop (a box handle or a move) or
+  // Levels (the dropper). isShiftHeld: Shift keeps a free crop's aspect.
+  function stepGesture(view, point, base, isShiftHeld) {
     if (app.tab === 'perspective' && !app.previewMode) {
       if (app.findMode) {
         // Find card is armed: a still tap finds the card (onPointerUp); a drag pans as usual
         // and never grabs a handle.
-        app.gesture = Object.assign(base, {
+        return Object.assign(base, {
           type: 'pan',
           isFind: true,
           startView: { panX: view.panX, panY: view.panY },
         });
-        return;
       }
       const handleIndex = hitHandle(view, point);
-      if (handleIndex >= 0) {
-        app.selected = handleIndex;
-        app.gesture = Object.assign(base, {
-          type: 'handle',
-          handleIndex,
-          startWorld: CF.toWorld(view, point),
-          startCorners: clone(app.state.corners),
-          before: clone(app.state),
-        });
-        CF.requestRender();
-        return;
-      }
+      if (handleIndex < 0) return null;
+      app.selected = handleIndex;
+      CF.requestRender();
+      return Object.assign(base, {
+        type: 'handle',
+        handleIndex,
+        startWorld: CF.toWorld(view, point),
+        startCorners: clone(app.state.corners),
+        before: clone(app.state),
+      });
     }
     if (app.tab === 'crop' && hasGeometry()) {
       const part = hitCrop(view, point);
-      if (part) {
-        app.gesture = Object.assign(base, {
-          type: 'crop',
-          part,
-          startWorld: CF.toWorld(view, point),
-          startCrop: { ...app.geometry.crop },
-          before: clone(app.state),
-          shiftHeld: event.shiftKey,
-        });
-        return;
-      }
+      if (!part) return null;
+      return Object.assign(base, {
+        type: 'crop',
+        part,
+        startWorld: CF.toWorld(view, point),
+        startCrop: { ...app.geometry.crop },
+        before: clone(app.state),
+        shiftHeld: isShiftHeld,
+      });
     }
     if (app.tab === 'levels' && app.dropper && hasGeometry()) {
-      app.gesture = Object.assign(base, { type: 'dropper' });
       CF.requestRender();
-      return;
+      return Object.assign(base, { type: 'dropper' });
     }
-    app.gesture = Object.assign(base, {
+    return null;
+  }
+
+  // A pan, built on `base`. On Levels, pressing and holding the photo without moving compares
+  // it with no levels (the timer checks the gesture is still the live one).
+  function panGesture(view, base) {
+    const gesture = Object.assign(base, {
       type: 'pan',
       startView: { panX: view.panX, panY: view.panY },
     });
     if (app.tab === 'levels' && hasGeometry()) {
-      // Levels: press and hold the photo (without moving) to compare with no levels.
-      const gesture = app.gesture;
       gesture.holdTimer = setTimeout(() => {
         if (app.gesture !== gesture || gesture.moved) return;
         gesture.comparing = true;
         CF.setCompare(true);
       }, CONFIG.levels.compareHoldMs);
     }
+    return gesture;
   }
 
   // Pinch: zoom by the change in finger distance, keeping the world point under the starting
@@ -325,7 +337,7 @@
       if (view) CF.findCardAt(CF.toWorld(view, gesture.start));
       return;
     }
-    const isTap =gesture && !gesture.moved && performance.now() - gesture.startTime < TAP_MS;
+    const isTap = gesture && !gesture.moved && performance.now() - gesture.startTime < TAP_MS;
     if (isTap && gesture.type === 'pan') checkDoubleTap(gesture);
     if (isTap && gesture.type === 'handle') checkHandleDoubleTap(gesture);
     endGesture();

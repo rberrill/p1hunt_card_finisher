@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 - On the Export step, **Edits** under More options now sits in a box of its own, like Corner shots, so its buttons are set apart from the export settings.
+- Two long functions (the geometry pipeline and the start of every touch) were split into named steps, and a new self-test pins the geometry's results so a future change can't move them unnoticed. Nothing you see changes; exports are identical.
 
 ### Security
 - More link settings are kept inside safe ranges: the detection blur, support radius, vote spread and refinement sample count, the card size and the Rotate grid spacing. Before this, a crafted link could set one of them so high that the page stopped responding.
