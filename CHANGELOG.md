@@ -4,7 +4,7 @@ All notable changes to P1Hunt Card Finisher are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is shown in the logo tooltip and logged to the browser console.
 
-## [1.8.0] - Unreleased
+## [1.8.0] - 2026-10-31
 
 ### Added
 - **Next card →** on the Export step. Once the photo is exported (Download, Copy or a finished Share), it opens the photo picker for the next card. The new photo starts as one opened with **Open**: the same crop preset and export settings, no levels, and your saved logo offered. The button hides again if you change anything that would change the exported image. While it shows, it takes the place of any export note (such as the unapplied-levels warning), which comes back with your next change.
