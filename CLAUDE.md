@@ -30,7 +30,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - Direct feedback; push back when something is wrong.
 - Simplicity over features: he removed case detection, Square up mode and the Before button when they didn't earn their place.
 - No messages a user can't act on (such as "needs HTTPS").
-- Nothing floats over the photo, except a short-lived menu or question (the step menu, Resume, a pair's questions).
+- Nothing blocks the photo unless the user must answer an alert before they can go on.
 
 **Brand:** matte black, white, and P1Hunt red (`#e5322d`, the UI accent), retro motorsport, no gradients. Inspired by F1, never its trademarks: no F1, FIA, team or driver logos or marks in the app or the docs.
 
@@ -59,7 +59,6 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - **Phone layout:**
   - Header, photo, a 184 px control area (the same on every step), then the action bar, whose first button is the step menu.
   - Non-essentials go under More options. Status messages appear only when actionable.
-  - Nothing overlays the photo except the open step menu and a pair's question card.
 - **Levels:** white lands at 245 and black at 8, in linear light. Picks edit a draft until Apply. Levels never carry over between photos. Auto's black point uses near-neutral darks only.
 - **Next card →:** shown on Export only while the current edits are exported; it sits in the control area (the action bar is full) and replaces the export note while shown.
 - **Tap to find card** (Perspective, More options): the button, then a tap on the card, runs detection at once. No Detect or Clear seed button, no marker; the tapped point is used for that run only.
