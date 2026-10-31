@@ -15,7 +15,7 @@ Exit code 0 means everything passed.
 | Privacy | No GPS location in `samples/` photos; no private network addresses or local drive paths in the published text files |
 | CONFIG consistency | The engine's built-in defaults (`DETECT_DEFAULTS`, `GEOMETRY_DEFAULTS`, `LEVELS_DEFAULTS`) match `CONFIG`; every `CONFIG_LIMITS` key is a `CONFIG` number with its default in range |
 | Code style | The parts of `.claude/rules/code-style.md` a tokenizer can check (`tests/style-check.js`): lines of at most 100 characters, no one- or two-letter names outside the allowed list, one statement per line, one declaration per `const` / `let` / `var` |
-| Engine self-tests | Geometry (homography round trip, Flatten 0% and 100%, perspective-corrected aspect, degenerate quads, the rotate/flip/crop pipeline, identity warp), detection (synthetic card, sub-pixel refinement, a faint card found by the second pass), Levels (pick targets, robust dropper, Auto, Auto ignoring colored darks), Overlay (placement, snap margins), untrusted input (URL overrides and their safe ranges, edits-file checks) |
+| Engine self-tests | Geometry (homography round trip, Flatten 0% and 100%, perspective-corrected aspect, degenerate quads, the rotate/flip/crop pipeline, identity warp), detection (synthetic card, sub-pixel refinement, a faint card found by the second pass), Levels (pick targets, robust dropper, Auto, Auto ignoring colored darks), Corner shots (corners at the inset and labelled as the export shows them, the size cap, the 2×2 sheet), Overlay (placement, snap margins), untrusted input (URL overrides and their safe ranges, edits-file checks) |
 
 The engine self-tests also run in the app with `?selftest=1`, on the main thread and inside the worker; the toast reads `main n/n, worker n/n`.
 

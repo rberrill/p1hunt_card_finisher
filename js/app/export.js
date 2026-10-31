@@ -121,24 +121,46 @@
 
   /**
    * renderFull(state, onProgress) → { canvas, geometry }: the export at full resolution,
-   * rendered from the original photo. Deterministic for a given state. Renders in row bands so
-   * a phone never holds the whole source and output as raw pixels at once.
+   * rendered from the original photo, with the overlay. Deterministic for a given state.
    */
   async function renderFull(state, onProgress) {
     const geometry = CardEngine.computeGeometry(state, geometryConfig());
     if (!geometry.ok) throw new Error(geometry.reason);
-    const sourceWidth = state.source.width;
-    const sourceHeight = state.source.height;
     const { width: outputWidth, height: outputHeight } = geometry.output;
-    const outputToSource = geometry.outputToSource;
+    const output = await renderWarped(
+      state,
+      geometry.outputToSource,
+      outputWidth,
+      outputHeight,
+      onProgress,
+    );
+    // The overlay goes on last, before encoding (Levels never touches it).
+    CF.compositeOverlay(context2d(output), state, outputWidth, outputHeight);
+    return { canvas: output, geometry };
+  }
+
+  /**
+   * renderWarped(state, outputToSource, outputWidth, outputHeight, onProgress) → a canvas of
+   * the photo warped through outputToSource (output px → source px), from the original photo,
+   * with the applied levels and the export fill, and no overlay. The main export and the
+   * corner shots both render through it. Renders in row bands so a phone never holds the whole
+   * source and output as raw pixels at once.
+   */
+  async function renderWarped(state, outputToSource, outputWidth, outputHeight, onProgress) {
     const isTransparent = state.export.fill === 'transparent';
     const isJpegOnTransparent = state.export.format === 'jpeg' && isTransparent;
-    const fill = CF.fillRgba(isJpegOnTransparent ? '#ffffff' : state.export.fill);
+    const region = makeCanvas(1, 1);
+    const render = {
+      state,
+      outputToSource,
+      outputWidth,
+      fill: CF.fillRgba(isJpegOnTransparent ? '#ffffff' : state.export.fill),
+      lut: CardEngine.levelsLut(state.levels, CONFIG.levels),
+      region,
+      regionContext: context2d(region, true),
+    };
     const output = makeCanvas(outputWidth, outputHeight);
     const outputContext = context2d(output);
-    const lut = CardEngine.levelsLut(state.levels, CONFIG.levels);
-    const region = makeCanvas(1, 1);
-    const regionContext = context2d(region, true);
     let bandRows = Math.max(MIN_BAND_ROWS, Math.floor(CONFIG.export.bandPx / outputWidth));
     let y = 0;
     while (y < outputHeight) {
@@ -148,57 +170,24 @@
         outputWidth,
         y,
         y + rows,
-        sourceWidth,
-        sourceHeight,
+        state.source.width,
+        state.source.height,
       );
+      const density = samplingDensity(outputToSource, outputWidth / 2, y + rows / 2);
+      // When shrinking a lot, the browser's area-filtered resampler pre-shrinks the region
+      // first (a mip level), since bilinear alone only reads 4 texels and aliases.
+      const regionScale = isFinite(density) && density > 1.5 ? Math.min(1, 1.25 / density) : 1;
+      if (box && isRegionTooBig(box, regionScale) && bandRows > MIN_BAND_ROWS) {
+        bandRows = Math.max(MIN_BAND_ROWS, bandRows >> 1);
+        continue;
+      }
       const band = new ImageData(outputWidth, rows);
       if (box) {
-        const density = samplingDensity(outputToSource, outputWidth / 2, y + rows / 2);
-        // When shrinking a lot, the browser's area-filtered resampler pre-shrinks the region
-        // first (a mip level), since bilinear alone only reads 4 texels and aliases.
-        const regionScale = isFinite(density) && density > 1.5 ? Math.min(1, 1.25 / density) : 1;
-        const boxWidth = box.right - box.left;
-        const boxHeight = box.bottom - box.top;
-        const regionPixels = boxWidth * boxHeight * regionScale * regionScale;
-        const isTooBig = regionPixels > CONFIG.export.maxBandSrcPx;
-        if (isTooBig && bandRows > MIN_BAND_ROWS) {
-          bandRows = Math.max(MIN_BAND_ROWS, bandRows >> 1);
-          continue;
-        }
-        const regionWidth = Math.max(1, Math.round(boxWidth * regionScale));
-        const regionHeight = Math.max(1, Math.round(boxHeight * regionScale));
-        const scaleX = regionWidth / boxWidth;
-        const scaleY = regionHeight / boxHeight;
-        region.width = regionWidth;
-        region.height = regionHeight;
-        regionContext.imageSmoothingEnabled = true;
-        regionContext.imageSmoothingQuality = 'high';
-        regionContext.drawImage(
-          app.img.el,
-          box.left, box.top, boxWidth, boxHeight,
-          0, 0, regionWidth, regionHeight,
-        );
-        const source = regionContext.getImageData(0, 0, regionWidth, regionHeight);
-        // Levels are per pixel, so applying them before the warp leaves the fill color untouched.
-        if (lut) CardEngine.applyLut(source, lut);
-        const outputToRegion = Mat3.chain(
-          Mat3.scale(scaleX, scaleY),
-          Mat3.translate(-box.left, -box.top),
-          outputToSource,
-        );
-        CardEngine.warp(band, source, outputToRegion, {
-          fill,
-          interp: state.export.interp,
-          rowOffset: y,
-          bounds: [
-            -box.left * scaleX,
-            -box.top * scaleY,
-            (sourceWidth - box.left) * scaleX,
-            (sourceHeight - box.top) * scaleY,
-          ],
-        });
+        warpBand(render, band, box, regionScale, y);
       } else {
-        for (let offset = 0; offset < band.data.length; offset += 4) band.data.set(fill, offset);
+        for (let offset = 0; offset < band.data.length; offset += 4) {
+          band.data.set(render.fill, offset);
+        }
       }
       outputContext.putImageData(band, 0, y);
       y += rows;
@@ -207,9 +196,54 @@
     }
     region.width = 0;
     region.height = 0;
-    // The overlay goes on last, before encoding (Levels never touches it).
-    CF.compositeOverlay(outputContext, state, outputWidth, outputHeight);
-    return { canvas: output, geometry };
+    return output;
+  }
+
+  // True when a band's source box, read at regionScale, is more pixels than one band may read.
+  function isRegionTooBig(box, regionScale) {
+    const regionPixels = (box.right - box.left) * (box.bottom - box.top)
+      * regionScale * regionScale;
+    return regionPixels > CONFIG.export.maxBandSrcPx;
+  }
+
+  // Warps one band of output rows starting at row y: reads the band's source box (source px)
+  // from the photo at regionScale, applies levels, and samples it into `band`.
+  function warpBand(render, band, box, regionScale, y) {
+    const { state, outputToSource, region, regionContext } = render;
+    const boxWidth = box.right - box.left;
+    const boxHeight = box.bottom - box.top;
+    const regionWidth = Math.max(1, Math.round(boxWidth * regionScale));
+    const regionHeight = Math.max(1, Math.round(boxHeight * regionScale));
+    const scaleX = regionWidth / boxWidth;
+    const scaleY = regionHeight / boxHeight;
+    region.width = regionWidth;
+    region.height = regionHeight;
+    regionContext.imageSmoothingEnabled = true;
+    regionContext.imageSmoothingQuality = 'high';
+    regionContext.drawImage(
+      app.img.el,
+      box.left, box.top, boxWidth, boxHeight,
+      0, 0, regionWidth, regionHeight,
+    );
+    const source = regionContext.getImageData(0, 0, regionWidth, regionHeight);
+    // Levels are per pixel, so applying them before the warp leaves the fill color untouched.
+    if (render.lut) CardEngine.applyLut(source, render.lut);
+    const outputToRegion = Mat3.chain(
+      Mat3.scale(scaleX, scaleY),
+      Mat3.translate(-box.left, -box.top),
+      outputToSource,
+    );
+    CardEngine.warp(band, source, outputToRegion, {
+      fill: render.fill,
+      interp: state.export.interp,
+      rowOffset: y,
+      bounds: [
+        -box.left * scaleX,
+        -box.top * scaleY,
+        (state.source.width - box.left) * scaleX,
+        (state.source.height - box.top) * scaleY,
+      ],
+    });
   }
 
   // A copy of the canvas flattened onto white (JPEG can't hold alpha, and transparent turns
@@ -224,31 +258,44 @@
     return flat;
   }
 
-  // Renders and encodes the export → a Promise of the file's Blob.
-  function encodeExport(state, type, onProgress) {
-    return renderFull(state, onProgress).then(async ({ canvas }) => {
-      const needsFlattening = type === 'image/jpeg' && state.export.fill === 'transparent';
-      const image = needsFlattening ? flattenOnWhite(canvas) : canvas;
-      const quality = state.export.format === 'png' ? undefined : state.export.quality;
-      const blob = await toBlob(image, type, quality);
-      // Free the big buffer now (it matters on iOS).
-      image.width = 0;
-      image.height = 0;
-      return blob;
-    });
+  // Encodes a finished canvas as `type` with the export's quality, then frees it → a Promise
+  // of the Blob.
+  async function encodeCanvas(canvas, state, type) {
+    const needsFlattening = type === 'image/jpeg' && state.export.fill === 'transparent';
+    const image = needsFlattening ? flattenOnWhite(canvas) : canvas;
+    const quality = state.export.format === 'png' ? undefined : state.export.quality;
+    const blob = await toBlob(image, type, quality);
+    // Free the big buffer now (it matters on iOS).
+    image.width = 0;
+    image.height = 0;
+    return blob;
   }
 
-  // Delivers a finished export by Download or Share, with a toast saying how it went.
-  async function deliverExport(kind, blob, state, type, startTime) {
+  // Renders and encodes the export → a Promise of the file's Blob.
+  function encodeExport(state, type, onProgress) {
+    return renderFull(state, onProgress).then(({ canvas }) => encodeCanvas(canvas, state, type));
+  }
+
+  // The photo's name without its extension, the start of every exported file's name.
+  const exportBaseName = state => (state.source.name || 'photo').replace(/\.[^.]+$/, '');
+
+  // The file extension for an encoded blob. When the browser couldn't encode the chosen
+  // format it falls back to PNG (Safari has no WebP encoder), and this says so.
+  function extensionFor(blob, state, type) {
     const extension = EXTENSIONS[blob.type] || 'png';
     if (blob.type !== type) {
       const format = state.export.format.toUpperCase();
       const savedAs = extension.toUpperCase();
       toast(`${format} isn’t supported by this browser — saved as ${savedAs}.`, 'warn', 5000);
     }
-    const baseName = (state.source.name || 'photo').replace(/\.[^.]+$/, '');
+    return extension;
+  }
+
+  // Delivers a finished export by Download or Share, with a toast saying how it went.
+  async function deliverExport(kind, blob, state, type, startTime) {
+    const extension = extensionFor(blob, state, type);
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
-    const name = `${baseName}${CONFIG.export.suffix}.${extension}`;
+    const name = `${exportBaseName(state)}${CONFIG.export.suffix}.${extension}`;
     const output = app.geometry.output;
     const done = `Exported ${output.width} × ${output.height} px in ${seconds} s.`;
     if (kind === 'download') {
@@ -283,32 +330,19 @@
     CF.syncReadouts();
   }
 
-  // Exports the current edits. kind: 'download', 'share' or 'copy' (PNG to the clipboard).
-  async function doExport(kind) {
-    if (!app.img || app.exporting) return;
-    const state = clone(app.state);
-    const type = kind === 'copy' ? 'image/png' : MIME_TYPES[state.export.format];
+  // Runs task(onProgress) with the progress bar showing and the export buttons disabled, so
+  // only one export runs at a time. Returns the task's promise.
+  async function runWithProgress(task) {
     const progress = byId('progress');
     const bar = progress.firstElementChild;
     app.exporting = true;
     progress.hidden = false;
     bar.style.width = '0%';
     CF.syncReadouts();
-    const startTime = performance.now();
-    const encoding = encodeExport(state, type, fraction => {
-      bar.style.width = Math.round(fraction * 100) + '%';
-    });
     try {
-      if (kind === 'copy') {
-        await Exporter.copy(encoding);
-        markExported(state);
-        toast('Copied to clipboard (PNG).');
-      } else {
-        await deliverExport(kind, await encoding, state, type, startTime);
-      }
-    } catch (error) {
-      console.error(error);
-      toast((kind === 'copy' ? 'Copy failed: ' : 'Export failed: ') + error.message, 'error', 6000);
+      return await task(fraction => {
+        bar.style.width = Math.round(fraction * 100) + '%';
+      });
     } finally {
       app.exporting = false;
       progress.hidden = true;
@@ -316,26 +350,52 @@
     }
   }
 
-  // Opens the share sheet for a finished file. Returns 'shared', 'cancelled', 'pending' or
-  // 'failed'. 'pending': the browser refused because the tap was too long ago (a slow export),
-  // so the Share button becomes "Share now" and a fresh tap opens the sheet. Any edit cancels it.
-  async function shareFile(file) {
+  // Exports the current edits. kind: 'download', 'share' or 'copy' (PNG to the clipboard).
+  async function doExport(kind) {
+    if (!app.img || app.exporting) return;
+    const state = clone(app.state);
+    const type = kind === 'copy' ? 'image/png' : MIME_TYPES[state.export.format];
+    const startTime = performance.now();
     try {
-      await navigator.share({ files: [file] });
-      app.pendingSave = null;
+      await runWithProgress(async onProgress => {
+        const encoding = encodeExport(state, type, onProgress);
+        if (kind === 'copy') {
+          await Exporter.copy(encoding);
+          markExported(state);
+          toast('Copied to clipboard (PNG).');
+        } else {
+          await deliverExport(kind, await encoding, state, type, startTime);
+        }
+      });
+    } catch (error) {
+      console.error(error);
+      toast((kind === 'copy' ? 'Copy failed: ' : 'Export failed: ') + error.message, 'error', 6000);
+    }
+  }
+
+  // Opens the share sheet for finished files. Returns 'shared', 'cancelled', 'pending' or
+  // 'failed'. 'pending': the browser refused because the tap was too long ago (a slow export)
+  // and canWait is true, so the caller keeps the files for a fresh tap ("Share now").
+  async function shareFiles(files, canWait) {
+    try {
+      await navigator.share({ files });
       return 'shared';
     } catch (error) {
       if (error.name === 'AbortError') return 'cancelled';
-      if (error.name === 'NotAllowedError' && !app.pendingSave) {
-        app.pendingSave = file;
-        return 'pending';
-      }
-      app.pendingSave = null;
+      if (error.name === 'NotAllowedError' && canWait) return 'pending';
       toast('Share failed: ' + error.message, 'error', 6000);
       return 'failed';
-    } finally {
-      CF.syncReadouts();
     }
+  }
+
+  // Shares the main export's file. On 'pending' the Share button becomes "Share now" and a
+  // fresh tap opens the sheet; any edit cancels it. Returns shareFiles' outcome.
+  async function shareFile(file) {
+    const outcome = await shareFiles([file], !app.pendingSave);
+    if (outcome === 'pending') app.pendingSave = file;
+    else if (outcome !== 'cancelled') app.pendingSave = null;
+    CF.syncReadouts();
+    return outcome;
   }
 
   /* ---------- saving and loading edits (the serializable edit state) ---------- */
@@ -345,9 +405,8 @@
     const overlayImage = CF.overlayForEdits(app.state) || undefined;
     const data = Object.assign(clone(app.state), { overlayImage });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const baseName = (app.state.source.name || 'photo').replace(/\.[^.]+$/, '');
     CF.Session.flush();
-    Exporter.download(blob, baseName + '-edits.json');
+    Exporter.download(blob, exportBaseName(app.state) + '-edits.json');
   }
 
   // An edits file is untrusted: its size is checked before reading, and the fields the messages
@@ -438,8 +497,15 @@
 
   Object.assign(CF, {
     Exporter,
+    MIME_TYPES,
     renderFull,
+    renderWarped,
+    encodeCanvas,
+    exportBaseName,
+    extensionFor,
+    runWithProgress,
     doExport,
+    shareFiles,
     shareFile,
     sharePending,
     saveEdits,

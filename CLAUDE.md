@@ -73,6 +73,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
   - Drop and paste add a logo there; elsewhere they open a photo.
   - The saved logo is offered with "Use saved overlay", not auto-applied. Delete clears storage only; Start fresh keeps it.
   - Edits files embed the logo.
+- **Corner shots** (Export → More options): a 2×2 sheet (the default) or four photos, Share + Download as for the main export. Each is a square framed like the export (same tilt), at the photo's real resolution (capped, never upscaled), with levels and never the overlay. No quality warning: the readout shows the size and the user decides. The choice is a preference, not edit state.
 - **Versioning:** SemVer by user-visible change. Process and tooling changes don't bump the major.
 
 ## Map

@@ -319,12 +319,13 @@ new Function(engine)();
     ['DETECT_DEFAULTS', engineApi.DETECT_DEFAULTS, config.detect],
     ['GEOMETRY_DEFAULTS', engineApi.GEOMETRY_DEFAULTS, geometry],
     ['LEVELS_DEFAULTS', engineApi.LEVELS_DEFAULTS, config.levels],
+    ['CORNER_SHOT_DEFAULTS', engineApi.CORNER_SHOT_DEFAULTS, config.cornerShots],
   ];
   const drift = pairs.flatMap(([name, defaults, configured]) => Object.keys(defaults)
     .filter(key => JSON.stringify(defaults[key]) !== JSON.stringify(configured[key]))
     .map(key => `${name}.${key} ${defaults[key]} vs CONFIG ${configured[key]}`));
   report(!drift.length, 'CONFIG: the engine defaults match CONFIG',
-    drift.length ? drift.join('; ') : 'detect, geometry and levels');
+    drift.length ? drift.join('; ') : 'detect, geometry, levels and corner shots');
 
   const valueAt = dottedKey => dottedKey
     .split('.')

@@ -12,7 +12,7 @@ P1Hunt Card Finisher is a static web page. It has no server, no accounts and no 
 
 - The last photo and its edits, so you can resume after a reload (**Start fresh** clears them).
 - Your last logo, if you added one (**Delete saved overlay** clears it).
-- Your last export and crop choices.
+- Your last export and crop choices, and whether corner shots save as a sheet or four photos.
 
 All of this lives in your browser's own storage for this site. Clearing the site's data in your browser removes it.
 

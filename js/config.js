@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.9.0-dev.1',
+  appVersion: '1.9.0-dev.2',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -106,6 +106,20 @@ const CONFIG = {
     maxBandSrcPx: 6000000,
     // Larger files aren't read as edits (a 5 MB logo is ~6.7 MB in base64).
     editsMaxBytes: 8 * 1024 * 1024,
+  },
+  // Corner shots (Export → More options): close-ups of the card's four corners, framed like
+  // the export. js/engine.js's CORNER_SHOT_DEFAULTS mirror the number keys.
+  cornerShots: {
+    // A shot's side as a fraction of the card's short edge; the card's corner sits
+    // insetFraction of the side in from the shot's two outer edges.
+    sizeFraction: 0.25,
+    insetFraction: 0.3,
+    // The largest side in px. Shots are never upscaled past the photo's real resolution.
+    maxPx: 1200,
+    // The sheet's gutter, as % of its two tiles' width (8 px for two 500 px tiles).
+    gutterPct: 0.8,
+    // The output until a user picks one: 'sheet' (one 2×2 image) or 'photos' (four files).
+    output: 'sheet',
   },
 
   // Detection. js/engine.js's DETECT_DEFAULTS mirror the engine's keys (tests/selftest.js
@@ -267,6 +281,10 @@ const CONFIG_LIMITS = {
   'export.bandPx': [65536, 2097152],
   'export.maxBandSrcPx': [1000000, 6000000],
   'export.editsMaxBytes': [65536, 8388608],
+  'cornerShots.sizeFraction': [0.05, 0.5],
+  'cornerShots.insetFraction': [0, 0.5],
+  'cornerShots.maxPx': [100, 1200],
+  'cornerShots.gutterPct': [0, 5],
   'overlay.maxBytes': [65536, 5242880],
   'overlay.maxPx': [256, 4096],
   'overlay.svgPx': [256, 2048],

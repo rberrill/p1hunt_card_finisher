@@ -109,6 +109,10 @@
     edgeCanvas: null,
     loadId: 0,
     pendingSave: null,
+    // Corner shots: the output ('sheet' or 'photos', a preference) and the files waiting for
+    // "Share now" (corner-shots.js).
+    cornerShotsOutput: null,
+    pendingCorners: null,
     // The edit state (as JSON) of this photo's last finished export, for Next card.
     exportedState: null,
   };

@@ -328,6 +328,21 @@ input[type="color"] {
   margin-bottom: 6px;
 }
 .readout b { color: var(--text); font-weight: 600; }
+/* Corner shots (Export → More options): four live thumbnails in a row, tl tr bl br. */
+.corner-thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  max-width: 280px;
+  margin-bottom: 8px;
+}
+.corner-thumbs canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--stage);
+  border-radius: 4px;
+}
 .mini {
   width: 100%;
   max-width: 280px;

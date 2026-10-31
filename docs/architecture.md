@@ -17,7 +17,7 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 | `css/app.css` | All styles; phone rules in the `@media (max-width: 760px)` block at the end |
 | `js/config.js` | `CONFIG`: every tunable, commented in place. Loaded first |
 | `js/engine.js` | `CardEngine`: pure functions, wrapped in `function CardEngineModule(globalScope)` |
-| `js/app/*.js` | The shell: ten modules sharing the `CF` namespace, loaded in order `core → adapters → state → view → levels → overlay → input → ui → export → main` |
+| `js/app/*.js` | The shell: eleven modules sharing the `CF` namespace, loaded in order `core → adapters → state → view → levels → overlay → input → ui → export → corner-shots → main` |
 | `icons/` | The app icon. `icon.svg` is the source; `favicon.ico` (16, 32, 48 px) and `apple-touch-icon.png` (180 px) are rendered from it |
 | `tests/` | Node and browser tests (see [tests/README.md](../tests/README.md)) |
 | `samples/` | Real phone photos with hand-placed ground truth for the regression test |
@@ -31,6 +31,7 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 - **Detection:** per-channel edges → Canny → gradient-gated Hough → line pairs → scored quads → full-resolution sub-pixel edge refinement. Of nested, equally strong rectangles it prefers the inner one (the card inside a case).
 - **Render pipeline:** `computeGeometry(state)` gives every transform; `warp()` does inverse-mapped bilinear or bicubic sampling.
 - **Levels:** linear-light LUTs, a robust patch mean, the Auto estimate.
+- **Corner shots:** `cornerShots(geometry)` gives each corner's square in the rotated frame (so it keeps the export's tilt and flips), labelled as the corner appears in the export, at one shared size: the smallest real resolution of the four, capped at `cornerShots.maxPx`. `cornerSheetLayout` places them 2×2.
 - **Overlay:** `overlayRect`, `clampOverlay`, `snapOverlay`.
 - **Untrusted input:** `applyConfigOverrides` (URL settings, kept inside `CONFIG_LIMITS` from `js/config.js`) and `sanitizeState` (edits files, Resume, stored settings).
 - **Self-tests**, run by `tests/selftest.js` and by the app with `?selftest=1`.
@@ -56,6 +57,7 @@ source (photo px) —homography→ perspective (corrected) —flip, then rotate�
 
 - **Preview:** a 2048 px copy; a 720 px copy for the live mini-preview; a 1000 px copy for detection.
 - **Export:** row bands of about 2 MP; each band reads at most 6 MP of the source. Output is capped at 16.7 MP (iOS Safari's canvas limit).
+- **Corner shots:** rendered one at a time through the same banded renderer (`renderWarped`), at most 1200 px a side, so the sheet stays under 2.5 × 2.5 k px.
 - **Levels in export:** the LUT is applied to each band's source pixels before the warp, so the fill color is never recolored.
 
 ## Edits file format
@@ -85,4 +87,4 @@ source (photo px) —homography→ perspective (corrected) —flip, then rotate�
 
 ## What's stored on the device
 
-See [SECURITY.md](../SECURITY.md). In short: the last photo and its edits and the saved logo in IndexedDB (`p1hunt-finisher`), and remembered export and crop choices in localStorage (`p1hunt.straightener.v1`).
+See [SECURITY.md](../SECURITY.md). In short: the last photo and its edits and the saved logo in IndexedDB (`p1hunt-finisher`), and remembered export and crop choices and the corner shots choice (sheet or photos) in localStorage (`p1hunt.straightener.v1`).

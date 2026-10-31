@@ -14,6 +14,7 @@
      OVERLAY              logo placement relative to the crop
      UNTRUSTED INPUT      URL overrides, edits files, stored sessions
      RENDER PIPELINE      state → geometry → warp
+     CORNER SHOTS         the four corner close-ups and their 2×2 sheet
      LEVELS               white and black point correction in linear light
      SELF-TEST            runs the same on the main thread and in the Worker
    ===================================================================== */
@@ -2053,6 +2054,109 @@ function CardEngineModule(globalScope) {
   }
 
   /* ===================================================================
+     CORNER SHOTS: close-ups of the card's four corners, framed like the main export
+     Each shot is a square in the rotated frame, so it keeps the export's tilt and flips. Its
+     side is sizeFraction of the card's short edge, and the card's corner sits insetFraction of
+     the side in from the square's two outer edges, so a sliver of background shows and the
+     tip is never cut. All four shots share one size, the smallest real resolution of the four
+     (perspective makes them differ), so they're never upscaled and the sheet's tiles match.
+     =================================================================== */
+  const CORNER_SHOT_DEFAULTS = {
+    sizeFraction: 0.25,
+    insetFraction: 0.3,
+    maxPx: 1200,
+    gutterPct: 0.8,
+  };
+  // The shots in Quad.sortCorners order, named as the corners appear in the export.
+  const CORNER_LABELS = ['tl', 'tr', 'br', 'bl'];
+  // Which way each corner's square reaches past the card: [x, y] signs, in the same order.
+  const CORNER_OUTWARD = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+
+  // Source px per px of another frame at a point of it: the square root of the area scale of
+  // `toSource` there, measured over one px.
+  function sourcePxPerPx(toSource, point) {
+    const center = Mat3.apply(toSource, point[0], point[1]);
+    const acrossX = Mat3.apply(toSource, point[0] + 1, point[1]);
+    const acrossY = Mat3.apply(toSource, point[0], point[1] + 1);
+    return Math.sqrt(Math.abs(Vec2.cross(center, acrossX, acrossY)));
+  }
+
+  // The square { x, y, width, height } of side `side` around one card corner (rotated px):
+  // the corner sits insetFraction of the side in from the edges on its `outward` sides.
+  function cornerSquare(corner, outward, side, insetFraction) {
+    const offsetAlong = sign => side * (sign < 0 ? insetFraction : 1 - insetFraction);
+    return {
+      x: corner[0] - offsetAlong(outward[0]),
+      y: corner[1] - offsetAlong(outward[1]),
+      width: side,
+      height: side,
+    };
+  }
+
+  /**
+   * cornerShots(geometry, config) → { ok: true, sizePx, isCapped, shots } or
+   * { ok: false, reason }. geometry: computeGeometry's result; config: overrides of
+   * CORNER_SHOT_DEFAULTS. sizePx: every shot's side in output px. shots: four
+   * { label, rectRotated, outputToSource } in the order tl, tr, br, bl, as the corners appear
+   * in the export; outputToSource maps a shot's px to source px, as geometry.outputToSource
+   * does for the main export. isCapped: the real resolution was over maxPx.
+   */
+  function cornerShots(geometry, configIn) {
+    if (!geometry || !geometry.ok) {
+      return { ok: false, reason: (geometry && geometry.reason) || 'No card corners.' };
+    }
+    const config = Object.assign({}, CORNER_SHOT_DEFAULTS, configIn || {});
+    const card = Quad.sortCorners(geometry.cardRotated);
+    const sides = Quad.sides(card);
+    const shortEdge = Math.min((sides.top + sides.bottom) / 2, (sides.left + sides.right) / 2);
+    const side = config.sizeFraction * shortEdge;
+    const rotatedToSource = Mat3.invert(geometry.sourceToRotated);
+    if (!rotatedToSource || !(side > 0)) {
+      return { ok: false, reason: 'The card is too small for corner shots.' };
+    }
+    const realPx = card.map(corner => side * sourcePxPerPx(rotatedToSource, corner));
+    const smallestRealPx = Math.min(...realPx);
+    const sizePx = Math.max(1, Math.round(Math.min(config.maxPx, smallestRealPx)));
+    const shots = card.map((corner, i) => {
+      const rect = cornerSquare(corner, CORNER_OUTWARD[i], side, config.insetFraction);
+      const sourceToShot = Mat3.chain(
+        Mat3.scale(sizePx / side),
+        Mat3.translate(-rect.x, -rect.y),
+        geometry.sourceToRotated,
+      );
+      return {
+        label: CORNER_LABELS[i],
+        rectRotated: rect,
+        outputToSource: Mat3.invert(sourceToShot),
+      };
+    });
+    if (shots.some(shot => !shot.outputToSource)) {
+      return { ok: false, reason: 'Transform is not invertible.' };
+    }
+    return { ok: true, sizePx, isCapped: smallestRealPx > config.maxPx, shots };
+  }
+
+  /**
+   * cornerSheetLayout(sizePx, config) → { width, height, gutterPx, tiles }: the one-image
+   * sheet of four sizePx shots, tl tr over bl br, with a gutter between and around them of
+   * gutterPct % of the two tiles' width (8 px for two 500 px tiles). tiles: { label, x, y }.
+   */
+  function cornerSheetLayout(sizePx, configIn) {
+    const config = Object.assign({}, CORNER_SHOT_DEFAULTS, configIn || {});
+    const gutterPx = Math.max(0, Math.round(config.gutterPct / 100 * 2 * sizePx));
+    const width = 2 * sizePx + 3 * gutterPx;
+    const near = gutterPx;
+    const far = 2 * gutterPx + sizePx;
+    const tiles = [
+      { label: 'tl', x: near, y: near },
+      { label: 'tr', x: far, y: near },
+      { label: 'bl', x: near, y: far },
+      { label: 'br', x: far, y: far },
+    ];
+    return { width, height: width, gutterPx, tiles };
+  }
+
+  /* ===================================================================
      LEVELS: white and black point correction in linear light
      =================================================================== */
   const LEVELS_DEFAULTS = {
@@ -2584,6 +2688,52 @@ function CardEngineModule(globalScope) {
   }
 
   // 11. Snap presets sit at the margin (3% of the frame width).
+  // Corner shots: each shot's card corner sits at the inset in the shot, labelled as the
+  // corner appears in the main export (after a quarter turn, a fine tilt and a flip), and
+  // maxPx caps the size.
+  function testCornerShots(record, quad) {
+    const state = {
+      source: { width: 4032, height: 3024 },
+      corners: quad,
+      strength: 1,
+      aspect: { ratio: CARD_ASPECT, orientation: 'auto' },
+      rotation: { quarter: 1, fine: 3.5 },
+      flip: { h: true },
+      crop: { mode: 'fit', ratio: 1 },
+      export: {},
+    };
+    const geometry = computeGeometry(state, {});
+    const result = cornerShots(geometry, {});
+    const inset = CORNER_SHOT_DEFAULTS.insetFraction;
+    const near = inset * result.sizePx;
+    const far = (1 - inset) * result.sizePx;
+    const expected = { tl: [near, near], tr: [far, near], br: [far, far], bl: [near, far] };
+    // Which source corner is which, as seen in the main export.
+    const cardOutput = quad.map(point => Mat3.apply(geometry.sourceToOutput, point[0], point[1]));
+    const seen = Quad.sortCorners(cardOutput).map(point => cardOutput.findIndex(
+      candidate => candidate[0] === point[0] && candidate[1] === point[1],
+    ));
+    let worstPx = 0;
+    result.shots.forEach((shot, i) => {
+      const source = quad[seen[i]];
+      const inShot = Mat3.apply(Mat3.invert(shot.outputToSource), source[0], source[1]);
+      const target = expected[shot.label];
+      worstPx = Math.max(worstPx, Vec2.distance(inShot, target));
+    });
+    const capped = cornerShots(geometry, { maxPx: 100 });
+    record('Corner shots: corners at the inset, labelled as the export shows them',
+      result.ok && worstPx < 1e-6 && capped.sizePx === 100 && capped.isCapped,
+      `worst ${worstPx.toExponential(2)} px, ${result.sizePx} px a side`);
+    const sheet = cornerSheetLayout(500, { gutterPct: 0.8 });
+    const tileAt = label => sheet.tiles.find(tile => tile.label === label);
+    record('Corner sheet: 2×2 with an 8 px gutter at 500 px tiles',
+      sheet.gutterPx === 8
+        && sheet.width === 1024
+        && tileAt('br').x === 516
+        && tileAt('bl').y === 516,
+      `${sheet.width} px, gutter ${sheet.gutterPx} px`);
+  }
+
   function testOverlaySnap(record) {
     const overlay = { cx: 0.7, cy: 0.2, w: 0.3, aspect: 2, opacity: 1 };
     const snapped = where => overlayRect(snapOverlay(overlay, where, 1000, 800), 1000, 800);
@@ -2735,6 +2885,7 @@ function CardEngineModule(globalScope) {
     testCorrectedAspect(record);
     testDegenerateQuads(record);
     testPipeline(record, quads[0]);
+    testCornerShots(record, quads[0]);
     testWarpAndDetection(record);
     testLevelsTargets(record);
     testDropperTrim(record);
@@ -2773,6 +2924,9 @@ function CardEngineModule(globalScope) {
     shrinkToValid,
     cropRatio,
     warp,
+    CORNER_SHOT_DEFAULTS,
+    cornerShots,
+    cornerSheetLayout,
     OVERLAY_DEFAULTS,
     overlayRect,
     clampOverlay,

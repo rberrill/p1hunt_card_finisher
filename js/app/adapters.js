@@ -351,6 +351,8 @@
           interp: exportState.interp,
           fill: exportState.fill,
         },
+        // Not edit state, so it stays out of edits files and the session.
+        cornerShots: app.cornerShotsOutput,
       };
       try {
         localStorage.setItem(CONFIG.storageKey, JSON.stringify(prefs));

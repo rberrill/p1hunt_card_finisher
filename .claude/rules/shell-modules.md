@@ -28,5 +28,6 @@ paths:
 - **`overlay.js`**: image decode and validation (SVG via `viewBox`) into an `images` map keyed by byte hash, kept out of the edit state so undo stays small; the saved logo (`Session` keys `'overlay'`, `'photoOverlay'`); embed / restore for edits files; `compositeOverlay` for export; on-screen drawing, handles and gestures (`overlayMove` / `overlayResize` / `overlayPinch`); `syncOverlay`.
 - **`input.js`**: pointer, wheel and keyboard; handle and crop dragging and snapping. On the Overlay step everything routes to `overlay.js`.
 - **`ui.js`**: `setTab` and the step menu; `buildControls` / `bindControls` (every button handler); `syncUI` / `syncReadouts`; the debug panel; the resume prompt.
-- **`export.js`**: `Exporter`, `renderFull`, `doExport`, `shareFile`, edits save and load.
+- **`export.js`**: `Exporter`, `renderFull` and the banded `renderWarped` it shares with corner shots, `encodeCanvas`, `runWithProgress`, `doExport`, `shareFiles` / `shareFile`, edits save and load.
+- **`corner-shots.js`**: the Corner shots group (Export → More options): the sheet / photos preference, rendering through `renderWarped`, Share and Download, the live thumbnails.
 - **`main.js`**: the layout switch, the self-test runner, `init` (events, `window.__straightener`). Calls `init()` last.

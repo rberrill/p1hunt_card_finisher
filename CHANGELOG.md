@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [1.9.0] - Unreleased
 
 ### Added
+- **Corner shots** on the Export step, under More options: close-ups of the card's four corners, for condition photos in listings and posts. Save them as one 2×2 sheet (the first choice) or as four photos, with Share or Download like the main export. Each corner is cut from your original photo at its own resolution, never enlarged, framed like your export, with the same levels and no logo. Four small previews show the framing, and the readout shows the size, so you can judge whether to use the shot or take a closer one.
 - An app icon: a red P and a white 1 on black. It shows in browser tabs and bookmarks, and on the iPhone home screen when you use **Add to Home Screen**.
 
 ## [1.8.0] - 2026-10-31

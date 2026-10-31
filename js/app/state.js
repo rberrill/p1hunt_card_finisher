@@ -225,6 +225,7 @@
     app.views.export = null;
     // An export waiting for a second tap no longer matches the edits.
     app.pendingSave = null;
+    app.pendingCorners = null;
     CF.Prefs.save();
     CF.Session.saveSoon();
     CF.overlayStateChanged();

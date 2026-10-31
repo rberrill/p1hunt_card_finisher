@@ -132,6 +132,7 @@
       button.addEventListener('click', () => resetStep(button.dataset.reset));
     });
     CF.bindOverlayControls();
+    CF.bindCornerShots();
   }
 
   // The header, tabs, step menu, More options and Preview.
@@ -610,6 +611,7 @@
     const geometry = app.geometry;
     if (!state) return;
     syncNextCard(state);
+    CF.syncCornerShots();
     byId('btnShare').querySelector('span').textContent = app.pendingSave ? 'Share now' : 'Share';
     const count = app.detection.candidates.length;
     const candidate = count ? app.detection.candidates[app.detection.index] : null;
@@ -789,6 +791,8 @@
   Object.assign(CF, {
     setTab,
     STEPS,
+    bindSegment,
+    setSegment,
     closeStepMenu,
     collapseMore,
     buildControls,
