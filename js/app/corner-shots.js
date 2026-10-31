@@ -71,7 +71,7 @@
   }
 
   // The sheet → one File named <photo>-corners: the four shots in a 2×2 grid (tl tr over
-  // bl br) on the export fill, each shot freed once it's drawn.
+  // bl br), the gutter between them in the export fill, each shot freed once it's drawn.
   async function encodeSheet(state, shots, type, onProgress) {
     const layout = CardEngine.cornerSheetLayout(shots.sizePx, CONFIG.cornerShots);
     const sheet = makeCanvas(layout.width, layout.height);

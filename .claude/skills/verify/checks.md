@@ -77,7 +77,7 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Both | Stubbed share: Share | button shown; the shared `File` has the right name and type; the app stays on Export with edits intact |
 | Both | Stubbed share refused (`NotAllowedError`) | button becomes **Share now**; any edit cancels it |
 | Both | No `navigator.share` / no `ClipboardItem` | Share and Copy hidden, not greyed; Download is the main button |
-| Both | Corner shots (capture `CF.Exporter.download`) | sheet: one `-corners` file, 2×2 at 2 × size + 3 gutters; photos: four `-corner-tl/tr/br/bl` files; a full-crop logo appears in the main export but no corner; Next card unchanged; stubbed Share gets all four, refusal gives **Share now**, an edit cancels it |
+| Both | Corner shots (capture `CF.Exporter.download`) | sheet: one `-corners` file, 2×2 at 2 × size + 1 gutter, photo to the outer edges; photos: four `-corner-tl/tr/br/bl` files; a full-crop logo appears in the main export but no corner; Next card unchanged; stubbed Share gets all four, refusal gives **Share now**, an edit cancels it |
 | Phone | Corner shots group | with More closed the control area is 184 px and the photo the same height as on Crop; no page scroll sideways with it open |
 
 ## 9. Session restore

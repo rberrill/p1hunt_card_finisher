@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.9.0-dev.2',
+  appVersion: '1.9.0-dev.3',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -116,7 +116,8 @@ const CONFIG = {
     insetFraction: 0.3,
     // The largest side in px. Shots are never upscaled past the photo's real resolution.
     maxPx: 1200,
-    // The sheet's gutter, as % of its two tiles' width (8 px for two 500 px tiles).
+    // The gutter between the sheet's tiles, as % of two tiles' width (8 px for two 500 px
+    // tiles). There's no outer margin: eBay doesn't allow added borders.
     gutterPct: 0.8,
     // The output until a user picks one: 'sheet' (one 2×2 image) or 'photos' (four files).
     output: 'sheet',

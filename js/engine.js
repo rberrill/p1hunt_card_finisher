@@ -2138,15 +2138,16 @@ function CardEngineModule(globalScope) {
 
   /**
    * cornerSheetLayout(sizePx, config) → { width, height, gutterPx, tiles }: the one-image
-   * sheet of four sizePx shots, tl tr over bl br, with a gutter between and around them of
-   * gutterPct % of the two tiles' width (8 px for two 500 px tiles). tiles: { label, x, y }.
+   * sheet of four sizePx shots, tl tr over bl br, with a gutter between them of gutterPct % of
+   * the two tiles' width (8 px for two 500 px tiles). No margin around the outside: eBay's
+   * picture policy doesn't allow added borders. tiles: { label, x, y }.
    */
   function cornerSheetLayout(sizePx, configIn) {
     const config = Object.assign({}, CORNER_SHOT_DEFAULTS, configIn || {});
     const gutterPx = Math.max(0, Math.round(config.gutterPct / 100 * 2 * sizePx));
-    const width = 2 * sizePx + 3 * gutterPx;
-    const near = gutterPx;
-    const far = 2 * gutterPx + sizePx;
+    const width = 2 * sizePx + gutterPx;
+    const near = 0;
+    const far = sizePx + gutterPx;
     const tiles = [
       { label: 'tl', x: near, y: near },
       { label: 'tr', x: far, y: near },
@@ -2726,11 +2727,12 @@ function CardEngineModule(globalScope) {
       `worst ${worstPx.toExponential(2)} px, ${result.sizePx} px a side`);
     const sheet = cornerSheetLayout(500, { gutterPct: 0.8 });
     const tileAt = label => sheet.tiles.find(tile => tile.label === label);
-    record('Corner sheet: 2×2 with an 8 px gutter at 500 px tiles',
+    record('Corner sheet: 2×2, an 8 px gutter between 500 px tiles, no outer margin',
       sheet.gutterPx === 8
-        && sheet.width === 1024
-        && tileAt('br').x === 516
-        && tileAt('bl').y === 516,
+        && sheet.width === 1008
+        && tileAt('tl').x === 0
+        && tileAt('br').x === 508
+        && tileAt('bl').y === 508,
       `${sheet.width} px, gutter ${sheet.gutterPx} px`);
   }
 
