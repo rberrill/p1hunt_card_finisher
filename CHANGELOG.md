@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Tests: twelve more sample photos (raw cards, flat on dark and busy mats, cards on stands) with hand-placed corners. The detection check now holds every photo to its own measured baseline, so nothing that detects well today can quietly break, and it prints a scoreboard of how many photos are found. Nothing in the app changes.
 
 ### Fixed
+- Corner detection now finds cards with faint edges, such as a black card on a black mat. When the first pick looks doubtful, detection takes a second, more sensitive look at the edges and keeps whichever result it's more sure of. Photos it already detected confidently are unchanged.
 - **Auto** on the Levels step could give the whole photo a color cast when the darkest part of the photo was strongly colored, such as a blue slab label (which turned the photo yellow). Auto's black point now uses only near-neutral dark areas, and sets no black point when there are none. Its white point is unchanged.
 
 ## [1.7.0] - 2026-10-30

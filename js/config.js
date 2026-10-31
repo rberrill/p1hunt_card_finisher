@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.8.0-dev.5',
+  appVersion: '1.8.0-dev.6',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -167,6 +167,12 @@ const CONFIG = {
     dupCornerFrac: 0.02,
     maxCandidates: 3,
     minConfidence: 0.5,
+    // When the top pick's confidence is below retryConfidence (0 = never), detection runs a
+    // second pass with the more sensitive Canny thresholds retryCannyLow / retryCannyHigh and
+    // keeps the more confident pass. Finds faint edges, such as a black card on a black mat.
+    retryConfidence: 0.8,
+    retryCannyLow: 8,
+    retryCannyHigh: 30,
     // Refinement: search ± refineSearchWorkingPx (working px) along each side's normal at
     // refineSamples points, after a refineBlur blur; points weaker than refineMinGrad are
     // dropped, and the line fit keeps points within refineInlierPx.

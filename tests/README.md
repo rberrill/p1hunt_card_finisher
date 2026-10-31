@@ -15,7 +15,7 @@ Exit code 0 means everything passed.
 | Privacy | No GPS location in `samples/` photos; no private network addresses or local drive paths in the published text files |
 | CONFIG consistency | The engine's built-in defaults (`DETECT_DEFAULTS`, `GEOMETRY_DEFAULTS`, `LEVELS_DEFAULTS`) match `CONFIG`; every `CONFIG_LIMITS` key is a `CONFIG` number with its default in range |
 | Code style | The parts of `.claude/rules/code-style.md` a tokenizer can check (`tests/style-check.js`): lines of at most 100 characters, no one- or two-letter names outside the allowed list, one statement per line, one declaration per `const` / `let` / `var` |
-| Engine self-tests | Geometry (homography round trip, Flatten 0% and 100%, perspective-corrected aspect, degenerate quads, the rotate/flip/crop pipeline, identity warp), detection (synthetic card, sub-pixel refinement), Levels (pick targets, robust dropper, Auto, Auto ignoring colored darks), Overlay (placement, snap margins), untrusted input (URL overrides and their safe ranges, edits-file checks) |
+| Engine self-tests | Geometry (homography round trip, Flatten 0% and 100%, perspective-corrected aspect, degenerate quads, the rotate/flip/crop pipeline, identity warp), detection (synthetic card, sub-pixel refinement, a faint card found by the second pass), Levels (pick targets, robust dropper, Auto, Auto ignoring colored darks), Overlay (placement, snap margins), untrusted input (URL overrides and their safe ranges, edits-file checks) |
 
 The engine self-tests also run in the app with `?selftest=1`, on the main thread and inside the worker; the toast reads `main n/n, worker n/n`.
 
@@ -67,8 +67,8 @@ The run also prints a **scoreboard** that never fails: how many photos are found
 | IMG_9142 | CGC slab, landscape card, on a stand | 0.25% | 0.25% | Within 1% |
 | IMG_9216 | Toploader on a stand | 0.09% | 0.09% | Within 1% |
 | 01_chrome_flat_black | Raw chrome card, flat on a black mat | 0.00% | 0.00% | Within 1% |
-| 02_black_flat_black | Raw black card, flat on a black mat | 18.54% | 18.54% | Wrong shape (a line inside the card's design taken as the top edge) |
-| 03_chrome_flat_busy | Raw chrome card, flat on a busy mat | 24.32% | 19.53% | Wrong shape (mat lines break up the card's outline). Held out |
+| 02_black_flat_black | Raw black card, flat on a black mat | 0.24% | 0.24% | Within 1% (found by the second, more sensitive pass) |
+| 03_chrome_flat_busy | Raw chrome card, flat on a busy mat | 24.32% | 24.32% | Wrong shape (mat lines break up the card's outline). Held out |
 | 04_red_angle_busy | Raw red card, steep angle, busy mat | 6.29% | 1.35% | Wrong shape (the printed frame inside the card) |
 | 05_sapphire_flat_black | Landscape card in a toploader, black mat | 0.03% | 0.03% | Within 1% |
 | 06_chrome_flat_white | Toploader, flat on white | 0.42% | 0.42% | Within 1% |

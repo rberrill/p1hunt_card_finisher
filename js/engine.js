@@ -655,6 +655,9 @@ function CardEngineModule(globalScope) {
     dupCornerFrac: 0.02,
     maxCandidates: 3,
     minConfidence: 0.5,
+    retryConfidence: 0.8,
+    retryCannyLow: 8,
+    retryCannyHigh: 30,
     refineSearchWorkingPx: 3,
     refineSamples: 48,
     refineBlur: 1.0,
@@ -1100,16 +1103,10 @@ function CardEngineModule(globalScope) {
     return { params, width, height, edges, lines, supportBits };
   }
 
-  /**
-   * detect(img, options) → { candidates: [{ corners, confidence, score, parts }], lines, timing,
-   * debug }. img: ImageData-like at working size. options: { ratio (card width ÷ height, default
-   * 5:7), seed: [x, y] working px or null, params: overrides of DETECT_DEFAULTS, debug: bool,
-   * quads: optional external candidate quads (such as native detection in phase two), scored
-   * alongside the Hough quads }.
-   */
-  function detect(img, options = {}) {
-    const startTime = now();
-    const analysis = analyze(img, options.params);
+  // One detection pass at the given parameter overrides: analysis, every scored quad (the Hough
+  // quads plus any external proposals, never instead of them) and the picked candidates.
+  function detectionPass(img, paramOverrides, options) {
+    const analysis = analyze(img, paramOverrides);
     const { params, width, height, lines, supportBits } = analysis;
     const context = {
       width,
@@ -1121,16 +1118,50 @@ function CardEngineModule(globalScope) {
       seed: options.seed || null,
       focal: focalModel(width, height, params.focalFactor),
     };
-    const diagonal = Math.hypot(width, height);
     const analyzedTime = now();
     const quads = quadsFromLines(lines, context);
-    // External proposals are added to the Hough quads, never replace them.
     for (const external of options.quads || []) {
       const corners = Quad.sortCorners(external);
       if (!Quad.isConvex(corners)) continue;
       quads.push(Object.assign({ corners }, scoreQuad(corners, context)));
     }
+    const diagonal = Math.hypot(width, height);
     const candidates = pickCandidates(quads, params, diagonal, params.maxCandidates);
+    return { analysis, quads, candidates, analyzedTime };
+  }
+
+  // The top candidate's confidence, or 0 when there is none.
+  function topConfidence(candidates) {
+    return candidates.length ? candidates[0].confidence : 0;
+  }
+
+  /**
+   * detect(img, options) → { candidates: [{ corners, confidence, score, parts }], lines, timing,
+   * debug }. img: ImageData-like at working size. options: { ratio (card width ÷ height, default
+   * 5:7), seed: [x, y] working px or null, params: overrides of DETECT_DEFAULTS, debug: bool,
+   * quads: optional external candidate quads (such as native detection in phase two), scored
+   * alongside the Hough quads }.
+   */
+  function detect(img, options = {}) {
+    const startTime = now();
+    let pass = detectionPass(img, options.params, options);
+    // A doubtful top pick (such as a black card on a black mat, whose edges are too faint for
+    // the usual thresholds) gets a second pass with more sensitive edges. The pass with the
+    // more confident top pick wins, so a confident result is never second-guessed.
+    const firstConfidence = topConfidence(pass.candidates);
+    const isDoubtful = firstConfidence < pass.analysis.params.retryConfidence;
+    if (isDoubtful) {
+      const { params } = pass.analysis;
+      const sensitive = Object.assign({}, options.params, {
+        cannyLow: params.retryCannyLow,
+        cannyHigh: params.retryCannyHigh,
+      });
+      const retry = detectionPass(img, sensitive, options);
+      if (topConfidence(retry.candidates) > firstConfidence) pass = retry;
+    }
+    const { analysis, quads, candidates, analyzedTime } = pass;
+    const { params, width, height, lines } = analysis;
+    const diagonal = Math.hypot(width, height);
     const result = {
       candidates: candidates.map(candidate => ({
         corners: candidate.corners,
@@ -1151,6 +1182,7 @@ function CardEngineModule(globalScope) {
         total: now() - startTime,
         lines: lines.length,
         quadCount: quads.length,
+        retried: isDoubtful,
       },
     };
     if (options.debug) {
@@ -2389,8 +2421,8 @@ function CardEngineModule(globalScope) {
   }
 
   // A synthetic photo: a warm card on a dark background, 4×4 supersampled for anti-aliased
-  // edges like a real photo.
-  function syntheticCardImage(width, height, card) {
+  // edges like a real photo. shades: the red channel of the background and the card.
+  function syntheticCardImage(width, height, card, shades = { background: 50, card: 200 }) {
     const img = { width, height, data: new Uint8ClampedArray(width * height * 4) };
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
@@ -2400,7 +2432,7 @@ function CardEngineModule(globalScope) {
             if (Quad.contains(card, [x + (subX + 0.5) / 4, y + (subY + 0.5) / 4])) coverage++;
           }
         }
-        const value = 50 + (200 - 50) * coverage / 16;
+        const value = shades.background + (shades.card - shades.background) * coverage / 16;
         const offset = (y * width + x) * 4;
         img.data[offset] = value;
         img.data[offset + 1] = value * 0.9;
@@ -2439,6 +2471,18 @@ function CardEngineModule(globalScope) {
     const refineError = cornerError(refined.corners);
     record('Refinement lands within 0.5 px', refineError < 0.5,
       `max corner error ${refineError.toFixed(3)} px`);
+
+    // A dark card on a dark background (red 54 on 30): too faint for the usual Canny
+    // thresholds, found by the second, more sensitive pass.
+    const faint = syntheticCardImage(width, height, card, { background: 30, card: 54 });
+    const firstPassOnly = detect(faint, { params: { retryConfidence: 0 } }).candidates[0];
+    const withRetry = detect(faint, {});
+    const faintFound = withRetry.candidates[0];
+    const faintError = faintFound ? cornerError(faintFound.corners) : Infinity;
+    record('A faint card is found by the second pass',
+      !firstPassOnly && withRetry.timing.retried && faintError < 2,
+      `first pass alone ${firstPassOnly ? 'found a candidate' : 'finds nothing'}; `
+      + `second pass max corner error ${faintError.toFixed(2)} px`);
   }
 
   // 8. Levels: the white pick comes out neutral at whiteTarget, the black pick at blackTarget.

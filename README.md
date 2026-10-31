@@ -89,7 +89,7 @@ Pinch or scroll to zoom; drag empty space to pan.
 
 ## Known limitations
 
-- Detection is tuned on a small set of photos. It can pick a stand or case edge over the card; the next candidate or a quick drag fixes it. Its confidence score doesn't reliably flag wrong picks.
+- Detection is tuned on a small set of photos. It can pick a stand or case edge over the card, and on a raw card it can pick a frame printed inside the card or lose the card's outline on a busy mat; the next candidate or a quick drag fixes it. Its confidence score doesn't reliably flag wrong picks.
 - Auto levels can be fooled by strongly colored backdrops, and white picks on foil or reflections give wrong results.
 - No batch processing, background removal or glare correction.
 
