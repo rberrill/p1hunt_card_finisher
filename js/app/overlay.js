@@ -353,6 +353,24 @@
     }
   }
 
+  // The stored form ({ id, buf, type, name }) of a decoded logo, or null: a pair keeps the
+  // waiting side's logo with its photo for Resume.
+  function overlayRecord(id) {
+    const image = images.get(id);
+    return image ? storedRecord(image) : null;
+  }
+
+  // Decodes a stored logo record again (Resume of a pair). It comes from storage; register
+  // checks its type and bytes, and a bad record is skipped (the export then says the logo is
+  // missing, as for a bad edits file).
+  async function restoreOverlayRecord(record) {
+    if (!record || typeof record !== 'object') return;
+    try {
+      const name = typeof record.name === 'string' ? record.name.slice(0, 200) : '';
+      await register(record.buf, record.type, name);
+    } catch (error) { /* left out */ }
+  }
+
   /* ---------- edits files: the overlay image is embedded ---------- */
   const BASE64_CHUNK = 0x8000;
 
@@ -849,6 +867,8 @@
     loadSavedOverlay,
     overlayStateChanged,
     ensureOverlayImage,
+    overlayRecord,
+    restoreOverlayRecord,
     overlayForEdits,
     overlayFromEdits,
     compositeOverlay,

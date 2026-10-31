@@ -25,6 +25,7 @@ Six steps, in order:
    - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
    - Exports are rendered from the full-resolution original.
    - Once the photo is exported, **Next card →** opens the next photo, with the same crop and export settings.
+   - **Add back** pairs the card's front with its back. A **Front | Back** switch in the header moves between them, both are cropped to the 5:7 card shape, and the pair saves **Together** (one image, side by side or stacked) or **Separately** (two files).
 
 Also:
 - **Undo / redo** (50 steps).

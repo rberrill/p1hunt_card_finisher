@@ -140,18 +140,24 @@
   }
 
   /**
-   * renderWarped(state, outputToSource, outputWidth, outputHeight, onProgress) → a canvas of
-   * the photo warped through outputToSource (output px → source px), from the original photo,
-   * with the applied levels and the export fill, and no overlay. The main export and the
-   * corner shots both render through it. Renders in row bands so a phone never holds the whole
-   * source and output as raw pixels at once.
+   * renderWarped(state, outputToSource, outputWidth, outputHeight, onProgress, options) → a
+   * canvas of the photo warped through outputToSource (output px → source px), from the
+   * original photo, with the applied levels and the export fill, and no overlay. The main
+   * export, the corner shots and a pair's sides all render through it. Renders in row bands so
+   * a phone never holds the whole source and output as raw pixels at once.
+   * options: photo (the full-resolution image to read; the open photo by default) and target
+   * ({ canvas, x, y }: render into that canvas at that offset instead of a new one, as a pair's
+   * Together image does).
    */
-  async function renderWarped(state, outputToSource, outputWidth, outputHeight, onProgress) {
+  async function renderWarped(state, outputToSource, outputWidth, outputHeight, onProgress,
+    options = {}) {
     const isTransparent = state.export.fill === 'transparent';
     const isJpegOnTransparent = state.export.format === 'jpeg' && isTransparent;
     const region = makeCanvas(1, 1);
+    const target = options.target || null;
     const render = {
       state,
+      photo: options.photo || app.img.el,
       outputToSource,
       outputWidth,
       fill: CF.fillRgba(isJpegOnTransparent ? '#ffffff' : state.export.fill),
@@ -159,8 +165,10 @@
       region,
       regionContext: context2d(region, true),
     };
-    const output = makeCanvas(outputWidth, outputHeight);
+    const output = target ? target.canvas : makeCanvas(outputWidth, outputHeight);
     const outputContext = context2d(output);
+    const offsetX = target ? target.x : 0;
+    const offsetY = target ? target.y : 0;
     let bandRows = Math.max(MIN_BAND_ROWS, Math.floor(CONFIG.export.bandPx / outputWidth));
     let y = 0;
     while (y < outputHeight) {
@@ -189,7 +197,7 @@
           band.data.set(render.fill, offset);
         }
       }
-      outputContext.putImageData(band, 0, y);
+      outputContext.putImageData(band, offsetX, offsetY + y);
       y += rows;
       if (onProgress) onProgress(y / outputHeight);
       await nextFrame();
@@ -209,7 +217,7 @@
   // Warps one band of output rows starting at row y: reads the band's source box (source px)
   // from the photo at regionScale, applies levels, and samples it into `band`.
   function warpBand(render, band, box, regionScale, y) {
-    const { state, outputToSource, region, regionContext } = render;
+    const { state, photo, outputToSource, region, regionContext } = render;
     const boxWidth = box.right - box.left;
     const boxHeight = box.bottom - box.top;
     const regionWidth = Math.max(1, Math.round(boxWidth * regionScale));
@@ -221,7 +229,7 @@
     regionContext.imageSmoothingEnabled = true;
     regionContext.imageSmoothingQuality = 'high';
     regionContext.drawImage(
-      app.img.el,
+      photo,
       box.left, box.top, boxWidth, boxHeight,
       0, 0, regionWidth, regionHeight,
     );
@@ -306,12 +314,10 @@
       toast(done);
       return;
     }
-    const outcome = await shareFile(new File([blob], name, { type: blob.type }));
+    const file = new File([blob], name, { type: blob.type });
+    const outcome = await shareExport([file], () => markExported(state));
     if (outcome === 'pending') toast(done + ' Tap Share now to open the share sheet.', '', 6000);
-    if (outcome === 'shared') {
-      markExported(state);
-      toast(done);
-    }
+    if (outcome === 'shared') toast(done);
   }
 
   // Records that these edits were exported (downloaded, copied or shared), which shows Next
@@ -321,12 +327,14 @@
     CF.Session.saveSoon();
   }
 
-  // The second tap after a slow export ("Share now"). Any edit clears the waiting file, so a
+  // The second tap after a slow export ("Share now"). Any edit clears the waiting files, so a
   // finished share here is of the current edits.
   async function sharePending() {
-    if (!app.pendingSave) return;
-    const outcome = await shareFile(app.pendingSave);
-    if (outcome === 'shared') markExported(app.state);
+    const pending = app.pendingSave;
+    if (!pending) return;
+    const outcome = await shareFiles(pending.files, false);
+    if (outcome !== 'cancelled') app.pendingSave = null;
+    if (outcome === 'shared') pending.onShared();
     CF.syncReadouts();
   }
 
@@ -350,9 +358,14 @@
     }
   }
 
-  // Exports the current edits. kind: 'download', 'share' or 'copy' (PNG to the clipboard).
+  // Exports the current edits. kind: 'download', 'share' or 'copy' (PNG to the clipboard). A
+  // pair exports both sides as chosen, except that Copy with Separately copies the open side.
   async function doExport(kind) {
     if (!app.img || app.exporting) return;
+    if (app.pair && (kind !== 'copy' || app.pairOutput !== 'separately')) {
+      CF.exportPair(kind);
+      return;
+    }
     const state = clone(app.state);
     const type = kind === 'copy' ? 'image/png' : MIME_TYPES[state.export.format];
     const startTime = performance.now();
@@ -388,15 +401,20 @@
     }
   }
 
-  // Shares the main export's file. On 'pending' the Share button becomes "Share now" and a
+  // Shares finished export files in one sheet; onShared() runs once they're shared. On
+  // 'pending' the Share button becomes "Share now" (app.pendingSave = { files, onShared }) and a
   // fresh tap opens the sheet; any edit cancels it. Returns shareFiles' outcome.
-  async function shareFile(file) {
-    const outcome = await shareFiles([file], !app.pendingSave);
-    if (outcome === 'pending') app.pendingSave = file;
+  async function shareExport(files, onShared) {
+    const outcome = await shareFiles(files, !app.pendingSave);
+    if (outcome === 'pending') app.pendingSave = { files, onShared };
     else if (outcome !== 'cancelled') app.pendingSave = null;
+    if (outcome === 'shared') onShared();
     CF.syncReadouts();
     return outcome;
   }
+
+  // Shares one file of the open photo's export (the test hook's entry point).
+  const shareFile = file => shareExport([file], () => markExported(app.state));
 
   /* ---------- saving and loading edits (the serializable edit state) ---------- */
   function saveEdits() {
@@ -506,6 +524,7 @@
     runWithProgress,
     doExport,
     shareFiles,
+    shareExport,
     shareFile,
     sharePending,
     saveEdits,

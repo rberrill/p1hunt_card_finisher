@@ -13,13 +13,13 @@
 <title>P1Hunt Card Finisher</title>
 <!-- App icon: favicon.ico for Safari on Mac and older browsers, the SVG for the rest, and
      the 180 px PNG for the iPhone home screen. All three are drawn from icons/icon.svg. -->
-<link rel="icon" href="icons/favicon.ico?v=1.9.0-dev.3" sizes="32x32">
-<link rel="icon" href="icons/icon.svg?v=1.9.0-dev.3" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.9.0-dev.3">
+<link rel="icon" href="icons/favicon.ico?v=1.9.0-dev.4" sizes="32x32">
+<link rel="icon" href="icons/icon.svg?v=1.9.0-dev.4" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.9.0-dev.4">
 <!-- PWA (phase two): this becomes a real file; a service worker can't be inlined.
 <link rel="manifest" href="manifest.webmanifest">
 -->
-<link rel="stylesheet" href="css/app.css?v=1.9.0-dev.3">
+<link rel="stylesheet" href="css/app.css?v=1.9.0-dev.4">
 </head>
 <body>
 <div id="app">
@@ -41,6 +41,15 @@
         <svg viewBox="0 0 24 24">
             <path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>
         </svg>
+      </button>
+      <!-- A front + back pair: switch sides, or unpair (it asks which side to keep). -->
+      <div class="side-switch" id="sideSwitch" role="group" aria-label="Card side" hidden>
+        <button class="btn" data-side="front" aria-pressed="true">Front</button>
+        <button class="btn" data-side="back" aria-pressed="false">Back</button>
+      </div>
+      <button class="btn" id="btnUnpair" title="Unpair (keep one side)" aria-label="Unpair"
+          hidden>
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
       <button class="btn" id="btnPreview" aria-pressed="false"
           title="Show the corrected card full size">
@@ -85,6 +94,17 @@
     </div>
 
     <aside class="panel" id="panel">
+      <!-- A pair's questions (Unpair, a new photo) take the control area's place; nothing goes
+           over the photo. -->
+      <div class="pair-prompt" id="pairPrompt" hidden>
+        <h3 id="pairPromptTitle"></h3>
+        <div class="hint" id="pairPromptText"></div>
+        <div class="row">
+          <button class="btn" id="btnPromptFirst"></button>
+          <button class="btn" id="btnPromptSecond"></button>
+        </div>
+        <button class="btn wide" id="btnPromptCancel">Cancel</button>
+      </div>
       <!-- Each step: one compact control area (fixed height on phones), "More options", then the
            action bar. The action bar's first button (phones) is the step menu; the last moves to
            the next step. -->
@@ -335,14 +355,23 @@
               <option value="webp">WebP</option>
             </select>
             <select id="size" aria-label="Size (long edge)" class="grow"></select>
+            <select id="pairOutput" aria-label="Pair output" class="grow" hidden>
+              <option value="together">Together</option>
+              <option value="separately">Separately</option>
+            </select>
           </div>
           <div class="readout" id="exportReadout"></div>
           <div class="status" id="exportMessage"></div>
           <div class="progress" id="progress" hidden><div></div></div>
-          <!-- Next card: shown once this photo's current edits have been exported. It sits here,
-               not in the action bar, which is full once Share and Copy show. -->
-          <button class="btn wide next-card" id="btnNextCard" hidden
-              title="Open the next photo">Next card →</button>
+          <!-- Add back starts a front + back pair. Next card: shown once this photo's current
+               edits have been exported. They sit here, not in the action bar, which is full once
+               Share and Copy show. -->
+          <div class="row next-row">
+            <button class="btn" id="btnAddBack" hidden
+                title="Keep this photo as the front and open the back">Add back</button>
+            <button class="btn" id="btnNextCard" hidden
+                title="Open the next photo">Next card →</button>
+          </div>
           <details class="more">
             <summary>More options</summary>
             <div class="group" id="qualityRow">
@@ -391,6 +420,7 @@
                 <button class="btn" id="btnLoadEdits">Load edits</button>
               </div>
               <div class="hint">
+                <span id="editsPairHint" hidden>Saves the side you’re on.</span>
                 Edits are a small JSON file. Re-open the same photo, load it, and the export is
                 identical.
               </div>
@@ -426,18 +456,19 @@
      engine → app modules (core first: it creates the CF namespace; main last: it calls init()).
      ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay
      relative. -->
-<script src="js/config.js?v=1.9.0-dev.3"></script>
-<script src="js/engine.js?v=1.9.0-dev.3"></script>
-<script src="js/app/core.js?v=1.9.0-dev.3"></script>
-<script src="js/app/adapters.js?v=1.9.0-dev.3"></script>
-<script src="js/app/state.js?v=1.9.0-dev.3"></script>
-<script src="js/app/view.js?v=1.9.0-dev.3"></script>
-<script src="js/app/levels.js?v=1.9.0-dev.3"></script>
-<script src="js/app/overlay.js?v=1.9.0-dev.3"></script>
-<script src="js/app/input.js?v=1.9.0-dev.3"></script>
-<script src="js/app/ui.js?v=1.9.0-dev.3"></script>
-<script src="js/app/export.js?v=1.9.0-dev.3"></script>
-<script src="js/app/corner-shots.js?v=1.9.0-dev.3"></script>
-<script src="js/app/main.js?v=1.9.0-dev.3"></script>
+<script src="js/config.js?v=1.9.0-dev.4"></script>
+<script src="js/engine.js?v=1.9.0-dev.4"></script>
+<script src="js/app/core.js?v=1.9.0-dev.4"></script>
+<script src="js/app/adapters.js?v=1.9.0-dev.4"></script>
+<script src="js/app/state.js?v=1.9.0-dev.4"></script>
+<script src="js/app/view.js?v=1.9.0-dev.4"></script>
+<script src="js/app/levels.js?v=1.9.0-dev.4"></script>
+<script src="js/app/overlay.js?v=1.9.0-dev.4"></script>
+<script src="js/app/input.js?v=1.9.0-dev.4"></script>
+<script src="js/app/ui.js?v=1.9.0-dev.4"></script>
+<script src="js/app/export.js?v=1.9.0-dev.4"></script>
+<script src="js/app/corner-shots.js?v=1.9.0-dev.4"></script>
+<script src="js/app/pair.js?v=1.9.0-dev.4"></script>
+<script src="js/app/main.js?v=1.9.0-dev.4"></script>
 </body>
 </html>

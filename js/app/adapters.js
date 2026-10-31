@@ -130,6 +130,8 @@
   // { originX, originY, scale } (region px = (source − origin) · scale), or null if tiny.
   function readRegion(box, maxPx) {
     const img = app.img;
+    // A pair export releases the open photo while it renders the other side.
+    if (!img.el) return null;
     const left = Math.max(0, Math.floor(box.left));
     const top = Math.max(0, Math.floor(box.top));
     const right = Math.min(img.width, Math.ceil(box.right));
@@ -343,7 +345,8 @@
       if (!app.state) return;
       const { crop, export: exportState } = app.state;
       const prefs = {
-        cropPreset: crop.preset,
+        // A pair's 5:7 lock never becomes the remembered preset.
+        cropPreset: app.isPairCrop ? this.load().cropPreset : crop.preset,
         export: {
           format: exportState.format,
           quality: exportState.quality,
@@ -353,6 +356,7 @@
         },
         // Not edit state, so it stays out of edits files and the session.
         cornerShots: app.cornerShotsOutput,
+        pairOutput: app.pairOutput,
       };
       try {
         localStorage.setItem(CONFIG.storageKey, JSON.stringify(prefs));
@@ -363,7 +367,8 @@
   /* ---------- session restore (IndexedDB, best-effort) ----------
      Records: 'photo' (the original file's bytes, written once per photo), 'edits' (the edit
      state, Levels draft and step, rewritten shortly after every change), 'overlay' (the saved
-     logo) and 'photoOverlay' (the current photo's logo, for Resume). */
+     logo) and 'photoOverlay' (the current photo's logo, for Resume). A front + back pair adds
+     'pair' (the other side's edits) and 'pairPhoto' (its photo and logo); see pair.js. */
   const Session = {
     database: null,
     timer: 0,
@@ -467,6 +472,8 @@
       return this.transaction('readwrite', store => {
         store.delete('photo');
         store.delete('photoOverlay');
+        store.delete('pair');
+        store.delete('pairPhoto');
         return store.delete('edits');
       }).catch(() => {});
     },

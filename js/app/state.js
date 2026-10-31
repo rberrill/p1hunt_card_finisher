@@ -214,8 +214,11 @@
     return ratio + preset.label.slice(preset.id.length);
   }
 
-  // After every committed change: geometry, crop alignment, saving, and a redraw.
+  // After every committed change: geometry, crop alignment, saving, and a redraw. In a front +
+  // back pair, the pair's rules (the 5:7 crop, its shared orientation and export settings) are
+  // applied first, so neither undo nor a loaded edits file can break them.
   function stateChanged() {
+    if (app.state) CF.applyPairRules(app.state);
     app.geometry = app.state ? CardEngine.computeGeometry(app.state, geometryConfig()) : null;
     if (app.state && alignCrop(app.state, app.geometry)) {
       app.geometry = CardEngine.computeGeometry(app.state, geometryConfig());
@@ -244,28 +247,29 @@
 
   /* ---------- loading ---------- */
 
-  // The downscaled copies a photo needs: the preview, the mini-preview thumbnail and the
-  // detection working image. Each gets `scale` = its px per source px.
+  // The downscaled copies a photo needs → { preview, thumb, work }: the preview, the
+  // mini-preview thumbnail and the detection working image. Each gets `scale` = its px per
+  // source px. A front + back pair keeps the other side's copies, so switching sides doesn't
+  // rebuild them.
   function makeCopies(img) {
     const longSide = Math.max(img.width, img.height);
-    app.preview = CF.scaledCopy(img.el, img.width, img.height, CONFIG.previewMaxPx);
-    const previewCanvas = app.preview.canvas;
+    const preview = CF.scaledCopy(img.el, img.width, img.height, CONFIG.previewMaxPx);
+    const previewCanvas = preview.canvas;
     const copyOfPreview = maxPx => (
       CF.scaledCopy(previewCanvas, previewCanvas.width, previewCanvas.height, maxPx)
     );
     const thumbScale = Math.min(1, CONFIG.thumbMaxPx / longSide);
-    app.thumb = copyOfPreview(longSide * thumbScale);
-    app.thumb.scale = app.thumb.data.width / img.width;
+    const thumb = copyOfPreview(longSide * thumbScale);
+    thumb.scale = thumb.data.width / img.width;
     const workScale = Math.min(1, CONFIG.detect.workingSize / longSide);
-    app.work = copyOfPreview(longSide * workScale);
-    app.work.scale = app.work.data.width / img.width;
+    const work = copyOfPreview(longSide * workScale);
+    work.scale = work.data.width / img.width;
+    return { preview, thumb, work };
   }
 
-  // Clears everything that belonged to the previous photo.
-  function resetPhotoState() {
-    History.reset();
-    app.views = { source: null, result: null, export: null };
-    app.detection = {
+  // A photo's detection results before the first run.
+  function emptyDetection() {
+    return {
       candidates: [],
       index: 0,
       last: null,
@@ -274,6 +278,13 @@
       snapPoints: [],
       snapLines: [],
     };
+  }
+
+  // Clears everything that belonged to the previous photo.
+  function resetPhotoState() {
+    History.reset();
+    app.views = { source: null, result: null, export: null, together: null };
+    app.detection = emptyDetection();
     app.findMode = false;
     app.perspectivePreview = null;
     app.edgeCanvas = null;
@@ -298,6 +309,8 @@
 
   // Opens a photo. restore: a saved session record ({ state, draft, tab, exported, width,
   // height }) to reapply instead of starting fresh; it's used only if the photo's size matches.
+  // Resolves true once the photo is open, false if it couldn't be read or another photo was
+  // opened meanwhile (the open photo is then unchanged).
   async function openFile(file, name, restore) {
     const startTime = performance.now();
     const id = ++app.loadId;
@@ -307,16 +320,20 @@
       img = await CF.ImageSource.load(file, name);
     } catch (error) {
       toast(error.message, 'error', 6000);
-      return;
+      return false;
     }
     // Another photo was opened meanwhile.
     if (id !== app.loadId) {
       img.close();
-      return;
+      return false;
     }
     if (app.img) app.img.close();
     app.img = img;
-    makeCopies(img);
+    // The original bytes, so a front + back pair can decode this side again after a switch.
+    app.file = file;
+    // A new single photo remembers the crop preset it uses again (see Prefs.save).
+    if (!app.pair) app.isPairCrop = false;
+    Object.assign(app, makeCopies(img));
     app.state = newState(img);
     const resumed = !!(restore
       && restore.state
@@ -348,6 +365,7 @@
       CF.ensureOverlayImage();
     }
     runDetect({ auto: true, keepCorners: resumed });
+    return true;
   }
 
   /* ---------- detection ---------- */
@@ -358,6 +376,7 @@
   // it's used for this run only.
   async function runDetect({ auto = false, keepCorners = false, seed = null } = {}) {
     if (!app.img) return;
+    const img = app.img;
     const run = ++app.detection.running;
     const startTime = performance.now();
     app.detection.message = 'Detecting…';
@@ -371,8 +390,8 @@
         getRegion: CF.readRegion,
         debug: app.debugOverlay || CONFIG.debug,
       });
-      // A newer run has started.
-      if (run !== app.detection.running) return;
+      // A newer run has started, or a pair switched to its other side.
+      if (run !== app.detection.running || app.img !== img) return;
       const last = CF.JSDetector.last;
       app.detection.candidates = candidates;
       app.detection.index = 0;
@@ -463,6 +482,8 @@
     insetCorners,
     cropDefaults,
     cleanState,
+    makeCopies,
+    emptyDetection,
     History,
     commit,
     commitFrom,

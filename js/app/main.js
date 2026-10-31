@@ -55,12 +55,17 @@
   }
 
   function bindPhotoInput() {
-    const onFile = (file, name) => CF.openFile(file, name);
+    // The picker's photo is for what opened it (Open, Next card or Add back).
+    const onFile = (file, name) => {
+      const intent = app.fileIntent || 'open';
+      app.fileIntent = null;
+      CF.receivePhoto(file, name, intent);
+    };
     // On the Overlay step, a dropped or pasted image becomes the overlay; elsewhere it opens a
-    // new photo.
+    // new photo (asking first while a pair is open).
     const onDropOrPaste = (file, name) => {
       if (app.tab === 'overlay' && app.img) CF.addOverlayFile(file);
-      else CF.openFile(file, name);
+      else CF.receivePhoto(file, name, 'open');
     };
     CF.ImageSource.bindPicker(elements.fileInput, onFile);
     CF.ImageSource.bindDrop(elements.stage, onDropOrPaste);

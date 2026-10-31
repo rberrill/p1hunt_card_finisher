@@ -15,6 +15,7 @@
      UNTRUSTED INPUT      URL overrides, edits files, stored sessions
      RENDER PIPELINE      state → geometry → warp
      CORNER SHOTS         the four corner close-ups and their 2×2 sheet
+     FRONT + BACK PAIRS   the layout of the Together image
      LEVELS               white and black point correction in linear light
      SELF-TEST            runs the same on the main thread and in the Worker
    ===================================================================== */
@@ -2158,6 +2159,81 @@ function CardEngineModule(globalScope) {
   }
 
   /* ===================================================================
+     FRONT + BACK PAIRS: the Together image joins the two sides' exports
+     Portrait cards sit side by side (front left), landscape cards are stacked (front on top),
+     with the corner sheet's gutter rule between them and no outer margin. Each side keeps its
+     own export size; a smaller side is centered in its cell, never stretched. Over the canvas
+     caps, both sides scale down by the same factor.
+     =================================================================== */
+  const PAIR_DEFAULTS = {
+    gutterPct: 0.8,
+  };
+
+  /**
+   * pairLayout(frontSize, backSize, orient, config) → { width, height, gutterPx, scale, front,
+   * back }: the Together image for two exports of { width, height } px. orient: 'portrait'
+   * (side by side) or 'landscape' (stacked). config: PAIR_DEFAULTS plus maxOutputPx and
+   * maxOutputArea (the canvas caps). scale (≤ 1) is the factor both sides are rendered at;
+   * front and back are { x, y, width, height } in the Together image's px.
+   */
+  function pairLayout(frontSize, backSize, orient, configIn) {
+    const config = Object.assign({}, PAIR_DEFAULTS, configIn || {});
+    const isSideBySide = orient !== 'landscape';
+    const scale = pairScale(frontSize, backSize, isSideBySide, config);
+    const scaled = size => ({
+      width: Math.max(1, Math.round(size.width * scale)),
+      height: Math.max(1, Math.round(size.height * scale)),
+    });
+    const front = scaled(frontSize);
+    const back = scaled(backSize);
+    const cellWidth = Math.max(front.width, back.width);
+    const cellHeight = Math.max(front.height, back.height);
+    // The gutter is gutterPct % of the two cells' size across it, as on the corner sheet.
+    const across = isSideBySide ? cellWidth : cellHeight;
+    const gutterPx = Math.max(0, Math.round(config.gutterPct / 100 * 2 * across));
+    const width = isSideBySide ? 2 * cellWidth + gutterPx : cellWidth;
+    const height = isSideBySide ? cellHeight : 2 * cellHeight + gutterPx;
+    const placeIn = (size, cellX, cellY) => ({
+      x: cellX + Math.floor((cellWidth - size.width) / 2),
+      y: cellY + Math.floor((cellHeight - size.height) / 2),
+      width: size.width,
+      height: size.height,
+    });
+    const backCellX = isSideBySide ? cellWidth + gutterPx : 0;
+    const backCellY = isSideBySide ? 0 : cellHeight + gutterPx;
+    return {
+      width,
+      height,
+      gutterPx,
+      scale,
+      front: placeIn(front, 0, 0),
+      back: placeIn(back, backCellX, backCellY),
+    };
+  }
+
+  // Keeps a scaled-down pair safely under the caps after rounding (see pairScale).
+  const PAIR_SCALE_SLACK = 0.995;
+
+  // The factor (≤ 1) that keeps the joined image inside maxOutputPx on its long side and
+  // maxOutputArea in total. The gutter scales with the cells, so the ratio is exact up to
+  // rounding; PAIR_SCALE_SLACK keeps the rounded result under the caps.
+  function pairScale(frontSize, backSize, isSideBySide, config) {
+    const cellWidth = Math.max(frontSize.width, backSize.width);
+    const cellHeight = Math.max(frontSize.height, backSize.height);
+    const gutterFrac = config.gutterPct / 100 * 2;
+    const width = isSideBySide ? cellWidth * (2 + gutterFrac) : cellWidth;
+    const height = isSideBySide ? cellHeight : cellHeight * (2 + gutterFrac);
+    let scale = 1;
+    if (config.maxOutputPx) {
+      scale = Math.min(scale, config.maxOutputPx / Math.max(width, height));
+    }
+    if (config.maxOutputArea) {
+      scale = Math.min(scale, Math.sqrt(config.maxOutputArea / (width * height)));
+    }
+    return scale < 1 ? scale * PAIR_SCALE_SLACK : 1;
+  }
+
+  /* ===================================================================
      LEVELS: white and black point correction in linear light
      =================================================================== */
   const LEVELS_DEFAULTS = {
@@ -2736,6 +2812,47 @@ function CardEngineModule(globalScope) {
       `${sheet.width} px, gutter ${sheet.gutterPx} px`);
   }
 
+  // Front + back: the Together layout for portrait and landscape pairs, a smaller side
+  // centered in its cell, and the canvas caps.
+  function testPairLayout(record) {
+    const portrait = pairLayout(
+      { width: 1429, height: 2000 },
+      { width: 1429, height: 2000 },
+      'portrait',
+      { gutterPct: 0.8 },
+    );
+    record('Pair: portrait side by side, front left, 23 px gutter, no outer margin',
+      portrait.width === 2881
+        && portrait.height === 2000
+        && portrait.front.x === 0
+        && portrait.back.x === 1452
+        && portrait.scale === 1,
+      `${portrait.width} × ${portrait.height}, back at ${portrait.back.x}`);
+    const landscape = pairLayout(
+      { width: 2000, height: 1429 },
+      { width: 1000, height: 714 },
+      'landscape',
+      { gutterPct: 0.8 },
+    );
+    record('Pair: landscape stacked, front on top, a smaller back centered in its cell',
+      landscape.width === 2000
+        && landscape.height === 2881
+        && landscape.back.x === 500
+        && landscape.back.y === 1452 + 357,
+      `${landscape.width} × ${landscape.height}, back at ${landscape.back.x}, ${landscape.back.y}`);
+    const capped = pairLayout(
+      { width: 3000, height: 4200 },
+      { width: 3000, height: 4200 },
+      'portrait',
+      { gutterPct: 0.8, maxOutputPx: 12000, maxOutputArea: 16777216 },
+    );
+    record('Pair: over 16.7 MP both sides scale down together',
+      capped.width * capped.height <= 16777216
+        && capped.scale < 1
+        && capped.front.width === capped.back.width,
+      `${capped.width} × ${capped.height}, scale ${capped.scale.toFixed(3)}`);
+  }
+
   function testOverlaySnap(record) {
     const overlay = { cx: 0.7, cy: 0.2, w: 0.3, aspect: 2, opacity: 1 };
     const snapped = where => overlayRect(snapOverlay(overlay, where, 1000, 800), 1000, 800);
@@ -2888,6 +3005,7 @@ function CardEngineModule(globalScope) {
     testDegenerateQuads(record);
     testPipeline(record, quads[0]);
     testCornerShots(record, quads[0]);
+    testPairLayout(record);
     testWarpAndDetection(record);
     testLevelsTargets(record);
     testDropperTrim(record);
@@ -2929,6 +3047,8 @@ function CardEngineModule(globalScope) {
     CORNER_SHOT_DEFAULTS,
     cornerShots,
     cornerSheetLayout,
+    PAIR_DEFAULTS,
+    pairLayout,
     OVERLAY_DEFAULTS,
     overlayRect,
     clampOverlay,

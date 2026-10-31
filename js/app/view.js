@@ -38,6 +38,7 @@
 
   // The view for the current step, built when needed; null while the geometry is invalid.
   function currentView() {
+    if (CF.isTogetherShown()) return togetherView();
     if (app.tab === 'perspective' && !app.previewMode) {
       if (!app.views.source) app.views.source = fitView(app.img.width, app.img.height);
       return app.views.source;
@@ -60,8 +61,27 @@
     return app.views.result;
   }
 
+  // The Together preview's view (world px = the preview image's px), refit when its size
+  // changes; null while a side's corners are invalid.
+  function togetherView() {
+    const canvas = CF.togetherPreview();
+    if (!canvas) return null;
+    const view = app.views.together;
+    const isSameSize = view
+      && view.worldWidth === canvas.width
+      && view.worldHeight === canvas.height;
+    if (!isSameSize) {
+      app.views.together = Object.assign(fitView(canvas.width, canvas.height), {
+        worldWidth: canvas.width,
+        worldHeight: canvas.height,
+      });
+    }
+    return app.views.together;
+  }
+
   // Which of app.views the current step uses.
   function viewKey() {
+    if (CF.isTogetherShown()) return 'together';
     if (app.tab === 'perspective' && !app.previewMode) return 'source';
     return isFramedStep(app.tab) ? 'export' : 'result';
   }
@@ -179,6 +199,10 @@
     ctx.fillStyle = CONFIG.theme.stage;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (!app.img) return;
+    if (CF.isTogetherShown()) {
+      drawTogether(ctx);
+      return;
+    }
     const view = currentView();
     if (app.tab === 'perspective' && !app.previewMode) {
       drawSource(ctx, view, true);
@@ -189,6 +213,23 @@
       return;
     }
     drawResult(ctx, view);
+  }
+
+  // Export of a pair with Together chosen: the joined image as it will be saved, over the
+  // checkerboard where the fill is transparent.
+  function drawTogether(ctx) {
+    const view = togetherView();
+    if (!view) {
+      drawMessage(ctx, 'Fix the corners of both sides in Perspective first.');
+      return;
+    }
+    const canvas = CF.togetherPreview();
+    setWorld(ctx, view);
+    ctx.fillStyle = underlayStyle(ctx, app.state.export.fill);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(canvas, 0, 0);
   }
 
   function drawMessage(ctx, text) {
@@ -222,7 +263,9 @@
   }
 
   // Draws the full-resolution region [left, right) × [top, bottom) of the photo, clipped to it.
+  // Returns false (drawing nothing) while a pair export has the photo released.
   function drawPhotoRegion(ctx, left, top, right, bottom) {
+    if (!app.img.el) return false;
     const clampedLeft = Math.max(0, Math.floor(left));
     const clampedTop = Math.max(0, Math.floor(top));
     const clampedRight = Math.min(app.img.width, Math.ceil(right));
@@ -235,6 +278,7 @@
       clampedLeft, clampedTop, width, height,
       clampedLeft, clampedTop, width, height,
     );
+    return true;
   }
 
   // Draws the source photo; switches to a full-resolution tile of the visible area when zoomed
@@ -243,13 +287,12 @@
     setWorld(ctx, view);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    if (view.zoom * app.devicePixelRatio > app.preview.scale * 1.15) {
-      const topLeft = toWorld(view, [0, 0]);
-      const bottomRight = toWorld(view, [app.cssWidth, app.cssHeight]);
-      drawPhotoRegion(ctx, topLeft[0], topLeft[1], bottomRight[0], bottomRight[1]);
-    } else {
-      ctx.drawImage(app.preview.canvas, 0, 0, app.img.width, app.img.height);
-    }
+    const isZoomedIn = view.zoom * app.devicePixelRatio > app.preview.scale * 1.15;
+    const topLeft = toWorld(view, [0, 0]);
+    const bottomRight = toWorld(view, [app.cssWidth, app.cssHeight]);
+    const isDrawn = isZoomedIn
+      && drawPhotoRegion(ctx, topLeft[0], topLeft[1], bottomRight[0], bottomRight[1]);
+    if (!isDrawn) ctx.drawImage(app.preview.canvas, 0, 0, app.img.width, app.img.height);
   }
 
   // The position of handle `index`: 0–3 the corners, 4–7 the edge midpoints.

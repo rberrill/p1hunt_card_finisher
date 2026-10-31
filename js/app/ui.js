@@ -133,6 +133,13 @@
     });
     CF.bindOverlayControls();
     CF.bindCornerShots();
+    CF.bindPair();
+  }
+
+  // Opens the file picker for `intent` (see receivePhoto in pair.js).
+  function pickPhoto(intent) {
+    app.fileIntent = intent;
+    elements.fileInput.click();
   }
 
   // The header, tabs, step menu, More options and Preview.
@@ -140,8 +147,8 @@
     document.querySelectorAll('.tab').forEach(button => {
       button.addEventListener('click', () => app.img && setTab(button.dataset.tab));
     });
-    byId('btnOpen').onclick = () => elements.fileInput.click();
-    byId('btnOpenEmpty').onclick = () => elements.fileInput.click();
+    byId('btnOpen').onclick = () => pickPhoto('open');
+    byId('btnOpenEmpty').onclick = () => pickPhoto('open');
     byId('btnResume').onclick = resumeSession;
     byId('btnFresh').onclick = () => {
       CF.Session.clear();
@@ -339,7 +346,10 @@
   }
 
   // Picks a crop preset. A manual box is reshaped to the new aspect with the same center and area.
+  // A pair keeps 5:7; once unpaired, a picked preset is remembered again.
   function pickCropPreset(presetId) {
+    if (app.pair) return;
+    app.isPairCrop = false;
     CF.commit(state => {
       const previous = app.geometry && app.geometry.ok ? { ...app.geometry.crop } : null;
       state.crop.preset = presetId;
@@ -370,7 +380,19 @@
       const chip = event.target.closest('[data-crop]');
       if (chip) pickCropPreset(chip.dataset.crop);
     });
-    byId('btnSwap').onclick = () => CF.commit(state => {
+    byId('btnSwap').onclick = () => {
+      if (app.pair) CF.swapPair();
+      else swapCrop();
+    };
+    byId('btnFitToCard').onclick = () => CF.commit(state => {
+      state.crop.mode = 'fit';
+      state.crop.rect = null;
+    });
+  }
+
+  // Swap on a single photo: the crop turns between portrait and landscape (one undo step).
+  function swapCrop() {
+    CF.commit(state => {
       const next = CF.cropOrient(state, app.geometry) === 'portrait' ? 'landscape' : 'portrait';
       state.crop.orient = next === CF.cardOrient(app.geometry) ? null : next;
       state.crop.swapped = !state.crop.swapped;
@@ -378,10 +400,6 @@
         const rect = state.crop.rect;
         state.crop.rect = { cx: rect.cx, cy: rect.cy, w: rect.h, h: rect.w };
       }
-    });
-    byId('btnFitToCard').onclick = () => CF.commit(state => {
-      state.crop.mode = 'fit';
-      state.crop.rect = null;
     });
   }
 
@@ -426,8 +444,9 @@
       if (app.pendingSave) CF.sharePending();
       else CF.doExport('share');
     };
-    // Next card opens the photo picker, like Open; the new photo starts as any other does.
-    byId('btnNextCard').onclick = () => elements.fileInput.click();
+    // Next card opens the photo picker, like Open; the new photo starts as any other does. After
+    // a pair's export it starts a single photo without asking.
+    byId('btnNextCard').onclick = () => pickPhoto('next');
     // Share is the main action where the browser supports it; Download stays a plain download.
     if (CF.Exporter.canShare()) {
       byId('btnShare').hidden = false;
@@ -526,6 +545,8 @@
     const orient = CF.cropOrient(state, app.geometry);
     document.querySelectorAll('[data-crop]').forEach(chip => {
       chip.setAttribute('aria-pressed', String(chip.dataset.crop === state.crop.preset));
+      // A pair is locked to 5:7.
+      if (app.pair) chip.disabled = chip.dataset.crop !== state.crop.preset;
       const preset = CONFIG.crop.presets.find(candidate => candidate.id === chip.dataset.crop);
       chip.textContent = CF.cropLabel(preset, orient);
     });
@@ -590,10 +611,12 @@
     return '';
   }
 
-  // The export notes: why the output isn't what you might expect.
-  function exportNotes(state, geometry) {
+  // The export notes: why the output isn't what you might expect. pairLayout: the Together
+  // layout when a pair is saved Together (its cap replaces the open side's).
+  function exportNotes(state, geometry, pairLayout) {
     const notes = [];
-    if (geometry.output.isClamped) {
+    const isClamped = pairLayout ? pairLayout.scale < 1 : geometry.output.isClamped;
+    if (isClamped) {
       const megapixels = Math.round(CONFIG.maxOutputArea / 1e6 * 10) / 10;
       notes.push(`Clamped to fit the ${megapixels} MP canvas limit.`);
     }
@@ -609,6 +632,9 @@
   function syncReadouts() {
     const state = app.state;
     const geometry = app.geometry;
+    // Here rather than in syncUI: an export's start and end resync only the readouts, and the
+    // side switch is off while one runs.
+    CF.syncPair();
     if (!state) return;
     syncNextCard(state);
     CF.syncCornerShots();
@@ -633,31 +659,51 @@
       });
       return;
     }
-    const { crop, output } = geometry;
+    const { crop } = geometry;
     const cropSize = `${Math.round(crop.width)} × ${Math.round(crop.height)}`;
     byId('cropReadout').replaceChildren('Crop ', makeEl('b', null, cropSize), ' px');
-    const longEdge = state.export.longEdge;
-    const isSmall = longEdge && output.scale >= 1 && Math.max(crop.width, crop.height) < longEdge;
-    const format = state.export.format.toUpperCase();
-    const details = ` px · ${format}` + (isSmall ? ' · full crop, not upscaled' : '');
-    const outputSize = makeEl('b', null, `${output.width} × ${output.height}`);
-    byId('exportReadout').replaceChildren('Output ', outputSize, details);
+    const pairLayout = syncExportReadout(state, geometry);
+    // The phone control area holds one row here: a note, or Add back and Next card. A note
+    // shows until the export (it was on screen when the photo was exported), then Next card
+    // takes its place until the next edit (on wide screens too, so both layouts behave the
+    // same). Add back shows when no note needs the row.
+    const notes = exportNotes(state, geometry, pairLayout);
+    const isNextCardShown = !byId('btnNextCard').hidden;
     const message = byId('exportMessage');
     message.className = 'status';
-    // The phone control area can't hold a note and Next card together. The note was on screen
-    // when the photo was exported, so Next card takes its place until the next edit (on wide
-    // screens too, so both layouts behave the same).
-    const isNextCardShown = !byId('btnNextCard').hidden;
-    message.textContent = isNextCardShown ? '' : exportNotes(state, geometry);
+    message.textContent = isNextCardShown ? '' : notes;
+    byId('btnAddBack').hidden = !!app.pair || (!isNextCardShown && !!notes);
     byId('btnDownload').disabled = !!app.exporting;
     byId('btnShare').disabled = !!app.exporting && !app.pendingSave;
     byId('btnCopy').disabled = !!app.exporting;
   }
 
-  // Next card shows only once the current edits are exported, so it never offers to leave
-  // unexported work behind, and not while a share waits for its second tap.
+  // The output readout: the size and format, or for a pair the choice and its size. Returns the
+  // Together layout when a pair is saved Together, else null.
+  function syncExportReadout(state, geometry) {
+    const { crop, output } = geometry;
+    const format = state.export.format.toUpperCase();
+    if (app.pair) {
+      const pair = CF.pairReadout();
+      const size = makeEl('b', null, pair.size);
+      byId('exportReadout').replaceChildren(`${pair.label} · `, size, ` px · ${format}`);
+      return pair.layout;
+    }
+    const longEdge = state.export.longEdge;
+    const isSmall = longEdge && output.scale >= 1 && Math.max(crop.width, crop.height) < longEdge;
+    const details = ` px · ${format}` + (isSmall ? ' · full crop, not upscaled' : '');
+    const outputSize = makeEl('b', null, `${output.width} × ${output.height}`);
+    byId('exportReadout').replaceChildren('Output ', outputSize, details);
+    return null;
+  }
+
+  // Next card shows only once the current edits are exported (for a pair, both sides in the
+  // chosen output), so it never offers to leave unexported work behind, and not while a share
+  // waits for its second tap.
   function syncNextCard(state) {
-    const isExported = app.exportedState === JSON.stringify(state);
+    const isExported = app.pair
+      ? CF.isPairExported()
+      : app.exportedState === JSON.stringify(state);
     const isShown = isExported && !app.pendingSave;
     byId('btnNextCard').hidden = !isShown;
   }
@@ -760,12 +806,22 @@
   async function offerResume() {
     const record = await CF.Session.peek();
     if (!record || app.img) return;
-    // The record comes from storage.
-    byId('resumeName').textContent = shortText(record.name) || 'your last photo';
+    // The records come from storage.
+    const pair = await CF.peekPair();
+    byId('resumeName').textContent = resumeName(record, pair);
     const when = Number.isFinite(record.savedAt) ? '(' + timeAgo(record.savedAt) + ')' : '';
     byId('resumeWhen').textContent = when;
     byId('resume').hidden = false;
     byId('btnOpenEmpty').classList.remove('primary');
+  }
+
+  // The Resume prompt's name: the photo, or a pair's front + back.
+  function resumeName(record, pair) {
+    const name = shortText(record.name) || 'your last photo';
+    const other = pair && pair.other && pair.other.edits;
+    const otherName = other && shortText(other.name);
+    if (!otherName) return name;
+    return pair.current === 'front' ? `${name} + ${otherName}` : `${otherName} + ${name}`;
   }
 
   function hideResume() {
@@ -776,12 +832,21 @@
   async function resumeSession() {
     hideResume();
     try {
-      const [photo, edits] = await Promise.all([CF.Session.loadPhoto(), CF.Session.peek()]);
+      const [photo, edits, pair] = await Promise.all([
+        CF.Session.loadPhoto(),
+        CF.Session.peek(),
+        CF.peekPair(),
+      ]);
       if (!photo) {
         toast('The saved photo is gone. Open it again.', 'warn', 5000);
         return;
       }
-      await CF.openFile(new File([photo.buf], photo.name, { type: photo.type }), photo.name, edits);
+      // A pair's waiting side comes back first, so one full-size photo is decoded at a time.
+      if (pair) await CF.restorePair(pair);
+      const file = new File([photo.buf], photo.name, { type: photo.type });
+      const isOpen = await CF.openFile(file, photo.name, edits);
+      if (!isOpen) app.pair = null;
+      CF.finishResume();
     } catch (error) {
       console.error(error);
       toast('Couldn’t resume: ' + error.message, 'error', 6000);

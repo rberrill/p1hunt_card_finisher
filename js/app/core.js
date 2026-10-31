@@ -80,7 +80,7 @@
     perspectivePreview: null,
     tab: 'perspective',
     selected: 0,
-    views: { source: null, result: null, export: null },
+    views: { source: null, result: null, export: null, together: null },
     detection: {
       candidates: [],
       index: 0,
@@ -115,6 +115,17 @@
     pendingCorners: null,
     // The edit state (as JSON) of this photo's last finished export, for Next card.
     exportedState: null,
+    // The open photo's original file (a pair decodes a side again from it).
+    file: null,
+    // A front + back pair (pair.js): { current, orient, other, exportedKey }, or null.
+    pair: null,
+    // The pair's output ('together' or 'separately', a preference).
+    pairOutput: null,
+    // True while the crop is the pair's 5:7 (paired, or a side kept after Unpair): the
+    // remembered crop preset isn't overwritten until a preset is picked.
+    isPairCrop: false,
+    // What the next photo from the file picker is for: 'open', 'next' or 'addBack'.
+    fileIntent: null,
   };
 
   // The CONFIG settings CardEngine.computeGeometry reads.

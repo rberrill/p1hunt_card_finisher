@@ -17,7 +17,7 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 | `css/app.css` | All styles; phone rules in the `@media (max-width: 760px)` block at the end |
 | `js/config.js` | `CONFIG`: every tunable, commented in place. Loaded first |
 | `js/engine.js` | `CardEngine`: pure functions, wrapped in `function CardEngineModule(globalScope)` |
-| `js/app/*.js` | The shell: eleven modules sharing the `CF` namespace, loaded in order `core → adapters → state → view → levels → overlay → input → ui → export → corner-shots → main` |
+| `js/app/*.js` | The shell: twelve modules sharing the `CF` namespace, loaded in order `core → adapters → state → view → levels → overlay → input → ui → export → corner-shots → pair → main` |
 | `icons/` | The app icon. `icon.svg` is the source; `favicon.ico` (16, 32, 48 px) and `apple-touch-icon.png` (180 px) are rendered from it |
 | `tests/` | Node and browser tests (see [tests/README.md](../tests/README.md)) |
 | `samples/` | Real phone photos with hand-placed ground truth for the regression test |
@@ -47,7 +47,7 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 | `ImageSource` | File picker, drag-and-drop, paste; EXIF orientation via `createImageBitmap(…, {imageOrientation:'from-image'})` | Camera, photo library |
 | `Detector.detect(imageData, options) → [{corners, confidence}]` | JS detector in the worker (main-thread fallback) | Apple Vision / ML Kit, same return shape |
 | `Exporter` | Download, share sheet, image clipboard | Save to Photos |
-| `Session` | IndexedDB (last photo, its edits, the saved logo) | Native storage |
+| `Session` | IndexedDB (last photo, its edits, the saved logo; a pair's other side) | Native storage |
 
 ## Coordinate frames
 
@@ -58,6 +58,7 @@ source (photo px) —homography→ perspective (corrected) —flip, then rotate�
 - **Preview:** a 2048 px copy; a 720 px copy for the live mini-preview; a 1000 px copy for detection.
 - **Export:** row bands of about 2 MP; each band reads at most 6 MP of the source. Output is capped at 16.7 MP (iOS Safari's canvas limit).
 - **Corner shots:** rendered one at a time through the same banded renderer (`renderWarped`), at most 1200 px a side, so the sheet stays under 2.5 × 2.5 k px.
+- **Front + back pairs:** the side you're on lives in the app state like any photo. The other side keeps its edits, undo history, preview copies and original bytes, but not its decoded full-resolution photo, so only one full-resolution photo is in memory at a time: switching decodes the other side's photo before releasing the open one, and a pair export renders the open side, releases its photo, decodes, renders and closes the other side's, then decodes the open side's again. The Together image renders both sides into one canvas (`renderWarped`'s `target`), laid out by `CardEngine.pairLayout`, and obeys the same 16.7 MP cap, both sides scaling down together.
 - **Levels in export:** the LUT is applied to each band's source pixels before the warp, so the fill color is never recolored.
 
 ## Edits file format
@@ -87,4 +88,4 @@ source (photo px) —homography→ perspective (corrected) —flip, then rotate�
 
 ## What's stored on the device
 
-See [SECURITY.md](../SECURITY.md). In short: the last photo and its edits and the saved logo in IndexedDB (`p1hunt-finisher`), and remembered export and crop choices and the corner shots choice (sheet or photos) in localStorage (`p1hunt.straightener.v1`).
+See [SECURITY.md](../SECURITY.md). In short: the last photo and its edits and the saved logo in IndexedDB (`p1hunt-finisher`; a front + back pair adds `pair`, the other side's edits, and `pairPhoto`, its photo and logo, both checked like an edits file on Resume), and remembered export and crop choices, the corner shots choice (sheet or photos) and the pair output (Together or Separately) in localStorage (`p1hunt.straightener.v1`).

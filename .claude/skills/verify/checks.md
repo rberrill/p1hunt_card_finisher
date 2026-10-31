@@ -80,6 +80,21 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Both | Corner shots (capture `CF.Exporter.download`) | sheet: one `-corners` file, 2×2 at 2 × size + 1 gutter, photo to the outer edges; photos: four `-corner-tl/tr/br/bl` files; a full-crop logo appears in the main export but no corner; Next card unchanged; stubbed Share gets all four, refusal gives **Share now**, an edit cancels it |
 | Phone | Corner shots group | with More closed the control area is 184 px and the photo the same height as on Crop; no page scroll sideways with it open |
 
+## 8b. Front + back pairs
+
+| Device | Check | Pass when |
+|---|---|---|
+| Phone | Paired header on every step (Preview shows on Perspective) | every header target ≥ 44 px and the last ends inside `innerWidth`, at 390 and 375 px |
+| Both | Add back (`CF.receivePhoto(file, name, 'addBack')`) | back opens on Perspective at 5:7 in the front's orientation; the front's crop is 5:7 fit; chip and ⨯ show |
+| Both | Switch sides | lands on that side's last step with its own edits and Undo; `app.switchDurationMs` logged |
+| Both | Crop while paired | only 5:7 enabled; Swap turns both sides' crops and adds no undo step; a quarter turn keeps the orientation |
+| Both | Together and Separately (capture `CF.Exporter.download`) | one `-pair` file at the readout's size, front left (portrait) or top (landscape); two `-front` / `-back` files, each byte-identical to `renderFull` + `encodeCanvas` of that side |
+| Both | Logo on one side | it appears only in that side's half of the Together image |
+| Both | Stubbed share | one sheet with every file; refusal gives **Share now**; an edit cancels it; Next card only after the chosen output is saved |
+| Phone | Unpair and New photo prompts | 184 px, in the control area; the photo keeps its height |
+| Both | Resume a pair (with a logo on the waiting side) | the prompt names both photos; both sides, the side and step come back; Together exports without a missing-logo error |
+| Both | Crafted `pair` record (`orient: '<b>x</b>'`) | resumes the open side alone with the "reset" notice; the record is cleared |
+
 ## 9. Session restore
 
 | Device | Check | Pass when |

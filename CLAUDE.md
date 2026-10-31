@@ -74,6 +74,10 @@ A static web app that straightens, crops and color-corrects phone photos of trad
   - The saved logo is offered with "Use saved overlay", not auto-applied. Delete clears storage only; Start fresh keeps it.
   - Edits files embed the logo.
 - **Corner shots** (Export → More options): a 2×2 sheet (the default; 1:1, no outer margin, since eBay bans added borders) or four photos, Share + Download as for the main export. Each is a square framed like the export (same tilt), at the photo's real resolution (capped, never upscaled), with levels and never the overlay. No quality warning: the readout shows the size and the user decides. The choice is a preference, not edit state.
+- **Front + back pairs** (Add back on Export; the last new feature of version 1):
+  - The header gets a Front | Back chip and ⨯ (Open and Preview go icon-only on the phone). Unpair asks Keep front / Keep back; Open, drop and paste ask New photo / Replace side; both in the control area. Next card after the pair's export doesn't ask.
+  - Both sides are locked to 5:7; Swap turns both and isn't an undo step; export settings are shared; the 5:7 lock never becomes the remembered preset.
+  - Together = the two exports joined (portrait side by side, landscape stacked, front first, the corner sheet's divider, no margin, size per card, each side's own logo), or Separately; a dropdown preference. Export previews Together. One full-resolution photo in memory at a time.
 - **Versioning:** SemVer by user-visible change. Process and tooling changes don't bump the major.
 
 ## Map

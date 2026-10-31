@@ -30,4 +30,5 @@ paths:
 - **`ui.js`**: `setTab` and the step menu; `buildControls` / `bindControls` (every button handler); `syncUI` / `syncReadouts`; the debug panel; the resume prompt.
 - **`export.js`**: `Exporter`, `renderFull` and the banded `renderWarped` it shares with corner shots, `encodeCanvas`, `runWithProgress`, `doExport`, `shareFiles` / `shareFile`, edits save and load.
 - **`corner-shots.js`**: the Corner shots group (Export → More options): the sheet / photos preference, rendering through `renderWarped`, Share and Download, the live thumbnails.
+- **`pair.js`**: front + back pairs (`app.pair`): Add back, switching sides (the open side lives in `app.*`, the other in `app.pair.other`), Unpair, the photo prompt (`receivePhoto` handles every incoming photo), the pair's rules (`applyPairRules`, called by `stateChanged`), Together / Separately export, the Together preview, and the `pair` / `pairPhoto` session records.
 - **`main.js`**: the layout switch, the self-test runner, `init` (events, `window.__straightener`). Calls `init()` last.

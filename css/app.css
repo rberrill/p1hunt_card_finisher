@@ -110,7 +110,31 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
   flex: none;
 }
 .btn.wide { width: 100%; }
-.next-card { margin: 2px 0 6px; }
+.next-row { margin: 2px 0 6px; }
+/* Front | Back in the header while a pair is open: the side you're on is lit. */
+.side-switch { display: flex; }
+.side-switch .btn { padding: 0 8px; min-width: 52px; font-weight: 600; }
+.side-switch .btn:first-child { border-radius: 10px 0 0 10px; }
+.side-switch .btn:last-child { border-radius: 0 10px 10px 0; border-left: 0; }
+.side-switch .btn[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+/* A pair's question replaces the step's controls (the action bar stays). */
+.pair-prompt { padding: 12px 14px; }
+.pair-prompt h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+.pair-prompt .hint { margin-bottom: 8px; }
+#app.prompting section[data-panel].active .controls { display: none; }
+/* The side panel is too narrow for three dropdowns; the phone fits them in one row. */
+#pairOutput { flex-basis: 100%; }
 
 /* ---- stage and panel ---- */
 main { flex: 1; display: flex; min-height: 0; }
@@ -489,6 +513,17 @@ details.more[open] > summary::before { content: '▾'; }
   .top-bar { padding: 4px 6px; flex-wrap: nowrap; }
   .brand, .tabs { display: none; }
   .actions { width: 100%; justify-content: space-between; }
+  /* A pair needs the room for Front | Back and Unpair: Open shows its icon only, and the row
+     packs tighter so all seven targets (Preview shows on Perspective) fit 375 px at 44 px. */
+  #app.paired #btnOpen span,
+  #app.paired #btnPreview span { display: none; }
+  #app.paired #btnOpen,
+  #app.paired #btnPreview { padding: 0; }
+  #app.paired .top-bar { padding: 4px; }
+  #app.paired .actions { gap: 2px; }
+  .side-switch .btn { min-width: 44px; padding: 0 5px; font-size: 13px; }
+  .pair-prompt { height: 184px; padding: 10px 12px 0; box-sizing: border-box; }
+  #pairOutput { flex-basis: 0%; }
   main { flex-direction: column; }
   .panel { width: auto; border-left: 0; border-top: 1px solid var(--line); }
   /* Fits the tallest step (Perspective) plus a status line. */

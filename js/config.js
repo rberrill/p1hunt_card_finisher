@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.9.0-dev.3',
+  appVersion: '1.9.0-dev.4',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -121,6 +121,17 @@ const CONFIG = {
     gutterPct: 0.8,
     // The output until a user picks one: 'sheet' (one 2×2 image) or 'photos' (four files).
     output: 'sheet',
+  },
+  // Front + back pairs (Add back on Export). js/engine.js's PAIR_DEFAULTS mirror the number
+  // keys.
+  pair: {
+    // The gutter between the two sides of the Together image, as % of the two sides' width
+    // across it (the corner sheet's rule). No outer margin, as on the corner sheet.
+    gutterPct: 0.8,
+    // The output until a user picks one: 'together' (one joined image) or 'separately'.
+    output: 'together',
+    // Long side of each side's render in the Together preview on Export.
+    previewMaxPx: 1200,
   },
 
   // Detection. js/engine.js's DETECT_DEFAULTS mirror the engine's keys (tests/selftest.js
@@ -286,6 +297,8 @@ const CONFIG_LIMITS = {
   'cornerShots.insetFraction': [0, 0.5],
   'cornerShots.maxPx': [100, 1200],
   'cornerShots.gutterPct': [0, 5],
+  'pair.gutterPct': [0, 5],
+  'pair.previewMaxPx': [256, 2048],
   'overlay.maxBytes': [65536, 5242880],
   'overlay.maxPx': [256, 4096],
   'overlay.svgPx': [256, 2048],
