@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 - **Next card →** on the Export step. Once the photo is exported (Download, Copy or a finished Share), it opens the photo picker for the next card. The new photo starts as one opened with **Open**: the same crop preset and export settings, no levels, and your saved logo offered. The button hides again if you change anything that would change the exported image. While it shows, it takes the place of any export note (such as the unapplied-levels warning), which comes back with your next change.
 
+### Changed
+- Tests: twelve more sample photos (raw cards, flat on dark and busy mats, cards on stands) with hand-placed corners. The detection check now holds every photo to its own measured baseline, so nothing that detects well today can quietly break, and it prints a scoreboard of how many photos are found. Nothing in the app changes.
+
 ### Fixed
 - **Auto** on the Levels step could give the whole photo a color cast when the darkest part of the photo was strongly colored, such as a blue slab label (which turned the photo yellow). Auto's black point now uses only near-neutral dark areas, and sets no black point when there are none. Its white point is unchanged.
 

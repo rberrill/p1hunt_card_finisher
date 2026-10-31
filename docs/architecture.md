@@ -19,7 +19,7 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 | `js/engine.js` | `CardEngine`: pure functions, wrapped in `function CardEngineModule(globalScope)` |
 | `js/app/*.js` | The shell: ten modules sharing the `CF` namespace, loaded in order `core → adapters → state → view → levels → overlay → input → ui → export → main` |
 | `tests/` | Node and browser tests (see [tests/README.md](../tests/README.md)) |
-| `samples/` | Six real photos with hand-placed ground truth for the regression test |
+| `samples/` | Real phone photos with hand-placed ground truth for the regression test |
 
 ## Engine and shell
 

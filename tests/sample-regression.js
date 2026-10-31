@@ -12,8 +12,8 @@
 //          { src: 'tests/sample-regression.js' }))
 //      then await window.__regression.
 //
-// The ground truth below is hand-placed card corners (source px, TL TR BR BL) from 2026-10-24.
-// The thresholds are the v1.0 acceptance bar; "recorded" values are what v1.0 measured.
+// The ground truth below is hand-placed card corners (source px, TL TR BR BL). Detection is held
+// photo by photo to its measured baseline (R1, explained in tests/README.md).
 window.__regression = (async () => {
   'use strict';
   const app = window.__straightener;
@@ -28,6 +28,8 @@ window.__regression = (async () => {
   } catch (error) { /* storage unavailable */ }
 
   const CARD_ASPECT = 63.5 / 88.9;
+  // The IMG_ photos were placed on 2026-10-24; the numbered set on 2026-10-31, in the app with
+  // Save edits.
   const GROUND_TRUTH = {
     IMG_9060: [[253, 260], [1275.5, 261], [1254, 1534], [305.5, 1535]],
     IMG_9074: [[388.5, 546], [1110, 545], [1104, 1520], [402.5, 1522.5]],
@@ -35,16 +37,63 @@ window.__regression = (async () => {
     IMG_9136: [[274, 593], [1167, 591], [1151, 1770], [306, 1774]],
     IMG_9142: [[127, 500], [1246, 515], [1221, 1265], [163, 1248]],
     IMG_9216: [[445.5, 627], [1146, 633], [1112, 1505], [466.5, 1501.5]],
+    '01_chrome_flat_black': [[426.2, 529.5], [1081.2, 530.7], [1119.7, 1428.1], [415, 1433]],
+    '02_black_flat_black': [[297.5, 446.6], [1000.5, 442.1], [1061.9, 1397.6], [312.3, 1420.9]],
+    '03_chrome_flat_busy': [[385.1, 373.8], [1024.5, 333.4], [1101.8, 1218], [423.4, 1260.8]],
+    '04_red_angle_busy': [[355.3, 418.9], [981.5, 398.4], [1105.4, 1173.4], [391.4, 1211.4]],
+    '05_sapphire_flat_black': [[382, 505.7], [1264.1, 512.3], [1294.6, 1115.2], [355.2, 1111.2]],
+    '06_chrome_flat_white': [[413.7, 557.9], [1035.4, 566.8], [1014.1, 1413.5], [409.4, 1403.2]],
+    '07_dark_flat_black': [[319.1, 594.2], [1113.8, 573.3], [1143.1, 1125.8], [313.9, 1145.3]],
+    '08_silver_stand_busy': [[693.5, 682.2], [1110.8, 684.6], [1103, 1270.5], [686.5, 1268.6]],
+    '09_silver_stand_white': [[426, 433.2], [1025, 439.2], [1005.5, 1263.5], [425.4, 1256.2]],
+    '10_sapphire_flat_busy': [[426.2, 496.7], [981.3, 495.3], [1006.3, 1253.7], [417, 1257.7]],
+    '11_any_flatglare_black': [[440.3, 553.3], [954.7, 549.1], [978.1, 1261.7], [439.1, 1272.1]],
+    '12_blackred_stand_busy': [[544.8, 762.6], [1018.8, 764.7], [1018.2, 1434.6], [539.9, 1432.6]],
   };
-  // The v1.0 recorded top-1 error, % of the image diagonal.
-  const RECORDED = {
-    IMG_9060: 2.48,
-    IMG_9074: 1.80,
-    IMG_9075: 0.04,
-    IMG_9136: 0.46,
-    IMG_9142: 0.25,
-    IMG_9216: 0.09,
+  // Each photo's detection baseline: the top pick's error and the best of the three candidates'
+  // error, % of the image diagonal (desktop Chrome, 2026-10-31). A baseline moves down in the
+  // change that improves it; raising one needs the maintainer's agreement.
+  const BASELINE = {
+    IMG_9060: { top: 2.48, best: 0.49 },
+    IMG_9074: { top: 1.80, best: 1.80 },
+    IMG_9075: { top: 0.04, best: 0.04 },
+    IMG_9136: { top: 0.46, best: 0.46 },
+    IMG_9142: { top: 0.25, best: 0.25 },
+    IMG_9216: { top: 0.09, best: 0.09 },
+    '01_chrome_flat_black': { top: 0.00, best: 0.00 },
+    '02_black_flat_black': { top: 18.54, best: 18.54 },
+    '03_chrome_flat_busy': { top: 24.32, best: 19.53 },
+    '04_red_angle_busy': { top: 6.29, best: 1.35 },
+    '05_sapphire_flat_black': { top: 0.03, best: 0.03 },
+    '06_chrome_flat_white': { top: 0.42, best: 0.42 },
+    '07_dark_flat_black': { top: 1.75, best: 0.93 },
+    '08_silver_stand_busy': { top: 1.16, best: 1.16 },
+    '09_silver_stand_white': { top: 0.19, best: 0.19 },
+    '10_sapphire_flat_busy': { top: 5.64, best: 1.60 },
+    '11_any_flatglare_black': { top: 1.24, best: 1.24 },
+    '12_blackred_stand_busy': { top: 0.36, best: 0.36 },
   };
+  // Raw cards, counted on their own in the scoreboard: the weakest kind of shot.
+  const RAW_CARDS = [
+    '01_chrome_flat_black',
+    '02_black_flat_black',
+    '03_chrome_flat_busy',
+    '04_red_angle_busy',
+  ];
+  // Held out of detection tuning: not looked at while tuning, checked once at the end, so a
+  // change that only fits the photos it was tuned on shows up.
+  const HELD_OUT = [
+    '03_chrome_flat_busy',
+    '07_dark_flat_black',
+    '10_sapphire_flat_busy',
+    '12_blackred_stand_busy',
+  ];
+  // A pick counts as found when its worst corner is within 1% of the diagonal.
+  const WITHIN_PCT = 1;
+  // How far a photo may drift above its baseline between runs.
+  const SLACK_PCT = 0.25;
+  // Above this the top pick is a different rectangle: reported, not gated, until a fix lands.
+  const WRONG_SHAPE_PCT = 5;
 
   const results = [];
   const record = (name, pass, detail) => results.push({ name, pass: !!pass, detail });
@@ -87,24 +136,53 @@ window.__regression = (async () => {
     return count;
   }
 
-  /* ---- R1. Auto-detect accuracy (card) ---- */
+  // The group a photo's top-pick baseline puts it in.
+  function groupOf(baselinePct) {
+    if (baselinePct < WITHIN_PCT) return 'within 1%';
+    if (baselinePct <= WRONG_SHAPE_PCT) return 'near miss';
+    return 'wrong shape, not gated';
+  }
+
+  // Whether a top pick still meets its group's rule: a photo within 1% stays within 1% and no
+  // worse than its baseline + slack; a near miss gets no worse; a wrong shape isn't gated.
+  function isTopPickHeld(topPct, baselinePct) {
+    if (baselinePct > WRONG_SHAPE_PCT) return true;
+    const isNoWorse = topPct <= baselinePct + SLACK_PCT;
+    if (baselinePct < WITHIN_PCT) return isNoWorse && topPct < WITHIN_PCT;
+    return isNoWorse;
+  }
+
+  /* ---- R1. Auto-detect accuracy (card), held photo by photo to its baseline ---- */
   const topPick = {};
   const bestOfThree = {};
   for (const name of Object.keys(GROUND_TRUTH)) {
+    const baseline = BASELINE[name];
+    if (!baseline) {
+      record(`R1 ${name}`, false, 'no baseline in BASELINE');
+      continue;
+    }
     await load(name);
     const errors = app.app.detection.candidates.map(
       candidate => cornerErrorPct(candidate.corners, GROUND_TRUTH[name]),
     );
     topPick[name] = errors[0] ?? 99;
     bestOfThree[name] = Math.min(99, ...errors);
-    record(`R1 ${name}: top-1 no worse than v1.0 + 0.25`, topPick[name] <= RECORDED[name] + 0.25,
-      `top-1 ${topPick[name].toFixed(2)}% (v1.0 ${RECORDED[name]}%), `
-      + `best of 3 ${bestOfThree[name].toFixed(2)}%`);
+    // A best of 3 that is within 1% (one Candidate tap away) stays within 1%.
+    const isBestHeld = baseline.best >= WITHIN_PCT || bestOfThree[name] < WITHIN_PCT;
+    record(`R1 ${name} (${groupOf(baseline.top)})`,
+      isTopPickHeld(topPick[name], baseline.top) && isBestHeld,
+      `top ${topPick[name].toFixed(2)}% (baseline ${baseline.top}%), `
+      + `best of 3 ${bestOfThree[name].toFixed(2)}% (baseline ${baseline.best}%)`);
   }
-  const topWithin = Object.values(topPick).filter(error => error < 1).length;
-  const bestWithin = Object.values(bestOfThree).filter(error => error < 1).length;
-  record('R1 top-1 within 1% of diagonal on ≥ 4 of 6', topWithin >= 4, `${topWithin}/6`);
-  record('R1 best-of-3 within 1% of diagonal on ≥ 5 of 6', bestWithin >= 5, `${bestWithin}/6`);
+  // The scoreboard: how many photos are within 1%, reported every run and never a gate.
+  const countWithin = (errors, names) => names.filter(name => errors[name] < WITHIN_PCT).length;
+  const allNames = Object.keys(GROUND_TRUTH);
+  const scoreboard = {
+    topPick: `${countWithin(topPick, allNames)}/${allNames.length}`,
+    bestOfThree: `${countWithin(bestOfThree, allNames)}/${allNames.length}`,
+    rawCards: `${countWithin(topPick, RAW_CARDS)}/${RAW_CARDS.length}`,
+    heldOut: `${countWithin(topPick, HELD_OUT)}/${HELD_OUT.length}`,
+  };
 
   /* ---- R2 / R3. Flatten 100% and 0%, measured on exported pixels
     (IMG_9216, hand-placed corners) ---- */
@@ -504,5 +582,8 @@ window.__regression = (async () => {
   console.log(passed
     ? `All ${results.length} regression checks passed.`
     : `${failedCount} of ${results.length} checks FAILED.`);
-  return { passed, results };
+  console.log(`R1 scoreboard, within 1%: top pick ${scoreboard.topPick}, `
+    + `best of 3 ${scoreboard.bestOfThree}, raw cards ${scoreboard.rawCards}, `
+    + `held out ${scoreboard.heldOut} (top pick).`);
+  return { passed, results, scoreboard };
 })();
