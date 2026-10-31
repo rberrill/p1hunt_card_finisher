@@ -109,6 +109,8 @@
     edgeCanvas: null,
     loadId: 0,
     pendingSave: null,
+    // The edit state (as JSON) of this photo's last finished export, for Next card.
+    exportedState: null,
   };
 
   // The CONFIG settings CardEngine.computeGeometry reads.

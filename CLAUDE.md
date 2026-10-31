@@ -60,7 +60,8 @@ A static web app that straightens, crops and color-corrects phone photos of trad
   - Header, photo, a 184 px control area (the same on every step), then the action bar, whose first button is the step menu.
   - Non-essentials go under More options. Status messages appear only when actionable.
   - Nothing overlays the photo except the open step menu.
-- **Levels:** white lands at 245 and black at 8, in linear light. Picks edit a draft until Apply. Levels never carry over between photos.
+- **Levels:** white lands at 245 and black at 8, in linear light. Picks edit a draft until Apply. Levels never carry over between photos. Auto's black point uses near-neutral darks only.
+- **Next card →:** shown on Export only while the current edits are exported; it sits in the control area (the action bar is full) and replaces the export note while shown.
 - **Crop orientation follows the card** (after Perspective + Rotate); Swap overrides it.
 - **Share / Copy:** both need a secure page, so they're *hidden* where unavailable, never greyed out. Download is always shown and is a plain download.
 - **Session restore:** the last photo and its edits are kept in IndexedDB, and the app asks Resume / Start fresh instead of resuming automatically.

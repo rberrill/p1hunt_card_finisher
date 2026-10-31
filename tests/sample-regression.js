@@ -456,6 +456,44 @@ window.__regression = (async () => {
       detail);
   }
 
+  /* ---- R15. Auto levels at the default framing: the white point is unchanged from 1.7, and
+    the black point is near-neutral or absent (a colored black cast IMG_9074 yellow) ---- */
+  {
+    // Auto's white point in 1.7.0, at the default 1:1 fit-to-card crop.
+    const RECORDED_WHITE = {
+      IMG_9060: [242, 240, 225],
+      IMG_9074: [234, 239, 227],
+      IMG_9075: [242, 243, 235],
+      IMG_9136: [240, 238, 225],
+      IMG_9142: [242, 240, 234],
+      IMG_9216: [246, 244, 227],
+    };
+    const whiteChanged = [];
+    const coloredBlack = [];
+    for (const name of Object.keys(RECORDED_WHITE)) {
+      try {
+        localStorage.clear();
+      } catch (error) { /* storage unavailable */ }
+      await load(name);
+      CF.autoLevelsDraft();
+      const { white, black } = CF.draftLevels();
+      CF.discardLevels();
+      const isSameWhite = white.every(
+        (value, channel) => Math.abs(value - RECORDED_WHITE[name][channel]) <= 1,
+      );
+      if (!isSameWhite) whiteChanged.push(`${name} ${white.map(Math.round).join(',')}`);
+      const spread = black ? Math.max(...black) - Math.min(...black) : 0;
+      if (spread > CONFIG.levels.autoBlackMaxSpread) {
+        coloredBlack.push(`${name} ${black.map(Math.round).join(',')}`);
+      }
+    }
+    record('R15 Auto levels: white unchanged from 1.7 on every sample', !whiteChanged.length,
+      whiteChanged.length ? whiteChanged.join('; ') : 'all 6 within 1');
+    record('R15 Auto levels: black is near-neutral or absent on every sample',
+      !coloredBlack.length,
+      coloredBlack.length ? coloredBlack.join('; ') : 'all 6 near-neutral or none');
+  }
+
   console.table(results.map(result => ({
     result: result.pass ? 'PASS' : 'FAIL',
     check: result.name,

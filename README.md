@@ -23,6 +23,7 @@ Six steps, in order:
    - Where the browser supports it, **Share** opens the share sheet; on iPhone, Save Image puts the result straight into Photos.
    - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
    - Exports are rendered from the full-resolution original.
+   - Once the photo is exported, **Next card →** opens the next photo, with the same crop and export settings.
 
 Also:
 - **Undo / redo** (50 steps).

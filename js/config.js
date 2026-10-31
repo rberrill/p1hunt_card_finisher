@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.8.0-dev',
+  appVersion: '1.8.0-dev.5',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -195,6 +195,11 @@ const CONFIG = {
     // not used for white.
     autoWhitePct: 1,
     autoBlackPct: 0.5,
+    // Auto's black point uses only dark pixels whose red, green and blue differ by at most this
+    // (0–255): a colored shadow, such as a blue slab label, would cast the whole image. With
+    // fewer than autoBlackMinNeutralPct% of the darkest pixels neutral, Auto sets white only.
+    autoBlackMaxSpread: 24,
+    autoBlackMinNeutralPct: 10,
     autoClipAt: 250,
     // Press and hold the photo this long (without moving) to compare with no levels.
     compareHoldMs: 250,

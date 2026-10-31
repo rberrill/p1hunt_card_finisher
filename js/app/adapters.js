@@ -403,6 +403,9 @@
         state: clone(app.state),
         draft: app.levelsPending ? clone(app.levelsDraft) : null,
         tab: app.tab,
+        // These edits were exported, so Resume shows Next card again (an iPhone download can
+        // leave the page, and coming back goes through Resume).
+        exported: app.exportedState === JSON.stringify(app.state),
         savedAt: Date.now(),
       };
     },

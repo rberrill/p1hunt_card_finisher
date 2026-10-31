@@ -110,6 +110,7 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
   flex: none;
 }
 .btn.wide { width: 100%; }
+.next-card { margin: 2px 0 6px; }
 
 /* ---- stage and panel ---- */
 main { flex: 1; display: flex; min-height: 0; }

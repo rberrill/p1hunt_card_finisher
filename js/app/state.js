@@ -283,6 +283,7 @@
     app.dropper = null;
     app.compare = false;
     app.previewMode = false;
+    app.exportedState = null;
   }
 
   // Reapplies a resumed session's unapplied Levels draft.
@@ -294,8 +295,8 @@
     app.levelsPending = JSON.stringify(restore.draft) !== JSON.stringify(app.state.levels || null);
   }
 
-  // Opens a photo. restore: a saved session record ({ state, draft, tab, width, height }) to
-  // reapply instead of starting fresh; it's used only if the photo's size matches.
+  // Opens a photo. restore: a saved session record ({ state, draft, tab, exported, width,
+  // height }) to reapply instead of starting fresh; it's used only if the photo's size matches.
   async function openFile(file, name, restore) {
     const startTime = performance.now();
     const id = ++app.loadId;
@@ -326,6 +327,8 @@
     }
     resetPhotoState();
     if (resumed) restoreLevelsDraft(restore, img);
+    // The stored record is untrusted: only a literal true counts.
+    if (resumed && restore.exported === true) app.exportedState = JSON.stringify(app.state);
     elements.empty.hidden = true;
     // A resumed photo is already stored.
     if (resumed) CF.Session.photoId = id;

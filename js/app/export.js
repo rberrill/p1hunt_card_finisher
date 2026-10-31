@@ -252,6 +252,8 @@
     const output = app.geometry.output;
     const done = `Exported ${output.width} × ${output.height} px in ${seconds} s.`;
     if (kind === 'download') {
+      // Saved before the download, which can leave the page on iPhone.
+      markExported(state);
       CF.Session.flush();
       Exporter.download(blob, name);
       toast(done);
@@ -259,7 +261,26 @@
     }
     const outcome = await shareFile(new File([blob], name, { type: blob.type }));
     if (outcome === 'pending') toast(done + ' Tap Share now to open the share sheet.', '', 6000);
-    else if (outcome === 'shared') toast(done);
+    if (outcome === 'shared') {
+      markExported(state);
+      toast(done);
+    }
+  }
+
+  // Records that these edits were exported (downloaded, copied or shared), which shows Next
+  // card until an edit changes the output or another photo opens.
+  function markExported(state) {
+    app.exportedState = JSON.stringify(state);
+    CF.Session.saveSoon();
+  }
+
+  // The second tap after a slow export ("Share now"). Any edit clears the waiting file, so a
+  // finished share here is of the current edits.
+  async function sharePending() {
+    if (!app.pendingSave) return;
+    const outcome = await shareFile(app.pendingSave);
+    if (outcome === 'shared') markExported(app.state);
+    CF.syncReadouts();
   }
 
   // Exports the current edits. kind: 'download', 'share' or 'copy' (PNG to the clipboard).
@@ -280,6 +301,7 @@
     try {
       if (kind === 'copy') {
         await Exporter.copy(encoding);
+        markExported(state);
         toast('Copied to clipboard (PNG).');
       } else {
         await deliverExport(kind, await encoding, state, type, startTime);
@@ -414,5 +436,13 @@
     });
   }
 
-  Object.assign(CF, { Exporter, renderFull, doExport, shareFile, saveEdits, loadEdits });
+  Object.assign(CF, {
+    Exporter,
+    renderFull,
+    doExport,
+    shareFile,
+    sharePending,
+    saveEdits,
+    loadEdits,
+  });
 })(window.CF);

@@ -2028,6 +2028,8 @@ function CardEngineModule(globalScope) {
     blackTarget: 8,
     autoWhitePct: 1,
     autoBlackPct: 0.5,
+    autoBlackMaxSpread: 24,
+    autoBlackMinNeutralPct: 10,
     autoClipAt: 250,
   };
   // Rec. 709 luminance weights, for brightness on sRGB values.
@@ -2135,70 +2137,115 @@ function CardEngineModule(globalScope) {
     return level;
   }
 
+  // Pixel status in autoLevels: transparent pixels are skipped, unclipped ones can be white.
+  const LEVELS_OPAQUE = 1;
+  const LEVELS_UNCLIPPED = 2;
+
+  // autoLevels' first pass: each pixel's brightness (0–255) and status, and brightness
+  // histograms of the opaque and the unclipped pixels.
+  function levelsHistograms(data, settings) {
+    const pixelCount = data.length / 4;
+    const result = {
+      brightness: new Uint8Array(pixelCount),
+      status: new Uint8Array(pixelCount),
+      opaqueHistogram: new Uint32Array(256),
+      unclippedHistogram: new Uint32Array(256),
+      opaqueCount: 0,
+      unclippedCount: 0,
+    };
+    for (let pixel = 0, offset = 0; pixel < pixelCount; pixel++, offset += 4) {
+      if (data[offset + 3] === 0) continue;
+      const level = Math.round(luminanceAt(data, offset));
+      result.brightness[pixel] = level;
+      result.status[pixel] = LEVELS_OPAQUE;
+      result.opaqueHistogram[level]++;
+      result.opaqueCount++;
+      if (Math.max(data[offset], data[offset + 1], data[offset + 2]) < settings.autoClipAt) {
+        result.status[pixel] = LEVELS_UNCLIPPED;
+        result.unclippedHistogram[level]++;
+        result.unclippedCount++;
+      }
+    }
+    return result;
+  }
+
+  // autoLevels' second pass: linear-light sums of the white pixels (at or above whiteThreshold)
+  // and of the dark pixels (at or below blackThreshold) that are near-neutral, with the counts.
+  function sumLevelsSamples(data, histograms, whiteThreshold, blackThreshold, settings) {
+    const { brightness, status } = histograms;
+    const sums = {
+      white: [0, 0, 0],
+      black: [0, 0, 0],
+      whiteCount: 0,
+      darkCount: 0,
+      neutralDarkCount: 0,
+    };
+    for (let pixel = 0, offset = 0; pixel < brightness.length; pixel++, offset += 4) {
+      if (status[pixel] === LEVELS_UNCLIPPED && brightness[pixel] >= whiteThreshold) {
+        for (let channel = 0; channel < 3; channel++) {
+          sums.white[channel] += SRGB_TO_LINEAR[data[offset + channel]];
+        }
+        sums.whiteCount++;
+      }
+      if (status[pixel] && brightness[pixel] <= blackThreshold) {
+        sums.darkCount++;
+        const red = data[offset];
+        const green = data[offset + 1];
+        const blue = data[offset + 2];
+        const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
+        if (spread > settings.autoBlackMaxSpread) continue;
+        sums.black[0] += SRGB_TO_LINEAR[red];
+        sums.black[1] += SRGB_TO_LINEAR[green];
+        sums.black[2] += SRGB_TO_LINEAR[blue];
+        sums.neutralDarkCount++;
+      }
+    }
+    return sums;
+  }
+
+  // Linear-light channel sums and a pixel count → their mean as sRGB, to one decimal.
+  function meanSrgb(sums, count) {
+    return sums.map(sum => Math.round(linearToSrgb(sum / count) * 10) / 10);
+  }
+
+  // Brightness (0–255) of an sRGB color.
+  function colorLuminance(color) {
+    return LUMA[0] * color[0] + LUMA[1] * color[1] + LUMA[2] * color[2];
+  }
+
   /**
    * autoLevels(img, options) → { white, black } as a starting point, or null (transparent
    * pixels ignored). White = the mean of the brightest autoWhitePct% of pixels that aren't
    * clipped (a white-patch estimate; clipped pixels carry no color). Black = the mean of the
-   * darkest autoBlackPct%. A black more than half as bright as the white is dropped.
+   * darkest autoBlackPct% that are near-neutral (channel spread at most autoBlackMaxSpread).
+   * Colored darks, such as a blue slab label, would push their color into the black point and
+   * cast the whole image, so they're left out. There's no black when fewer than
+   * autoBlackMinNeutralPct% of the darkest pixels are neutral, or when it's more than half as
+   * bright as the white.
    */
   function autoLevels(img, options) {
     const settings = Object.assign({}, LEVELS_DEFAULTS, options || {});
     const data = img.data;
-    const pixelCount = data.length / 4;
-    const brightness = new Uint8Array(pixelCount);
-    // 0 transparent, 1 opaque, 2 opaque and unclipped (usable for white).
-    const status = new Uint8Array(pixelCount);
-    const OPAQUE = 1;
-    const UNCLIPPED = 2;
-    const unclippedHistogram = new Uint32Array(256);
-    const opaqueHistogram = new Uint32Array(256);
-    let unclippedCount = 0;
-    let opaqueCount = 0;
-    for (let pixel = 0, offset = 0; pixel < pixelCount; pixel++, offset += 4) {
-      if (data[offset + 3] === 0) continue;
-      const level = Math.round(luminanceAt(data, offset));
-      brightness[pixel] = level;
-      status[pixel] = OPAQUE;
-      opaqueHistogram[level]++;
-      opaqueCount++;
-      if (Math.max(data[offset], data[offset + 1], data[offset + 2]) < settings.autoClipAt) {
-        status[pixel] = UNCLIPPED;
-        unclippedHistogram[level]++;
-        unclippedCount++;
-      }
-    }
-    if (!unclippedCount) return null;
-    const whiteNeeded = Math.max(1, unclippedCount * settings.autoWhitePct / 100);
-    const whiteThreshold = histogramThreshold(unclippedHistogram, 255, -1, whiteNeeded);
-    const blackNeeded = Math.max(1, opaqueCount * settings.autoBlackPct / 100);
-    const blackThreshold = histogramThreshold(opaqueHistogram, 0, 1, blackNeeded);
-
-    const whiteSums = [0, 0, 0];
-    const blackSums = [0, 0, 0];
-    let whiteCount = 0;
-    let blackCount = 0;
-    for (let pixel = 0, offset = 0; pixel < pixelCount; pixel++, offset += 4) {
-      if (status[pixel] === UNCLIPPED && brightness[pixel] >= whiteThreshold) {
-        for (let channel = 0; channel < 3; channel++) {
-          whiteSums[channel] += SRGB_TO_LINEAR[data[offset + channel]];
-        }
-        whiteCount++;
-      }
-      if (status[pixel] && brightness[pixel] <= blackThreshold) {
-        for (let channel = 0; channel < 3; channel++) {
-          blackSums[channel] += SRGB_TO_LINEAR[data[offset + channel]];
-        }
-        blackCount++;
-      }
-    }
-    const encode = (sums, count) => sums.map(
-      sum => Math.round(linearToSrgb(sum / count) * 10) / 10,
+    const histograms = levelsHistograms(data, settings);
+    if (!histograms.unclippedCount) return null;
+    const whiteNeeded = Math.max(1, histograms.unclippedCount * settings.autoWhitePct / 100);
+    const whiteThreshold = histogramThreshold(
+      histograms.unclippedHistogram,
+      255,
+      -1,
+      whiteNeeded,
     );
-    const white = encode(whiteSums, whiteCount);
-    const black = blackCount ? encode(blackSums, blackCount) : null;
-    const luminanceOf = color => LUMA[0] * color[0] + LUMA[1] * color[1] + LUMA[2] * color[2];
+    const blackNeeded = Math.max(1, histograms.opaqueCount * settings.autoBlackPct / 100);
+    const blackThreshold = histogramThreshold(histograms.opaqueHistogram, 0, 1, blackNeeded);
+    const sums = sumLevelsSamples(data, histograms, whiteThreshold, blackThreshold, settings);
+
+    const white = meanSrgb(sums.white, sums.whiteCount);
+    const neutralPct = sums.darkCount ? sums.neutralDarkCount / sums.darkCount * 100 : 0;
+    const hasNeutralBlack = sums.neutralDarkCount > 0
+      && neutralPct >= settings.autoBlackMinNeutralPct;
+    const black = hasNeutralBlack ? meanSrgb(sums.black, sums.neutralDarkCount) : null;
     // A "black" more than half as bright as white is a low-contrast scene, not a black point.
-    const isRealBlack = black && luminanceOf(black) < luminanceOf(white) * 0.5;
+    const isRealBlack = black && colorLuminance(black) < colorLuminance(white) * 0.5;
     return { white, black: isRealBlack ? black : null };
   }
 
@@ -2438,6 +2485,39 @@ function CardEngineModule(globalScope) {
       found ? `white ${found.white.join(',')}` : 'none');
   }
 
+  // A 100×100 test image: a 1% white patch, a mid-grey body, and a 1% dark patch whose first
+  // blueCount pixels are a saturated dark blue and the rest a neutral dark grey.
+  function darkPatchImage(blueCount) {
+    const img = { width: 100, height: 100, data: new Uint8ClampedArray(40000) };
+    const colors = {
+      white: [240, 240, 240],
+      grey: [128, 128, 128],
+      blue: [10, 10, 90],
+      darkGrey: [20, 20, 20],
+    };
+    for (let i = 0; i < 10000; i++) {
+      let color = colors.grey;
+      if (i < 100) color = colors.white;
+      else if (i >= 9900) color = i - 9900 < blueCount ? colors.blue : colors.darkGrey;
+      img.data.set(color, i * 4);
+      img.data[i * 4 + 3] = 255;
+    }
+    return img;
+  }
+
+  // 9b. Auto's black point leaves out colored darks (a blue slab label would turn the image
+  // yellow), and there's no black point when the darks are all colored.
+  function testAutoLevelsColoredDarks(record) {
+    const mixed = autoLevels(darkPatchImage(40), {});
+    const isNeutral = mixed && mixed.black
+      && mixed.black.every(value => Math.abs(value - 20) < 1);
+    record('Auto black ignores colored darks', isNeutral,
+      mixed && mixed.black ? `black ${mixed.black.join(',')}` : 'no black');
+    const allBlue = autoLevels(darkPatchImage(100), {});
+    record('Auto sets no black from colored darks only', allBlue && !allBlue.black,
+      allBlue && allBlue.black ? `black ${allBlue.black.join(',')}` : 'no black');
+  }
+
   // 10. Overlay placement scales with the frame (resolution-independent) and stays fully inside.
   function testOverlayPlacement(record) {
     const overlay = { cx: 0.7, cy: 0.2, w: 0.3, aspect: 2, opacity: 1 };
@@ -2615,6 +2695,7 @@ function CardEngineModule(globalScope) {
     testLevelsTargets(record);
     testDropperTrim(record);
     testAutoLevels(record);
+    testAutoLevelsColoredDarks(record);
     testOverlayPlacement(record);
     testOverlaySnap(record);
     testConfigOverrides(record);

@@ -15,7 +15,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 -->
-<link rel="stylesheet" href="css/app.css?v=1.8.0-dev">
+<link rel="stylesheet" href="css/app.css?v=1.8.0-dev.5">
 </head>
 <body>
 <div id="app">
@@ -337,6 +337,10 @@
           <div class="readout" id="exportReadout"></div>
           <div class="status" id="exportMessage"></div>
           <div class="progress" id="progress" hidden><div></div></div>
+          <!-- Next card: shown once this photo's current edits have been exported. It sits here,
+               not in the action bar, which is full once Share and Copy show. -->
+          <button class="btn wide next-card" id="btnNextCard" hidden
+              title="Open the next photo">Next card →</button>
           <details class="more">
             <summary>More options</summary>
             <div class="group" id="qualityRow">
@@ -394,17 +398,17 @@
      engine → app modules (core first: it creates the CF namespace; main last: it calls init()).
      ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay
      relative. -->
-<script src="js/config.js?v=1.8.0-dev"></script>
-<script src="js/engine.js?v=1.8.0-dev"></script>
-<script src="js/app/core.js?v=1.8.0-dev"></script>
-<script src="js/app/adapters.js?v=1.8.0-dev"></script>
-<script src="js/app/state.js?v=1.8.0-dev"></script>
-<script src="js/app/view.js?v=1.8.0-dev"></script>
-<script src="js/app/levels.js?v=1.8.0-dev"></script>
-<script src="js/app/overlay.js?v=1.8.0-dev"></script>
-<script src="js/app/input.js?v=1.8.0-dev"></script>
-<script src="js/app/ui.js?v=1.8.0-dev"></script>
-<script src="js/app/export.js?v=1.8.0-dev"></script>
-<script src="js/app/main.js?v=1.8.0-dev"></script>
+<script src="js/config.js?v=1.8.0-dev.5"></script>
+<script src="js/engine.js?v=1.8.0-dev.5"></script>
+<script src="js/app/core.js?v=1.8.0-dev.5"></script>
+<script src="js/app/adapters.js?v=1.8.0-dev.5"></script>
+<script src="js/app/state.js?v=1.8.0-dev.5"></script>
+<script src="js/app/view.js?v=1.8.0-dev.5"></script>
+<script src="js/app/levels.js?v=1.8.0-dev.5"></script>
+<script src="js/app/overlay.js?v=1.8.0-dev.5"></script>
+<script src="js/app/input.js?v=1.8.0-dev.5"></script>
+<script src="js/app/ui.js?v=1.8.0-dev.5"></script>
+<script src="js/app/export.js?v=1.8.0-dev.5"></script>
+<script src="js/app/main.js?v=1.8.0-dev.5"></script>
 </body>
 </html>

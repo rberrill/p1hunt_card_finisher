@@ -425,9 +425,11 @@
     });
     byId('btnDownload').onclick = () => CF.doExport('download');
     byId('btnShare').onclick = () => {
-      if (app.pendingSave) CF.shareFile(app.pendingSave);
+      if (app.pendingSave) CF.sharePending();
       else CF.doExport('share');
     };
+    // Next card opens the photo picker, like Open; the new photo starts as any other does.
+    byId('btnNextCard').onclick = () => elements.fileInput.click();
     // Share is the main action where the browser supports it; Download stays a plain download.
     if (CF.Exporter.canShare()) {
       byId('btnShare').hidden = false;
@@ -610,6 +612,7 @@
     const state = app.state;
     const geometry = app.geometry;
     if (!state) return;
+    syncNextCard(state);
     byId('btnShare').querySelector('span').textContent = app.pendingSave ? 'Share now' : 'Share';
     const count = app.detection.candidates.length;
     const candidate = count ? app.detection.candidates[app.detection.index] : null;
@@ -642,10 +645,22 @@
     byId('exportReadout').replaceChildren('Output ', outputSize, details);
     const message = byId('exportMessage');
     message.className = 'status';
-    message.textContent = exportNotes(state, geometry);
+    // The phone control area can't hold a note and Next card together. The note was on screen
+    // when the photo was exported, so Next card takes its place until the next edit (on wide
+    // screens too, so both layouts behave the same).
+    const isNextCardShown = !byId('btnNextCard').hidden;
+    message.textContent = isNextCardShown ? '' : exportNotes(state, geometry);
     byId('btnDownload').disabled = !!app.exporting;
     byId('btnShare').disabled = !!app.exporting && !app.pendingSave;
     byId('btnCopy').disabled = !!app.exporting;
+  }
+
+  // Next card shows only once the current edits are exported, so it never offers to leave
+  // unexported work behind, and not while a share waits for its second tap.
+  function syncNextCard(state) {
+    const isExported = app.exportedState === JSON.stringify(state);
+    const isShown = isExported && !app.pendingSave;
+    byId('btnNextCard').hidden = !isShown;
   }
 
   /* ---------- the debug tuning panel (?debug=1 or the ` key) ---------- */
