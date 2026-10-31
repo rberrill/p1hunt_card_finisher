@@ -53,6 +53,7 @@ List in the proposal, for Rich to agree along with the ACs:
 3. **New in X.Y**, at the lead: an `ID | Test | Section` table of every 🆕 row.
 4. **Setup**, copied from the catalog.
 5. **Feature sections:** only the sections with rows this version. New rows are marked 🆕; connected rows are copied from the catalog unchanged. For a full run, copy every catalog section.
+   **Write the catalog in the same step.** Every 🆕 row goes into its catalog table (without the marker, with an empty Result, and ➖ for (HTTPS) rows) at the moment it goes into the script; a reworded (✏️) row replaces its catalog row, and a retired row is deleted from the catalog. The catalog is the master, so it is never behind the script. If a row changes during UAT, change it in both.
 6. **Smoke test:** the Desktop and Phone tables copied from `tests/uat/smoke.md`, with **Pre-release** and **Live** result columns.
 7. **After deploy:**
    - re-run the smoke test on the live site (Live column);
@@ -68,6 +69,6 @@ List in the proposal, for Rich to agree along with the ACs:
 ## At release (the `release` skill calls this)
 
 - Record Rich's sign-off and decision.
-- **Merge into the catalog:** add each 🆕 row (without the marker) to its catalog table; replace changed rows; delete retired ones.
+- **Check the catalog:** every 🆕 and ✏️ row in the script is already in the catalog, worded the same (they went in with the script). Fix any drift; if the release drops a feature, delete its rows from the catalog.
 - If a smoke row found a real regression, or a step stops making sense, update `tests/uat/smoke.md` too.
 - Keep the smoke test at about 15 rows per device: one per step plus the iPhone-only risks. If it grows, propose what to drop.

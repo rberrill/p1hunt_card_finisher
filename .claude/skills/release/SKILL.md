@@ -31,7 +31,7 @@ Edits Rich makes on GitHub's website go on `main`, never on `release`.
 
 - `node .claude/skills/release/set-version.js X.Y.Z` sets `appVersion` in `js/config.js` and every `?v=` in `index.html`.
 - CHANGELOG: `## [X.Y.0] - Unreleased` becomes `## [X.Y.Z] - YYYY-MM-DD`. Update the README if features or usage changed.
-- Local (the `uat` skill): record Rich's sign-off in `tests/UAT-X.Y.md`, then merge its 🆕, changed and retired cases into `tests/uat/catalog.md`.
+- Local (the `uat` skill): record Rich's sign-off in `tests/UAT-X.Y.md`, then check that its 🆕, changed and retired cases are already in `tests/uat/catalog.md` (they go in when the script is written).
 - `node tests/selftest.js`, then commit `X.Y.Z: version, changelog date` and `git push origin main`.
 
 ## 3. Tag and deploy
