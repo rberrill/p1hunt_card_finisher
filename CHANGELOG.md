@@ -15,8 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - **Open**, a dropped photo or a pasted photo asks, on the same kind of card, whether to start a new photo (ending the pair) or replace the side you're on. Tap outside a card to cancel.
 
   Export saves the pair **Together** (one image: portrait cards side by side, front on the left; landscape cards stacked, front on top; a thin divider between them and no border) or **Separately** (two files, `-front` and `-back`, each the same as exporting that side on its own). The choice is a dropdown beside Format and Size, and it's remembered. With Together chosen, the photo area shows the joined image before you save it. Each side keeps its own levels and logo in both. Share puts every file in one share sheet. **Next card →** shows once the pair is saved. Resume brings the whole pair back. On the phone, Open and Preview show only their icons while a pair is open, to make room in the header.
-- **Corner shots** on the Export step, under More options: close-ups of the card's four corners, for condition photos in listings and posts. Save them as one 2×2 sheet (the first choice) or as four photos, with Share or Download like the main export. Each corner is cut from your original photo at its own resolution, never enlarged, framed like your export, with the same levels and no logo. Four small previews show the framing, and the readout shows the size, so you can judge whether to use the shot or take a closer one.
+- **Corner shots** on the Export step, under More options: close-ups of the card's four corners, for condition photos in listings and posts. Save them as one 2×2 sheet (the first choice) or as four photos, with **Share corners** or **Download corners**, in a box of their own so they don't read as the main export's buttons. Each corner is cut from your original photo at its own resolution, never enlarged, framed like your export, with the same levels and no logo. Four small previews show the framing, and the readout shows the size, so you can judge whether to use the shot or take a closer one.
 - An app icon: a red P and a white 1 on black. It shows in browser tabs and bookmarks, and on the iPhone home screen when you use **Add to Home Screen**.
+
+### Changed
+- On the Export step, **Edits** under More options now sits in a box of its own, like Corner shots, so its buttons are set apart from the export settings.
 
 ## [1.8.0] - 2026-10-31
 

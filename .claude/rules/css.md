@@ -8,5 +8,6 @@ paths:
 - Phone rules live in the `@media (max-width: 760px)` block at the end of the file. **Phone-only behaviors** (the sideways chip scroller, the step menu button) **must stay inside it**: a scroller rule outside it once hid half the Crop presets on desktop.
 - The phone control area is `.controls { height: 184px }` on every step, so the photo never changes size between steps. Opening More options expands it; check that nothing scrolls with More closed, even with a status line showing.
 - Nothing blocks the photo, except a temporary flyout the user opens or an alert they must answer before they can go on (the rule in CLAUDE.md).
+- **Section boxes** (`.section-box`) are darker than the panel, never lighter: buttons, dropdowns and segmented controls are already the lighter grey (`--panel2`) and vanish on it. Box only a section whose buttons save something other than the main export.
 - Tap targets are ≥ 44 px; respect the safe-area padding (`viewport-fit=cover`).
 - After any layout change, check 390×844, 375×667 and 1280×800 (the `verify` skill).

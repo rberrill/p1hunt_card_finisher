@@ -173,7 +173,7 @@
     CF.setSegment('cornerOutput', app.cornerShotsOutput);
     byId('cornerReadout').replaceChildren(...(shots.ok ? readout(shots, state) : []));
     const share = byId('btnCornerShare');
-    share.querySelector('span').textContent = app.pendingCorners ? 'Share now' : 'Share';
+    share.querySelector('span').textContent = app.pendingCorners ? 'Share now' : 'Share corners';
     share.disabled = !shots.ok || (!!app.exporting && !app.pendingCorners);
     byId('btnCornerDownload').disabled = !shots.ok || !!app.exporting;
     requestThumbs();

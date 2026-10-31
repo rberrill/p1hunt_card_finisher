@@ -231,6 +231,16 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
 .row > .btn { flex: 1; }
+/* A section in More options whose buttons save something other than the main export (Corner
+   shots, Edits): an inset box, so its Share or Download doesn't read as the export's. */
+.section-box {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+}
+/* Buttons with long labels stack where two won't fit on one line (the desktop side panel). */
+.row.stack-narrow > .btn { flex: 1 1 150px; }
 .segmented {
   display: flex;
   background: var(--panel2);

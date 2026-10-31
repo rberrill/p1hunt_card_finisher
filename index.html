@@ -13,13 +13,13 @@
 <title>P1Hunt Card Finisher</title>
 <!-- App icon: favicon.ico for Safari on Mac and older browsers, the SVG for the rest, and
      the 180 px PNG for the iPhone home screen. All three are drawn from icons/icon.svg. -->
-<link rel="icon" href="icons/favicon.ico?v=1.9.0-dev.6" sizes="32x32">
-<link rel="icon" href="icons/icon.svg?v=1.9.0-dev.6" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.9.0-dev.6">
+<link rel="icon" href="icons/favicon.ico?v=1.9.0-dev.7" sizes="32x32">
+<link rel="icon" href="icons/icon.svg?v=1.9.0-dev.7" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.9.0-dev.7">
 <!-- PWA (phase two): this becomes a real file; a service worker can't be inlined.
 <link rel="manifest" href="manifest.webmanifest">
 -->
-<link rel="stylesheet" href="css/app.css?v=1.9.0-dev.6">
+<link rel="stylesheet" href="css/app.css?v=1.9.0-dev.7">
 </head>
 <body>
 <div id="app">
@@ -390,7 +390,7 @@
                 <option value="bicubic">Bicubic (sharper, slower)</option>
               </select>
             </div>
-            <div class="group" id="cornerShots">
+            <div class="group section-box" id="cornerShots">
               <h3>Corner shots</h3>
               <div class="corner-thumbs">
                 <canvas data-corner="tl" role="img" aria-label="Top-left corner"></canvas>
@@ -404,19 +404,19 @@
                 <button data-value="sheet">1 sheet</button>
               </div>
               <div class="readout" id="cornerReadout"></div>
-              <div class="row">
+              <div class="row stack-narrow">
                 <button class="btn" id="btnCornerShare" hidden
                     title="Share the corner shots (Save Image puts them in Photos)">
-                  <span>Share</span>
+                  <span>Share corners</span>
                 </button>
-                <button class="btn" id="btnCornerDownload">Download</button>
+                <button class="btn" id="btnCornerDownload">Download corners</button>
               </div>
               <div class="hint">
                 Close-ups of the card's four corners, at the photo's own resolution, with this
                 photo's levels and no overlay.
               </div>
             </div>
-            <div class="group">
+            <div class="group section-box">
               <h3>Edits</h3>
               <div class="row">
                 <button class="btn" id="btnSaveEdits">Save edits</button>
@@ -459,19 +459,19 @@
      engine → app modules (core first: it creates the CF namespace; main last: it calls init()).
      ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay
      relative. -->
-<script src="js/config.js?v=1.9.0-dev.6"></script>
-<script src="js/engine.js?v=1.9.0-dev.6"></script>
-<script src="js/app/core.js?v=1.9.0-dev.6"></script>
-<script src="js/app/adapters.js?v=1.9.0-dev.6"></script>
-<script src="js/app/state.js?v=1.9.0-dev.6"></script>
-<script src="js/app/view.js?v=1.9.0-dev.6"></script>
-<script src="js/app/levels.js?v=1.9.0-dev.6"></script>
-<script src="js/app/overlay.js?v=1.9.0-dev.6"></script>
-<script src="js/app/input.js?v=1.9.0-dev.6"></script>
-<script src="js/app/ui.js?v=1.9.0-dev.6"></script>
-<script src="js/app/export.js?v=1.9.0-dev.6"></script>
-<script src="js/app/corner-shots.js?v=1.9.0-dev.6"></script>
-<script src="js/app/pair.js?v=1.9.0-dev.6"></script>
-<script src="js/app/main.js?v=1.9.0-dev.6"></script>
+<script src="js/config.js?v=1.9.0-dev.7"></script>
+<script src="js/engine.js?v=1.9.0-dev.7"></script>
+<script src="js/app/core.js?v=1.9.0-dev.7"></script>
+<script src="js/app/adapters.js?v=1.9.0-dev.7"></script>
+<script src="js/app/state.js?v=1.9.0-dev.7"></script>
+<script src="js/app/view.js?v=1.9.0-dev.7"></script>
+<script src="js/app/levels.js?v=1.9.0-dev.7"></script>
+<script src="js/app/overlay.js?v=1.9.0-dev.7"></script>
+<script src="js/app/input.js?v=1.9.0-dev.7"></script>
+<script src="js/app/ui.js?v=1.9.0-dev.7"></script>
+<script src="js/app/export.js?v=1.9.0-dev.7"></script>
+<script src="js/app/corner-shots.js?v=1.9.0-dev.7"></script>
+<script src="js/app/pair.js?v=1.9.0-dev.7"></script>
+<script src="js/app/main.js?v=1.9.0-dev.7"></script>
 </body>
 </html>
