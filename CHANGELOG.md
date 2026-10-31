@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Next card →** on the Export step. Once the photo is exported (Download, Copy or a finished Share), it opens the photo picker for the next card. The new photo starts as one opened with **Open**: the same crop preset and export settings, no levels, and your saved logo offered. The button hides again if you change anything that would change the exported image. While it shows, it takes the place of any export note (such as the unapplied-levels warning), which comes back with your next change.
 
 ### Changed
+- On the Perspective step, **Tap to seed** is now **Tap to find card**, and it takes two taps: the button, then the card. Detection runs as soon as you tap the card, and one Undo puts the corners back. The **Detect** and **Clear seed** buttons are gone, and no marker is left on the photo. While it's waiting for your tap you can still drag and pinch the photo; tap the button again to cancel.
 - Tests: twelve more sample photos (raw cards, flat on dark and busy mats, cards on stands) with hand-placed corners. The detection check now holds every photo to its own measured baseline, so nothing that detects well today can quietly break, and it prints a scoreboard of how many photos are found. Nothing in the app changes.
 
 ### Fixed

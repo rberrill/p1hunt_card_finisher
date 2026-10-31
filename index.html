@@ -15,7 +15,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 -->
-<link rel="stylesheet" href="css/app.css?v=1.8.0-dev.6">
+<link rel="stylesheet" href="css/app.css?v=1.8.0-dev.7">
 </head>
 <body>
 <div id="app">
@@ -108,17 +108,16 @@
           <details class="more">
             <summary>More options</summary>
             <div class="group">
-              <h3>Detect</h3>
+              <h3>Detection</h3>
               <div class="row">
-                <button class="btn" id="btnSeed" aria-pressed="false"
-                    title="Tap inside the card, then Detect">
-                  Tap to seed
+                <button class="btn" id="btnFindCard" aria-pressed="false"
+                    title="Then tap the card in the photo">
+                  Tap to find card
                 </button>
-                <button class="btn" id="btnClearSeed">Clear seed</button>
               </div>
               <div class="readout" id="detectInfo"></div>
               <div class="hint">
-                Detection picks the wrong edge? Tap to seed, tap inside the card, then Detect.
+                Corners on the wrong card? Tap to find card, then tap the card.
               </div>
             </div>
             <div class="group">
@@ -163,7 +162,6 @@
           </details>
         </div>
         <div class="action-bar">
-          <button class="btn primary" id="btnDetect">Detect</button>
           <button class="btn" id="btnNext" title="Try the next detected candidate">
               Candidate
           </button>
@@ -398,17 +396,17 @@
      engine → app modules (core first: it creates the CF namespace; main last: it calls init()).
      ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay
      relative. -->
-<script src="js/config.js?v=1.8.0-dev.6"></script>
-<script src="js/engine.js?v=1.8.0-dev.6"></script>
-<script src="js/app/core.js?v=1.8.0-dev.6"></script>
-<script src="js/app/adapters.js?v=1.8.0-dev.6"></script>
-<script src="js/app/state.js?v=1.8.0-dev.6"></script>
-<script src="js/app/view.js?v=1.8.0-dev.6"></script>
-<script src="js/app/levels.js?v=1.8.0-dev.6"></script>
-<script src="js/app/overlay.js?v=1.8.0-dev.6"></script>
-<script src="js/app/input.js?v=1.8.0-dev.6"></script>
-<script src="js/app/ui.js?v=1.8.0-dev.6"></script>
-<script src="js/app/export.js?v=1.8.0-dev.6"></script>
-<script src="js/app/main.js?v=1.8.0-dev.6"></script>
+<script src="js/config.js?v=1.8.0-dev.7"></script>
+<script src="js/engine.js?v=1.8.0-dev.7"></script>
+<script src="js/app/core.js?v=1.8.0-dev.7"></script>
+<script src="js/app/adapters.js?v=1.8.0-dev.7"></script>
+<script src="js/app/state.js?v=1.8.0-dev.7"></script>
+<script src="js/app/view.js?v=1.8.0-dev.7"></script>
+<script src="js/app/levels.js?v=1.8.0-dev.7"></script>
+<script src="js/app/overlay.js?v=1.8.0-dev.7"></script>
+<script src="js/app/input.js?v=1.8.0-dev.7"></script>
+<script src="js/app/ui.js?v=1.8.0-dev.7"></script>
+<script src="js/app/export.js?v=1.8.0-dev.7"></script>
+<script src="js/app/main.js?v=1.8.0-dev.7"></script>
 </body>
 </html>

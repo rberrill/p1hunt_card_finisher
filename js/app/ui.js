@@ -38,6 +38,7 @@
     }
     if (tab !== 'overlay') app.overlayMessage = '';
     app.nudgeLoupeUntil = 0;
+    app.findMode = false;
     closeStepMenu();
     CF.Session.saveSoon();
     if (CF.phoneLayout.matches) collapseMore();
@@ -233,21 +234,17 @@
   }
 
   function bindPerspective() {
-    byId('btnDetect').onclick = () => CF.runDetect();
     byId('btnNext').onclick = () => {
       const count = app.detection.candidates.length;
       if (count) CF.useCandidate((app.detection.index + 1) % count);
     };
-    byId('btnSeed').onclick = () => {
-      app.seedMode = !app.seedMode;
+    // Arms (or cancels) Find card: the next still tap on the photo finds the card there. On
+    // phones, More options closes so the whole photo is there to tap; the status line prompts
+    // until the tap.
+    byId('btnFindCard').onclick = () => {
+      app.findMode = !app.findMode;
+      if (app.findMode && CF.phoneLayout.matches) collapseMore();
       syncUI();
-      if (app.seedMode) toast('Tap inside the card.');
-    };
-    byId('btnClearSeed').onclick = () => {
-      app.detection.seed = null;
-      app.seedMode = false;
-      syncUI();
-      CF.requestRender();
     };
     // Strength updates live while sliding (geometry only); one undo step per slide.
     const strength = byId('strength');
@@ -513,8 +510,7 @@
     const isPreset = ['transparent', '#ffffff', '#000000'].includes(fill);
     byId('fill').value = isPreset ? fill : 'custom';
     if (!isPreset) byId('fillColor').value = fill;
-    byId('btnSeed').setAttribute('aria-pressed', String(app.seedMode));
-    byId('btnClearSeed').disabled = !app.detection.seed;
+    byId('btnFindCard').setAttribute('aria-pressed', String(app.findMode));
     const count = app.detection.candidates.length;
     byId('btnNext').disabled = count < 2;
     const label = count > 1 ? `Candidate ${app.detection.index + 1}/${count}` : 'Candidate';
@@ -578,6 +574,7 @@
   // The Perspective status line: only what needs action (detection details live under More).
   function perspectiveStatus(geometry, candidate) {
     const count = app.detection.candidates.length;
+    if (app.findMode) return 'Tap the card in the photo.';
     if (geometry && !geometry.ok) return geometry.reason;
     if (app.detection.message) return app.detection.message;
     if (candidate && candidate.confidence < CONFIG.detect.minConfidence) {

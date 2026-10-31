@@ -320,23 +320,7 @@
     });
   }
 
-  // The detection seed: a ring with a cross.
-  function drawSeed(ctx, view) {
-    const point = toScreen(view, app.detection.seed);
-    ctx.strokeStyle = CONFIG.colors.seed;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(point[0], point[1], 9, 0, FULL_CIRCLE);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(point[0] - 14, point[1]);
-    ctx.lineTo(point[0] + 14, point[1]);
-    ctx.moveTo(point[0], point[1] - 14);
-    ctx.lineTo(point[0], point[1] + 14);
-    ctx.stroke();
-  }
-
-  // The Perspective step: the photo with the corner quad, handles, seed and loupe.
+  // The Perspective step: the photo with the corner quad, handles and loupe.
   function drawSource(ctx, view, showControls) {
     drawSourceImage(ctx, view);
     if (!showControls) return;
@@ -350,7 +334,6 @@
     tracePolygon(ctx, quad);
     ctx.stroke();
     drawHandles(ctx, quad);
-    if (app.detection.seed) drawSeed(ctx, view);
     const gesture = app.gesture;
     if (gesture && gesture.type === 'handle') {
       drawLoupe(ctx, view, gesture);

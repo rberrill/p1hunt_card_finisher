@@ -267,13 +267,13 @@
     app.detection = {
       candidates: [],
       index: 0,
-      seed: null,
       last: null,
       running: 0,
       message: '',
       snapPoints: [],
       snapLines: [],
     };
+    app.findMode = false;
     app.perspectivePreview = null;
     app.edgeCanvas = null;
     app.selected = 0;
@@ -353,8 +353,9 @@
 
   // Finds card candidates and moves the corners to the best one. auto: without an undo step
   // (on open). keepCorners: find candidates (for Candidate n/3 and snapping) without moving
-  // the corners (session resume).
-  async function runDetect({ auto = false, keepCorners = false } = {}) {
+  // the corners (session resume). seed: a source-px point the card should contain (Find card);
+  // it's used for this run only.
+  async function runDetect({ auto = false, keepCorners = false, seed = null } = {}) {
     if (!app.img) return;
     const run = ++app.detection.running;
     const startTime = performance.now();
@@ -363,7 +364,7 @@
     try {
       const candidates = await CF.Detector.detect(app.work.data, {
         ratio: CONFIG.card.w / CONFIG.card.h,
-        seed: app.detection.seed,
+        seed,
         sourceWidth: app.img.width,
         sourceHeight: app.img.height,
         getRegion: CF.readRegion,
@@ -382,7 +383,7 @@
       if (!candidates.length) {
         if (!auto) {
           const message = 'No card-shaped edges found. '
-            + 'Place the corners by hand, or tap to seed and retry.';
+            + 'Drag the corners into place, or tap to find card and tap the card again.';
           toast(message, 'warn', 5000);
         }
       } else if (keepCorners) {
@@ -405,6 +406,13 @@
     CF.syncUI();
     CF.requestRender();
     CF.updateDebugPanel();
+  }
+
+  // Find card: disarms it, then finds the card containing `point` (source px, where the photo
+  // was tapped). The corners move as one undo step.
+  function findCardAt(point) {
+    app.findMode = false;
+    return runDetect({ seed: point });
   }
 
   function useCandidate(index) {
@@ -467,6 +475,7 @@
     liveChanged,
     openFile,
     runDetect,
+    findCardAt,
     useCandidate,
   });
 })(window.CF);

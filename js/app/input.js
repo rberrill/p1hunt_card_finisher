@@ -7,7 +7,7 @@
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { Vec2, elements, clone, app, toast } = CF;
+  const { Vec2, elements, clone, app } = CF;
 
   // A press shorter than this, without moving, is a tap.
   const TAP_MS = 300;
@@ -107,7 +107,7 @@
 
   const hasGeometry = () => app.geometry && app.geometry.ok;
 
-  // Starts the gesture a press begins: pinch (second finger), seed, handle, crop, dropper or pan.
+  // Starts the gesture a press begins: pinch (second finger), handle, crop, dropper or pan.
   function onPointerDown(event) {
     if (!app.img) return;
     elements.canvas.focus({ preventScroll: true });
@@ -143,12 +143,14 @@
       moved: false,
     };
     if (app.tab === 'perspective' && !app.previewMode) {
-      if (app.seedMode) {
-        app.detection.seed = CF.toWorld(view, point);
-        app.seedMode = false;
-        CF.syncUI();
-        CF.requestRender();
-        toast('Seed set. Press Detect.');
+      if (app.findMode) {
+        // Find card is armed: a still tap finds the card (onPointerUp); a drag pans as usual
+        // and never grabs a handle.
+        app.gesture = Object.assign(base, {
+          type: 'pan',
+          isFind: true,
+          startView: { panX: view.panX, panY: view.panY },
+        });
         return;
       }
       const handleIndex = hitHandle(view, point);
@@ -315,7 +317,15 @@
       return;
     }
     if (gesture && gesture.type.startsWith('overlay') && pointers.size > 0) return;
-    const isTap = gesture && !gesture.moved && performance.now() - gesture.startTime < TAP_MS;
+    // Find card: a still tap (however long) finds the card where the photo was tapped.
+    const isFindTap = gesture && gesture.isFind && !gesture.moved && pointers.size === 0;
+    if (isFindTap) {
+      const view = CF.currentView();
+      endGesture();
+      if (view) CF.findCardAt(CF.toWorld(view, gesture.start));
+      return;
+    }
+    const isTap =gesture && !gesture.moved && performance.now() - gesture.startTime < TAP_MS;
     if (isTap && gesture.type === 'pan') checkDoubleTap(gesture);
     if (isTap && gesture.type === 'handle') checkHandleDoubleTap(gesture);
     endGesture();
@@ -532,7 +542,7 @@
     const point = localPoint(event);
     let cursor = 'grab';
     if (view && app.tab === 'perspective' && !app.previewMode) {
-      if (app.seedMode) cursor = 'crosshair';
+      if (app.findMode) cursor = 'crosshair';
       else if (hitHandle(view, point) >= 0) cursor = 'move';
     } else if (view && app.tab === 'crop' && hasGeometry()) {
       const part = hitCrop(view, point);

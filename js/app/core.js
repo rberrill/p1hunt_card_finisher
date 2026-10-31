@@ -84,14 +84,14 @@
     detection: {
       candidates: [],
       index: 0,
-      seed: null,
       last: null,
       running: 0,
       message: '',
       snapPoints: [],
       snapLines: [],
     },
-    seedMode: false,
+    // Find card is armed: the next still tap on the photo finds the card there.
+    findMode: false,
     snap: false,
     debugOverlay: !!CONFIG.debug,
     showGrid: true,

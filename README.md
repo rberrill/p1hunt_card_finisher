@@ -15,6 +15,7 @@ Six steps, in order:
    - Drag corners or edges, with a magnifier that stays clear of your finger.
    - Double-tap a handle to zoom in on it; on phones, arrow buttons nudge it a pixel at a time.
    - **Candidate n/3** tries the next-best detection when the first pick catches a stand or case edge.
+   - Corners on the wrong card? **Tap to find card** (under More options), then tap the card: detection runs again around that spot.
 2. **Rotate.** 90° turns, flips, and fine rotation in 0.1° steps.
 3. **Crop.** Free, Original, 1:1, 4:3, 5:4, 3:2, 16:9 and 5:7 card. Presets follow the card's orientation (a portrait card gets 4:5, 2:3, 9:16…), and **Swap** flips them. **Fit to card** frames the card with a little padding.
 4. **Levels.** Set a white point (and optionally a black point) by tapping the image, or start from **Auto**. Press and hold the photo to compare before and after. Changes stay a draft until you **Apply** them.

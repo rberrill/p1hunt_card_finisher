@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.8.0-dev.6',
+  appVersion: '1.8.0-dev.7',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -36,7 +36,6 @@ const CONFIG = {
     grid: 'rgba(255,255,255,0.18)',
     thirds: 'rgba(255,255,255,0.45)',
     dim: 'rgba(0,0,0,0.55)',
-    seed: '#3fb950',
   },
   theme: {
     bg: '#161618',
@@ -160,9 +159,9 @@ const CONFIG = {
     wAngle: 0.35,
     wCenter: 0.25,
     wArea: -0.45,
-    // A quad that misses the seed scores this much; candidates whose corners all lie within
-    // dupCornerFrac of the diagonal are one; keep maxCandidates; below minConfidence the status
-    // line asks you to check the corners.
+    // A quad that misses the point tapped with Find card scores this much; candidates whose
+    // corners all lie within dupCornerFrac of the diagonal are one; keep maxCandidates; below
+    // minConfidence the status line asks you to check the corners.
     seedMissFactor: 0.3,
     dupCornerFrac: 0.02,
     maxCandidates: 3,
