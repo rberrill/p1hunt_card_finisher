@@ -292,10 +292,11 @@
     });
   }
 
-  /* ---------- the prompt in the control area ---------- */
+  /* ---------- the question card ---------- */
 
-  // Shows a choice where the step's controls were (nothing goes over the photo): a title, a
-  // line of text, two choices and Cancel. choices: [{ label, action }].
+  // Shows a question on a card over the dimmed photo, like Resume (with the step menu, the only
+  // things allowed over the photo): a title, a line of text, two choices and Cancel. A tap
+  // outside the card or Escape cancels. choices: [{ label, action }].
   function showPrompt({ title, text, choices }) {
     byId('pairPromptTitle').textContent = title;
     byId('pairPromptText').textContent = text;
@@ -309,7 +310,8 @@
     });
     byId('pairPrompt').hidden = false;
     elements.root.classList.add('prompting');
-    if (CF.phoneLayout.matches) CF.collapseMore();
+    CF.closeStepMenu();
+    byId('btnPromptFirst').focus({ preventScroll: true });
   }
 
   function hidePrompt() {
@@ -790,6 +792,9 @@
     });
     byId('btnUnpair').onclick = askUnpair;
     byId('btnPromptCancel').onclick = hidePrompt;
+    byId('pairPrompt').addEventListener('click', event => {
+      if (event.target === event.currentTarget) hidePrompt();
+    });
     byId('btnAddBack').onclick = () => {
       app.fileIntent = 'addBack';
       elements.fileInput.click();

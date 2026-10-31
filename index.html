@@ -13,13 +13,13 @@
 <title>P1Hunt Card Finisher</title>
 <!-- App icon: favicon.ico for Safari on Mac and older browsers, the SVG for the rest, and
      the 180 px PNG for the iPhone home screen. All three are drawn from icons/icon.svg. -->
-<link rel="icon" href="icons/favicon.ico?v=1.9.0-dev.4" sizes="32x32">
-<link rel="icon" href="icons/icon.svg?v=1.9.0-dev.4" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.9.0-dev.4">
+<link rel="icon" href="icons/favicon.ico?v=1.9.0-dev.5" sizes="32x32">
+<link rel="icon" href="icons/icon.svg?v=1.9.0-dev.5" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.9.0-dev.5">
 <!-- PWA (phase two): this becomes a real file; a service worker can't be inlined.
 <link rel="manifest" href="manifest.webmanifest">
 -->
-<link rel="stylesheet" href="css/app.css?v=1.9.0-dev.4">
+<link rel="stylesheet" href="css/app.css?v=1.9.0-dev.5">
 </head>
 <body>
 <div id="app">
@@ -91,20 +91,23 @@
         <button class="btn primary" id="btnOpenEmpty">Open photo</button>
       </div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <!-- A pair's questions (Unpair, a new photo): a card over the dimmed photo, like Resume.
+           With the step menu, the only things allowed over the photo. A tap outside cancels. -->
+      <div class="pair-prompt" id="pairPrompt" role="dialog" aria-modal="true"
+          aria-labelledby="pairPromptTitle" hidden>
+        <div class="resume pair-card">
+          <div><b id="pairPromptTitle"></b></div>
+          <div class="when" id="pairPromptText"></div>
+          <div class="row">
+            <button class="btn" id="btnPromptFirst"></button>
+            <button class="btn" id="btnPromptSecond"></button>
+          </div>
+          <button class="btn wide" id="btnPromptCancel">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <aside class="panel" id="panel">
-      <!-- A pair's questions (Unpair, a new photo) take the control area's place; nothing goes
-           over the photo. -->
-      <div class="pair-prompt" id="pairPrompt" hidden>
-        <h3 id="pairPromptTitle"></h3>
-        <div class="hint" id="pairPromptText"></div>
-        <div class="row">
-          <button class="btn" id="btnPromptFirst"></button>
-          <button class="btn" id="btnPromptSecond"></button>
-        </div>
-        <button class="btn wide" id="btnPromptCancel">Cancel</button>
-      </div>
       <!-- Each step: one compact control area (fixed height on phones), "More options", then the
            action bar. The action bar's first button (phones) is the step menu; the last moves to
            the next step. -->
@@ -456,19 +459,19 @@
      engine → app modules (core first: it creates the CF namespace; main last: it calls init()).
      ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay
      relative. -->
-<script src="js/config.js?v=1.9.0-dev.4"></script>
-<script src="js/engine.js?v=1.9.0-dev.4"></script>
-<script src="js/app/core.js?v=1.9.0-dev.4"></script>
-<script src="js/app/adapters.js?v=1.9.0-dev.4"></script>
-<script src="js/app/state.js?v=1.9.0-dev.4"></script>
-<script src="js/app/view.js?v=1.9.0-dev.4"></script>
-<script src="js/app/levels.js?v=1.9.0-dev.4"></script>
-<script src="js/app/overlay.js?v=1.9.0-dev.4"></script>
-<script src="js/app/input.js?v=1.9.0-dev.4"></script>
-<script src="js/app/ui.js?v=1.9.0-dev.4"></script>
-<script src="js/app/export.js?v=1.9.0-dev.4"></script>
-<script src="js/app/corner-shots.js?v=1.9.0-dev.4"></script>
-<script src="js/app/pair.js?v=1.9.0-dev.4"></script>
-<script src="js/app/main.js?v=1.9.0-dev.4"></script>
+<script src="js/config.js?v=1.9.0-dev.5"></script>
+<script src="js/engine.js?v=1.9.0-dev.5"></script>
+<script src="js/app/core.js?v=1.9.0-dev.5"></script>
+<script src="js/app/adapters.js?v=1.9.0-dev.5"></script>
+<script src="js/app/state.js?v=1.9.0-dev.5"></script>
+<script src="js/app/view.js?v=1.9.0-dev.5"></script>
+<script src="js/app/levels.js?v=1.9.0-dev.5"></script>
+<script src="js/app/overlay.js?v=1.9.0-dev.5"></script>
+<script src="js/app/input.js?v=1.9.0-dev.5"></script>
+<script src="js/app/ui.js?v=1.9.0-dev.5"></script>
+<script src="js/app/export.js?v=1.9.0-dev.5"></script>
+<script src="js/app/corner-shots.js?v=1.9.0-dev.5"></script>
+<script src="js/app/pair.js?v=1.9.0-dev.5"></script>
+<script src="js/app/main.js?v=1.9.0-dev.5"></script>
 </body>
 </html>

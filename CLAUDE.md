@@ -30,7 +30,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - Direct feedback; push back when something is wrong.
 - Simplicity over features: he removed case detection, Square up mode and the Before button when they didn't earn their place.
 - No messages a user can't act on (such as "needs HTTPS").
-- Nothing floats over the photo.
+- Nothing floats over the photo, except a short-lived menu or question (the step menu, Resume, a pair's questions).
 
 **Brand:** matte black, white, and P1Hunt red (`#e5322d`, the UI accent), retro motorsport, no gradients. Inspired by F1, never its trademarks: no F1, FIA, team or driver logos or marks in the app or the docs.
 
@@ -59,7 +59,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - **Phone layout:**
   - Header, photo, a 184 px control area (the same on every step), then the action bar, whose first button is the step menu.
   - Non-essentials go under More options. Status messages appear only when actionable.
-  - Nothing overlays the photo except the open step menu.
+  - Nothing overlays the photo except the open step menu and a pair's question card.
 - **Levels:** white lands at 245 and black at 8, in linear light. Picks edit a draft until Apply. Levels never carry over between photos. Auto's black point uses near-neutral darks only.
 - **Next card →:** shown on Export only while the current edits are exported; it sits in the control area (the action bar is full) and replaces the export note while shown.
 - **Tap to find card** (Perspective, More options): the button, then a tap on the card, runs detection at once. No Detect or Clear seed button, no marker; the tapped point is used for that run only.
@@ -75,7 +75,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
   - Edits files embed the logo.
 - **Corner shots** (Export → More options): a 2×2 sheet (the default; 1:1, no outer margin, since eBay bans added borders) or four photos, Share + Download as for the main export. Each is a square framed like the export (same tilt), at the photo's real resolution (capped, never upscaled), with levels and never the overlay. No quality warning: the readout shows the size and the user decides. The choice is a preference, not edit state.
 - **Front + back pairs** (Add back on Export; the last new feature of version 1):
-  - The header gets a Front | Back chip and ⨯ (Open and Preview go icon-only on the phone). Unpair asks Keep front / Keep back; Open, drop and paste ask New photo / Replace side; both in the control area. Next card after the pair's export doesn't ask.
+  - The header gets a Front | Back chip and ⨯ (Open and Preview go icon-only on the phone). Unpair asks Keep front / Keep back; Open, drop and paste ask New photo / Replace side; both on a Resume-style card over the dimmed photo (a tap outside cancels). Next card after the pair's export doesn't ask.
   - Both sides are locked to 5:7; Swap turns both and isn't an undo step; export settings are shared; the 5:7 lock never becomes the remembered preset.
   - Together = the two exports joined (portrait side by side, landscape stacked, front first, the corner sheet's divider, no margin, size per card, each side's own logo), or Separately; a dropdown preference. Export previews Together. One full-resolution photo in memory at a time.
 - **Versioning:** SemVer by user-visible change. Process and tooling changes don't bump the major.

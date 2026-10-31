@@ -14,7 +14,7 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Phone | Control area doesn't scroll with More closed | each visible `.controls`: `scrollHeight <= clientHeight`, including with a status line showing |
 | Phone | Action bar fits | no button has `scrollWidth > clientWidth`; the bar's bottom is inside the safe area |
 | Phone | Header is one row | header height matches a single button row |
-| Phone | Nothing over the photo | no element other than the open step menu intersects `#stage` |
+| Phone | Nothing over the photo | no element other than the open step menu (or a pair's question card while it's up) intersects `#stage` |
 
 ## 2. Navigation
 
@@ -91,7 +91,7 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Both | Together and Separately (capture `CF.Exporter.download`) | one `-pair` file at the readout's size, front left (portrait) or top (landscape); two `-front` / `-back` files, each byte-identical to `renderFull` + `encodeCanvas` of that side |
 | Both | Logo on one side | it appears only in that side's half of the Together image |
 | Both | Stubbed share | one sheet with every file; refusal gives **Share now**; an edit cancels it; Next card only after the chosen output is saved |
-| Phone | Unpair and New photo prompts | 184 px, in the control area; the photo keeps its height |
+| Both | Unpair and New photo questions | a card centered over the dimmed photo, buttons ≥ 44 px; the control area and photo height unchanged; a tap outside or Escape cancels; shortcuts don't reach the photo behind it |
 | Both | Resume a pair (with a logo on the waiting side) | the prompt names both photos; both sides, the side and step come back; Together exports without a missing-logo error |
 | Both | Crafted `pair` record (`orient: '<b>x</b>'`) | resumes the open side alone with the "reset" notice; the record is cleared |
 

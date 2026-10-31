@@ -121,18 +121,19 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
   border-color: var(--accent);
   color: #fff;
 }
-/* A pair's question replaces the step's controls (the action bar stays). */
-.pair-prompt { padding: 12px 14px; }
-.pair-prompt h3 {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--muted);
-  margin: 0 0 4px;
-  font-weight: 600;
+/* A pair's question: a Resume-style card over the dimmed photo. The backdrop takes every
+   touch, so the photo can't be dragged while it's up. */
+.pair-prompt {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, .6);
 }
-.pair-prompt .hint { margin-bottom: 8px; }
-#app.prompting section[data-panel].active .controls { display: none; }
+.pair-card { width: 100%; }
 /* The side panel is too narrow for three dropdowns; the phone fits them in one row. */
 #pairOutput { flex-basis: 100%; }
 
@@ -522,7 +523,6 @@ details.more[open] > summary::before { content: '▾'; }
   #app.paired .top-bar { padding: 4px; }
   #app.paired .actions { gap: 2px; }
   .side-switch .btn { min-width: 44px; padding: 0 5px; font-size: 13px; }
-  .pair-prompt { height: 184px; padding: 10px 12px 0; box-sizing: border-box; }
   #pairOutput { flex-basis: 0%; }
   main { flex-direction: column; }
   .panel { width: auto; border-left: 0; border-top: 1px solid var(--line); }
