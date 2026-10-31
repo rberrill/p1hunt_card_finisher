@@ -1820,9 +1820,54 @@ function CardEngineModule(globalScope) {
     return { width, height, scale, isClamped };
   }
 
+  // The rotated frame (rotatedFrame) and the outlines mapped into it, all in rotated px: the
+  // card, the perspective frame, and the photo itself (validRotated, null when part of the photo
+  // maps past the horizon). sourceToRotated is the composed source → rotated matrix.
+  function rotatedOutlines(perspective, rotation, flip, sourceCorners) {
+    const rotated = rotatedFrame(perspective, rotation, flip);
+    const { perspectiveToRotated } = rotated;
+    const sourceToRotated = Mat3.multiply(perspectiveToRotated, perspective.sourceToPerspective);
+    const toRotated = matrix => point => Mat3.apply(matrix, point[0], point[1]);
+    const perspectiveCorners = [
+      [0, 0],
+      [perspective.width, 0],
+      [perspective.width, perspective.height],
+      [0, perspective.height],
+    ];
+    const isSourceInFront = sourceCorners.every(
+      point => Mat3.homogeneousW(sourceToRotated, point[0], point[1]) > EPSILON,
+    );
+    return {
+      rotated,
+      sourceToRotated,
+      cardRotated: perspective.cardPerspective.map(toRotated(perspectiveToRotated)),
+      frameRotated: Quad.sortCorners(perspectiveCorners.map(toRotated(perspectiveToRotated))),
+      validRotated: isSourceInFront
+        ? Quad.sortCorners(sourceCorners.map(toRotated(sourceToRotated)))
+        : null,
+    };
+  }
+
+  // The crop in the rotated frame (rotated px) for the state's crop settings, shrunk to the
+  // valid area when fillFrame is on; null when it comes out empty.
+  function placeCrop(state, outlines, perspectiveLongSide, config) {
+    const { rotated, cardRotated, frameRotated, validRotated } = outlines;
+    const cropState = state.crop || { mode: 'full' };
+    const ratio = cropRatio(cropState, state.source.width, state.source.height);
+    let crop = cropInRotated(cropState, ratio, rotated, perspectiveLongSide, cardRotated, config);
+    if ((state.rotation || {}).fillFrame) {
+      const polygons = validRotated ? [frameRotated, validRotated] : [frameRotated];
+      crop = shrinkToValid(crop, polygons);
+    }
+    return crop.width >= 1 && crop.height >= 1 ? crop : null;
+  }
+
   /**
    * computeGeometry(state, config) → every transform needed to render `state`, or
    * { ok: false, reason }. A pure function of (state, config); preview and export both use it.
+   * The stages, in order: validate the corners and solve the homography; the perspective frame;
+   * the rotated frame and the outlines in it (rotatedOutlines); the crop (placeCrop); the output
+   * size; the composed matrices.
    */
   function computeGeometry(state, configIn) {
     const config = Object.assign({}, GEOMETRY_DEFAULTS, configIn || {});
@@ -1852,35 +1897,13 @@ function CardEngineModule(globalScope) {
     const { sourceToPerspective, cardPerspective } = perspective;
 
     const rotation = state.rotation || { quarter: 0, fine: 0 };
-    const rotated = rotatedFrame(perspective, rotation, state.flip || {});
+    const outlines = rotatedOutlines(perspective, rotation, state.flip || {}, sourceCorners);
+    const { rotated, sourceToRotated, cardRotated, frameRotated, validRotated } = outlines;
     const { perspectiveToRotated } = rotated;
-    const sourceToRotated = Mat3.multiply(perspectiveToRotated, sourceToPerspective);
-    const toRotated = matrix => point => Mat3.apply(matrix, point[0], point[1]);
-    const cardRotated = cardPerspective.map(toRotated(perspectiveToRotated));
-    const perspectiveCorners = [
-      [0, 0],
-      [perspective.width, 0],
-      [perspective.width, perspective.height],
-      [0, perspective.height],
-    ];
-    const frameRotated = Quad.sortCorners(perspectiveCorners.map(toRotated(perspectiveToRotated)));
-    const isSourceInFront = sourceCorners.every(
-      point => Mat3.homogeneousW(sourceToRotated, point[0], point[1]) > EPSILON,
-    );
-    // The photo's own outline in the rotated frame (null when part of it maps past the horizon).
-    const validRotated = isSourceInFront
-      ? Quad.sortCorners(sourceCorners.map(toRotated(sourceToRotated)))
-      : null;
 
     const perspectiveLongSide = Math.max(perspective.width, perspective.height);
-    const cropState = state.crop || { mode: 'full' };
-    const ratio = cropRatio(cropState, sourceWidth, sourceHeight);
-    let crop = cropInRotated(cropState, ratio, rotated, perspectiveLongSide, cardRotated, config);
-    if (rotation.fillFrame) {
-      const polygons = validRotated ? [frameRotated, validRotated] : [frameRotated];
-      crop = shrinkToValid(crop, polygons);
-    }
-    if (!(crop.width >= 1 && crop.height >= 1)) return { ok: false, reason: 'Crop is empty.' };
+    const crop = placeCrop(state, outlines, perspectiveLongSide, config);
+    if (!crop) return { ok: false, reason: 'Crop is empty.' };
 
     const output = outputSize(crop, state.export || {}, config);
     const sourceToOutput = Mat3.chain(
@@ -2601,6 +2624,63 @@ function CardEngineModule(globalScope) {
       `angle error ${angleError.toExponential(2)}°, aspect ${aspect.toFixed(6)}`);
   }
 
+  // The states the geometry golden test runs: every random quad with a cycling mix of Flatten,
+  // orientation, rotation, flip, crop, fill-frame and export settings.
+  function goldenStates(quads) {
+    const presets = [null, 1, 4 / 3, 'original', CARD_ASPECT];
+    const orientations = ['auto', 'portrait', 'landscape'];
+    const longEdges = [0, 1080, 2000];
+    return quads.map((quad, i) => ({
+      source: { width: 4032, height: 3024 },
+      corners: quad,
+      strength: (i % 5) / 4,
+      aspect: { ratio: CARD_ASPECT, orientation: orientations[i % 3] },
+      squareUpHeight: 'preserveEdges',
+      rotation: { quarter: i % 4, fine: ((i % 7) - 3) * 1.5, fillFrame: i % 6 === 0 },
+      flip: { h: i % 2 === 1, v: i % 8 >= 6 },
+      crop: {
+        mode: i % 3 === 0 ? 'manual' : 'fit',
+        ratio: presets[i % 5],
+        swapped: i % 4 === 2,
+        rect: i % 3 === 0 ? { cx: 0.05, cy: -0.03, w: 0.4, h: 0.3 } : null,
+      },
+      levels: null,
+      overlay: null,
+      export: { longEdge: longEdges[i % 3], interp: 'bilinear', fill: '#ffffff' },
+    }));
+  }
+
+  // FNV-1a (32-bit) of a string, as 8 hex digits.
+  function hashText(text) {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i++) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+  }
+
+  // The golden hash of computeGeometry's results over goldenStates, recorded from the code as
+  // it was before the pipeline was split into stages (1.9). Numbers are rounded to
+  // 1 / GOLDEN_PRECISION px first, far above the last-digit differences between JavaScript
+  // engines. A deliberate change to the geometry updates the hash from the test's detail.
+  const GEOMETRY_GOLDEN = 'ee55be98';
+  const GOLDEN_PRECISION = 1000;
+
+  // 6b. Geometry golden: the pipeline gives exactly the recorded results on 50 mixed states, so
+  // a refactor of computeGeometry can't move anything.
+  function testGeometryGolden(record, quads) {
+    const round = (key, value) => (
+      typeof value === 'number' ? Math.round(value * GOLDEN_PRECISION) / GOLDEN_PRECISION : value
+    );
+    const results = goldenStates(quads).map(state => computeGeometry(state, {}));
+    const hash = hashText(JSON.stringify(results, round));
+    const okCount = results.filter(result => result.ok).length;
+    record('Geometry golden: 50 mixed states give the recorded results',
+      hash === GEOMETRY_GOLDEN,
+      `hash ${hash}, expected ${GEOMETRY_GOLDEN}; ${okCount}/${results.length} states ok`);
+  }
+
   // A synthetic photo: a warm card on a dark background, 4×4 supersampled for anti-aliased
   // edges like a real photo. shades: the red channel of the background and the card.
   function syntheticCardImage(width, height, card, shades = { background: 50, card: 200 }) {
@@ -3004,6 +3084,7 @@ function CardEngineModule(globalScope) {
     testCorrectedAspect(record);
     testDegenerateQuads(record);
     testPipeline(record, quads[0]);
+    testGeometryGolden(record, quads);
     testCornerShots(record, quads[0]);
     testPairLayout(record);
     testWarpAndDetection(record);
