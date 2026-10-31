@@ -389,11 +389,11 @@
 
   // Runs task(side, photoEl) for each side from its full-resolution photo, one photo in memory at
   // a time: the open side first, then its photo is released while the other side's is decoded,
-  // used and closed, and the open side's photo is decoded again at the end.
+  // used and closed, and the open side's photo is decoded again at the end. A failed reload
+  // doesn't fail the task (see reloadOpenPhoto).
   async function forEachSidePhoto(task) {
     const pair = app.pair;
     await task(pair.current, app.img.el);
-    const openName = app.img.name;
     app.img.close();
     app.img.el = null;
     try {
@@ -404,7 +404,22 @@
         other.close();
       }
     } finally {
-      app.img = await CF.ImageSource.load(app.file, openName);
+      await reloadOpenPhoto();
+    }
+  }
+
+  // Decodes the open side's photo again after a pair export released it. Returns true when the
+  // photo is back. On a failure (memory pressure on a phone, with the export's canvas still
+  // held, is the realistic case) the photo stays released: the preview copies still draw it,
+  // and exports refuse with CF.PHOTO_RELEASED_MESSAGE until it's back.
+  async function reloadOpenPhoto() {
+    if (app.img.el) return true;
+    try {
+      app.img = await CF.ImageSource.load(app.file, app.img.name);
+      return true;
+    } catch (error) {
+      console.warn('[card-finisher] photo not reloaded after the pair export:', error);
+      return false;
     }
   }
 
@@ -507,6 +522,12 @@
       console.error(error);
       const what = kind === 'copy' ? 'Copy failed: ' : 'Export failed: ';
       toast(what + error.message, 'error', 6000);
+    }
+    // The export's canvas is freed by now, so a reload that failed under memory pressure gets
+    // one more try; if the photo is still missing, say how to get it back.
+    if (app.img && !app.img.el && !(await reloadOpenPhoto())) {
+      toast(CF.PHOTO_RELEASED_MESSAGE, 'warn', 8000);
+      CF.requestRender();
     }
   }
 

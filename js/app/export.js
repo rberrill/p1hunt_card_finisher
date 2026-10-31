@@ -63,6 +63,11 @@
   // Bicubic sampling reads 2 px past a pixel, so band regions get this margin.
   const BAND_MARGIN_PX = 3;
   const MIN_BAND_ROWS = 8;
+  // A pair export releases the open photo and reloads it afterwards (pair.js); when the reload
+  // fails, every full-resolution render refuses with this until the photo is back. Switching
+  // sides decodes the photo again.
+  const PHOTO_RELEASED_MESSAGE = 'The photo isn’t loaded after the last export. '
+    + 'Tap Front or Back to switch sides, then switch back.';
 
   function toBlob(canvas, type, quality) {
     return new Promise((resolve, reject) => canvas.toBlob(blob => {
@@ -153,11 +158,13 @@
     options = {}) {
     const isTransparent = state.export.fill === 'transparent';
     const isJpegOnTransparent = state.export.format === 'jpeg' && isTransparent;
+    const photo = options.photo || app.img.el;
+    if (!photo) throw new Error(PHOTO_RELEASED_MESSAGE);
     const region = makeCanvas(1, 1);
     const target = options.target || null;
     const render = {
       state,
-      photo: options.photo || app.img.el,
+      photo,
       outputToSource,
       outputWidth,
       fill: CF.fillRgba(isJpegOnTransparent ? '#ffffff' : state.export.fill),
@@ -516,6 +523,7 @@
   Object.assign(CF, {
     Exporter,
     MIME_TYPES,
+    PHOTO_RELEASED_MESSAGE,
     renderFull,
     renderWarped,
     encodeCanvas,

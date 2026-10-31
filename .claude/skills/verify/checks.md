@@ -95,6 +95,7 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Both | Unpair and New photo questions | a card centered over the dimmed photo, buttons ≥ 44 px; the control area and photo height unchanged; a tap outside or Escape cancels; shortcuts don't reach the photo behind it |
 | Both | Resume a pair (with a logo on the waiting side) | the prompt names both photos; both sides, the side and step come back; Together exports without a missing-logo error |
 | Both | Crafted `pair` record (`orient: '<b>x</b>'`) | resumes the open side alone with the "reset" notice; the record is cleared |
+| Desktop | Reload fails after a pair export (wrap `CF.ImageSource.load` to reject the next two calls for the open side's file, then Download Together) | the file is still delivered; a warn toast says the photo isn't loaded and to switch sides; `app.img.el` is null; Download then refuses with the same message; switching sides and back restores `app.img.el` and the export works |
 
 ## 9. Session restore
 
