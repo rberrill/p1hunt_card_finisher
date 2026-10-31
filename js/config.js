@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.9.0-dev.7',
+  appVersion: '1.9.0-dev.8',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -283,6 +283,11 @@ const CONFIG_LIMITS = {
   maxOutputPx: [1000, 12000],
   maxOutputArea: [1000000, 16777216],
   maxBoundsFactor: [1, 3],
+  // The card size sets the 5:7 target; zero or negative gives NaN geometry.
+  'card.w': [1, 1000],
+  'card.h': [1, 1000],
+  // The Rotate grid is drawn in a loop stepping gridPx; 0 would never end.
+  'rotate.gridPx': [4, 1000],
   loupeZoom: [1, 16],
   loupeSize: [60, 400],
   handleZoom: [1, 20],
@@ -304,6 +309,14 @@ const CONFIG_LIMITS = {
   'overlay.svgPx': [256, 2048],
   'detect.workingSize': [300, 2000],
   'detect.refineMaxPx': [1000000, 8000000],
+  // Blur sigmas size the Gaussian kernel (3 sigma a side); the support radius and the vote
+  // spread (houghGradWinDeg ÷ angleStepDeg) size per-pixel loops; refineSamples is a loop
+  // count per side.
+  'detect.blurSigma': [0, 10],
+  'detect.refineBlur': [0, 10],
+  'detect.supportRadiusPx': [0, 20],
+  'detect.houghGradWinDeg': [0, 90],
+  'detect.refineSamples': [4, 400],
   'detect.angleStepDeg': [0.1, 5],
   'detect.houghMaxLines': [4, 96],
   'detect.maxCandidates': [1, 10],

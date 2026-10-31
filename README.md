@@ -26,6 +26,8 @@ Six steps, in order:
    - Exports are rendered from the full-resolution original.
    - Once the photo is exported, **Next card →** opens the next photo, with the same crop and export settings.
    - **Add back** pairs the card's front with its back. A **Front | Back** switch in the header moves between them, both are cropped to the 5:7 card shape, and the pair saves **Together** (one image, side by side or stacked) or **Separately** (two files).
+   - **Corner shots** (under More options): close-ups of the card's four corners for condition photos, as one 2×2 sheet or four photos, cut from the original at its own resolution with the same levels and no logo.
+   - The app version is shown at the bottom of More options; include it when you report a problem.
 
 Also:
 - **Undo / redo** (50 steps).
@@ -67,7 +69,7 @@ Pinch or scroll to zoom; drag empty space to pan.
   - `css/app.css`
   - `js/config.js` (settings)
   - `js/engine.js` (image engine)
-  - `js/app/` (interface: ten small modules on one shared namespace)
+  - `js/app/` (interface: twelve small modules on one shared namespace)
 - The scripts are classic scripts on relative paths, so the app works from disk, from `localhost`, or from any folder on a static host.
 - The image engine is pure functions with no access to the page. Corner detection runs in a Web Worker so the interface stays responsive.
 - Every edit is a small state object, and the export is rendered from it in one resampling pass from the original photo. The work is done in bands to keep memory low on phones.
@@ -94,6 +96,10 @@ Pinch or scroll to zoom; drag empty space to pan.
 - Detection is tuned on a small set of photos. It can pick a stand or case edge over the card, and on a raw card it can pick a frame printed inside the card or lose the card's outline on a busy mat; the next candidate or a quick drag fixes it. Its confidence score doesn't reliably flag wrong picks.
 - Auto levels can be fooled by strongly colored backdrops, and white picks on foil or reflections give wrong results.
 - No batch processing, background removal or glare correction.
+
+## Reporting a problem
+
+Open an issue on the repository's Issues tab. Say which device and browser you used and the app version (Export → More options, at the bottom), and attach the photo if you can share it, with its edits file (**Save edits** under the same More options), so the result can be reproduced exactly. For a security concern, see [SECURITY.md](SECURITY.md) instead.
 
 ## Changes
 

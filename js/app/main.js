@@ -7,7 +7,7 @@
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { params, elements, app, toast } = CF;
+  const { params, byId, elements, app, toast } = CF;
 
   /* ---------- self-tests (?selftest=1) ---------- */
 
@@ -117,6 +117,8 @@
   function init() {
     elements.root.dataset.tab = app.tab;
     document.querySelector('.brand').title = 'Version ' + CONFIG.appVersion;
+    // Also under Export → More options, where a phone can read it.
+    byId('versionInfo').textContent = 'Card Finisher ' + CONFIG.appVersion;
     console.info(`[card-finisher] v${CONFIG.appVersion}`);
     CF.buildControls();
     CF.bindControls();

@@ -751,7 +751,7 @@
         width: img.width,
         height: img.height,
         state: clean.state,
-        tab: CF.STEPS[edits.tab] ? edits.tab : 'perspective',
+        tab: CF.isStep(edits.tab) ? edits.tab : 'perspective',
         detection: CF.emptyDetection(),
         levelsDraft,
         levelsPending: !!levelsDraft

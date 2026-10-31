@@ -17,6 +17,9 @@
     overlay: 'Overlay',
     export: 'Export',
   };
+  // True for a real step name. A stored step (session records are untrusted) is checked with
+  // this, not `STEPS[tab]`, which is truthy for inherited keys such as 'constructor'.
+  const isStep = tab => Object.prototype.hasOwnProperty.call(STEPS, tab);
   // The debug panel re-runs detection this long after the last change to a setting.
   const REDETECT_DELAY_MS = 350;
 
@@ -837,14 +840,17 @@
         CF.Session.peek(),
         CF.peekPair(),
       ]);
-      if (!photo) {
+      // The record comes from storage: its bytes, name and type are checked before use.
+      if (!photo || !(photo.buf instanceof ArrayBuffer)) {
         toast('The saved photo is gone. Open it again.', 'warn', 5000);
         return;
       }
+      const name = shortText(photo.name, 200) || 'photo';
+      const type = typeof photo.type === 'string' ? photo.type : '';
       // A pair's waiting side comes back first, so one full-size photo is decoded at a time.
       if (pair) await CF.restorePair(pair);
-      const file = new File([photo.buf], photo.name, { type: photo.type });
-      const isOpen = await CF.openFile(file, photo.name, edits);
+      const file = new File([photo.buf], name, { type });
+      const isOpen = await CF.openFile(file, name, edits);
       if (!isOpen) app.pair = null;
       CF.finishResume();
     } catch (error) {
@@ -856,6 +862,7 @@
   Object.assign(CF, {
     setTab,
     STEPS,
+    isStep,
     bindSegment,
     setSegment,
     closeStepMenu,

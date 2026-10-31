@@ -13,7 +13,7 @@ Exit code 0 means everything passed.
 | Module boundaries | `js/app/` modules all load (`core` first, `main` last); no name declared twice; cross-module names go through `CF`; only known globals (the `GLOBALS` list, extended when the shell uses a new browser API); every `CF` name is exported |
 | Security | No HTML-string sinks, `eval`, `new Function` or string timers in `js/`; `index.html` has a strict CSP before any asset and nothing inline or off-site |
 | Privacy | No GPS location in `samples/` photos; no private network addresses or local drive paths in the published text files |
-| CONFIG consistency | The engine's built-in defaults (`DETECT_DEFAULTS`, `GEOMETRY_DEFAULTS`, `LEVELS_DEFAULTS`) match `CONFIG`; every `CONFIG_LIMITS` key is a `CONFIG` number with its default in range |
+| CONFIG consistency | The engine's built-in defaults (`DETECT_DEFAULTS`, `GEOMETRY_DEFAULTS`, `LEVELS_DEFAULTS`, `CORNER_SHOT_DEFAULTS`, `PAIR_DEFAULTS`) match `CONFIG`; every `CONFIG_LIMITS` key is a `CONFIG` number with its default in range |
 | Code style | The parts of `.claude/rules/code-style.md` a tokenizer can check (`tests/style-check.js`): lines of at most 100 characters, no one- or two-letter names outside the allowed list, one statement per line, one declaration per `const` / `let` / `var` |
 | Engine self-tests | Geometry (homography round trip, Flatten 0% and 100%, perspective-corrected aspect, degenerate quads, the rotate/flip/crop pipeline, identity warp), detection (synthetic card, sub-pixel refinement, a faint card found by the second pass), Levels (pick targets, robust dropper, Auto, Auto ignoring colored darks), Corner shots (corners at the inset and labelled as the export shows them, the size cap, the 2×2 sheet), front + back pairs (the Together layout side by side and stacked, a smaller side centered, the canvas cap), Overlay (placement, snap margins), untrusted input (URL overrides and their safe ranges, edits-file checks) |
 
@@ -41,6 +41,8 @@ The engine self-tests also run in the app with `?selftest=1`, on the main thread
 | R15 | Auto levels at the default framing: the white point matches 1.7 on every sample, and the black point is near-neutral or absent |
 
 ### Detection (R1)
+
+The sample photos are test fixtures: phone photos of real trading cards, whose artwork and marks belong to their owners. They're here only so detection can be tested on real shots, and they aren't covered by the repository's licence.
 
 Error = worst corner distance ÷ image diagonal. A pick is **found** when its error is under 1%. The hand-placed corners and each photo's baseline (`GROUND_TRUTH`, `BASELINE`) are in the script.
 

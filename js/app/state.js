@@ -352,7 +352,7 @@
     if (resumed) CF.Session.photoId = id;
     else CF.Session.savePhoto(file, id);
     stateChanged();
-    CF.setTab(resumed && CF.STEPS[restore.tab] ? restore.tab : 'perspective');
+    CF.setTab(resumed && CF.isStep(restore.tab) ? restore.tab : 'perspective');
     await nextFrame();
     const durationMs = performance.now() - startTime;
     const size = `${img.width}×${img.height}`;
