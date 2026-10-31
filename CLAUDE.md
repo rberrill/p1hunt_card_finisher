@@ -30,7 +30,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - Direct feedback; push back when something is wrong.
 - Simplicity over features: he removed case detection, Square up mode and the Before button when they didn't earn their place.
 - No messages a user can't act on (such as "needs HTTPS").
-- Nothing blocks the photo unless the user must answer an alert before they can go on.
+- Nothing blocks the photo, except a temporary flyout the user opens or an alert they must answer before they can go on.
 
 **Brand:** matte black, white, and P1Hunt red (`#e5322d`, the UI accent), retro motorsport, no gradients. Inspired by F1, never its trademarks: no F1, FIA, team or driver logos or marks in the app or the docs.
 

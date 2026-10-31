@@ -14,7 +14,7 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Phone | Control area doesn't scroll with More closed | each visible `.controls`: `scrollHeight <= clientHeight`, including with a status line showing |
 | Phone | Action bar fits | no button has `scrollWidth > clientWidth`; the bar's bottom is inside the safe area |
 | Phone | Header is one row | header height matches a single button row |
-| Phone | Nothing blocks the photo | with no alert waiting on an answer, no element intersects `#stage` |
+| Phone | Nothing blocks the photo | with no flyout open and no alert waiting on an answer, no element intersects `#stage` |
 
 ## 2. Navigation
 
