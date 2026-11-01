@@ -28,7 +28,7 @@ All three files are local only (gitignored), so they may hold the LAN address.
 ## Writing test cases
 
 - **One behavior per row.** Steps may set things up, but Expected is a single outcome to judge. If Expected reads "…; then…" or covers two features, split the row. Rows may build on the rows above them in the same table; name the row when it depends on a specific one ("After P8.4, …").
-- **Test** is a short name for the behavior. **Expected** must be visible without DevTools, except in Security.
+- **Test** is a short name for the behavior. **Expected** should be visible without DevTools, except in Security (Claude's habit, so Rich can judge a row on the phone; not a rule he set).
 - **Both devices:** a behavior that applies to both gets a row in each table, with that device's steps and outcome.
 - **One device:** device-only behavior (keyboard, wheel, drag-and-drop, paste; pinch, nudge strip, iOS long-press, share sheet) goes only in that device's table.
 - Cite AC and question numbers when a feature has them (`(AC14, Q5)`).
@@ -71,4 +71,4 @@ List in the proposal, for Rich to agree along with the ACs:
 - Record Rich's sign-off and decision.
 - **Check the catalog:** every 🆕 and ✏️ row in the script is already in the catalog, worded the same (they went in with the script). Fix any drift; if the release drops a feature, delete its rows from the catalog.
 - If a smoke row found a real regression, or a step stops making sense, update `tests/uat/smoke.md` too.
-- Keep the smoke test at about 15 rows per device: one per step plus the iPhone-only risks. If it grows, propose what to drop.
+- Keep the smoke test short: one row per step plus the iPhone-only risks (Rich's "lighter release check", 2026-10-30). About 15 rows per device is Claude's target, not his; if it grows, propose what to drop.

@@ -10,4 +10,4 @@ paths:
 - Nothing blocks the photo, except a temporary flyout the user opens or an alert they must answer before they can go on (the rule in CLAUDE.md).
 - **Section boxes** (`.section-box`) are darker than the panel, never lighter: buttons, dropdowns and segmented controls are already the lighter grey (`--panel2`) and vanish on it. Box only a section whose buttons save something other than the main export.
 - Tap targets are ≥ 44 px; respect the safe-area padding (`viewport-fit=cover`).
-- After any layout change, check 390×844, 375×667 and 1280×800 (the `verify` skill).
+- After any layout change, check 390×844, 375×667 and 1280×800 (the `verify` skill). Claude's verification practice since 1.3, not a rule Rich set; the sizes are his iPhone, the smallest common iPhone and a laptop.

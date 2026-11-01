@@ -11,7 +11,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
    - what changes, how, open questions and gaps in the ACs;
    - its new UAT cases, the connected catalog cases it could affect, and whether a full UAT run is triggered (the `uat` skill).
 
-   Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away.
+   Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away (Claude's working habit, not a rule Rich set).
 2. **Write for the reviewer.** Code is read more than it's run: whole-word names, one statement per line, lines of 100 characters at most, a comment on every function. The detail is in `.claude/rules/code-style.md` (it loads with any code file). Apply it to everything you touch, and don't add to the debt.
 3. **Build, then verify yourself** with the `verify` skill. Report measured results, not assumptions. The only thing a browser can't check is the real iOS share sheet.
 4. **UAT** (the `uat` skill) has three files, all local:
@@ -59,10 +59,10 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - **Phone layout:**
   - Header, photo, a 192 px control area (the same on every step), then the action bar, whose first button is the step menu. More options is a full-width button bar on every step.
   - Non-essentials go under More options. Status messages appear only when actionable.
-- **Levels:** white lands at 245 and black at 8, in linear light. Picks edit a draft until Apply. Levels never carry over between photos. Auto's black point uses near-neutral darks only.
-- **Next card →:** shown on Export only while the current edits are exported; it sits in the control area (the action bar is full) and replaces the export note while shown.
+- **Levels:** picks edit a draft until Apply, and levels never carry over between photos (Rich). White at 245 and black at 8 in linear light, and Auto's black from near-neutral darks only, are Claude's calls, accepted in UAT (1.0, 1.8).
+- **Next card →:** shown on Export only while the current edits are exported (Rich). Its place, in the control area (the action bar is full), replacing the export note while shown, is Claude's measured call, accepted in UAT (1.8).
 - **Tap to find card** (Perspective, More options): the button, then a tap on the card, runs detection at once. No Detect or Clear seed button, no marker; the tapped point is used for that run only.
-- **Crop orientation follows the card** (after Perspective + Rotate); Swap overrides it.
+- **Crop orientation follows the card** (after Perspective + Rotate); Swap overrides it. Claude's design for a bug Rich found, accepted in UAT (1.3.2).
 - **Share / Copy:** both need a secure page, so they're *hidden* where unavailable, never greyed out. Download is always shown and is a plain download.
 - **Session restore:** the last photo and its edits are kept in IndexedDB, and the app asks Resume / Start fresh instead of resuming automatically.
 - **Overlay:**
@@ -70,11 +70,11 @@ A static web app that straightens, crops and color-corrects phone photos of trad
   - It's composited last (Levels never touches it) and shows only on Overlay and Export.
   - On that step the photo is locked: gestures move the logo. Nine snap rings sit on the photo (corners, side middles, center); a still tap snaps and a drag moves.
   - Drop and paste add a logo there; elsewhere they open a photo.
-  - The saved logo is offered with "Use saved overlay", not auto-applied. Delete clears storage only; Start fresh keeps it.
+  - The saved logo is offered with "Use saved overlay", not auto-applied. Delete clears storage only. (That Start fresh keeps it is Claude's call, accepted in UAT.)
   - Edits files embed the logo.
 - **Corner shots** (Export → More options): a 2×2 sheet (the default; 1:1, no outer margin, since eBay bans added borders) or four photos, Share + Download as for the main export. Each is a square framed like the export (same tilt), at the photo's real resolution (capped, never upscaled), with levels and never the overlay. No quality warning: the readout shows the size and the user decides. The choice is a preference, not edit state.
 - **Front + back pairs** (Add back on Export; the last new feature of version 1):
-  - The header gets a Front | Back chip and ⨯ (Open and Preview go icon-only on the phone); switching keeps the step you're on. Unpair asks Keep front / Keep back; Open, drop and paste ask New photo / Replace side; both on a Resume-style card over the dimmed photo (a tap outside cancels). Next card after the pair's export doesn't ask.
+  - The header gets a Front | Back chip and ⨯ (that Open and Preview go icon-only on the phone is Claude's measured call, for Rich to overrule in UAT); switching keeps the step you're on. Unpair asks Keep front / Keep back; Open, drop and paste ask New photo / Replace side; both on a Resume-style card over the dimmed photo (a tap outside cancels). Next card after the pair's export doesn't ask.
   - Both sides are locked to 5:7; Swap turns both and isn't an undo step; export settings are shared; the 5:7 lock never becomes the remembered preset.
   - Together = the two exports joined (portrait side by side, landscape stacked, front first, the corner sheet's divider, no margin, size per card, each side's own logo), or Separately; a dropdown preference. Export previews Together. One full-resolution photo in memory at a time.
 - **Versioning:** SemVer by user-visible change. Process and tooling changes don't bump the major.
@@ -116,6 +116,7 @@ Claude maintains these files without being asked. Each kind of fact has one home
 | What's current (version, what's unreleased, what's blocked and on whom) | Not this file. At the start of every session a script shows Claude the branch, last release, version and the CHANGELOG's unreleased entries; what's blocked is under **Waiting on** in `CLAUDE.local.md` |
 
 - When Rich settles a product decision, add one line under "Settled product decisions" and log the detail in the decision-log.
+- **A rule needs a source.** A line in this file, a rule file or a skill that constrains the product or the process needs a decision of Rich's behind it (a decision-log entry). Claude's own build calls, habits and heuristics are marked as Claude's, so no later session takes them for his (Rich, 2026-10-31, after finding a "nothing scrolls" rule he never set).
 - When something trips us up, fix the cause if you can (as with the preview port). Otherwise add one line to the nearest rule, skill or `CLAUDE.local.md`.
-- Don't record test counts or per-version history in docs; they drift. Prune stale lines instead of appending. Keep this file under about 120 lines.
+- Don't record test counts or per-version history in docs; they drift. Prune stale lines instead of appending. Keep this file short (Claude's target: about 120 lines).
 - Mention any change to these files in the closing message.
