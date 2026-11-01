@@ -13,13 +13,13 @@
 <title>P1Hunt Card Finisher</title>
 <!-- App icon: favicon.ico for Safari on Mac and older browsers, the SVG for the rest, and
      the 180 px PNG for the iPhone home screen. All three are drawn from icons/icon.svg. -->
-<link rel="icon" href="icons/favicon.ico?v=1.9.0-dev.10" sizes="32x32">
-<link rel="icon" href="icons/icon.svg?v=1.9.0-dev.10" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.9.0-dev.10">
+<link rel="icon" href="icons/favicon.ico?v=1.9.0-dev.11" sizes="32x32">
+<link rel="icon" href="icons/icon.svg?v=1.9.0-dev.11" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.9.0-dev.11">
 <!-- PWA (phase two): this becomes a real file; a service worker can't be inlined.
 <link rel="manifest" href="manifest.webmanifest">
 -->
-<link rel="stylesheet" href="css/app.css?v=1.9.0-dev.10">
+<link rel="stylesheet" href="css/app.css?v=1.9.0-dev.11">
 </head>
 <body>
 <div id="app">
@@ -366,12 +366,15 @@
           <div class="readout" id="exportReadout"></div>
           <div class="status" id="exportMessage"></div>
           <div class="progress" id="progress" hidden><div></div></div>
-          <!-- Add back starts a front + back pair. Next card: shown once this photo's current
-               edits have been exported. They sit here, not in the action bar, which is full once
-               Share and Copy show. -->
+          <!-- Add back starts a front + back pair. Corner shots, until the export, opens More
+               options at its group, so the feature can be found. Next card takes its place once
+               this photo's current edits have been exported. They sit here, not in the action
+               bar, which is full once Share and Copy show. -->
           <div class="row next-row">
             <button class="btn" id="btnAddBack" hidden
                 title="Keep this photo as the front and open the back">Add back</button>
+            <button class="btn" id="btnCornerShots" hidden
+                title="Close-ups of the card's four corners">Corner shots</button>
             <button class="btn" id="btnNextCard" hidden
                 title="Open the next photo">Next card →</button>
           </div>
@@ -461,19 +464,19 @@
      engine → app modules (core first: it creates the CF namespace; main last: it calls init()).
      ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay
      relative. -->
-<script src="js/config.js?v=1.9.0-dev.10"></script>
-<script src="js/engine.js?v=1.9.0-dev.10"></script>
-<script src="js/app/core.js?v=1.9.0-dev.10"></script>
-<script src="js/app/adapters.js?v=1.9.0-dev.10"></script>
-<script src="js/app/state.js?v=1.9.0-dev.10"></script>
-<script src="js/app/view.js?v=1.9.0-dev.10"></script>
-<script src="js/app/levels.js?v=1.9.0-dev.10"></script>
-<script src="js/app/overlay.js?v=1.9.0-dev.10"></script>
-<script src="js/app/input.js?v=1.9.0-dev.10"></script>
-<script src="js/app/ui.js?v=1.9.0-dev.10"></script>
-<script src="js/app/export.js?v=1.9.0-dev.10"></script>
-<script src="js/app/corner-shots.js?v=1.9.0-dev.10"></script>
-<script src="js/app/pair.js?v=1.9.0-dev.10"></script>
-<script src="js/app/main.js?v=1.9.0-dev.10"></script>
+<script src="js/config.js?v=1.9.0-dev.11"></script>
+<script src="js/engine.js?v=1.9.0-dev.11"></script>
+<script src="js/app/core.js?v=1.9.0-dev.11"></script>
+<script src="js/app/adapters.js?v=1.9.0-dev.11"></script>
+<script src="js/app/state.js?v=1.9.0-dev.11"></script>
+<script src="js/app/view.js?v=1.9.0-dev.11"></script>
+<script src="js/app/levels.js?v=1.9.0-dev.11"></script>
+<script src="js/app/overlay.js?v=1.9.0-dev.11"></script>
+<script src="js/app/input.js?v=1.9.0-dev.11"></script>
+<script src="js/app/ui.js?v=1.9.0-dev.11"></script>
+<script src="js/app/export.js?v=1.9.0-dev.11"></script>
+<script src="js/app/corner-shots.js?v=1.9.0-dev.11"></script>
+<script src="js/app/pair.js?v=1.9.0-dev.11"></script>
+<script src="js/app/main.js?v=1.9.0-dev.11"></script>
 </body>
 </html>

@@ -22,6 +22,9 @@
   const isStep = tab => Object.prototype.hasOwnProperty.call(STEPS, tab);
   // The debug panel re-runs detection this long after the last change to a setting.
   const REDETECT_DELAY_MS = 350;
+  // The gap left above the Corner shots group when its button scrolls to it, so the box's top
+  // edge doesn't sit flush against the control area's edge.
+  const CORNER_SCROLL_MARGIN_PX = 8;
 
   /* ---------- steps ---------- */
   function setTab(tab) {
@@ -143,6 +146,24 @@
   function pickPhoto(intent) {
     app.fileIntent = intent;
     elements.fileInput.click();
+  }
+
+  // The Corner shots button on Export: opens More options and scrolls its Corner shots group to
+  // the top of the control area. On the phone, opening More options expands the panel in its
+  // toggle handler, so the scroll waits for that event and measures the new layout.
+  async function showCornerShots() {
+    const group = byId('cornerShots');
+    const more = group.closest('details');
+    if (!more.open) {
+      const toggled = new Promise(resolve => {
+        more.addEventListener('toggle', resolve, { once: true });
+      });
+      more.open = true;
+      await toggled;
+    }
+    const controls = group.closest('.controls');
+    const offsetPx = group.getBoundingClientRect().top - controls.getBoundingClientRect().top;
+    controls.scrollTop += offsetPx - CORNER_SCROLL_MARGIN_PX;
   }
 
   // The header, tabs, step menu, More options and Preview.
@@ -450,6 +471,7 @@
     // Next card opens the photo picker, like Open; the new photo starts as any other does. After
     // a pair's export it starts a single photo without asking.
     byId('btnNextCard').onclick = () => pickPhoto('next');
+    byId('btnCornerShots').onclick = showCornerShots;
     // Share is the main action where the browser supports it; Download stays a plain download.
     if (CF.Exporter.canShare()) {
       byId('btnShare').hidden = false;
@@ -666,16 +688,18 @@
     const cropSize = `${Math.round(crop.width)} × ${Math.round(crop.height)}`;
     byId('cropReadout').replaceChildren('Crop ', makeEl('b', null, cropSize), ' px');
     const pairLayout = syncExportReadout(state, geometry);
-    // The phone control area holds one row here: a note, or Add back and Next card. A note
-    // shows until the export (it was on screen when the photo was exported), then Next card
-    // takes its place until the next edit (on wide screens too, so both layouts behave the
-    // same). Add back shows when no note needs the row.
+    // The phone control area holds one row here: a note, or Add back with Corner shots or Next
+    // card. A note shows until the export (it was on screen when the photo was exported), then
+    // Next card takes its place until the next edit (on wide screens too, so both layouts behave
+    // the same). Add back and Corner shots show when no note needs the row; Next card replaces
+    // Corner shots, which is only a way to find the group under More options.
     const notes = exportNotes(state, geometry, pairLayout);
     const isNextCardShown = !byId('btnNextCard').hidden;
     const message = byId('exportMessage');
     message.className = 'status';
     message.textContent = isNextCardShown ? '' : notes;
     byId('btnAddBack').hidden = !!app.pair || (!isNextCardShown && !!notes);
+    byId('btnCornerShots').hidden = isNextCardShown || !!notes;
     byId('btnDownload').disabled = !!app.exporting;
     byId('btnShare').disabled = !!app.exporting && !app.pendingSave;
     byId('btnCopy').disabled = !!app.exporting;
