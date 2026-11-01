@@ -452,7 +452,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* More options is a full-width button, the same shape as the rows above it, so it reads as a
    control (a small muted line didn't, on the phone). Open, it takes the pressed look and its
    chevron turns, so what expanded the panel stays visible. */
-details.more { margin: 4px 0 0; }
+details.more { margin: 12px 0 0; }
 details.more > summary {
   min-height: 44px;
   box-sizing: border-box;
@@ -558,11 +558,11 @@ details.more[open] > summary::after { transform: translateY(2px) rotate(-135deg)
   #pairOutput { flex-basis: 0%; }
   main { flex-direction: column; }
   .panel { width: auto; border-left: 0; border-top: 1px solid var(--line); }
-  /* Fits the tallest step (Perspective, with its status line and the 44 px More options bar). */
-  .controls { flex: none; height: 184px; padding: 8px 12px 0; }
+  /* Fits the tallest step (Perspective, with a one-line status and the More options bar with
+     its gap). The same on every step, so the photo never changes height. */
+  .controls { flex: none; height: 192px; padding: 8px 12px 0; }
   .nudge { margin-bottom: 6px; }
-  .status { margin-bottom: 2px; }
-  details.more { margin-top: 0; }
+  .status { padding: 4px 10px; margin-bottom: 2px; }
   .panel.expanded .controls { height: calc(64dvh - 62px); }
   .action-bar { padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
   .action-bar > .btn { padding: 0 6px; }

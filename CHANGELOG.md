@@ -21,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 - On the Export step, **Edits** under More options now sits in a box of its own, like Corner shots, so its buttons are set apart from the export settings.
-- **More options** on every step is now a full-width button with a chevron, the same shape as the buttons above it, instead of a small muted line. While it's open it turns red with the chevron pointing up, so you can see what expanded the panel.
+- **More options** on every step is now a full-width button with a chevron, the same shape as the buttons above it, instead of a small muted line, with a little space above it. While it's open it turns red with the chevron pointing up, so you can see what expanded the panel. The phone's control area is 8 px taller to make room, so the photo is 8 px shorter on every step.
 - Two long functions (the geometry pipeline and the start of every touch) were split into named steps, and a new self-test pins the geometry's results so a future change can't move them unnoticed. Nothing you see changes; exports are identical.
 
 ### Security

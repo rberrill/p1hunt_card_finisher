@@ -57,7 +57,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - **The card is the only target.** No case or slab detection; the detector prefers the inner of nested quads. Flatten 0% replaced Square up.
 - **Default export:** 1:1 fit to card, 2000 px, JPEG 0.92. No HEIC decoder (Safari decodes natively).
 - **Phone layout:**
-  - Header, photo, a 184 px control area (the same on every step), then the action bar, whose first button is the step menu.
+  - Header, photo, a 192 px control area (the same on every step), then the action bar, whose first button is the step menu. More options is a full-width button bar on every step.
   - Non-essentials go under More options. Status messages appear only when actionable.
 - **Levels:** white lands at 245 and black at 8, in linear light. Picks edit a draft until Apply. Levels never carry over between photos. Auto's black point uses near-neutral darks only.
 - **Next card →:** shown on Export only while the current edits are exported; it sits in the control area (the action bar is full) and replaces the export note while shown.

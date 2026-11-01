@@ -78,7 +78,7 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Both | Stubbed share refused (`NotAllowedError`) | button becomes **Share now**; any edit cancels it |
 | Both | No `navigator.share` / no `ClipboardItem` | Share and Copy hidden, not greyed; Download is the main button |
 | Both | Corner shots (capture `CF.Exporter.download`) | sheet: one `-corners` file, 2×2 at 2 × size + 1 gutter, photo to the outer edges; photos: four `-corner-tl/tr/br/bl` files; a full-crop logo appears in the main export but no corner; Next card unchanged; stubbed Share gets all four, refusal gives **Share now**, an edit cancels it |
-| Phone | Corner shots group | with More closed the control area is 184 px and the photo the same height as on Crop; no page scroll sideways with it open |
+| Phone | Corner shots group | with More closed the control area is 192 px and the photo the same height as on Crop; no page scroll sideways with it open |
 | Both | Section boxes | Corner shots and Edits have the `--bg` box, Quality doesn't; each corner button's label is on one line (range client rects): side by side at 375 and 390, stacked at 1280; no sideways scroll |
 
 ## 8b. Front + back pairs
