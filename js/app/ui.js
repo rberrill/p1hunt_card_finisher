@@ -654,9 +654,23 @@
     return notes.join(' ');
   }
 
+  // The photo as the app received it: pixels, type, bytes and name. What the picker handed over,
+  // which on iOS can differ from what Photos stores (transcoded, resized), so it's on screen for
+  // bug reports. Returns '' with no photo.
+  function sourceInfo() {
+    const img = app.img;
+    const file = app.file;
+    if (!img || !file) return '';
+    const megabytes = (file.size / 1048576).toFixed(1);
+    const megapixels = (img.width * img.height / 1000000).toFixed(1);
+    return `Source ${img.width} × ${img.height} px (${megapixels} MP) · `
+      + `${file.type || 'unknown type'} · ${megabytes} MB · ${file.name || 'unnamed'}`;
+  }
+
   function syncReadouts() {
     const state = app.state;
     const geometry = app.geometry;
+    byId('sourceInfo').textContent = sourceInfo();
     // Here rather than in syncUI: an export's start and end resync only the readouts, and the
     // side switch is off while one runs.
     CF.syncPair();
