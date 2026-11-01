@@ -28,8 +28,8 @@ window.__regression = (async () => {
   } catch (error) { /* storage unavailable */ }
 
   const CARD_ASPECT = 63.5 / 88.9;
-  // The IMG_ photos were placed on 2026-10-24; the numbered set on 2026-10-31, in the app with
-  // Save edits.
+  // The IMG_ photos were placed on 2026-10-24, the numbered set on 2026-10-31 and the front +
+  // back pairs (13, 14) on 2026-11-01, in the app with Save edits.
   const GROUND_TRUTH = {
     IMG_9060: [[253, 260], [1275.5, 261], [1254, 1534], [305.5, 1535]],
     IMG_9074: [[388.5, 546], [1110, 545], [1104, 1520], [402.5, 1522.5]],
@@ -49,6 +49,16 @@ window.__regression = (async () => {
     '10_sapphire_flat_busy': [[426.2, 496.7], [981.3, 495.3], [1006.3, 1253.7], [417, 1257.7]],
     '11_any_flatglare_black': [[440.3, 553.3], [954.7, 549.1], [978.1, 1261.7], [439.1, 1272.1]],
     '12_blackred_stand_busy': [[544.8, 762.6], [1018.8, 764.7], [1018.2, 1434.6], [539.9, 1432.6]],
+    '13_front_landscape_onetouch_labeled_white': [
+      [475.6, 447.4], [1439, 458.7], [1427.2, 1144.3], [474.2, 1128.1],
+    ],
+    '13_back_landscape_onetouch_labeled_white': [
+      [514.8, 450.4], [1512.7, 438.6], [1507.8, 1148.2], [530.7, 1151.1],
+    ],
+    '14_front_portrait_raw_white': [
+      [415.3, 603.3], [1093.7, 611.8], [1054.5, 1509.5], [430.3, 1498.2],
+    ],
+    '14_back_portrait_raw_white': [[405.2, 480.1], [1116.6, 489.1], [1079.6, 1449], [415, 1438.2]],
   };
   // Each photo's detection baseline: the top pick's error and the best of the three candidates'
   // error, % of the image diagonal (desktop Chrome, 2026-10-31). A baseline moves down in the
@@ -72,6 +82,10 @@ window.__regression = (async () => {
     '10_sapphire_flat_busy': { top: 5.64, best: 1.60 },
     '11_any_flatglare_black': { top: 1.24, best: 1.24 },
     '12_blackred_stand_busy': { top: 0.36, best: 0.36 },
+    '13_front_landscape_onetouch_labeled_white': { top: 2.28, best: 2.28 },
+    '13_back_landscape_onetouch_labeled_white': { top: 2.57, best: 2.57 },
+    '14_front_portrait_raw_white': { top: 3.79, best: 2.29 },
+    '14_back_portrait_raw_white': { top: 2.07, best: 2.07 },
   };
   // Raw cards, counted on their own in the scoreboard: the weakest kind of shot.
   const RAW_CARDS = [
@@ -79,6 +93,8 @@ window.__regression = (async () => {
     '02_black_flat_black',
     '03_chrome_flat_busy',
     '04_red_angle_busy',
+    '14_front_portrait_raw_white',
+    '14_back_portrait_raw_white',
   ];
   // Held out of detection tuning: not looked at while tuning, checked once at the end, so a
   // change that only fits the photos it was tuned on shows up.
@@ -87,6 +103,7 @@ window.__regression = (async () => {
     '07_dark_flat_black',
     '10_sapphire_flat_busy',
     '12_blackred_stand_busy',
+    '14_back_portrait_raw_white',
   ];
   // A pick counts as found when its worst corner is within 1% of the diagonal.
   const WITHIN_PCT = 1;

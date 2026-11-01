@@ -80,6 +80,10 @@ The run also prints a **scoreboard** that never fails: how many photos are found
 | 10_sapphire_flat_busy | Hard holder, flat on a busy mat | 5.64% | 1.60% | Wrong shape (stops above the name bar). Held out |
 | 11_any_flatglare_black | Graded slab with glare, black mat | 1.24% | 1.24% | Near miss |
 | 12_blackred_stand_busy | Graded slab on a stand, busy background | 0.36% | 0.36% | Within 1%. Held out |
+| 13_front_landscape_onetouch_labeled_white | Landscape card in a labelled one-touch, on white (the front of a pair) | 2.28% | 2.28% | Near miss (the one-touch's edge under the label outranks the card's) |
+| 13_back_landscape_onetouch_labeled_white | The same card's back | 2.57% | 2.57% | Near miss (mixes the label's and the holder's edges with the card's) |
+| 14_front_portrait_raw_white | Raw portrait card, on white (the front of a pair) | 3.79% | 2.29% | Near miss (stops above the card's bottom edge) |
+| 14_back_portrait_raw_white | The same card's back, shot in the front's orientation | 2.07% | 2.07% | Near miss (the printed frame inside the card's white border). Held out |
 
 ## Bugs that became tests
 
@@ -92,6 +96,6 @@ The run also prints a **scoreboard** that never fails: how many photos are found
 
 ## Adding a sample photo
 
-Strip location data first. The privacy check fails on any JPEG in `samples/` with a GPS block. Put the photo in `samples/` itself, not a subfolder (the privacy check only looks there), with an uppercase `.JPEG` extension; the script assumes it. Keep it full frame, as the phone took it.
+Strip location data first. The privacy check fails on any JPEG in `samples/` with a GPS block. Put the photo in `samples/` itself, not a subfolder (the privacy check only looks there), with an uppercase `.JPEG` extension; the script assumes it. Keep it full frame, as the phone took it. Name it `NN_<card>_<pose>_<background>`; a card's front and back share a number, as `13_front_…` and `13_back_…` do, and the back is shot in the front's orientation, as a pair needs.
 
 To place its corners, open it in the app, drag the four corners onto the card's outer corners (the card, not its holder) and use **Save edits**; the file's `corners` go into `GROUND_TRUTH`. Run the regression once, put the measured top-pick and best-of-3 errors into `BASELINE`, and add a row to the table above. A new photo comes in at its measured baseline, so it never changes the rule for the others.
