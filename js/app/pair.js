@@ -298,7 +298,8 @@
 
   // Shows a question on a card over the dimmed photo, like Resume (with the step menu, the only
   // things allowed over the photo): a title, a line of text, two choices and Cancel. A tap
-  // outside the card or Escape cancels. choices: [{ label, action }].
+  // outside the card or Escape cancels. choices: [{ label, action }]. Corner shots ask their
+  // upscale question on it too.
   function showPrompt({ title, text, choices }) {
     byId('pairPromptTitle').textContent = title;
     byId('pairPromptText').textContent = text;
@@ -850,6 +851,7 @@
     swapPair,
     switchSide,
     receivePhoto,
+    showPrompt,
     hidePrompt,
     isPairExported,
     pairReadout,

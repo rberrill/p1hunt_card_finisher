@@ -45,13 +45,34 @@
 
   /* ---------- rendering and encoding ---------- */
 
-  // Renders shot i of `shots` at full resolution → a Promise of its canvas. onProgress gets
+  // Renders shot i of `shots` → a Promise of its canvas, at the photo's resolution or, when
+  // shots.isUpscaled, at the asked size and then sharpened (in the worker). onProgress gets
   // the fraction done over all four shots.
-  function renderShot(state, shots, i, onProgress) {
+  async function renderShot(state, shots, i, onProgress) {
     const count = shots.shots.length;
     const shotProgress = fraction => onProgress((i + fraction) / count);
     const sizePx = shots.sizePx;
-    return CF.renderWarped(state, shots.shots[i].outputToSource, sizePx, sizePx, shotProgress);
+    const outputToSource = shots.shots[i].outputToSource;
+    const canvas = await CF.renderWarped(state, outputToSource, sizePx, sizePx, shotProgress);
+    if (!shots.isUpscaled) return canvas;
+    const ctx = context2d(canvas);
+    const sharpened = await CF.EngineWorker.call('sharpen', {
+      image: ctx.getImageData(0, 0, sizePx, sizePx),
+      options: sharpenOptions(sizePx / shots.realPx),
+    });
+    ctx.putImageData(sharpened, 0, 0);
+    return canvas;
+  }
+
+  // The unsharp mask's settings for an upscale by `factor`: CONFIG's sigma is in source px,
+  // so it scales with the factor.
+  function sharpenOptions(factor) {
+    const settings = CONFIG.cornerShots;
+    return {
+      sigmaPx: settings.sharpenSigma * factor,
+      amount: settings.sharpenAmount,
+      thresholdLevels: settings.sharpenThreshold,
+    };
   }
 
   // The four photos, rendered and encoded one at a time (phone memory) → Files named
@@ -96,17 +117,46 @@
 
   /* ---------- saving ---------- */
 
-  // Saves the corner shots of the current edits. kind: 'download' or 'share'. Never marks the
-  // edits as exported: only the main export shows Next card.
-  async function saveCornerShots(kind) {
+  // Saves the corner shots of the current edits. kind: 'download' or 'share'. Below
+  // CONFIG.cornerShots.upscaleTargetPx at the photo's resolution, a card over the photo asks
+  // first whether to upscale to that size; Yes or No then saves, Cancel doesn't. Never marks
+  // the edits as exported: only the main export shows Next card.
+  function saveCornerShots(kind) {
     if (!app.img || app.exporting) return;
-    const state = clone(app.state);
-    const geometry = CardEngine.computeGeometry(state, geometryConfig());
-    const shots = CardEngine.cornerShots(geometry, CONFIG.cornerShots);
+    const shots = currentShots();
     if (!shots.ok) {
       toast(shots.reason, 'error', 5000);
       return;
     }
+    const targetPx = CONFIG.cornerShots.upscaleTargetPx;
+    if (!(targetPx > 0) || shots.sizePx >= targetPx) {
+      renderAndSave(kind, false);
+      return;
+    }
+    CF.showPrompt({
+      title: `Upscale to ${targetPx} px?`,
+      text: `Corners are ${shots.sizePx} px at the photo's resolution.`,
+      choices: [
+        { label: 'Yes', action: () => renderAndSave(kind, true) },
+        { label: 'No', action: () => renderAndSave(kind, false) },
+      ],
+    });
+  }
+
+  // Renders and saves the corner shots. isUpscaled: render every tile at
+  // CONFIG.cornerShots.upscaleTargetPx, bicubic whatever the export's interpolation, and
+  // sharpen it (renderShot).
+  async function renderAndSave(kind, isUpscaled) {
+    const state = clone(app.state);
+    const geometry = CardEngine.computeGeometry(state, geometryConfig());
+    const targetPx = isUpscaled ? CONFIG.cornerShots.upscaleTargetPx : 0;
+    const shots = CardEngine.cornerShots(geometry, CONFIG.cornerShots, targetPx);
+    if (!shots.ok) {
+      toast(shots.reason, 'error', 5000);
+      return;
+    }
+    shots.isUpscaled = isUpscaled;
+    if (isUpscaled) state.export.interp = 'bicubic';
     const type = CF.MIME_TYPES[state.export.format];
     const encode = app.cornerShotsOutput === 'photos' ? encodePhotos : encodeSheet;
     const startTime = performance.now();
@@ -114,18 +164,20 @@
       const files = await CF.runWithProgress(
         onProgress => encode(state, shots, type, onProgress),
       );
-      await deliverCornerShots(kind, files, startTime);
+      await deliverCornerShots(kind, files, startTime, shots);
     } catch (error) {
       console.error(error);
       toast('Corner shots failed: ' + error.message, 'error', 6000);
     }
   }
 
-  // Delivers finished corner files by Download or Share, with a toast saying how it went.
-  async function deliverCornerShots(kind, files, startTime) {
+  // Delivers finished corner files by Download or Share, with a toast saying how it went and,
+  // after an upscale, at what size.
+  async function deliverCornerShots(kind, files, startTime, shots) {
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
     const what = files.length === 1 ? 'the corner sheet' : `${files.length} corner shots`;
-    const done = `Saved ${what} in ${seconds} s.`;
+    const size = shots.isUpscaled ? ` at ${shots.sizePx} px` : '';
+    const done = `Saved ${what}${size} in ${seconds} s.`;
     if (kind === 'download') {
       // Saved first, since a download can leave the page on iPhone.
       CF.Session.flush();

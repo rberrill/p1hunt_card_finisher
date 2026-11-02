@@ -176,6 +176,8 @@
       result = CardEngine.refineQuad(payload.roi, payload.corners, payload.options);
     } else if (message.type === 'selftest') {
       result = CardEngine.selfTest();
+    } else if (message.type === 'sharpen') {
+      result = CardEngine.unsharpMask(payload.image, payload.options);
     } else {
       throw new Error('Unknown message ' + message.type);
     }
@@ -231,6 +233,7 @@
         return CardEngine.refineQuad(payload.roi, payload.corners, payload.options);
       }
       if (type === 'selftest') return CardEngine.selfTest();
+      if (type === 'sharpen') return CardEngine.unsharpMask(payload.image, payload.options);
       return undefined;
     },
 

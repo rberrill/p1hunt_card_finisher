@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.9.0-dev.14',
+  appVersion: '1.9.0-dev.15',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -114,11 +114,22 @@ const CONFIG = {
     // insetFraction of the side in from the shot's two outer edges.
     sizeFraction: 0.25,
     insetFraction: 0.3,
-    // The largest side in px. Shots are never upscaled past the photo's real resolution.
-    maxPx: 1200,
+    // The largest side in px at the photo's real resolution. Four 2000 px tiles make a
+    // 4032 px sheet, just under maxOutputArea.
+    maxPx: 2000,
     // The gutter between the sheet's tiles, as % of two tiles' width (8 px for two 500 px
     // tiles). There's no outer margin: eBay doesn't allow added borders.
     gutterPct: 0.8,
+    // Below this real resolution, Download and Share corners ask "Upscale to N px?" first
+    // (0 never asks). Yes renders the tiles at this size, bicubic, then sharpens them.
+    upscaleTargetPx: 2000,
+    // The unsharp mask after an upscale: the blur's sigma in source px (scaled by the
+    // upscale factor, so it sharpens card edges, not the interpolation grid), the amount
+    // (1 = add the full difference), and the luma difference (0–255) under which nothing
+    // changes, which keeps flat holofoil and JPEG noise from being sharpened.
+    sharpenSigma: 0.7,
+    sharpenAmount: 1,
+    sharpenThreshold: 4,
     // The output until a user picks one: 'sheet' (one 2×2 image) or 'photos' (four files).
     output: 'sheet',
   },
@@ -300,8 +311,12 @@ const CONFIG_LIMITS = {
   'export.editsMaxBytes': [65536, 8388608],
   'cornerShots.sizeFraction': [0.05, 0.5],
   'cornerShots.insetFraction': [0, 0.5],
-  'cornerShots.maxPx': [100, 1200],
+  'cornerShots.maxPx': [100, 2000],
   'cornerShots.gutterPct': [0, 5],
+  'cornerShots.upscaleTargetPx': [0, 2000],
+  'cornerShots.sharpenSigma': [0, 3],
+  'cornerShots.sharpenAmount': [0, 3],
+  'cornerShots.sharpenThreshold': [0, 64],
   'pair.gutterPct': [0, 5],
   'pair.previewMaxPx': [256, 2048],
   'overlay.maxBytes': [65536, 5242880],

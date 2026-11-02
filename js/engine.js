@@ -572,6 +572,85 @@ function CardEngineModule(globalScope) {
     return blurred;
   }
 
+  // A wide blur runs on a smaller copy: the blur's sigma stays at least this many px there.
+  const BLUR_MIN_SIGMA_PX = 1.5;
+
+  // Box-averages a one-channel image by an integer `factor` → { values, width, height }. The
+  // last partial row and column average what's there.
+  function downsample(values, width, height, factor) {
+    const smallWidth = Math.ceil(width / factor);
+    const smallHeight = Math.ceil(height / factor);
+    const small = new Float32Array(smallWidth * smallHeight);
+    for (let y = 0; y < smallHeight; y++) {
+      const rowEnd = Math.min(height, (y + 1) * factor);
+      for (let x = 0; x < smallWidth; x++) {
+        const columnEnd = Math.min(width, (x + 1) * factor);
+        let total = 0;
+        let count = 0;
+        for (let sourceY = y * factor; sourceY < rowEnd; sourceY++) {
+          for (let sourceX = x * factor; sourceX < columnEnd; sourceX++) {
+            total += values[sourceY * width + sourceX];
+            count++;
+          }
+        }
+        small[y * smallWidth + x] = total / count;
+      }
+    }
+    return { values: small, width: smallWidth, height: smallHeight };
+  }
+
+  // Gaussian blur of a one-channel image for any sigma. A wide blur (sigma over twice
+  // BLUR_MIN_SIGMA_PX) runs on a box-downsampled copy and is sampled back bilinearly
+  // (sampleBilinear, below in DETECTION, with pixel centers at +0.5): the result is within a
+  // level or two of the full blur and the cost falls by the square of the downsample factor,
+  // which matters on a phone for a 2000 px tile.
+  function gaussianBlurAnySigma(values, width, height, sigmaPx) {
+    const factor = Math.floor(sigmaPx / BLUR_MIN_SIGMA_PX);
+    if (factor < 2) return gaussianBlur(values, width, height, sigmaPx);
+    const small = downsample(values, width, height, factor);
+    const blurredSmall = gaussianBlur(small.values, small.width, small.height, sigmaPx / factor);
+    const blurred = new Float32Array(width * height);
+    for (let y = 0; y < height; y++) {
+      // A source px's center, in small px (a small px covers factor source px).
+      const smallY = (y + 0.5) / factor;
+      for (let x = 0; x < width; x++) {
+        const smallX = (x + 0.5) / factor;
+        blurred[y * width + x] = sampleBilinear(
+          blurredSmall,
+          small.width,
+          small.height,
+          smallX,
+          smallY,
+        );
+      }
+    }
+    return blurred;
+  }
+
+  /**
+   * unsharpMask(img, options) → img, sharpened in place. Unsharp mask on luma only, so edges
+   * get no colour fringes: out = in + amount × (luma − blur(luma)) where that difference is
+   * over thresholdLevels (0–255), which leaves flat areas and JPEG noise alone. options:
+   * { sigmaPx, amount, thresholdLevels }. Alpha is untouched.
+   */
+  function unsharpMask(img, options) {
+    const { sigmaPx, amount, thresholdLevels } = options;
+    if (!(sigmaPx > 0) || !(amount > 0)) return img;
+    const { data, width, height } = img;
+    const luma = toGray(img);
+    const blurred = gaussianBlurAnySigma(luma, width, height, sigmaPx);
+    const pixelCount = width * height;
+    for (let pixel = 0, offset = 0; pixel < pixelCount; pixel++, offset += 4) {
+      const difference = luma[pixel] - blurred[pixel];
+      if (Math.abs(difference) <= thresholdLevels) continue;
+      const boost = amount * difference;
+      data[offset] = clamp(Math.round(data[offset] + boost), 0, 255);
+      data[offset + 1] = clamp(Math.round(data[offset + 1] + boost), 0, 255);
+      data[offset + 2] = clamp(Math.round(data[offset + 2] + boost), 0, 255);
+    }
+    return img;
+  }
+
   // Sobel gradients of a one-channel image → { gradientX, gradientY, magnitude }.
   // The one-pixel border is left at 0.
   function sobel(values, width, height) {
@@ -2083,13 +2162,19 @@ function CardEngineModule(globalScope) {
      side is sizeFraction of the card's short edge, and the card's corner sits insetFraction of
      the side in from the square's two outer edges, so a sliver of background shows and the
      tip is never cut. All four shots share one size, the smallest real resolution of the four
-     (perspective makes them differ), so they're never upscaled and the sheet's tiles match.
+     (perspective makes them differ), so the sheet's tiles match. By default that's the real
+     resolution; the shell may ask for a larger size (sizePxOverride), which it then sharpens
+     with unsharpMask, since the user chose to upscale.
      =================================================================== */
   const CORNER_SHOT_DEFAULTS = {
     sizeFraction: 0.25,
     insetFraction: 0.3,
-    maxPx: 1200,
+    maxPx: 2000,
     gutterPct: 0.8,
+    upscaleTargetPx: 2000,
+    sharpenSigma: 0.7,
+    sharpenAmount: 1,
+    sharpenThreshold: 4,
   };
   // The shots in Quad.sortCorners order, named as the corners appear in the export.
   const CORNER_LABELS = ['tl', 'tr', 'br', 'bl'];
@@ -2118,14 +2203,16 @@ function CardEngineModule(globalScope) {
   }
 
   /**
-   * cornerShots(geometry, config) → { ok: true, sizePx, isCapped, shots } or
-   * { ok: false, reason }. geometry: computeGeometry's result; config: overrides of
-   * CORNER_SHOT_DEFAULTS. sizePx: every shot's side in output px. shots: four
-   * { label, rectRotated, outputToSource } in the order tl, tr, br, bl, as the corners appear
-   * in the export; outputToSource maps a shot's px to source px, as geometry.outputToSource
-   * does for the main export. isCapped: the real resolution was over maxPx.
+   * cornerShots(geometry, config, sizePxOverride) → { ok: true, sizePx, realPx, isCapped,
+   * shots } or { ok: false, reason }. geometry: computeGeometry's result; config: overrides
+   * of CORNER_SHOT_DEFAULTS. sizePx: every shot's side in output px: the real resolution
+   * capped at maxPx, or sizePxOverride when given (an upscale the user asked for). realPx: the
+   * real resolution, uncapped. shots: four { label, rectRotated, outputToSource } in the order
+   * tl, tr, br, bl, as the corners appear in the export; outputToSource maps a shot's px to
+   * source px, as geometry.outputToSource does for the main export. isCapped: the real
+   * resolution was over maxPx.
    */
-  function cornerShots(geometry, configIn) {
+  function cornerShots(geometry, configIn, sizePxOverride) {
     if (!geometry || !geometry.ok) {
       return { ok: false, reason: (geometry && geometry.reason) || 'No card corners.' };
     }
@@ -2140,7 +2227,8 @@ function CardEngineModule(globalScope) {
     }
     const realPx = card.map(corner => side * sourcePxPerPx(rotatedToSource, corner));
     const smallestRealPx = Math.min(...realPx);
-    const sizePx = Math.max(1, Math.round(Math.min(config.maxPx, smallestRealPx)));
+    const cappedPx = Math.max(1, Math.round(Math.min(config.maxPx, smallestRealPx)));
+    const sizePx = sizePxOverride > 0 ? Math.round(sizePxOverride) : cappedPx;
     const shots = card.map((corner, i) => {
       const rect = cornerSquare(corner, CORNER_OUTWARD[i], side, config.insetFraction);
       const sourceToShot = Mat3.chain(
@@ -2157,7 +2245,13 @@ function CardEngineModule(globalScope) {
     if (shots.some(shot => !shot.outputToSource)) {
       return { ok: false, reason: 'Transform is not invertible.' };
     }
-    return { ok: true, sizePx, isCapped: smallestRealPx > config.maxPx, shots };
+    return {
+      ok: true,
+      sizePx,
+      realPx: Math.round(smallestRealPx),
+      isCapped: smallestRealPx > config.maxPx,
+      shots,
+    };
   }
 
   /**
@@ -2878,9 +2972,13 @@ function CardEngineModule(globalScope) {
       worstPx = Math.max(worstPx, Vec2.distance(inShot, target));
     });
     const capped = cornerShots(geometry, { maxPx: 100 });
+    const upscaled = cornerShots(geometry, { maxPx: 100 }, 2000);
     record('Corner shots: corners at the inset, labelled as the export shows them',
       result.ok && worstPx < 1e-6 && capped.sizePx === 100 && capped.isCapped,
       `worst ${worstPx.toExponential(2)} px, ${result.sizePx} px a side`);
+    record('Corner shots: an upscale renders at the asked size and reports the real one',
+      upscaled.sizePx === 2000 && upscaled.realPx === capped.realPx && capped.realPx > 100,
+      `${upscaled.sizePx} px asked, ${upscaled.realPx} px real`);
     const sheet = cornerSheetLayout(500, { gutterPct: 0.8 });
     const tileAt = label => sheet.tiles.find(tile => tile.label === label);
     record('Corner sheet: 2×2, an 8 px gutter between 500 px tiles, no outer margin',
@@ -2890,6 +2988,40 @@ function CardEngineModule(globalScope) {
         && tileAt('br').x === 508
         && tileAt('bl').y === 508,
       `${sheet.width} px, gutter ${sheet.gutterPx} px`);
+  }
+
+  // The unsharp mask steepens a step edge (undershoot and overshoot either side), leaves far
+  // pixels alone, and leaves a difference under the threshold alone.
+  function testUnsharpMask(record) {
+    const width = 32;
+    const height = 4;
+    const img = { width, height, data: new Uint8ClampedArray(width * height * 4) };
+    const fillColumn = (x, value) => {
+      for (let y = 0; y < height; y++) {
+        img.data.set([value, value, value, 255], (y * width + x) * 4);
+      }
+    };
+    for (let x = 0; x < width; x++) fillColumn(x, x < 16 ? 50 : 200);
+    unsharpMask(img, { sigmaPx: 1, amount: 1, thresholdLevels: 0 });
+    const redAt = x => img.data[x * 4];
+    const edgeOk = redAt(15) < 50 && redAt(16) > 200 && redAt(0) === 50 && redAt(31) === 200;
+    for (let x = 0; x < width; x++) fillColumn(x, x < 16 ? 100 : 102);
+    unsharpMask(img, { sigmaPx: 1, amount: 1, thresholdLevels: 4 });
+    const flatOk = redAt(15) === 100 && redAt(16) === 102;
+    record('Unsharp mask: steepens a step edge, skips differences under the threshold',
+      edgeOk && flatOk, `flat after the step ${redAt(15)}|${redAt(16)}`);
+    // The downsampled wide blur against the full one, on a 64 px step edge with sigma 6.
+    const wideWidth = 64;
+    const step = new Float32Array(wideWidth * 4);
+    for (let i = 0; i < step.length; i++) step[i] = (i % wideWidth) < 32 ? 50 : 200;
+    const full = gaussianBlur(step, wideWidth, 4, 6);
+    const fast = gaussianBlurAnySigma(step, wideWidth, 4, 6);
+    let worstLevels = 0;
+    for (let i = 0; i < step.length; i++) {
+      worstLevels = Math.max(worstLevels, Math.abs(full[i] - fast[i]));
+    }
+    record('Wide blur: the downsampled blur is within 3 levels of the full blur',
+      worstLevels < 3, `worst ${worstLevels.toFixed(2)} levels`);
   }
 
   // Front + back: the Together layout for portrait and landscape pairs, a smaller side
@@ -3086,6 +3218,7 @@ function CardEngineModule(globalScope) {
     testPipeline(record, quads[0]);
     testGeometryGolden(record, quads);
     testCornerShots(record, quads[0]);
+    testUnsharpMask(record);
     testPairLayout(record);
     testWarpAndDetection(record);
     testLevelsTargets(record);
@@ -3125,6 +3258,7 @@ function CardEngineModule(globalScope) {
     shrinkToValid,
     cropRatio,
     warp,
+    unsharpMask,
     CORNER_SHOT_DEFAULTS,
     cornerShots,
     cornerSheetLayout,
