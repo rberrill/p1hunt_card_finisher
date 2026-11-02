@@ -2164,7 +2164,7 @@ function CardEngineModule(globalScope) {
      tip is never cut. All four shots share one size, the smallest real resolution of the four
      (perspective makes them differ), so the sheet's tiles match. By default that's the real
      resolution; the shell may ask for a larger size (sizePxOverride), which it then sharpens
-     with unsharpMask, since the user chose to upscale.
+     with unsharpMask (the upscale question's Yes).
      =================================================================== */
   const CORNER_SHOT_DEFAULTS = {
     sizeFraction: 0.25,
@@ -2172,9 +2172,6 @@ function CardEngineModule(globalScope) {
     maxPx: 2000,
     gutterPct: 0.8,
     upscaleTargetPx: 2000,
-    sharpenSigma: 0.7,
-    sharpenAmount: 1,
-    sharpenThreshold: 4,
   };
   // The shots in Quad.sortCorners order, named as the corners appear in the export.
   const CORNER_LABELS = ['tl', 'tr', 'br', 'bl'];
@@ -2303,13 +2300,17 @@ function CardEngineModule(globalScope) {
    * pairLayout(frontSize, backSize, orient, config) → { width, height, gutterPx, scale, front,
    * back }: the Together image for two exports of { width, height } px. orient: 'portrait'
    * (side by side) or 'landscape' (stacked). config: PAIR_DEFAULTS plus maxOutputPx and
-   * maxOutputArea (the canvas caps). scale (≤ 1) is the factor both sides are rendered at;
-   * front and back are { x, y, width, height } in the Together image's px.
+   * maxOutputArea (the canvas caps), and longEdgePx: 0, or the long edge the image is fitted
+   * to exactly (the upscale question's Yes), ignored when that would pass a cap. scale is the
+   * factor both sides are rendered at: ≤ 1 for the caps, > 1 for a fit that enlarges. front
+   * and back are { x, y, width, height } in the Together image's px.
    */
   function pairLayout(frontSize, backSize, orient, configIn) {
     const config = Object.assign({}, PAIR_DEFAULTS, configIn || {});
     const isSideBySide = orient !== 'landscape';
-    const scale = pairScale(frontSize, backSize, isSideBySide, config);
+    const extent = pairExtent(frontSize, backSize, isSideBySide, config);
+    const fitScale = pairFitScale(extent, config);
+    const scale = fitScale || pairScale(extent, config);
     const scaled = size => ({
       width: Math.max(1, Math.round(size.width * scale)),
       height: Math.max(1, Math.round(size.height * scale)),
@@ -2320,7 +2321,14 @@ function CardEngineModule(globalScope) {
     const cellHeight = Math.max(front.height, back.height);
     // The gutter is gutterPct % of the two cells' size across it, as on the corner sheet.
     const across = isSideBySide ? cellWidth : cellHeight;
-    const gutterPx = Math.max(0, Math.round(config.gutterPct / 100 * 2 * across));
+    let gutterPx = Math.max(0, Math.round(config.gutterPct / 100 * 2 * across));
+    // A fitted image's rounding remainder goes to the gutter, as on the corner sheet, when the
+    // gutter runs along the long edge; a cell on the long edge already rounds to it exactly.
+    const cellsAcross = 2 * across + gutterPx;
+    const otherEdge = isSideBySide ? cellHeight : cellWidth;
+    if (fitScale && cellsAcross >= otherEdge) {
+      gutterPx = Math.max(0, gutterPx + config.longEdgePx - cellsAcross);
+    }
     const width = isSideBySide ? 2 * cellWidth + gutterPx : cellWidth;
     const height = isSideBySide ? cellHeight : 2 * cellHeight + gutterPx;
     const placeIn = (size, cellX, cellY) => ({
@@ -2341,18 +2349,25 @@ function CardEngineModule(globalScope) {
     };
   }
 
-  // Keeps a scaled-down pair safely under the caps after rounding (see pairScale).
-  const PAIR_SCALE_SLACK = 0.995;
-
-  // The factor (≤ 1) that keeps the joined image inside maxOutputPx on its long side and
-  // maxOutputArea in total. The gutter scales with the cells, so the ratio is exact up to
-  // rounding; PAIR_SCALE_SLACK keeps the rounded result under the caps.
-  function pairScale(frontSize, backSize, isSideBySide, config) {
+  // The joined image's unrounded size at scale 1: the larger cell twice, plus the gutter.
+  function pairExtent(frontSize, backSize, isSideBySide, config) {
     const cellWidth = Math.max(frontSize.width, backSize.width);
     const cellHeight = Math.max(frontSize.height, backSize.height);
     const gutterFrac = config.gutterPct / 100 * 2;
-    const width = isSideBySide ? cellWidth * (2 + gutterFrac) : cellWidth;
-    const height = isSideBySide ? cellHeight : cellHeight * (2 + gutterFrac);
+    return {
+      width: isSideBySide ? cellWidth * (2 + gutterFrac) : cellWidth,
+      height: isSideBySide ? cellHeight : cellHeight * (2 + gutterFrac),
+    };
+  }
+
+  // Keeps a scaled-down pair safely under the caps after rounding (see pairScale).
+  const PAIR_SCALE_SLACK = 0.995;
+
+  // The factor (≤ 1) that keeps a joined image of `extent` inside maxOutputPx on its long side
+  // and maxOutputArea in total. The gutter scales with the cells, so the ratio is exact up to
+  // rounding; PAIR_SCALE_SLACK keeps the rounded result under the caps.
+  function pairScale(extent, config) {
+    const { width, height } = extent;
     let scale = 1;
     if (config.maxOutputPx) {
       scale = Math.min(scale, config.maxOutputPx / Math.max(width, height));
@@ -2361,6 +2376,18 @@ function CardEngineModule(globalScope) {
       scale = Math.min(scale, Math.sqrt(config.maxOutputArea / (width * height)));
     }
     return scale < 1 ? scale * PAIR_SCALE_SLACK : 1;
+  }
+
+  // The factor that puts a joined image of `extent` at config.longEdgePx on its long side, or
+  // 0 when no fit is asked for or the fitted image would pass a cap (the caps then decide).
+  function pairFitScale(extent, config) {
+    const longEdgePx = config.longEdgePx;
+    if (!(longEdgePx > 0)) return 0;
+    const scale = longEdgePx / Math.max(extent.width, extent.height);
+    const isOverPx = config.maxOutputPx && longEdgePx > config.maxOutputPx;
+    const isOverArea = config.maxOutputArea
+      && extent.width * extent.height * scale * scale > config.maxOutputArea;
+    return isOverPx || isOverArea ? 0 : scale;
   }
 
   /* ===================================================================
@@ -3081,6 +3108,35 @@ function CardEngineModule(globalScope) {
         && capped.scale < 1
         && capped.front.width === capped.back.width,
       `${capped.width} × ${capped.height}, scale ${capped.scale.toFixed(3)}`);
+    const fitted = pairLayout(
+      { width: 800, height: 1120 },
+      { width: 800, height: 1120 },
+      'portrait',
+      { gutterPct: 0.8, maxOutputPx: 12000, maxOutputArea: 16777216, longEdgePx: 2000 },
+    );
+    record('Pair: fitted to a 2000 px long edge exactly, both sides enlarged alike',
+      fitted.width === 2000
+        && fitted.scale > 1
+        && fitted.front.width === fitted.back.width
+        && fitted.front.width === Math.round(800 * fitted.scale)
+        && fitted.height === Math.round(1120 * fitted.scale),
+      `${fitted.width} × ${fitted.height}, scale ${fitted.scale.toFixed(3)}, `
+        + `gutter ${fitted.gutterPx}`);
+    const stacked = pairLayout(
+      { width: 1120, height: 800 },
+      { width: 1120, height: 800 },
+      'landscape',
+      { gutterPct: 0.8, longEdgePx: 2000 },
+    );
+    const overCap = pairLayout(
+      { width: 800, height: 1120 },
+      { width: 800, height: 1120 },
+      'portrait',
+      { gutterPct: 0.8, maxOutputPx: 1500, longEdgePx: 2000 },
+    );
+    record('Pair: a stacked fit is exact too; a fit over a cap is ignored and the caps decide',
+      stacked.height === 2000 && overCap.width <= 1500 && overCap.scale <= 1,
+      `stacked ${stacked.width} × ${stacked.height}, over the cap ${overCap.width} wide`);
   }
 
   function testOverlaySnap(record) {

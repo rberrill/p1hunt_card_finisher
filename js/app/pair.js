@@ -291,16 +291,22 @@
         { label: 'New photo', action: () => openSingle(file, name) },
         { label: 'Replace ' + app.pair.current, action: () => replaceSide(file, name) },
       ],
+      isForPair: true,
     });
   }
 
   /* ---------- the question card ---------- */
 
+  // Whether the card that's up asks one of the pair's questions (Unpair, New photo).
+  let isPromptForPair = false;
+
   // Shows a question on a card over the dimmed photo, like Resume (with the step menu, the only
   // things allowed over the photo): a title, a line of text, two choices and Cancel. A tap
-  // outside the card or Escape cancels. choices: [{ label, action }]. Corner shots ask their
-  // upscale question on it too.
-  function showPrompt({ title, text, choices }) {
+  // outside the card or Escape cancels. choices: [{ label, action }]. The upscale question
+  // (CF.askUpscale) asks on it too; isForPair marks the pair's own questions, which syncPair
+  // takes down when the pair ends while one is up.
+  function showPrompt({ title, text, choices, isForPair = false }) {
+    isPromptForPair = isForPair;
     byId('pairPromptTitle').textContent = title;
     byId('pairPromptText').textContent = text;
     ['btnPromptFirst', 'btnPromptSecond'].forEach((id, i) => {
@@ -330,6 +336,7 @@
         { label: 'Keep front', action: () => unpair('front') },
         { label: 'Keep back', action: () => unpair('back') },
       ],
+      isForPair: true,
     });
   }
 
@@ -360,8 +367,9 @@
     CF.syncReadouts();
   }
 
-  // The Together layout for both sides' export sizes, within the canvas caps.
-  function togetherLayout(sides) {
+  // The Together layout for both sides' export sizes, within the canvas caps. longEdgePx: 0,
+  // or the long edge the joined image is fitted to exactly (the upscale question's Yes).
+  function togetherLayout(sides, longEdgePx = 0) {
     const size = state => {
       const output = CardEngine.computeGeometry(state, geometryConfig()).output;
       return { width: output.width, height: output.height };
@@ -370,6 +378,7 @@
       gutterPct: CONFIG.pair.gutterPct,
       maxOutputPx: CONFIG.maxOutputPx,
       maxOutputArea: CONFIG.maxOutputArea,
+      longEdgePx,
     });
   }
 
@@ -426,7 +435,9 @@
 
   // Renders one side into `canvas` at `place` ({ x, y, width, height }), with its overlay, from
   // its photo element. A side scaled down for the caps is rendered at that size in one resample.
-  async function renderSideInto(canvas, place, state, photo, onProgress) {
+  // upscaleFactor: 0, or the factor `place` enlarges the side's real output by (the upscale
+  // question's Yes): the side then renders bicubic and is sharpened before its overlay goes on.
+  async function renderSideInto(canvas, place, state, photo, onProgress, upscaleFactor = 0) {
     const geometry = CardEngine.computeGeometry(state, geometryConfig());
     if (!geometry.ok) throw new Error(geometry.reason);
     const output = geometry.output;
@@ -434,10 +445,13 @@
       geometry.outputToSource,
       Mat3.scale(output.width / place.width, output.height / place.height),
     );
-    await CF.renderWarped(state, placeToSource, place.width, place.height, onProgress, {
+    const renderState = upscaleFactor ? clone(state) : state;
+    if (upscaleFactor) renderState.export.interp = 'bicubic';
+    await CF.renderWarped(renderState, placeToSource, place.width, place.height, onProgress, {
       photo,
       target: { canvas, x: place.x, y: place.y },
     });
+    if (upscaleFactor) await CF.sharpenUpscaled(canvas, place, upscaleFactor);
     const ctx = context2d(canvas);
     ctx.save();
     ctx.translate(place.x, place.y);
@@ -446,9 +460,11 @@
   }
 
   // The Together image → a Promise of its Blob, each side rendered from its own photo.
-  async function encodeTogether(sides, type, onProgress) {
-    const layout = togetherLayout(sides);
+  // isUpscaled: the joined image's long edge fitted to the chosen Size (togetherLayout).
+  async function encodeTogether(sides, type, onProgress, isUpscaled = false) {
     const frontState = sides.front.state;
+    const layout = togetherLayout(sides, isUpscaled ? frontState.export.longEdge : 0);
+    const upscaleFactor = isUpscaled && layout.scale > 1 ? layout.scale : 0;
     const canvas = makeCanvas(layout.width, layout.height);
     if (frontState.export.fill !== 'transparent') {
       const ctx = context2d(canvas);
@@ -458,25 +474,33 @@
     let done = 0;
     await forEachSidePhoto(async (side, photo) => {
       const progress = fraction => onProgress((done + fraction) / 2);
-      await renderSideInto(canvas, layout[side], sides[side].state, photo, progress);
+      await renderSideInto(
+        canvas,
+        layout[side],
+        sides[side].state,
+        photo,
+        progress,
+        upscaleFactor,
+      );
       done++;
     });
     return CF.encodeCanvas(canvas, frontState, type);
   }
 
   // Two files, <front>-front and <back>-back, each identical to that side's own export.
-  async function encodeSeparately(sides, type, onProgress) {
+  // isUpscaled: each side enlarged to the chosen Size, as its own export's Yes would be.
+  async function encodeSeparately(sides, type, onProgress, isUpscaled = false) {
     const blobs = {};
     let done = 0;
     await forEachSidePhoto(async (side, photo) => {
       const state = sides[side].state;
-      const geometry = CardEngine.computeGeometry(state, geometryConfig());
-      if (!geometry.ok) throw new Error(geometry.reason);
-      const { width, height } = geometry.output;
+      const output = CF.exportGeometry(state, isUpscaled).output;
+      const { width, height } = output;
       const canvas = makeCanvas(width, height);
       const place = { x: 0, y: 0, width, height };
+      const upscaleFactor = isUpscaled && output.scale > 1 ? output.scale : 0;
       const progress = fraction => onProgress((done + fraction) / 2);
-      await renderSideInto(canvas, place, state, photo, progress);
+      await renderSideInto(canvas, place, state, photo, progress, upscaleFactor);
       blobs[side] = await CF.encodeCanvas(canvas, state, type);
       done++;
     });
@@ -489,8 +513,8 @@
   }
 
   // Wraps the Together blob as a File named <front>-pair.
-  async function togetherFile(sides, type, onProgress) {
-    const blob = await encodeTogether(sides, type, onProgress);
+  async function togetherFile(sides, type, onProgress, isUpscaled) {
+    const blob = await encodeTogether(sides, type, onProgress, isUpscaled);
     const state = sides.front.state;
     const extension = CF.extensionFor(blob, state, type);
     const name = `${CF.exportBaseName(state)}-pair.${extension}`;
@@ -498,25 +522,64 @@
   }
 
   // Exports the pair as chosen. kind: 'download', 'share' or 'copy' (the Together image as PNG;
-  // with Separately chosen, Copy copies the open side through the normal export).
-  async function exportPair(kind) {
+  // with Separately chosen, Copy copies the open side through the normal export). When the
+  // file would be under the chosen Size, the upscale question comes first (pairUpscaleOffer).
+  function exportPair(kind) {
     if (!app.pair || app.exporting) return;
     const sides = sideStates();
     sides.front.state = clone(sides.front.state);
     sides.back.state = clone(sides.back.state);
+    let offer;
+    try {
+      offer = pairUpscaleOffer(sides, kind);
+    } catch (error) {
+      toast('Export failed: ' + error.message, 'error', 6000);
+      return;
+    }
+    if (!offer) {
+      runPairExport(kind, sides, false);
+      return;
+    }
+    CF.askUpscale(offer.targetPx, offer.text, isUpscaled => runPairExport(kind, sides, isUpscaled));
+  }
+
+  // The upscale the question offers for the pair's export: { targetPx, text } when the saved
+  // file's long edge is under the chosen Size (Together, and Copy: the joined image;
+  // Separately: either side's file), else null.
+  function pairUpscaleOffer(sides, kind) {
+    const targetPx = sides.front.state.export.longEdge;
+    if (!targetPx) return null;
+    const size = ({ width, height }) => `${width} × ${height}`;
+    const isUnder = ({ width, height }) => Math.max(width, height) < targetPx;
+    if (isTogether() || kind === 'copy') {
+      const layout = togetherLayout(sides);
+      if (!isUnder(layout)) return null;
+      return { targetPx, text: `The image is ${size(layout)} px at the photos' resolution.` };
+    }
+    const front = CF.exportGeometry(sides.front.state, false).output;
+    const back = CF.exportGeometry(sides.back.state, false).output;
+    if (!isUnder(front) && !isUnder(back)) return null;
+    const text = `The front is ${size(front)} px and the back ${size(back)} px`
+      + ` at the photos' resolution.`;
+    return { targetPx, text };
+  }
+
+  // Renders, encodes and delivers the pair's export of `sides` (copies of both sides' edits).
+  // kind as for exportPair; isUpscaled: the saved file enlarged to the chosen Size.
+  async function runPairExport(kind, sides, isUpscaled) {
     const key = pairKey();
     const type = kind === 'copy' ? 'image/png' : CF.MIME_TYPES[app.state.export.format];
     const startTime = performance.now();
     try {
       await CF.runWithProgress(async onProgress => {
         if (kind === 'copy') {
-          await CF.Exporter.copy(encodeTogether(sides, type, onProgress));
+          await CF.Exporter.copy(encodeTogether(sides, type, onProgress, isUpscaled));
           markPairExported(key);
           toast('Copied to clipboard (PNG).');
           return;
         }
         const encode = isTogether() ? togetherFile : encodeSeparately;
-        const files = await encode(sides, type, onProgress);
+        const files = await encode(sides, type, onProgress, isUpscaled);
         await deliverPair(kind, files, key, startTime);
       });
     } catch (error) {
@@ -835,7 +898,8 @@
     byId('pairOutput').hidden = !pair;
     byId('editsPairHint').hidden = !pair;
     if (!pair) {
-      hidePrompt();
+      // A single photo's upscale question stays up: only the pair's own cards go with it.
+      if (isPromptForPair) hidePrompt();
       return;
     }
     document.querySelectorAll('#sideSwitch [data-side]').forEach(button => {

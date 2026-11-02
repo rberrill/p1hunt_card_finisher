@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.9.0-dev.16',
+  appVersion: '1.9.0-dev.17',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -122,17 +122,23 @@ const CONFIG = {
     gutterPct: 0.8,
     // When the file would be smaller than this (the sheet's side, or each photo's), Download
     // and Share corners ask "Upscale to N px?" first (0 never asks). Yes renders the tiles
-    // to make the file exactly this size, bicubic, then sharpens them.
+    // to make the file exactly this size, bicubic, then sharpens them (`upscale` below).
     upscaleTargetPx: 2000,
-    // The unsharp mask after an upscale: the blur's sigma in source px (scaled by the
-    // upscale factor, so it sharpens card edges, not the interpolation grid), the amount
-    // (1 = add the full difference), and the luma difference (0–255) under which nothing
-    // changes, which keeps flat holofoil and JPEG noise from being sharpened.
+    // The output until a user picks one: 'sheet' (one 2×2 image) or 'photos' (four files).
+    output: 'sheet',
+  },
+  // The "Upscale to N px?" question. Download, Share and Copy ask it when the saved file's
+  // long edge would be under the chosen Size (a pair's joined image, or either of its two
+  // files); the corner buttons when theirs would be under cornerShots.upscaleTargetPx.
+  // Yes renders bicubic at the asked size, then runs this unsharp mask: the blur's sigma
+  // in source px (scaled by the upscale factor, so it sharpens card edges, not the
+  // interpolation grid), the amount (1 = add the full difference), and the luma difference
+  // (0–255) under which nothing changes, which keeps flat holofoil and JPEG noise from
+  // being sharpened.
+  upscale: {
     sharpenSigma: 0.7,
     sharpenAmount: 1,
     sharpenThreshold: 4,
-    // The output until a user picks one: 'sheet' (one 2×2 image) or 'photos' (four files).
-    output: 'sheet',
   },
   // Front + back pairs (Add back on Export). js/engine.js's PAIR_DEFAULTS mirror the number
   // keys.
@@ -315,9 +321,9 @@ const CONFIG_LIMITS = {
   'cornerShots.maxPx': [100, 2000],
   'cornerShots.gutterPct': [0, 5],
   'cornerShots.upscaleTargetPx': [0, 2000],
-  'cornerShots.sharpenSigma': [0, 3],
-  'cornerShots.sharpenAmount': [0, 3],
-  'cornerShots.sharpenThreshold': [0, 64],
+  'upscale.sharpenSigma': [0, 3],
+  'upscale.sharpenAmount': [0, 3],
+  'upscale.sharpenThreshold': [0, 64],
   'pair.gutterPct': [0, 5],
   'pair.previewMaxPx': [256, 2048],
   'overlay.maxBytes': [65536, 5242880],

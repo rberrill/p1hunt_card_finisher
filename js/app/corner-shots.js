@@ -46,8 +46,8 @@
   /* ---------- rendering and encoding ---------- */
 
   // Renders shot i of `shots` → a Promise of its canvas, at the photo's resolution or, when
-  // shots.isUpscaled, at the asked size and then sharpened (in the worker). onProgress gets
-  // the fraction done over all four shots.
+  // shots.isUpscaled, at the asked size and then sharpened (CF.sharpenUpscaled). onProgress
+  // gets the fraction done over all four shots.
   async function renderShot(state, shots, i, onProgress) {
     const count = shots.shots.length;
     const shotProgress = fraction => onProgress((i + fraction) / count);
@@ -55,24 +55,9 @@
     const outputToSource = shots.shots[i].outputToSource;
     const canvas = await CF.renderWarped(state, outputToSource, sizePx, sizePx, shotProgress);
     if (!shots.isUpscaled) return canvas;
-    const ctx = context2d(canvas);
-    const sharpened = await CF.EngineWorker.call('sharpen', {
-      image: ctx.getImageData(0, 0, sizePx, sizePx),
-      options: sharpenOptions(sizePx / shots.realPx),
-    });
-    ctx.putImageData(sharpened, 0, 0);
+    const whole = { x: 0, y: 0, width: sizePx, height: sizePx };
+    await CF.sharpenUpscaled(canvas, whole, sizePx / shots.realPx);
     return canvas;
-  }
-
-  // The unsharp mask's settings for an upscale by `factor`: CONFIG's sigma is in source px,
-  // so it scales with the factor.
-  function sharpenOptions(factor) {
-    const settings = CONFIG.cornerShots;
-    return {
-      sigmaPx: settings.sharpenSigma * factor,
-      amount: settings.sharpenAmount,
-      thresholdLevels: settings.sharpenThreshold,
-    };
   }
 
   // The four photos, rendered and encoded one at a time (phone memory) → Files named
@@ -135,8 +120,8 @@
 
   // Saves the corner shots of the current edits. kind: 'download' or 'share'. When the file
   // (the sheet, or each photo) would be under CONFIG.cornerShots.upscaleTargetPx at the
-  // photo's resolution, a card over the photo asks first whether to upscale it to that size;
-  // Yes or No then saves, Cancel doesn't. Never marks the edits as exported: only the main
+  // photo's resolution, the upscale question (CF.askUpscale) comes first; Yes or No then
+  // saves, Cancel doesn't. Never marks the edits as exported: only the main
   // export shows Next card.
   function saveCornerShots(kind) {
     if (!app.img || app.exporting) return;
@@ -152,14 +137,8 @@
       return;
     }
     const what = app.cornerShotsOutput === 'photos' ? 'Each corner is' : 'The sheet is';
-    CF.showPrompt({
-      title: `Upscale to ${targetPx} px?`,
-      text: `${what} ${realFilePx} px at the photo's resolution.`,
-      choices: [
-        { label: 'Yes', action: () => renderAndSave(kind, true) },
-        { label: 'No', action: () => renderAndSave(kind, false) },
-      ],
-    });
+    const text = `${what} ${realFilePx} px at the photo's resolution.`;
+    CF.askUpscale(targetPx, text, isUpscaled => renderAndSave(kind, isUpscaled));
   }
 
   // Renders and saves the corner shots. isUpscaled: render every tile at the size that makes

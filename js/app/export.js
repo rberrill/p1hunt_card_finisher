@@ -1,6 +1,6 @@
 /* =====================================================================
    js/app/export.js: the full-resolution render in row bands, Download / Share / Copy
-   (Exporter), and saving and loading edits files.
+   (Exporter), the upscale question, and saving and loading edits files.
    Shell modules share one namespace, CF (created in core.js). Names from core are
    destructured below; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
@@ -125,23 +125,47 @@
   }
 
   /**
-   * renderFull(state, onProgress) → { canvas, geometry }: the export at full resolution,
-   * rendered from the original photo, with the overlay. Deterministic for a given state.
+   * renderFull(state, onProgress, isUpscaled) → { canvas, geometry }: the export at full
+   * resolution, rendered from the original photo, with the overlay. Deterministic for a given
+   * state. isUpscaled (the upscale question's Yes): a crop smaller than the chosen Size is
+   * enlarged to it, bicubic, and sharpened before the overlay goes on.
    */
-  async function renderFull(state, onProgress) {
-    const geometry = CardEngine.computeGeometry(state, geometryConfig());
-    if (!geometry.ok) throw new Error(geometry.reason);
+  async function renderFull(state, onProgress, isUpscaled = false) {
+    const geometry = exportGeometry(state, isUpscaled);
     const { width: outputWidth, height: outputHeight } = geometry.output;
     const output = await renderWarped(
-      state,
+      upscaleRenderState(state, isUpscaled),
       geometry.outputToSource,
       outputWidth,
       outputHeight,
       onProgress,
     );
+    if (isUpscaled && geometry.output.scale > 1) {
+      const whole = { x: 0, y: 0, width: outputWidth, height: outputHeight };
+      await sharpenUpscaled(output, whole, geometry.output.scale);
+    }
     // The overlay goes on last, before encoding (Levels never touches it).
     CF.compositeOverlay(context2d(output), state, outputWidth, outputHeight);
     return { canvas: output, geometry };
+  }
+
+  // The export's geometry: at the real resolution or, with isUpscaled, with a crop smaller
+  // than the chosen Size enlarged to it. Throws when the edits have no geometry.
+  function exportGeometry(state, isUpscaled) {
+    const config = geometryConfig();
+    if (isUpscaled) config.allowUpscale = true;
+    const geometry = CardEngine.computeGeometry(state, config);
+    if (!geometry.ok) throw new Error(geometry.reason);
+    return geometry;
+  }
+
+  // The state to render with: an upscale is always bicubic, whatever Interpolation says, as
+  // the corner shots' is. The caller's state is left alone.
+  function upscaleRenderState(state, isUpscaled) {
+    if (!isUpscaled) return state;
+    const renderState = clone(state);
+    renderState.export.interp = 'bicubic';
+    return renderState;
   }
 
   /**
@@ -286,9 +310,63 @@
     return blob;
   }
 
-  // Renders and encodes the export → a Promise of the file's Blob.
-  function encodeExport(state, type, onProgress) {
-    return renderFull(state, onProgress).then(({ canvas }) => encodeCanvas(canvas, state, type));
+  // Renders and encodes the export → a Promise of the file's Blob. isUpscaled as for renderFull.
+  function encodeExport(state, type, onProgress, isUpscaled = false) {
+    return renderFull(state, onProgress, isUpscaled)
+      .then(({ canvas }) => encodeCanvas(canvas, state, type));
+  }
+
+  /* ---------- the upscale question ---------- */
+
+  // The unsharp mask's settings for an upscale by `factor`: CONFIG.upscale's sigma is in
+  // source px, so it scales with the factor.
+  function sharpenOptions(factor) {
+    const settings = CONFIG.upscale;
+    return {
+      sigmaPx: settings.sharpenSigma * factor,
+      amount: settings.sharpenAmount,
+      thresholdLevels: settings.sharpenThreshold,
+    };
+  }
+
+  // Sharpens the upscaled photo in `rect` ({ x, y, width, height }, canvas px) of `canvas` in
+  // the worker (CardEngine.unsharpMask), for an upscale by `factor`. Called before the
+  // overlay goes on, so a logo is never sharpened.
+  async function sharpenUpscaled(canvas, rect, factor) {
+    const ctx = context2d(canvas);
+    const image = ctx.getImageData(rect.x, rect.y, rect.width, rect.height);
+    const options = sharpenOptions(factor);
+    const sharpened = await CF.EngineWorker.call('sharpen', { image, options });
+    ctx.putImageData(sharpened, rect.x, rect.y);
+  }
+
+  // Asks "Upscale to N px?" on a card over the photo (CF.showPrompt): onAnswer(true) on Yes,
+  // onAnswer(false) on No, nothing on Cancel. The main export, a pair's and the corner shots
+  // all ask through it. `text` gives the real size.
+  function askUpscale(targetPx, text, onAnswer) {
+    CF.showPrompt({
+      title: `Upscale to ${targetPx} px?`,
+      text,
+      choices: [
+        { label: 'Yes', action: () => onAnswer(true) },
+        { label: 'No', action: () => onAnswer(false) },
+      ],
+    });
+  }
+
+  // The upscale the question offers for the open photo's export: { targetPx, text } when the
+  // crop's long edge is under the chosen Size (the readout's "full crop, not upscaled"), else
+  // null. With a link's export.allowUpscale the output is already at Size, so no question.
+  function offeredUpscale(state) {
+    const targetPx = state.export.longEdge;
+    const geometry = app.geometry;
+    if (!targetPx || !geometry || !geometry.ok) return null;
+    const { width, height } = geometry.output;
+    if (Math.max(width, height) >= targetPx) return null;
+    return {
+      targetPx,
+      text: `The crop is ${width} × ${height} px at the photo's resolution.`,
+    };
   }
 
   // The photo's name without its extension, the start of every exported file's name.
@@ -307,11 +385,11 @@
   }
 
   // Delivers a finished export by Download or Share, with a toast saying how it went.
-  async function deliverExport(kind, blob, state, type, startTime) {
+  async function deliverExport(kind, blob, state, type, startTime, isUpscaled) {
     const extension = extensionFor(blob, state, type);
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
     const name = `${exportBaseName(state)}${CONFIG.export.suffix}.${extension}`;
-    const output = app.geometry.output;
+    const output = exportGeometry(state, isUpscaled).output;
     const done = `Exported ${output.width} × ${output.height} px in ${seconds} s.`;
     if (kind === 'download') {
       // Saved before the download, which can leave the page on iPhone.
@@ -367,24 +445,37 @@
 
   // Exports the current edits. kind: 'download', 'share' or 'copy' (PNG to the clipboard). A
   // pair exports both sides as chosen, except that Copy with Separately copies the open side.
-  async function doExport(kind) {
+  // When the crop is under the chosen Size, the upscale question comes first (offeredUpscale);
+  // Copy still reaches the clipboard inside the tap that answers it.
+  function doExport(kind) {
     if (!app.img || app.exporting) return;
     if (app.pair && (kind !== 'copy' || app.pairOutput !== 'separately')) {
       CF.exportPair(kind);
       return;
     }
     const state = clone(app.state);
+    const offer = offeredUpscale(state);
+    if (!offer) {
+      runExport(kind, state, false);
+      return;
+    }
+    askUpscale(offer.targetPx, offer.text, isUpscaled => runExport(kind, state, isUpscaled));
+  }
+
+  // Renders, encodes and delivers one export of `state` (a copy of the edits). kind as for
+  // doExport; isUpscaled as for renderFull.
+  async function runExport(kind, state, isUpscaled) {
     const type = kind === 'copy' ? 'image/png' : MIME_TYPES[state.export.format];
     const startTime = performance.now();
     try {
       await runWithProgress(async onProgress => {
-        const encoding = encodeExport(state, type, onProgress);
+        const encoding = encodeExport(state, type, onProgress, isUpscaled);
         if (kind === 'copy') {
           await Exporter.copy(encoding);
           markExported(state);
           toast('Copied to clipboard (PNG).');
         } else {
-          await deliverExport(kind, await encoding, state, type, startTime);
+          await deliverExport(kind, await encoding, state, type, startTime, isUpscaled);
         }
       });
     } catch (error) {
@@ -525,6 +616,9 @@
     MIME_TYPES,
     PHOTO_RELEASED_MESSAGE,
     renderFull,
+    exportGeometry,
+    sharpenUpscaled,
+    askUpscale,
     renderWarped,
     encodeCanvas,
     exportBaseName,
