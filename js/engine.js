@@ -2255,14 +2255,27 @@ function CardEngineModule(globalScope) {
   }
 
   /**
-   * cornerSheetLayout(sizePx, config) → { width, height, gutterPx, tiles }: the one-image
-   * sheet of four sizePx shots, tl tr over bl br, with a gutter between them of gutterPct % of
-   * the two tiles' width (8 px for two 500 px tiles). No margin around the outside: eBay's
-   * picture policy doesn't allow added borders. tiles: { label, x, y }.
+   * cornerSheetTilePx(sheetPx, config) → the tile side that makes a cornerSheetLayout of
+   * exactly sheetPx: the largest whole tile that leaves room for the gutter, which then
+   * absorbs the remainder (one or two px).
    */
-  function cornerSheetLayout(sizePx, configIn) {
+  function cornerSheetTilePx(sheetPx, configIn) {
     const config = Object.assign({}, CORNER_SHOT_DEFAULTS, configIn || {});
-    const gutterPx = Math.max(0, Math.round(config.gutterPct / 100 * 2 * sizePx));
+    return Math.max(1, Math.floor(sheetPx / (2 + 2 * config.gutterPct / 100)));
+  }
+
+  /**
+   * cornerSheetLayout(sizePx, config, sheetPx) → { width, height, gutterPx, tiles }: the
+   * one-image sheet of four sizePx shots, tl tr over bl br, with a gutter between them of
+   * gutterPct % of the two tiles' width (8 px for two 500 px tiles), or, with sheetPx (an
+   * upscale to that exact size), whatever is left of sheetPx after the two tiles. No margin
+   * around the outside: eBay's picture policy doesn't allow added borders. tiles: { label, x, y }.
+   */
+  function cornerSheetLayout(sizePx, configIn, sheetPx) {
+    const config = Object.assign({}, CORNER_SHOT_DEFAULTS, configIn || {});
+    const gutterPx = sheetPx > 0
+      ? Math.max(0, Math.round(sheetPx) - 2 * sizePx)
+      : Math.max(0, Math.round(config.gutterPct / 100 * 2 * sizePx));
     const width = 2 * sizePx + gutterPx;
     const near = 0;
     const far = sizePx + gutterPx;
@@ -2988,6 +3001,11 @@ function CardEngineModule(globalScope) {
         && tileAt('br').x === 508
         && tileAt('bl').y === 508,
       `${sheet.width} px, gutter ${sheet.gutterPx} px`);
+    const tilePx = cornerSheetTilePx(2000, { gutterPct: 0.8 });
+    const exact = cornerSheetLayout(tilePx, { gutterPct: 0.8 }, 2000);
+    record('Corner sheet: an upscale to 2000 px lands on exactly 2000 px',
+      exact.width === 2000 && exact.gutterPx >= 0 && exact.gutterPx <= 2 * tilePx * 0.008 + 2,
+      `${tilePx} px tiles, gutter ${exact.gutterPx} px`);
   }
 
   // The unsharp mask steepens a step edge (undershoot and overshoot either side), leaves far
@@ -3261,6 +3279,7 @@ function CardEngineModule(globalScope) {
     unsharpMask,
     CORNER_SHOT_DEFAULTS,
     cornerShots,
+    cornerSheetTilePx,
     cornerSheetLayout,
     PAIR_DEFAULTS,
     pairLayout,

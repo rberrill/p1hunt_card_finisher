@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.9.0-dev.15',
+  appVersion: '1.9.0-dev.16',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -120,8 +120,9 @@ const CONFIG = {
     // The gutter between the sheet's tiles, as % of two tiles' width (8 px for two 500 px
     // tiles). There's no outer margin: eBay doesn't allow added borders.
     gutterPct: 0.8,
-    // Below this real resolution, Download and Share corners ask "Upscale to N px?" first
-    // (0 never asks). Yes renders the tiles at this size, bicubic, then sharpens them.
+    // When the file would be smaller than this (the sheet's side, or each photo's), Download
+    // and Share corners ask "Upscale to N px?" first (0 never asks). Yes renders the tiles
+    // to make the file exactly this size, bicubic, then sharpens them.
     upscaleTargetPx: 2000,
     // The unsharp mask after an upscale: the blur's sigma in source px (scaled by the
     // upscale factor, so it sharpens card edges, not the interpolation grid), the amount

@@ -92,9 +92,11 @@
   }
 
   // The sheet → one File named <photo>-corners: the four shots in a 2×2 grid (tl tr over
-  // bl br), the gutter between them in the export fill, each shot freed once it's drawn.
+  // bl br), the gutter between them in the export fill, each shot freed once it's drawn. An
+  // upscaled sheet is exactly the target size.
   async function encodeSheet(state, shots, type, onProgress) {
-    const layout = CardEngine.cornerSheetLayout(shots.sizePx, CONFIG.cornerShots);
+    const sheetPx = shots.isUpscaled ? CONFIG.cornerShots.upscaleTargetPx : 0;
+    const layout = CardEngine.cornerSheetLayout(shots.sizePx, CONFIG.cornerShots, sheetPx);
     const sheet = makeCanvas(layout.width, layout.height);
     const ctx = context2d(sheet);
     if (state.export.fill !== 'transparent') {
@@ -117,10 +119,25 @@
 
   /* ---------- saving ---------- */
 
-  // Saves the corner shots of the current edits. kind: 'download' or 'share'. Below
-  // CONFIG.cornerShots.upscaleTargetPx at the photo's resolution, a card over the photo asks
-  // first whether to upscale to that size; Yes or No then saves, Cancel doesn't. Never marks
-  // the edits as exported: only the main export shows Next card.
+  // The side of the file the current output saves (the sheet, or each photo) for tiles of
+  // sizePx.
+  function filePx(sizePx) {
+    if (app.cornerShotsOutput === 'photos') return sizePx;
+    return CardEngine.cornerSheetLayout(sizePx, CONFIG.cornerShots).width;
+  }
+
+  // The tile side that makes the file exactly CONFIG.cornerShots.upscaleTargetPx.
+  function upscaledTilePx() {
+    const targetPx = CONFIG.cornerShots.upscaleTargetPx;
+    if (app.cornerShotsOutput === 'photos') return targetPx;
+    return CardEngine.cornerSheetTilePx(targetPx, CONFIG.cornerShots);
+  }
+
+  // Saves the corner shots of the current edits. kind: 'download' or 'share'. When the file
+  // (the sheet, or each photo) would be under CONFIG.cornerShots.upscaleTargetPx at the
+  // photo's resolution, a card over the photo asks first whether to upscale it to that size;
+  // Yes or No then saves, Cancel doesn't. Never marks the edits as exported: only the main
+  // export shows Next card.
   function saveCornerShots(kind) {
     if (!app.img || app.exporting) return;
     const shots = currentShots();
@@ -129,13 +146,15 @@
       return;
     }
     const targetPx = CONFIG.cornerShots.upscaleTargetPx;
-    if (!(targetPx > 0) || shots.sizePx >= targetPx) {
+    const realFilePx = filePx(shots.sizePx);
+    if (!(targetPx > 0) || realFilePx >= targetPx) {
       renderAndSave(kind, false);
       return;
     }
+    const what = app.cornerShotsOutput === 'photos' ? 'Each corner is' : 'The sheet is';
     CF.showPrompt({
       title: `Upscale to ${targetPx} px?`,
-      text: `Corners are ${shots.sizePx} px at the photo's resolution.`,
+      text: `${what} ${realFilePx} px at the photo's resolution.`,
       choices: [
         { label: 'Yes', action: () => renderAndSave(kind, true) },
         { label: 'No', action: () => renderAndSave(kind, false) },
@@ -143,14 +162,14 @@
     });
   }
 
-  // Renders and saves the corner shots. isUpscaled: render every tile at
-  // CONFIG.cornerShots.upscaleTargetPx, bicubic whatever the export's interpolation, and
-  // sharpen it (renderShot).
+  // Renders and saves the corner shots. isUpscaled: render every tile at the size that makes
+  // the file CONFIG.cornerShots.upscaleTargetPx, bicubic whatever the export's interpolation,
+  // and sharpen it (renderShot).
   async function renderAndSave(kind, isUpscaled) {
     const state = clone(app.state);
     const geometry = CardEngine.computeGeometry(state, geometryConfig());
-    const targetPx = isUpscaled ? CONFIG.cornerShots.upscaleTargetPx : 0;
-    const shots = CardEngine.cornerShots(geometry, CONFIG.cornerShots, targetPx);
+    const tilePx = isUpscaled ? upscaledTilePx() : 0;
+    const shots = CardEngine.cornerShots(geometry, CONFIG.cornerShots, tilePx);
     if (!shots.ok) {
       toast(shots.reason, 'error', 5000);
       return;
@@ -176,7 +195,7 @@
   async function deliverCornerShots(kind, files, startTime, shots) {
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
     const what = files.length === 1 ? 'the corner sheet' : `${files.length} corner shots`;
-    const size = shots.isUpscaled ? ` at ${shots.sizePx} px` : '';
+    const size = shots.isUpscaled ? ` at ${CONFIG.cornerShots.upscaleTargetPx} px` : '';
     const done = `Saved ${what}${size} in ${seconds} s.`;
     if (kind === 'download') {
       // Saved first, since a download can leave the page on iPhone.
