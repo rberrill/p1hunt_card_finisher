@@ -23,10 +23,10 @@ Six steps, in order:
 6. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size.
    - Where the browser supports it, **Share** opens the share sheet; on iPhone, Save Image puts the result straight into Photos.
    - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
-   - Exports are rendered from the full-resolution original.
+   - Exports are rendered from the full-resolution original. When the crop is smaller than the chosen size, the app asks **Upscale to 2000 px?** (or whichever size you chose) first: Yes enlarges and sharpens it to that size, No keeps the photo's own resolution.
    - Once the photo is exported, **Next card →** opens the next photo, with the same crop and export settings.
    - **Add back** pairs the card's front with its back. A **Front | Back** switch in the header moves between them, both are cropped to the 5:7 card shape, and the pair saves **Together** (one image, side by side or stacked) or **Separately** (two files).
-   - **Corner shots** (under More options): close-ups of the card's four corners for condition photos, as one 2×2 sheet or four photos, cut from the original at its own resolution with the same levels and no logo.
+   - **Corner shots** (under More options): close-ups of the card's four corners for condition photos, as one 2×2 sheet or four photos, cut from the original at its own resolution with the same levels and no logo, and upscaled to 2000 px if you choose.
    - The app version is shown at the bottom of More options; include it when you report a problem.
 
 Also:

@@ -4,7 +4,7 @@ All notable changes to P1Hunt Card Finisher are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version is shown in the logo tooltip and logged to the browser console.
 
-## [1.9.0] - Unreleased
+## [1.9.0] - 2026-11-10
 
 ### Added
 - **Front + back pairs.** On the Export step, **Add back** keeps the photo you're on as the card's front and opens the photo picker for its back, which then goes through every step like any photo. While a pair is open:
