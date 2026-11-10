@@ -1,6 +1,6 @@
 # Behavior and layout checks
 
-The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure here points to the catalog rows it would break. Those rows are the connected cases to add to the version's UAT. Run the sections a change touches; run them all for a release. "Phone" means 390×844 (and 375×667 for layout rows) with touch emulation; "Desktop" means 1280×800.
+The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure here points to the catalog rows it would break. Those rows are the connected cases to add to the version's UAT. A behavior these checks prove has no catalog row unless a real iPhone adds something to the verdict (the `uat` skill), so a check dropped from here needs a catalog row in its place. Run the sections a change touches; run them all for a release. "Phone" means 390×844 (and 375×667 for layout rows) with touch emulation; "Desktop" means 1280×800.
 
 ## 1. Start and layout
 
@@ -69,7 +69,7 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Both | Other steps | the logo shows only on Overlay and Export |
 | Phone | Overlay layout | same photo height and control-area rules as section 1 |
 
-## 8. Export
+## 8. Export, 9. Corner shots, 10. Upscale question
 
 | Device | Check | Pass when |
 |---|---|---|
@@ -83,7 +83,7 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Both | Upscale card (main export) | with a crop under the Size, Download, Share (unhide the button and stub `navigator.share`) and Copy (stub `CF.Exporter.copy`) show the card (title with the Size, the crop's size, Yes / No / Cancel); Yes gives a file with the Size on its long edge and the toast its size, No the real size, a click outside nothing; Size 3000 asks for 3000, Original never asks; `upscale.sharpenAmount=0` applies; `CF.syncUI()` and a resize leave the card up; a pair (`CF.receivePhoto(file, name, 'addBack')`): Together's joined image fits the Size exactly, Separately's files each get it, Copy copies the joined image, Size 1080 with a bigger joined image gives no card |
 | Both | Section boxes | Corner shots and Edits have the `--bg` box, Quality doesn't; each corner button's label is on one line (range client rects): side by side at 375 and 390, stacked at 1280; no sideways scroll |
 
-## 8b. Front + back pairs
+## 11. Front and back
 
 | Device | Check | Pass when |
 |---|---|---|
@@ -99,14 +99,14 @@ The sections match Rich's UAT catalog (`tests/uat/catalog.md`), so a failure her
 | Both | Crafted `pair` record (`orient: '<b>x</b>'`) | resumes the open side alone with the "reset" notice; the record is cleared |
 | Desktop | Reload fails after a pair export (wrap `CF.ImageSource.load` to reject the next two calls for the open side's file, then Download Together) | the file is still delivered; a warn toast says the photo isn't loaded and to switch sides; `app.img.el` is null; Download then refuses with the same message; switching sides and back restores `app.img.el` and the export works |
 
-## 9. Session restore
+## 12. Session restore
 
 | Device | Check | Pass when |
 |---|---|---|
 | Both | Edit (with an unapplied Levels draft), reload, Resume | same photo, edits, step and draft; corners not moved by detection |
 | Both | Reload, Start fresh, reload | no prompt the second time |
 
-## 10. Security
+## 13. Security
 
 | Device | Check | Pass when |
 |---|---|---|
