@@ -11,6 +11,8 @@ A static web app that straightens, crops and color-corrects phone photos of trad
    - what changes, how, open questions and gaps in the ACs;
    - its new UAT cases, the connected catalog cases it could affect, and whether a full UAT run is triggered (the `uat` skill).
 
+   When he asks for it as a document, the `feature-request` skill writes it: a Markdown file in `../../feature-requests/` and a request page in Claude, with a description, purpose, impact, drawn wireframes and acceptance criteria (Rich, 2026-11-10).
+
    Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away (Claude's working habit, not a rule Rich set).
 2. **Write for the reviewer.** Code is read more than it's run: whole-word names, one statement per line, lines of 100 characters at most, a comment on every function. The detail is in `.claude/rules/code-style.md` (it loads with any code file). Apply it to everything you touch, and don't add to the debt.
 3. **Build, then verify yourself** with the `verify` skill. Report measured results, not assumptions. The only thing a browser can't check is the real iOS share sheet.
@@ -88,7 +90,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 | `icons/` | The app icon: `icon.svg` is the source of the `.ico` and the touch icon (see the `index.html` rule) |
 | `docs/architecture.md` | Engine, shell, adapters, coordinate frames, memory budget, edits-file format |
 | `tests/README.md` | How to run the tests, what each guards, the detection baseline |
-| `.claude/skills/` | `verify` (end-to-end checks), `uat` (Rich's acceptance script), `release` (Rich-triggered) |
+| `.claude/skills/` | `verify` (end-to-end checks), `uat` (Rich's acceptance script), `release` (Rich-triggered), `feature-request` (a request's Markdown file and its page) |
 | `.claude/hooks/` | SessionStart: project state. Stop: runs selftest when app code changed |
 | `CHANGELOG.md`, `README.md`, `SECURITY.md` | Public docs (see `.claude/rules/public-docs.md`) |
 | `tests/uat/` (catalog, smoke), `tests/UAT-X.Y.md`, `archive/`, `CLAUDE.local.md` | Local only (gitignored) |

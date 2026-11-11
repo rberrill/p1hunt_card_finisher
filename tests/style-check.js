@@ -26,6 +26,7 @@ function styledFiles(root) {
     .map(name => `${folder}/${name}`);
   const claudeScripts = [
     '.claude/hooks',
+    '.claude/skills/feature-request',
     '.claude/skills/release',
     '.claude/skills/verify',
   ].flatMap(listJs);
