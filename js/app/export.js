@@ -372,37 +372,53 @@
   // The photo's name without its extension, the start of every exported file's name.
   const exportBaseName = state => (state.source.name || 'photo').replace(/\.[^.]+$/, '');
 
-  // The file extension for an encoded blob. When the browser couldn't encode the chosen
-  // format it falls back to PNG (Safari has no WebP encoder), and this says so.
-  function extensionFor(blob, state, type) {
-    const extension = EXTENSIONS[blob.type] || 'png';
-    if (blob.type !== type) {
-      const format = state.export.format.toUpperCase();
-      const savedAs = extension.toUpperCase();
-      toast(`${format} isn’t supported by this browser — saved as ${savedAs}.`, 'warn', 5000);
-    }
-    return extension;
+  // The file extension for an encoded blob: the blob's real type, which is PNG when the browser
+  // couldn't encode the chosen format (Safari has no WebP encoder). toastSaved says so.
+  function extensionFor(blob) {
+    return EXTENSIONS[blob.type] || 'png';
+  }
+
+  // The sentence a save's toast adds when the browser saved `file` as another format than the
+  // requested `type` (a MIME type), or '' when it saved the requested one.
+  function fallbackNote(file, type) {
+    if (file.type === type) return '';
+    const asked = (EXTENSIONS[type] || type).toUpperCase();
+    const savedAs = extensionFor(file).toUpperCase();
+    return ` ${asked} isn’t supported by this browser, so it was saved as ${savedAs}.`;
+  }
+
+  // Shows how a save went: `done` ("Exported … in N s."), with fallbackNote's sentence when the
+  // browser saved another format than the requested `type`, as a longer warning. The note used
+  // to be its own toast, which `done` replaced at once. outcome: 'saved' (Download) or
+  // shareFiles' outcome; 'pending' adds how to finish, 'cancelled' and 'failed' show nothing
+  // (shareFiles already said why).
+  function toastSaved(done, files, type, outcome) {
+    if (!['saved', 'shared', 'pending'].includes(outcome)) return;
+    const note = fallbackNote(files[0], type);
+    const finish = outcome === 'pending' ? ' Tap Share now to open the share sheet.' : '';
+    const text = done + note + finish;
+    if (note || finish) toast(text, note ? 'warn' : '', 6000);
+    else toast(text);
   }
 
   // Delivers a finished export by Download or Share, with a toast saying how it went.
   async function deliverExport(kind, blob, state, type, startTime, isUpscaled) {
-    const extension = extensionFor(blob, state, type);
+    const extension = extensionFor(blob);
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
     const name = `${exportBaseName(state)}${CONFIG.export.suffix}.${extension}`;
     const output = exportGeometry(state, isUpscaled).output;
     const done = `Exported ${output.width} × ${output.height} px in ${seconds} s.`;
+    const file = new File([blob], name, { type: blob.type });
     if (kind === 'download') {
       // Saved before the download, which can leave the page on iPhone.
       markExported(state);
       CF.Session.flush();
       Exporter.download(blob, name);
-      toast(done);
+      toastSaved(done, [file], type, 'saved');
       return;
     }
-    const file = new File([blob], name, { type: blob.type });
     const outcome = await shareExport([file], () => markExported(state));
-    if (outcome === 'pending') toast(done + ' Tap Share now to open the share sheet.', '', 6000);
-    if (outcome === 'shared') toast(done);
+    toastSaved(done, [file], type, outcome);
   }
 
   // Records that these edits were exported (downloaded, copied or shared), which shows Next
@@ -623,6 +639,7 @@
     encodeCanvas,
     exportBaseName,
     extensionFor,
+    toastSaved,
     runWithProgress,
     doExport,
     shareFiles,

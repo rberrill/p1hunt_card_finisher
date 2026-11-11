@@ -68,7 +68,7 @@
       const canvas = await renderShot(state, shots, i, onProgress);
       files.push(await CF.encodeCanvas(canvas, state, type));
     }
-    const extension = CF.extensionFor(files[0], state, type);
+    const extension = CF.extensionFor(files[0]);
     const baseName = CF.exportBaseName(state);
     return files.map((blob, i) => {
       const name = `${baseName}-corner-${shots.shots[i].label}.${extension}`;
@@ -97,7 +97,7 @@
       canvas.height = 0;
     }
     const blob = await CF.encodeCanvas(sheet, state, type);
-    const extension = CF.extensionFor(blob, state, type);
+    const extension = CF.extensionFor(blob);
     const name = `${CF.exportBaseName(state)}-corners.${extension}`;
     return [new File([blob], name, { type: blob.type })];
   }
@@ -162,7 +162,7 @@
       const files = await CF.runWithProgress(
         onProgress => encode(state, shots, type, onProgress),
       );
-      await deliverCornerShots(kind, files, startTime, shots);
+      await deliverCornerShots(kind, files, startTime, shots, type);
     } catch (error) {
       console.error(error);
       toast('Corner shots failed: ' + error.message, 'error', 6000);
@@ -170,8 +170,8 @@
   }
 
   // Delivers finished corner files by Download or Share, with a toast saying how it went and,
-  // after an upscale, at what size.
-  async function deliverCornerShots(kind, files, startTime, shots) {
+  // after an upscale, at what size. type: the requested MIME type (CF.toastSaved's note).
+  async function deliverCornerShots(kind, files, startTime, shots, type) {
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
     const what = files.length === 1 ? 'the corner sheet' : `${files.length} corner shots`;
     const size = shots.isUpscaled ? ` at ${CONFIG.cornerShots.upscaleTargetPx} px` : '';
@@ -183,12 +183,11 @@
         if (i) await new Promise(resolve => setTimeout(resolve, DOWNLOAD_GAP_MS));
         CF.Exporter.download(files[i], files[i].name);
       }
-      toast(done);
+      CF.toastSaved(done, files, type, 'saved');
       return;
     }
     const outcome = await shareCornerShots(files);
-    if (outcome === 'pending') toast(done + ' Tap Share now to open the share sheet.', '', 6000);
-    if (outcome === 'shared') toast(done);
+    CF.toastSaved(done, files, type, outcome);
   }
 
   // Shares the corner files in one share sheet. On 'pending' (a slow render) the group's

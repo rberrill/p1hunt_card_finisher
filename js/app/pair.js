@@ -506,7 +506,7 @@
     });
     return SIDES.map(side => {
       const state = sides[side].state;
-      const extension = CF.extensionFor(blobs[side], state, type);
+      const extension = CF.extensionFor(blobs[side]);
       const name = `${CF.exportBaseName(state)}-${side}.${extension}`;
       return new File([blobs[side]], name, { type: blobs[side].type });
     });
@@ -516,7 +516,7 @@
   async function togetherFile(sides, type, onProgress, isUpscaled) {
     const blob = await encodeTogether(sides, type, onProgress, isUpscaled);
     const state = sides.front.state;
-    const extension = CF.extensionFor(blob, state, type);
+    const extension = CF.extensionFor(blob);
     const name = `${CF.exportBaseName(state)}-pair.${extension}`;
     return [new File([blob], name, { type: blob.type })];
   }
@@ -580,7 +580,7 @@
         }
         const encode = isTogether() ? togetherFile : encodeSeparately;
         const files = await encode(sides, type, onProgress, isUpscaled);
-        await deliverPair(kind, files, key, startTime);
+        await deliverPair(kind, files, key, startTime, type);
       });
     } catch (error) {
       console.error(error);
@@ -595,8 +595,9 @@
     }
   }
 
-  // Delivers the pair's files by Download (one after another) or one share sheet.
-  async function deliverPair(kind, files, key, startTime) {
+  // Delivers the pair's files by Download (one after another) or one share sheet. type: the
+  // requested MIME type, for CF.toastSaved's note when the browser saved another.
+  async function deliverPair(kind, files, key, startTime, type) {
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
     const what = files.length === 1 ? 'the Together image' : 'the front and back';
     const done = `Exported ${what} in ${seconds} s.`;
@@ -608,12 +609,11 @@
         if (i) await new Promise(resolve => setTimeout(resolve, PAIR_DOWNLOAD_GAP_MS));
         CF.Exporter.download(files[i], files[i].name);
       }
-      toast(done);
+      CF.toastSaved(done, files, type, 'saved');
       return;
     }
     const outcome = await CF.shareExport(files, () => markPairExported(key));
-    if (outcome === 'pending') toast(done + ' Tap Share now to open the share sheet.', '', 6000);
-    if (outcome === 'shared') toast(done);
+    CF.toastSaved(done, files, type, outcome);
   }
 
   /* ---------- the Together preview (Export) ---------- */

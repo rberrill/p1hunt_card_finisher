@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.10.0] - Unreleased
 
+### Fixed
+- When the browser can't save the chosen format (WebP on Safari) and saves a PNG instead, the message saying so was replaced at once by the "Exported…" message, so it was never seen. It's now part of that message, shown as a warning, on Download, Share, a pair's export and the corner shots.
+
 ## [1.9.0] - 2026-11-10
 
 ### Added

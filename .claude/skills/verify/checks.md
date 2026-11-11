@@ -73,7 +73,7 @@ The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure he
 
 | Device | Check | Pass when |
 |---|---|---|
-| Both | WebP where it can't encode | falls back to PNG with a notice |
+| Both | WebP where it can't encode (stub `toBlob` to answer WebP with PNG) | a `.png` file; the final toast is the warning "… WEBP isn’t supported by this browser, so it was saved as PNG." and stays up past 3 s, on Download, a finished Share, Share now, a pair's Separately and the corner sheet; a JPEG export's toast is unchanged |
 | Both | Stubbed share: Share | button shown; the shared `File` has the right name and type; the app stays on Export with edits intact |
 | Both | Stubbed share refused (`NotAllowedError`) | button becomes **Share now**; any edit cancels it |
 | Both | No `navigator.share` / no `ClipboardItem` | Share and Copy hidden, not greyed; Download is the main button |
