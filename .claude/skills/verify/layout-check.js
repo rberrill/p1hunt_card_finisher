@@ -144,10 +144,25 @@ function partChecks(label, { controls, layers }, isPhone, height) {
     [`${label}: a choice runs its action; a tap outside runs none`,
       layers.answerAfterYes === 'yes' && layers.answerAfterOutsideTap === 'none'
         && layers.cardHiddenAfter, ''],
-    [`${label}: toast is at least 44 px tall, inset 16 px, 12 px above the photo's edge`,
-      layers.toast.height >= MIN_TARGET_PX && layers.toastInsetPx === 16
-        && layers.toastBottomPx === 12, ''],
   ];
+  const toastDetail = `${layers.toast.width} × ${layers.toast.height} px, inset `
+    + `${layers.toastInsetPx} px, ${layers.toastBottomPx} px up`;
+  if (isPhone) {
+    checks.push([
+      `${label}: toast is at least 44 px tall, inset 16 px, 12 px above the photo's edge`,
+      layers.toast.height >= MIN_TARGET_PX && layers.toastInsetPx === 16
+        && layers.toastBottomPx === 12,
+      toastDetail,
+    ]);
+  } else {
+    // A wide screen: bottom center of the photo (frame DT10).
+    checks.push([
+      `${label}: toast is at least 44 px tall, centered, at most 460 px wide, 20 px up`,
+      layers.toast.height >= MIN_TARGET_PX && Math.abs(layers.toastOffCenterPx) <= 1
+        && layers.toast.width <= 460 && layers.toastBottomPx === 20,
+      toastDetail,
+    ]);
+  }
   const exportDetail = `${controls.exportRowSparePx} px spare`;
   checks.push([`${label}: Size and Format share one row, every choice a 44 px target`,
     controls.exportRowSparePx >= 0 && controls.exportSegments.every(isTarget), exportDetail]);

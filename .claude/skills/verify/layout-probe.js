@@ -361,6 +361,11 @@
       toast: size(toastEl),
       toastInsetPx: round(rectOf(toastEl).left - rectOf(stageLike).left),
       toastBottomPx: round(rectOf(stageLike).bottom - rectOf(toastEl).bottom),
+      // How far the toast's center is from the stage's, sideways.
+      toastOffCenterPx: round(
+        (rectOf(toastEl).left + rectOf(toastEl).right) / 2
+          - (rectOf(stageLike).left + rectOf(stageLike).right) / 2,
+      ),
     };
   }
 

@@ -300,32 +300,40 @@
   // Whether the card that's up asks one of the pair's questions (Unpair, New photo).
   let isPromptForPair = false;
 
-  // Shows a question on a card over the dimmed photo, like Resume (with the step menu, the only
-  // things allowed over the photo): a title, a line of text, two choices and Cancel. A tap
-  // outside the card or Escape cancels. choices: [{ label, action }]. The upscale question
-  // (CF.askUpscale) asks on it too; isForPair marks the pair's own questions, which syncPair
-  // takes down when the pair ends while one is up.
-  function showPrompt({ title, text, choices, isForPair = false }) {
-    isPromptForPair = isForPair;
-    byId('pairPromptTitle').textContent = title;
-    byId('pairPromptText').textContent = text;
-    ['btnPromptFirst', 'btnPromptSecond'].forEach((id, i) => {
-      const button = byId(id);
-      button.textContent = choices[i].label;
-      button.onclick = () => {
-        hidePrompt();
-        choices[i].action();
-      };
+  // The question card (the Alert card part), built on first use and kept in the stage, where a
+  // wide screen dims only the photo. Its ids are the ones the old markup had.
+  function promptCard() {
+    const existing = byId('pairPrompt');
+    if (existing) return existing;
+    const layer = CF.buildAlertCard('pairPrompt', {
+      first: 'btnPromptFirst',
+      second: 'btnPromptSecond',
+      cancel: 'btnPromptCancel',
     });
-    byId('pairPrompt').hidden = false;
-    elements.root.classList.add('prompting');
-    CF.closeSheets();
-    byId('btnPromptFirst').focus({ preventScroll: true });
+    // However the card closes (a choice, Cancel, a tap outside, Escape), the keyboard
+    // shortcuts wake again (input.js reads the class).
+    layer.addEventListener('alertclose', () => {
+      isPromptForPair = false;
+      elements.root.classList.remove('prompting');
+    });
+    elements.stage.append(layer);
+    return layer;
   }
 
+  // Shows a question on a card over the dimmed photo: a title, a line of text, two choices and
+  // Cancel. A tap outside the card or Escape cancels. choices: [{ label, action, isMain }];
+  // the main one is red, and a pair's questions have none. The upscale question
+  // (CF.askUpscale) asks on it too; isForPair marks the pair's own questions, which syncPair
+  // takes down when the pair ends while one is up. An open sheet stays open under the card.
+  function showPrompt({ title, text, choices, isForPair = false }) {
+    isPromptForPair = isForPair;
+    elements.root.classList.add('prompting');
+    CF.showAlert(promptCard(), { title, text, choices });
+  }
+
+  // Takes the question down without an answer.
   function hidePrompt() {
-    byId('pairPrompt').hidden = true;
-    elements.root.classList.remove('prompting');
+    CF.hideAlert(promptCard());
   }
 
   function askUnpair() {
@@ -876,10 +884,8 @@
       if (app.pair && side !== app.pair.current) switchSide();
     });
     byId('btnUnpair').onclick = askUnpair;
-    byId('btnPromptCancel').onclick = hidePrompt;
-    byId('pairPrompt').addEventListener('click', event => {
-      if (event.target === event.currentTarget) hidePrompt();
-    });
+    // The question card is in the page from the start; the part binds its own buttons.
+    promptCard();
     byId('btnAddBack').onclick = () => {
       app.fileIntent = 'addBack';
       elements.fileInput.click();

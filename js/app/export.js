@@ -342,13 +342,13 @@
 
   // Asks "Upscale to N px?" on a card over the photo (CF.showPrompt): onAnswer(true) on Yes,
   // onAnswer(false) on No, nothing on Cancel. The main export, a pair's and the corner shots
-  // all ask through it. `text` gives the real size.
+  // all ask through it. `text` gives the real size. Yes is the card's main (red) choice.
   function askUpscale(targetPx, text, onAnswer) {
     CF.showPrompt({
       title: `Upscale to ${targetPx} px?`,
       text,
       choices: [
-        { label: 'Yes', action: () => onAnswer(true) },
+        { label: 'Yes', isMain: true, action: () => onAnswer(true) },
         { label: 'No', action: () => onAnswer(false) },
       ],
     });
