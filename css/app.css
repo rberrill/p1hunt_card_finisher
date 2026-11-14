@@ -1190,6 +1190,34 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* ---- step: Perspective ---- */
 /* Owned by js/app/perspective.js's phase. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
+/* Preview's two grey lines (in the label row and the control row): at most two lines each in
+   their 44 px row, as the status text is. */
+.perspective-note {
+  flex: 1;
+  min-width: 0;
+  max-height: 34px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  line-height: 17px;
+  color: var(--quiet);
+}
+/* The Result preview: a wide screen only (frame DT3), between the control area and the
+   options listed inline. */
+.perspective-result { display: none; }
+@media (min-width: 761px) {
+  .perspective-result {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px 4px;
+    border-top: 1px solid var(--edge);
+  }
+  .perspective-result .sheet-heading { margin: 0; }
+  .perspective-result .mini { max-width: 180px; margin: 0; }
+}
 
 /* ---- step: Rotate ---- */
 /* Owned by js/app/rotate.js's phase. Phone-only and wide-only rules go in a

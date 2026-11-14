@@ -85,82 +85,12 @@
            section belongs to its step: edit only your own step's section. -->
       <!-- ==== step: Perspective (js/app/perspective.js) ==== -->
       <section data-panel="perspective" class="active">
-        <div class="controls">
-          <div class="nudge" role="group" aria-label="Nudge the selected handle">
-            <button data-nudge="0,-1" aria-label="Nudge up">▲</button>
-            <button data-nudge="0,1" aria-label="Nudge down">▼</button>
-            <button data-nudge="-1,0" aria-label="Nudge left">◀</button>
-            <button data-nudge="1,0" aria-label="Nudge right">▶</button>
-            <button data-nudge="cycle" class="cycle" title="Select the next handle">
-                Next handle
-            </button>
-          </div>
-          <div class="inline">
-            <label for="strength">Flatten</label>
-            <input type="range" id="strength" min="0" max="100" step="1">
-            <span class="value" id="strengthValue"></span>
-          </div>
-          <div class="status" id="perspectiveStatus"></div>
-          <div class="group result-group">
-            <h3>Result</h3>
-            <canvas class="mini" id="mini"></canvas>
-          </div>
-          <details class="more">
-            <summary>More options</summary>
-            <div class="group">
-              <h3>Detection</h3>
-              <div class="row">
-                <button class="btn" id="btnFindCard" aria-pressed="false"
-                    title="Then tap the card in the photo">
-                  Tap to find card
-                </button>
-              </div>
-              <div class="readout" id="detectInfo"></div>
-              <div class="hint">
-                Corners on the wrong card? Tap to find card, then tap the card.
-              </div>
-            </div>
-            <div class="group">
-              <h3>Flatten</h3>
-              <div class="hint">
-                0% squares the card up but keeps the camera's depth (a symmetric trapezoid).
-                100% is a
-                flat 5:7 rectangle, like a scan.
-              </div>
-            </div>
-            <div class="group">
-              <h3>Card orientation</h3>
-              <div class="segmented" data-segment="orientation">
-                <button data-value="auto">Auto</button>
-                <button data-value="portrait">Portrait</button>
-                <button data-value="landscape">Landscape</button>
-              </div>
-            </div>
-            <div class="group">
-              <h3>Handles</h3>
-              <label class="toggle"><input type="checkbox" id="snap"> Snap to detected edges</label>
-              <label class="toggle"><input type="checkbox" id="debugOverlay"> Debug overlay</label>
-              <div class="hint">
-                Drag corners or edge midpoints. Double-tap a handle to zoom in on it (again to zoom
-                out). On a phone, the arrows nudge the selected handle; on a keyboard, Tab selects a
-                handle and arrows nudge 1 px (Shift = 10).
-              </div>
-            </div>
-            <button class="btn wide" data-reset="perspective">Reset perspective</button>
-          </details>
-        </div>
-        <div class="action-bar">
-          <button class="btn" id="btnPreview" aria-pressed="false"
-              title="Show the corrected card full size">
-            <svg viewBox="0 0 24 24">
-              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <span>Preview</span>
-          </button>
-          <button class="btn" id="btnNext" title="Try the next detected candidate">
-              Candidate
-          </button>
+        <!-- js/app/perspective.js builds the control area before this and the options sheet
+             after it. The Result preview shows on a wide screen only; #mini stays static
+             because core.js looks it up at load. -->
+        <div class="perspective-result">
+          <h3 class="sheet-heading">Result</h3>
+          <canvas class="mini" id="mini"></canvas>
         </div>
       </section>
 
