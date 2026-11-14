@@ -21,12 +21,12 @@ The `uat` skill copies these tables into each version's script; edit this master
 | SD7 | Overlay | Press 5, **Add logo** with the PNG, click the bottom-right ring | The logo snaps to the bottom-right corner, inside the photo |  |  |  |
 | SD8 | Download | Press 6, **Download**, open the file | `<name>-straight.jpg`; the crop, rotation, levels and logo match the screen; **Next card →** shows |  |  |  |
 | SD9 | Copy | **Copy**, paste into another app | The image pastes |  |  |  |
-| SD10 | Edits round trip | More options → **Save edits**; reload, **Start fresh**; open the same photo, go to Export, **Load edits**, **Download** | The second file looks identical to SD8's, logo included |  |  |  |
-| SD11 | Add back | **Add back**, choose `14_back_portrait_raw_white` | It opens on Perspective; the header shows **Front / Back** with Back lit, then **×** |  |  |  |
+| SD10 | Edits round trip | In the side panel, **Save edits**; reload, **Start fresh**; open the same photo, go to Export, **Load edits**, **Download** | The second file looks identical to SD8's, logo included |  |  |  |
+| SD11 | Add back | **Add back**, choose `14_back_portrait_raw_white` | It opens on Perspective; the top bar shows **Front / Back** with Back lit, and the Unpair icon beside it |  |  |  |
 | SD12 | Pair export | Go to Export, look at the photo area; choose **Separately**, **Download** | The preview joins both cards, front on the left; two files arrive, `-front` (with the logo) and `-back` |  |  |  |
 | SD13 | Corner shots | In the side panel's **Corner shots** box choose **4 photos**, **Download corners** | Four close-up files, `-corner-tl`, `-tr`, `-br`, `-bl`, with no logo |  |  |  |
 | SD14 | Resume the pair | Reload, **Resume** | The prompt names both photos; both sides come back, on the side and step you left |  |  |  |
-| SD15 | Narrow window | Narrow the window below 760 px, then widen it | The step menu button replaces the tabs; widening brings them back |  |  |  |
+| SD15 | Narrow window | Narrow the window below 760 px, then widen it | The tab bar at the bottom replaces the top bar's step pill; widening brings the pill back |  |  |  |
 | SD16 | Clean console | Look at the console | No red errors (CSP or otherwise) from the whole pass |  |  |  |
 
 ### Phone
@@ -34,19 +34,19 @@ The `uat` skill copies these tables into each version's script; edit this master
 
 | ID | Test | Steps | Expected | Pre-release | Live | Notes |
 |---|---|---|---|---|---|---|
-| SP1 | Open and detect | **Open**, choose the slab's front | It loads and the corners sit on the card; header, photo, control area and action bar, with nothing over the photo and no button text cut off |  |  |  |
+| SP1 | Open and detect | **Open**, choose the slab's front | It loads and the corners sit on the card; top bar, photo, control area and tab bar, with nothing over the photo and no button text cut off |  |  |  |
 | SP2 | Long-press and drag | Press and hold a corner for 2 s, then drag it | No iOS magnifier or callout; the loupe pins to the top corner away from your finger |  |  |  |
 | SP3 | Nudge and Undo | Tap ▶ twice, then Undo | The handle moves and the loupe stays up; one Undo takes both taps back |  |  |  |
-| SP4 | Step menu and Rotate | Tap the step button, pick **Rotate**, drag the Fine slider | The menu closes on Rotate; the photo rotates, with a grid |  |  |  |
-| SP5 | Crop | **Crop →**, swipe the preset row, tap 5:4 | The chip reads 4:5 and the box is portrait; the photo is the same height as on Rotate |  |  |  |
-| SP6 | Levels | **Levels →**, **Auto**, press and hold the photo, then **Apply** | The colors adjust; the hold shows the photo without levels, with no magnifier; Apply clears the dot |  |  |  |
-| SP7 | Overlay | **Overlay →**, **Use saved overlay** (or **Add logo**), pinch on the logo, tap the bottom-right ring | The logo resizes while the photo stays still, then snaps to the corner |  |  |  |
-| SP8 | Right build | **Export →**, open More options, scroll to its end | The last line reads the version under test (`-dev` pre-release); the Source line above it gives the photo's real pixel size |  |  |  |
-| SP9 | Download with upscale | Close More options, **Download**; if it asks **Upscale to 2000 px?**, tap **Yes** | The image has the crop, levels and logo as on screen; no crash |  |  |  |
+| SP4 | Tab bar and Rotate | Tap **Rotate** in the tab bar, drag the Fine slider | Rotate opens, its tab lit; the photo rotates, with a grid |  |  |  |
+| SP5 | Crop | Tap **Crop** in the tab bar, swipe the preset row, tap 5:4 | The chip reads 4:5 and the box is portrait; the photo is the same height as on Rotate |  |  |  |
+| SP6 | Levels | Tap **Levels**, **Auto**, press and hold the photo, then **Apply** | The colors adjust; the hold shows the photo without levels, with no magnifier; Apply clears the dot |  |  |  |
+| SP7 | Overlay | Tap **Overlay**, **Use saved overlay** (or **Add logo**), pinch on the logo, tap the bottom-right ring | The logo resizes while the photo stays still, then snaps to the corner |  |  |  |
+| SP8 | Right build | Tap **Export**, tap the grabber to open its options sheet, scroll to its end | The last line reads the version under test (`-dev` pre-release); the Source line above it gives the photo's real pixel size |  |  |  |
+| SP9 | Download with upscale | Close the sheet with **✕**, **Download**; if it asks **Upscale to 2000 px?**, tap **Yes** | The image has the crop, levels and logo as on screen; no crash |  |  |  |
 | SP10 | Next card | Look under the readout (after Back and **Resume** if Safari showed the image) | On Export with every edit intact; **Next card →** sits beside **Add back** |  |  |  |
-| SP11 | Add back | **Add back**, choose the slab's back | It opens on Perspective with corners on the card; the header fits **Front / Back** and **×** in one row |  |  |  |
-| SP12 | Corner sheet | Go to Export, tap **Corner shots**, **1 sheet**, **Download corners** (answer **No** if asked) | More options opens at the Corner shots box; a 2×2 sheet of this side's corners downloads, with no logo |  |  |  |
-| SP13 | Pair preview and Download | Close More options; with **Together** chosen, **Download** (answer **No** if asked) | The photo area shows both sides, front first; one joined image downloads, the logo on the front only |  |  |  |
+| SP11 | Add back | **Add back**, choose the slab's back | It opens on Perspective with corners on the card; the top bar fits **Front / Back** and the Unpair icon in one row |  |  |  |
+| SP12 | Corner sheet | Go to Export, tap **Corner shots**, **1 sheet**, **Download corners** (answer **No** if asked) | Export's options sheet opens at the Corner shots box; a 2×2 sheet of this side's corners downloads, with no logo |  |  |  |
+| SP13 | Pair preview and Download | Drag the sheet down to close it; with **Together** chosen, **Download** (answer **No** if asked) | The photo area shows both sides, front first; one joined image downloads, the logo on the front only |  |  |  |
 | SP14 | (HTTPS) Share to Photos | **Share** → Save Image, then open it in Photos | The joined image is in Photos and matches the screen; Safari is still on Export with every edit intact | ➖ |  |  |
 | SP15 | Resume after closing | Swipe Safari away, reopen the page, **Resume** | The prompt names both photos; both sides and their edits come back |  |  |  |
-| SP16 | Unpair | Tap **×**, **Keep front** | A card over the dimmed photo asks which side to keep; the front stays as a single photo with its edits |  |  |  |
+| SP16 | Unpair | Tap the Unpair icon, **Keep front** | A card over the dimmed photo asks which side to keep; the front stays as a single photo with its edits |  |  |  |
