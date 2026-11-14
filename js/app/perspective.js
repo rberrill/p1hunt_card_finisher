@@ -25,8 +25,8 @@
     'Corners on the wrong card? Tap to find card, then tap the card.',
   ];
   const PERSPECTIVE_KEYS = [
-    'Drag corners or edge midpoints. Double-click a handle to zoom in on it. Tab selects the '
-      + 'next handle; arrows nudge 1 px (Shift 10). F fits; 1 to 6 change step.',
+    'Double-click a handle to zoom in on it. Tab selects the next handle; arrows nudge 1 px '
+      + '(Shift 10). F fits; 1 to 6 change step.',
   ];
   // The nudge pad's keys, left to right, and the direction each moves the handle (screen px).
   const NUDGE_KEYS = [

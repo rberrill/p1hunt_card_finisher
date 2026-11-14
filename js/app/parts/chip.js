@@ -37,9 +37,13 @@
   function revealSelectedChip(row) {
     const chip = row.querySelector('.preset-chip[aria-pressed="true"]');
     if (!chip) return;
+    // Measured against the row's content box: the row runs to the screen's edge through its
+    // own right padding, and the chip should rest clear of that edge, not flush against it.
     const rowRect = row.getBoundingClientRect();
+    const gutterPx = parseFloat(window.getComputedStyle(row).paddingRight) || 0;
+    const visibleRight = rowRect.right - gutterPx;
     const chipRect = chip.getBoundingClientRect();
-    if (chipRect.right > rowRect.right) row.scrollLeft += chipRect.right - rowRect.right;
+    if (chipRect.right > visibleRight) row.scrollLeft += chipRect.right - visibleRight;
     else if (chipRect.left < rowRect.left) row.scrollLeft -= rowRect.left - chipRect.left;
   }
 

@@ -14,7 +14,7 @@
   // screen (frame DT4).
   const CROP_TIPS = ['Drag inside the box to move it, and its handles to resize.'];
   const CROP_KEYS = [
-    'Drag inside the box to move it, handles to resize. Shift keeps the aspect in Free.',
+    'Shift keeps the aspect in Free.',
   ];
   // The label row's note while a pair is open (the plan's approved wording).
   const PAIR_NOTE = 'Pair: 5:7 only';
@@ -194,19 +194,6 @@
     if (selection === restingPreset) return;
     restingPreset = selection;
     CF.revealSelectedChip(row);
-    keepRowGutter(row);
-  }
-
-  // The row runs to the screen's right edge through its own padding, and revealSelectedChip
-  // stops a chip flush against that edge. This scrolls the padding in as well, so the selected
-  // chip rests clear of the edge, as the last chip does at the row's end.
-  function keepRowGutter(row) {
-    const chip = row.querySelector('.preset-chip[aria-pressed="true"]');
-    if (!chip) return;
-    const gutterPx = parseFloat(window.getComputedStyle(row).paddingRight) || 0;
-    const visibleRight = row.getBoundingClientRect().right - gutterPx;
-    const overlapPx = chip.getBoundingClientRect().right - visibleRight;
-    if (overlapPx > 0) row.scrollLeft += overlapPx;
   }
 
   // The crop's size in pixels; empty while the corners are invalid.
