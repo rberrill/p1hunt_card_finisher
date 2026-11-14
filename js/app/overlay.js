@@ -1,12 +1,28 @@
 /* =====================================================================
    js/app/overlay.js: the Overlay step. A logo placed on the framed photo and merged at export.
+   Its control area, built from js/app/parts/: with no logo, a hint in the label row, the saved
+   logo's thumbnail with Use saved overlay and Add logo in the control row, and Delete saved in
+   the tool row; with a logo placed, Opacity in the label row, the move and size pads in the
+   control row, and the tool row (Replace logo, Reset, Remove, Delete saved). A file error takes
+   the label row as a status. Its options sheet holds the Tips.
    Shell modules share one namespace, CF (created in core.js). Names from core are
    destructured below; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { FULL_CIRCLE, Vec2, byId, elements, clone, makeCanvas, context2d, app, toast } = CF;
+  const {
+    FULL_CIRCLE,
+    Vec2,
+    byId,
+    makeEl,
+    elements,
+    clone,
+    makeCanvas,
+    context2d,
+    app,
+    toast,
+  } = CF;
 
   /* ---------- the overlay image ----------
      state.overlay = { id, aspect, cx, cy, w, opacity } (placement relative to the crop; see
@@ -192,8 +208,15 @@
     return { overlay: effective(overlay, crop.width, crop.height), crop };
   }
 
+  // The placement (as JSON) a message was shown over: see setMessage.
+  let messagePlacement = '';
+
+  // Shows a message in the label row (a file that can't be used). It stays until a logo is
+  // added, the step is left or the logo next changes: with a logo placed it stands where
+  // Opacity does, so it must not outstay the next edit.
   function setMessage(text) {
     app.overlayMessage = text || '';
+    messagePlacement = JSON.stringify((app.state && app.state.overlay) || null);
     CF.syncUI();
   }
 
@@ -291,8 +314,13 @@
 
   let settingsTimer = 0;
   // The latest placement becomes the saved "last used" settings (only for the saved logo).
+  // A message shown over an earlier placement is cleared too (state.js calls this before the
+  // controls are synced).
   function overlayStateChanged() {
     const overlay = app.state && app.state.overlay;
+    if (app.overlayMessage && JSON.stringify(overlay || null) !== messagePlacement) {
+      app.overlayMessage = '';
+    }
     if (!overlay || !saved || overlay.id !== saved.id) return;
     const settings = settingsOf(overlay);
     if (JSON.stringify(settings) === JSON.stringify(saved.settings)) return;
@@ -758,50 +786,6 @@
     adjust(overlay => Object.assign(overlay, { w: overlay.w * factor }), 'overlayWheel');
   }
 
-  // Opacity updates live while sliding; one undo step per slide.
-  function bindOpacitySlider() {
-    const slider = byId('overlayOpacity');
-    let before = null;
-    slider.oninput = () => {
-      if (!app.state.overlay) return;
-      if (!before) before = clone(app.state);
-      app.state.overlay.opacity = slider.value / 100;
-      byId('overlayOpacityValue').textContent = slider.value + '%';
-      CF.requestRender();
-    };
-    slider.onchange = () => {
-      if (before) CF.commitFrom(before, 'overlayOpacity');
-      before = null;
-    };
-  }
-
-  // The on-screen arrows and − +: the same hold-to-repeat timing as the perspective nudge strip.
-  function bindNudgeButtons() {
-    let timer = 0;
-    const stop = () => {
-      clearTimeout(timer);
-      clearInterval(timer);
-    };
-    document.querySelectorAll('[data-overlay-nudge]').forEach(button => {
-      const step = () => {
-        const value = button.dataset.overlayNudge;
-        nudge(value === 'grow' || value === 'shrink' ? value : value.split(',').map(Number));
-      };
-      button.addEventListener('pointerdown', event => {
-        event.preventDefault();
-        stop();
-        step();
-        timer = setTimeout(() => {
-          timer = setInterval(step, CONFIG.nudge.repeatMs);
-        }, CONFIG.nudge.delayMs);
-      });
-      for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
-        button.addEventListener(type, stop);
-      }
-      button.addEventListener('contextmenu', event => event.preventDefault());
-    });
-  }
-
   function resetPlacement() {
     const overlay = app.state.overlay;
     if (!overlay) return;
@@ -811,61 +795,209 @@
     });
   }
 
+  // Takes the logo off this photo (one undo step); the saved logo stays.
+  function removeOverlay() {
+    app.overlayMessage = '';
+    CF.commit(state => {
+      state.overlay = null;
+    });
+  }
+
+  /* ---------- the controls: building ---------- */
+  // The step's tips: the plan's approved wording (14 November), and the line that sat under
+  // Delete saved overlay in the sheet, reworded for the tool (Rich, 14 November). Then the
+  // keyboard help shown under them on a wide screen (frame DT9).
+  const OVERLAY_TIPS = [
+    'Tap a ring to snap the logo to that corner, side or the center. Drag to move it; '
+      + 'drag a corner or pinch to resize.',
+    'On this step the photo stays framed as set in Crop.',
+    'Your last logo is kept in this browser for the next photo.',
+    'Delete saved leaves the logo on this photo.',
+  ];
+  const OVERLAY_KEYS = [
+    'Arrows move the logo (Shift for bigger steps); + and − resize it; the wheel resizes too.',
+  ];
+  const OVERLAY_HINT = 'Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.';
+  // The move pad's keys, left to right, with the direction each moves the logo, and the size
+  // pad's. A key's value is what nudge() takes.
+  const MOVE_KEYS = [
+    { value: '-1,0', icon: 'left', label: 'Move left' },
+    { value: '0,-1', icon: 'up', label: 'Move up' },
+    { value: '0,1', icon: 'down', label: 'Move down' },
+    { value: '1,0', icon: 'right', label: 'Move right' },
+  ];
+  const SIZE_KEYS = [
+    { value: 'shrink', icon: 'minus', label: 'Smaller' },
+    { value: 'grow', icon: 'plus', label: 'Larger' },
+  ];
+  // Delete saved's icon, a bin, on the icons' 24 px grid. Remove has the cross, and the two
+  // tools sit side by side. It belongs in parts/icon.js (CF.ICONS), which this phase can't edit.
+  const BIN_ICON_PATH = 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5';
+
+  // Builds Overlay's control area and options sheet into its section (the shell's contract).
+  // The sheet holds only the Tips: all four buttons are tools (Rich, 14 November).
+  function buildOverlayControls() {
+    const section = document.querySelector('section[data-panel="overlay"]');
+    const area = CF.buildControlArea('overlayArea',
+      CF.buildLabelRow('overlayHintLine', makeEl('span', { class: 'overlay-hint' }, OVERLAY_HINT)),
+      buildOpacityLine(),
+      CF.buildStatus('overlayStatus'),
+      buildAddRow(),
+      buildPadRow(),
+      buildOverlayTools());
+    const sheet = CF.buildSheet({ id: 'overlaySheet', title: 'Overlay options' },
+      CF.buildTipsRow('overlayTips', OVERLAY_TIPS, OVERLAY_KEYS));
+    section.replaceChildren(area, sheet);
+  }
+
+  // The label row with a logo placed: OPACITY, its slider, then the value (frame O8).
+  function buildOpacityLine() {
+    return CF.buildLabelRow('overlayOpacityLine',
+      makeEl('span', { class: 'line-label' }, 'Opacity'),
+      CF.buildSlider({ id: 'overlayOpacity', min: 0, max: 100, step: 1, label: 'Opacity' }),
+      makeEl('span', { class: 'line-value overlay-opacity-value', id: 'overlayOpacityValue' }));
+  }
+
+  // The control row with no logo placed: the saved logo's thumbnail and Use saved overlay
+  // (both only while a logo is saved), then Add logo, the step's red main action.
+  function buildAddRow() {
+    return CF.buildControlRow('overlayAddRow',
+      makeEl('img', { class: 'overlay-saved-thumb', id: 'overlayThumb', alt: 'Saved overlay' }),
+      CF.buildActionButton({ id: 'btnUseSaved', label: 'Use saved overlay', isWide: true }),
+      CF.buildActionButton({
+        id: 'btnOverlayAdd',
+        label: 'Add logo',
+        icon: 'plus',
+        look: 'main',
+        isWide: true,
+      }));
+  }
+
+  // The control row with a logo placed: the move pad at the left, the size pad at the right.
+  function buildPadRow() {
+    return CF.buildControlRow('overlayPadRow',
+      CF.buildNudgePad({ id: 'overlayMovePad', label: 'Move the logo', keys: MOVE_KEYS }),
+      makeEl('span', { class: 'line-spacer' }),
+      CF.buildNudgePad({ id: 'overlaySizePad', label: 'Resize the logo', keys: SIZE_KEYS }));
+  }
+
+  // The tool row: four actions. Delete saved, at the far right, is the one tool that also
+  // shows while a saved logo is offered but not placed.
+  function buildOverlayTools() {
+    const deleteSavedTool = CF.buildTool({
+      id: 'toolOverlayDeleteSaved',
+      kind: 'action',
+      label: 'Delete saved',
+      icon: 'close',
+      title: 'Delete the logo saved in this browser',
+    });
+    deleteSavedTool.querySelector('.icon path').setAttribute('d', BIN_ICON_PATH);
+    return CF.buildToolRow('overlayTools',
+      CF.buildTool({
+        id: 'toolOverlayReplace',
+        kind: 'action',
+        label: 'Replace logo',
+        icon: 'image',
+        title: 'Choose another logo',
+      }),
+      CF.buildTool({
+        id: 'toolOverlayReset',
+        kind: 'action',
+        label: 'Reset',
+        icon: 'rotateLeft',
+        title: 'Center the logo at its first size, at 100%',
+      }),
+      CF.buildTool({
+        id: 'toolOverlayRemove',
+        kind: 'action',
+        label: 'Remove',
+        icon: 'close',
+        title: 'Take the logo off this photo',
+      }),
+      deleteSavedTool);
+  }
+
+  /* ---------- the controls: binding and syncing ---------- */
+  // Opacity updates live while sliding; one undo step per slide.
+  function bindOpacitySlider() {
+    const slider = byId('overlayOpacity');
+    let before = null;
+    slider.addEventListener('input', () => {
+      if (!app.state.overlay) return;
+      if (!before) before = clone(app.state);
+      app.state.overlay.opacity = slider.value / 100;
+      byId('overlayOpacityValue').textContent = `${slider.value}%`;
+      CF.requestRender();
+    });
+    slider.addEventListener('change', () => {
+      if (before) CF.commitFrom(before, 'overlayOpacity');
+      before = null;
+    });
+  }
+
+  // Binds the step's controls once, at start-up. Both pads repeat while a key is held (the
+  // nudge pad part does that, with the perspective nudge's timing).
   function bindOverlayControls() {
     elements.overlayInput = byId('overlayInput');
-    byId('btnOverlayAdd').onclick = () => elements.overlayInput.click();
+    const pickLogo = () => elements.overlayInput.click();
+    byId('btnOverlayAdd').addEventListener('click', pickLogo);
+    byId('toolOverlayReplace').addEventListener('click', pickLogo);
     elements.overlayInput.addEventListener('change', () => {
       const file = elements.overlayInput.files[0];
       elements.overlayInput.value = '';
       if (file) addOverlayFile(file);
     });
-    byId('btnUseSaved').onclick = useSaved;
-    byId('btnOverlayDeleteSaved').onclick = deleteSaved;
-    byId('btnOverlayRemove').onclick = () => {
-      app.overlayMessage = '';
-      CF.commit(state => {
-        state.overlay = null;
-      });
-    };
-    byId('btnOverlayReset').onclick = resetPlacement;
+    byId('btnUseSaved').addEventListener('click', useSaved);
+    byId('toolOverlayDeleteSaved').addEventListener('click', deleteSaved);
+    byId('toolOverlayRemove').addEventListener('click', removeOverlay);
+    byId('toolOverlayReset').addEventListener('click', resetPlacement);
     bindOpacitySlider();
-    bindNudgeButtons();
+    CF.bindNudgePad(byId('overlayMovePad'), value => nudge(value.split(',').map(Number)));
+    CF.bindNudgePad(byId('overlaySizePad'), value => nudge(value));
   }
 
+  // Writes the state into the controls. Three states: no logo and none saved (the hint and
+  // Add logo), a saved logo offered (its thumbnail, Use saved overlay and the Delete saved
+  // tool as well), and a logo placed (Opacity, the pads and all four tools). A message takes
+  // the label row in any of them.
   function syncOverlay() {
     const overlay = app.state && app.state.overlay;
     const hasPhoto = !!app.img;
     const isPlaced = !!overlay;
-    byId('overlayEmpty').hidden = isPlaced;
-    byId('overlayEdit').hidden = !isPlaced;
-    byId('overlaySavedRow').hidden = !saved;
+    const hasSaved = !!saved;
+    const message = { kind: 'error', text: app.overlayMessage || '' };
+    const isStatusShown = CF.updateStatus(byId('overlayStatus'), message);
+    byId('overlayHintLine').hidden = isPlaced || isStatusShown;
+    byId('overlayOpacityLine').hidden = !isPlaced || isStatusShown;
+    byId('overlayAddRow').hidden = isPlaced;
+    byId('overlayPadRow').hidden = !isPlaced;
     const thumb = byId('overlayThumb');
-    if (saved && thumb.getAttribute('src') !== saved.url) thumb.src = saved.url;
-    byId('overlayHint').hidden = !!saved;
-    const addButton = byId('btnOverlayAdd');
-    addButton.textContent = isPlaced ? 'Replace logo' : 'Add logo';
-    addButton.classList.toggle('primary', !isPlaced);
-    addButton.disabled = !hasPhoto;
-    byId('btnUseSaved').disabled = !hasPhoto || !saved;
-    byId('btnOverlayDeleteSaved').disabled = !saved;
-    for (const id of ['btnOverlayReset', 'btnOverlayRemove']) byId(id).disabled = !isPlaced;
-    document.querySelectorAll('[data-overlay-nudge], #overlayOpacity').forEach(control => {
-      control.disabled = !isPlaced;
+    thumb.hidden = !hasSaved;
+    if (hasSaved && thumb.getAttribute('src') !== saved.url) thumb.src = saved.url;
+    CF.updateActionButton(byId('btnUseSaved'), { isHidden: !hasSaved, isDisabled: !hasPhoto });
+    CF.updateActionButton(byId('btnOverlayAdd'), { isDisabled: !hasPhoto });
+    CF.updateNudgePad(byId('overlayMovePad'), { isDisabled: !isPlaced });
+    CF.updateNudgePad(byId('overlaySizePad'), { isDisabled: !isPlaced });
+    const percent = isPlaced ? Math.round(overlay.opacity * 100) : 100;
+    CF.updateSlider(byId('overlayOpacity').parentElement, {
+      value: percent,
+      isDisabled: !isPlaced,
     });
-    if (isPlaced) {
-      const percent = Math.round(overlay.opacity * 100);
-      byId('overlayOpacity').value = percent;
-      byId('overlayOpacityValue').textContent = percent + '%';
-    }
-    const status = byId('overlayStatus');
-    status.className = 'status' + (app.overlayMessage ? ' error' : '');
-    status.textContent = app.overlayMessage || '';
+    byId('overlayOpacityValue').textContent = `${percent}%`;
+    syncOverlayTools(isPlaced, hasSaved, hasPhoto);
   }
 
-  // Builds Overlay's controls from js/app/parts/ into its section of index.html: a control area
-  // (CF.buildControlArea, id overlayArea) and a sheet (CF.buildSheet, id overlaySheet). Until
-  // then the shell hosts the step's old markup.
-  function buildOverlayControls() {
+  // The tool row: all four tools with a logo placed; Delete saved alone while a saved logo is
+  // only offered; no row with neither. Delete saved is dimmed while nothing is saved.
+  function syncOverlayTools(isPlaced, hasSaved, hasPhoto) {
+    byId('overlayTools').hidden = !isPlaced && !hasSaved;
+    for (const id of ['toolOverlayReplace', 'toolOverlayReset', 'toolOverlayRemove']) {
+      byId(id).hidden = !isPlaced;
+    }
+    CF.updateTool(byId('toolOverlayReplace'), { isDisabled: !isPlaced || !hasPhoto });
+    CF.updateTool(byId('toolOverlayReset'), { isDisabled: !isPlaced });
+    CF.updateTool(byId('toolOverlayRemove'), { isDisabled: !isPlaced });
+    CF.updateTool(byId('toolOverlayDeleteSaved'), { isDisabled: !hasSaved });
   }
 
   Object.assign(CF, {

@@ -1313,6 +1313,39 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* ---- step: Overlay ---- */
 /* Owned by js/app/overlay.js's phase. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
+/* The hint in the label row while no logo is placed: grey, at most two lines in its 44 px
+   row, as the status text is. */
+.overlay-hint {
+  flex: 1;
+  min-width: 0;
+  max-height: 34px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  line-height: 17px;
+  color: var(--quiet);
+}
+/* The saved logo's thumbnail, on flat checker squares so a white logo shows (frame O2). */
+.overlay-saved-thumb {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  object-fit: contain;
+  border-radius: 8px;
+  background: repeating-conic-gradient(var(--edge) 0 25%, var(--surface) 0 50%) 0 0 / 12px 12px;
+}
+/* Use saved overlay and Add logo share one control row, so the tool row fits under them in
+   the 200 px area. Each grows from its own width, with less side padding, so both fit beside
+   the thumbnail on a 375 px phone. */
+#overlayAddRow .action-button { flex: 1 1 auto; padding: 0 10px; }
+/* Wide enough for 100%, so the slider beside it keeps its length while it is dragged. */
+.overlay-opacity-value { min-width: 56px; text-align: right; }
+/* Four tools across (three 5 px gaps). While only Delete saved shows, it keeps its width and
+   its place at the right end. */
+#overlayTools { justify-content: flex-end; }
+#overlayTools .tool { flex: 0 0 calc((100% - 15px) / 4); }
 
 /* ---- shell: the phone ---- */
 @media (max-width: 760px) {
