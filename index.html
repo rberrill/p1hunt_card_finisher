@@ -198,33 +198,8 @@
           <button class="btn primary" id="btnDownload">Download</button>
           <button class="btn" id="btnCopy">Copy</button>
         </div>
-        <!-- Corner shots (js/app/corner-shots.js): its own sheet, built around this group by
+        <!-- Corner shots (js/app/corner-shots.js): its own sheet, built into this section by
              buildCornerShotsControls. -->
-        <div class="group" id="cornerShots">
-          <div class="corner-thumbs">
-            <canvas data-corner="tl" role="img" aria-label="Top-left corner"></canvas>
-            <canvas data-corner="tr" role="img" aria-label="Top-right corner"></canvas>
-            <canvas data-corner="bl" role="img" aria-label="Bottom-left corner"></canvas>
-            <canvas data-corner="br" role="img" aria-label="Bottom-right corner"></canvas>
-          </div>
-          <div class="segmented" data-segment="cornerOutput" role="group"
-              aria-label="Corner shots output">
-            <button data-value="photos">4 photos</button>
-            <button data-value="sheet">1 sheet</button>
-          </div>
-          <div class="readout" id="cornerReadout"></div>
-          <div class="row stack-narrow">
-            <button class="btn" id="btnCornerShare" hidden
-                title="Share the corner shots (Save Image puts them in Photos)">
-              <span>Share corners</span>
-            </button>
-            <button class="btn" id="btnCornerDownload">Download corners</button>
-          </div>
-          <div class="hint">
-            Close-ups of the card's four corners, at the photo's own resolution, with this
-            photo's levels and no overlay.
-          </div>
-        </div>
       </section>
     </aside>
   </main>

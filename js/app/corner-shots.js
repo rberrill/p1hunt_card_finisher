@@ -1,8 +1,9 @@
 /* =====================================================================
-   js/app/corner-shots.js: Corner shots (Export → More options), close-ups of the card's four
-   corners as one 2×2 sheet or four photos. They render like the main export, from the
-   full-resolution photo, without the overlay; the geometry is CardEngine.cornerShots. The
-   sheet / photos choice is a remembered preference, not edit state.
+   js/app/corner-shots.js: Corner shots, close-ups of the card's four corners as one 2×2 sheet
+   or four photos, in their own sheet, opened by the Corner shots button on Export (a wide
+   screen lists it in the panel). They render like the main export, from the full-resolution
+   photo, without the overlay; the geometry is CardEngine.cornerShots. The sheet / photos
+   choice is a remembered preference, not edit state.
    Shell modules share one namespace, CF (created in core.js). Names from core are
    destructured below; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
@@ -21,6 +22,21 @@
   // The gap left above Corner shots when its button scrolls the panel to it, so its heading
   // doesn't sit flush against the panel's edge.
   const CORNER_SCROLL_MARGIN_PX = 8;
+  // The thumbnails, left to right (the sheet's reading order: tl tr over bl br), with what a
+  // screen reader calls each.
+  const THUMBNAILS = [
+    { corner: 'tl', label: 'Top-left corner' },
+    { corner: 'tr', label: 'Top-right corner' },
+    { corner: 'bl', label: 'Bottom-left corner' },
+    { corner: 'br', label: 'Bottom-right corner' },
+  ];
+  // The output control's two choices, as they read on screen.
+  const OUTPUT_OPTIONS = [
+    { value: 'photos', label: '4 photos' },
+    { value: 'sheet', label: '1 sheet' },
+  ];
+  const CORNER_HINT = 'Close-ups of the card’s four corners, at the photo’s own resolution, '
+    + 'with this photo’s levels and no overlay.';
 
   /* ---------- the output choice (a preference) ---------- */
 
@@ -195,7 +211,7 @@
     CF.toastSaved(done, files, type, outcome);
   }
 
-  // Shares the corner files in one share sheet. On 'pending' (a slow render) the group's
+  // Shares the corner files in one share sheet. On 'pending' (a slow render) the sheet's
   // Share button becomes "Share now"; any edit cancels it. Returns CF.shareFiles' outcome.
   async function shareCornerShots(files) {
     const outcome = await CF.shareFiles(files, !app.pendingCorners);
@@ -205,7 +221,7 @@
     return outcome;
   }
 
-  /* ---------- the group: readout, buttons, thumbnails ---------- */
+  /* ---------- the sheet: thumbnails, output, readout, save row ---------- */
 
   // The readout: what will be saved and how big, at the photo's real resolution.
   function readout(shots, state) {
@@ -219,24 +235,28 @@
     return ['Sheet ', sheetSize, ` px · ${sizePx} px corners · ${format}`];
   }
 
-  // Syncs the group to the edits and the output choice. Called from CF.syncReadouts.
+  // Syncs the sheet to the edits and the output choice. Called from CF.syncReadouts. Both save
+  // buttons are off while the corners are invalid or anything is being saved (frame CS4);
+  // "Share now" stays on, since its files are already rendered.
   function syncCornerShots() {
     const state = app.state;
     if (!state) return;
     const shots = currentShots();
-    CF.setSegment('cornerOutput', app.cornerShotsOutput);
+    const isSaving = !!app.exporting;
+    CF.updateSegmented(byId('cornerOutput'), app.cornerShotsOutput);
     byId('cornerReadout').replaceChildren(...(shots.ok ? readout(shots, state) : []));
-    const share = byId('btnCornerShare');
-    share.querySelector('span').textContent = app.pendingCorners ? 'Share now' : 'Share corners';
-    share.disabled = !shots.ok || (!!app.exporting && !app.pendingCorners);
-    byId('btnCornerDownload').disabled = !shots.ok || !!app.exporting;
+    CF.updateActionButton(byId('btnCornerShare'), {
+      label: app.pendingCorners ? 'Share now' : 'Share corners',
+      isDisabled: !shots.ok || (isSaving && !app.pendingCorners),
+    });
+    CF.updateActionButton(byId('btnCornerDownload'), { isDisabled: !shots.ok || isSaving });
     requestThumbs();
   }
 
-  // True while the thumbnails can be seen: on Export with its options open (always open on a
-  // wide screen).
+  // True while the thumbnails can be seen: on Export with the Corner shots sheet open (a wide
+  // screen lists it in the panel, always open).
   function areThumbsShown() {
-    return app.tab === 'export' && CF.isSheetOpen(byId('cornerShots').closest('.sheet-layer'));
+    return app.tab === 'export' && CF.isSheetOpen(byId('cornerShotsSheet'));
   }
 
   let isThumbsQueued = false;
@@ -295,12 +315,59 @@
     ctx.restore();
   }
 
-  // Builds Corner shots' sheet (called by the shell before any binding): its own sheet in
-  // Export's section, around the group in index.html.
+  /* ---------- the sheet: building and binding ---------- */
+
+  // The four live thumbnails in a row: one canvas per corner, which drawThumbs finds by its
+  // data-corner.
+  function buildThumbnails() {
+    const canvases = THUMBNAILS.map(thumbnail => makeEl('canvas', {
+      'data-corner': thumbnail.corner,
+      role: 'img',
+      'aria-label': thumbnail.label,
+    }));
+    return makeEl('div', { class: 'corner-thumbs' }, ...canvases);
+  }
+
+  // The save row: Share corners, the sheet's red main action, then Download corners. Where
+  // the browser can't share files, bindCornerShots hides Share and makes Download the red one.
+  function buildSaveRow() {
+    return CF.buildControlRow('cornerSaveRow',
+      CF.buildActionButton({
+        id: 'btnCornerShare',
+        label: 'Share corners',
+        icon: 'share',
+        look: 'main',
+        size: 'tall',
+        isWide: true,
+        title: 'Share the corner shots (Save Image puts them in Photos)',
+      }),
+      CF.buildActionButton({
+        id: 'btnCornerDownload',
+        label: 'Download corners',
+        icon: 'download',
+        size: 'tall',
+        isWide: true,
+      }));
+  }
+
+  // Builds Corner shots' sheet into Export's section (called by the shell before any binding):
+  // the thumbnails, 4 photos | 1 sheet, the readout, the save row and the hint (frame CS1). It
+  // goes before Export's own options sheet, so a wide screen lists it first (frame DT6); while
+  // Export's sheet isn't built yet, it goes at the section's end, and the shell adds Export's
+  // after it.
   function buildCornerShotsControls() {
-    const group = byId('cornerShots');
-    const sheet = CF.buildSheet({ id: 'cornerShotsSheet', title: 'Corner shots' }, group);
-    byId('exportMessage').closest('section').append(sheet);
+    const section = document.querySelector('section[data-panel="export"]');
+    const sheet = CF.buildSheet({ id: 'cornerShotsSheet', title: 'Corner shots' },
+      buildThumbnails(),
+      CF.buildSegmented({
+        id: 'cornerOutput',
+        label: 'Corner shots output',
+        options: OUTPUT_OPTIONS,
+      }),
+      makeEl('div', { class: 'corner-readout', id: 'cornerReadout' }),
+      buildSaveRow(),
+      CF.buildSheetHint(CORNER_HINT));
+    section.insertBefore(sheet, byId('exportSheet'));
   }
 
   // The Corner shots button on Export: opens the Corner shots sheet. A wide screen lists it in
@@ -317,18 +384,23 @@
     panel.scrollTop += offsetPx - CORNER_SCROLL_MARGIN_PX;
   }
 
-  // Wires the group's controls. Share shows only where the browser can share files, as for
-  // the main export; Download always shows.
+  // Wires the sheet's controls. Share shows only where the browser can share files, as for
+  // the main export (hidden, never greyed); there Download, always shown, is the red main
+  // action instead (frame CS3). The thumbnails draw as the sheet opens.
   function bindCornerShots() {
     app.cornerShotsOutput = storedOutput();
-    CF.bindSegment('cornerOutput', setOutput);
-    byId('btnCornerDownload').onclick = () => saveCornerShots('download');
-    byId('btnCornerShare').onclick = () => {
+    CF.bindSegmented(byId('cornerOutput'), setOutput);
+    const share = byId('btnCornerShare');
+    const download = byId('btnCornerDownload');
+    const canShare = CF.Exporter.canShare();
+    CF.updateActionButton(share, { isHidden: !canShare });
+    CF.updateActionButton(download, { look: canShare ? '' : 'main' });
+    download.onclick = () => saveCornerShots('download');
+    share.onclick = () => {
       if (app.pendingCorners) shareCornerShots(app.pendingCorners);
       else saveCornerShots('share');
     };
-    byId('btnCornerShare').hidden = !CF.Exporter.canShare();
-    byId('cornerShots').closest('.sheet-layer').addEventListener('sheetopen', requestThumbs);
+    byId('cornerShotsSheet').addEventListener('sheetopen', requestThumbs);
   }
 
   Object.assign(CF, {
