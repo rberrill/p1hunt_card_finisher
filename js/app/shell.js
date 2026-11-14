@@ -160,7 +160,8 @@
     CF.buildCropControls();
     CF.buildLevelsControls();
     CF.buildOverlayControls();
-    CF.buildSizeOptions();
+    CF.buildExportControls();
+    CF.buildCornerShotsControls();
     document.querySelectorAll('section[data-panel]').forEach(mountInterimStep);
   }
 

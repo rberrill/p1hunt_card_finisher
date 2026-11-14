@@ -884,7 +884,6 @@
       app.fileIntent = 'addBack';
       elements.fileInput.click();
     };
-    byId('pairOutput').onchange = event => setPairOutput(event.target.value);
   }
 
   // Front | Back and Unpair in the top bar, the output dropdown and the Save edits hint follow
@@ -896,14 +895,11 @@
       pairSide: pair ? pair.current : null,
       isSwitchDisabled: !!app.exporting || !!app.isSwitching,
     });
-    byId('pairOutput').hidden = !pair;
     byId('editsPairHint').hidden = !pair;
     if (!pair) {
       // A single photo's upscale question stays up: only the pair's own cards go with it.
       if (isPromptForPair) hidePrompt();
-      return;
     }
-    byId('pairOutput').value = app.pairOutput;
   }
 
   Object.assign(CF, {
@@ -912,6 +908,7 @@
     swapPair,
     switchSide,
     receivePhoto,
+    setPairOutput,
     showPrompt,
     hidePrompt,
     isPairExported,

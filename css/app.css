@@ -299,14 +299,6 @@ input[type="color"] {
   display: block;
   margin: 0 auto 6px;
 }
-.progress {
-  height: 6px;
-  background: var(--panel2);
-  border-radius: 3px;
-  overflow: hidden;
-  margin: 6px 0;
-}
-.progress > div { height: 100%; width: 0; background: var(--accent); transition: width .1s; }
 .hint { color: var(--muted); font-size: 12px; margin: 4px 0 8px; }
 section[data-panel] { display: none; }
 section[data-panel].active { display: flex; flex-direction: column; flex: 1; min-height: 0; }

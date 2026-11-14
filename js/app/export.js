@@ -439,22 +439,29 @@
     CF.syncReadouts();
   }
 
-  // Runs task(onProgress) with the progress bar showing and the export buttons disabled, so
+  // The progress line an export draws on: the top edge of the sheet that is open (Corner
+  // shots), or else of the open step's control area.
+  function progressLine() {
+    const openLayer = [...document.querySelectorAll('.sheet-layer')].find(CF.isSheetOpen);
+    const host = openLayer || byId(`${app.tab}Area`);
+    return host ? host.querySelector('.progress-line') : null;
+  }
+
+  // Runs task(onProgress) with the progress line showing and the export buttons disabled, so
   // only one export runs at a time. Returns the task's promise.
   async function runWithProgress(task) {
-    const progress = byId('progress');
-    const bar = progress.firstElementChild;
+    const line = progressLine();
+    const showProgress = fraction => {
+      if (line) CF.updateProgressLine(line, fraction);
+    };
     app.exporting = true;
-    progress.hidden = false;
-    bar.style.width = '0%';
+    showProgress(0);
     CF.syncReadouts();
     try {
-      return await task(fraction => {
-        bar.style.width = Math.round(fraction * 100) + '%';
-      });
+      return await task(showProgress);
     } finally {
       app.exporting = false;
-      progress.hidden = true;
+      showProgress(null);
       CF.syncReadouts();
     }
   }

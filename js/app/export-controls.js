@@ -9,10 +9,6 @@
   'use strict';
   const { byId, makeEl, elements, app } = CF;
 
-  // The gap left above the Corner shots group when its button scrolls to it, so the box's top
-  // edge doesn't sit flush against the control area's edge.
-  const CORNER_SCROLL_MARGIN_PX = 8;
-
   // The Size dropdown's options, from CONFIG (0 = the original size).
   function buildSizeOptions() {
     byId('size').replaceChildren(...CONFIG.export.longEdgePresets.map(
@@ -20,16 +16,9 @@
     ));
   }
 
-  // The Corner shots button on Export: opens More options and scrolls its Corner shots group to
-  // the top of the control area. On the phone, opening More options expands the panel in its
-  // toggle handler, so the scroll waits for that event and measures the new layout.
-  function showCornerShots() {
-    const group = byId('cornerShots');
-    const layer = group.closest('.sheet-layer');
-    if (CF.phoneLayout.matches) CF.openSheet(layer);
-    const scroller = CF.phoneLayout.matches ? group.closest('.sheet-body') : elements.panel;
-    const offsetPx = group.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
-    scroller.scrollTop += offsetPx - CORNER_SCROLL_MARGIN_PX;
+  // Builds the Export step's controls (called by the shell before any binding).
+  function buildExportControls() {
+    buildSizeOptions();
   }
 
   // Fill outside photo (D12: it is export state, so it lives with Export's options).
@@ -63,6 +52,7 @@
     byId('interp').onchange = event => CF.commit(state => {
       state.export.interp = event.target.value;
     });
+    byId('pairOutput').onchange = event => CF.setPairOutput(event.target.value);
     byId('btnDownload').onclick = () => CF.doExport('download');
     byId('btnShare').onclick = () => {
       if (app.pendingSave) CF.sharePending();
@@ -71,7 +61,7 @@
     // Next card opens the photo picker, like Open; the new photo starts as any other does. After
     // a pair's export it starts a single photo without asking.
     byId('btnNextCard').onclick = () => CF.pickPhoto('next');
-    byId('btnCornerShots').onclick = showCornerShots;
+    byId('btnCornerShots').onclick = () => CF.openCornerShots();
     // Share is the main action where the browser supports it; Download stays a plain download.
     if (CF.Exporter.canShare()) {
       byId('btnShare').hidden = false;
@@ -100,6 +90,9 @@
     const isPreset = ['transparent', '#ffffff', '#000000'].includes(fill);
     byId('fill').value = isPreset ? fill : 'custom';
     if (!isPreset) byId('fillColor').value = fill;
+    // Together or Separately: a pair's choice, shown only while paired.
+    byId('pairOutput').hidden = !app.pair;
+    byId('pairOutput').value = app.pairOutput;
   }
 
   // The export notes: why the output isn't what you might expect. pairLayout: the Together
@@ -202,7 +195,7 @@
   }
 
   Object.assign(CF, {
-    buildSizeOptions,
+    buildExportControls,
     bindExport,
     syncExportControls,
     syncSourceInfo,
