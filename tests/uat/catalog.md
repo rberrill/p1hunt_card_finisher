@@ -189,7 +189,7 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| D6.1 | Light black point rejected | Click **Pick black**, then click something light | An amber toast: "That spot is too light to be a black point. Pick something dark, or skip the black point."; the black swatch stays empty and the photo doesn't change |  |  |
+| D6.1 | Light black point rejected | Click **Pick black**, then click something light | An amber toast: "That spot is too light to be a black point. Pick something dark, or skip the black point."; the black swatch stays empty and the photo doesn't change. The pick stays armed (the line still reads "Tap something black"), so a click on something dark picks it |  |  |
 | D6.2 | C key compare | Click **Auto**, then hold the **C** key | The image shows without levels while held, then returns |  |  |
 | D6.3 | Undo and Redo | **Apply**, Undo, then Redo | One Undo removes the levels; Redo brings them back |  |  |
 | D6.4 | Levels don't carry over | With levels applied, open a new photo | The new photo has no levels |  |  |
@@ -244,7 +244,7 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| P7.1 | Overlay layout | Look at the screen | The photo is the same height as on other steps. The control area holds the hint "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." and **Add logo** in red (with **Use saved overlay** and its thumbnail between them if a logo is saved); no text is cut off and nothing scrolls (AC2) |  |  |
+| P7.1 | Overlay layout | Look at the screen | The photo is the same height as on other steps. The control area holds the hint "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." and **Add logo** in red (if a logo is saved: its thumbnail and **Use saved overlay** beside **Add logo** in one row, and **Delete saved** as the one tool under them); no text is cut off and nothing scrolls (AC2) |  |  |
 | P7.2 | Add a logo | **Add logo**, choose the PNG | The logo appears centered at about ¼ of the photo width, with nine rings on the photo. The control area now holds Opacity with its slider and %, the move pad beside the − + pad, and four tools (**Replace logo**, **Reset**, **Remove**, **Delete saved**), all in view at once with no label cut off (AC4, AC9) |  |  |
 | P7.3 | Drag the logo | Drag starting on the logo, then starting on empty photo | The logo moves both times; the photo doesn't pan (AC10, Q5) |  |  |
 | P7.4 | Stays inside | Drag the logo far past an edge | It stops with the whole logo inside the photo (AC10) |  |  |
