@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Overlay:** with a logo placed, **Opacity**, the move arrows and the **−** and **+** size buttons are all on screen, above four tools: **Replace logo**, **Reset**, **Remove** (was Remove overlay) and **Delete saved** (was Delete saved overlay). While a saved logo is on offer, **Use saved overlay**, **Add logo** and **Delete saved** show. A problem with a logo file shows in the line above the controls. The options hold only the tips.
 - **Export:** four rows, with everything you save with on screen.
   - **Size** (**1080**, **2000**, **3000** or **Original**) and **Format** (**JPEG**, **PNG** or **WebP**) are one tap each, where they were dropdowns.
-  - The readout, with any note on a second line under it. One note is reworded: "Levels has unapplied changes; export uses the applied levels."
+  - The readout, with any note on a second line under it. When there's more than one note, a phone shows them one at a time, the next once the first is dealt with; a wide screen lists them all. One note is reworded: "Levels has unapplied changes; export uses the applied levels."
   - **Share**, **Download** and **Copy**. Share and Copy are still hidden where they can't work, and **Download** is then the red button.
   - **Add back**, **Corner shots** and, once the current edits are exported, **Next card** in white. **Add back** is always there while no pair is open (a note used to hide it), and a note now stays visible beside **Next card** instead of giving way to it.
 

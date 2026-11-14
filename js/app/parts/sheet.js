@@ -243,7 +243,8 @@
   // The Tips row: a tap opens the tips in place, under the row; another tap closes them.
   // tips: one string per paragraph. keys: the step's keyboard help, one string per paragraph,
   // shown on a wide screen only, where the tips are always open under the heading "Tips and
-  // keys" (css/app.css hides the row there). Returns the row and its tips in one element.
+  // keys" ("Tips" for a step with no keys; css/app.css hides the row there). Returns the row
+  // and its tips in one element.
   function buildTipsRow(id, tips, keys = []) {
     const chevron = makeEl('span', { class: 'sheet-row-detail' });
     const row = makeEl('button', {
@@ -259,8 +260,9 @@
       hint.classList.add('sheet-keys');
       return hint;
     });
+    const heading = keys.length ? 'Tips and keys' : 'Tips';
     const body = makeEl('div', { class: 'sheet-tips', hidden: true },
-      makeEl('h3', { class: 'sheet-heading sheet-tips-heading' }, 'Tips and keys'),
+      makeEl('h3', { class: 'sheet-heading sheet-tips-heading' }, heading),
       ...tips.map(tip => buildSheetHint(tip)),
       ...keyHints);
     const setOpen = isOpen => {

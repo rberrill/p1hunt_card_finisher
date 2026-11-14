@@ -817,6 +817,8 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
+  /* A word wider than the pill (a long file name) breaks, so it is never cut at the edge. */
+  overflow-wrap: anywhere;
 }
 /* A wide screen: bottom center of the photo, 20 px up, as wide as its words up to 460 px
    (frame DT10). */
@@ -1162,26 +1164,17 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
    choice keeps its 44 px and the grabber keeps the strip above them. */
 #exportChoices { justify-content: space-between; }
 #exportChoices .segmented-control { position: relative; z-index: 5; }
-/* The readout, with any note under it. Both fit the row's 44 px: the readout takes two lines
-   while there is no note (a pair's is long), and one line above a note's two. */
+/* The readout, with any notes under it. */
 .export-readout-column {
   flex: 1;
   min-width: 0;
-  max-height: 44px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  overflow: hidden;
-}
-.export-readout, .export-note-text {
-  min-width: 0;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 .export-readout {
   flex: none;
+  min-width: 0;
   font-size: 13px;
   line-height: 16px;
   font-variant-numeric: tabular-nums;
@@ -1189,10 +1182,9 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 }
 .export-readout:empty { display: none; }
 .export-readout b { color: var(--ink); font-weight: 700; }
-.export-readout-column:has(.export-note:not([hidden])) .export-readout { -webkit-line-clamp: 1; }
+.export-notes { flex: none; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 /* A note: white text led by the amber warning mark (frame E4). */
 .export-note {
-  flex: none;
   display: flex;
   align-items: flex-start;
   gap: 5px;
@@ -1202,6 +1194,32 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   color: var(--ink);
 }
 .export-note .icon { color: var(--warn); stroke-width: 2.2; }
+@media (max-width: 760px) {
+  /* The row is 44 px: a readout line and one note of two lines, never cut. So only the first
+     note shows (the next comes when it is dealt with), and while one shows the readout keeps
+     to one line by dropping its "not upscaled" tail. A wide screen has room for all of it. */
+  .export-readout-column { max-height: 44px; overflow: hidden; }
+  .export-note + .export-note { display: none; }
+  .export-readout-column:has(.export-note) .export-readout-tail { display: none; }
+  /* Beside a pair's Together | Separately the column is narrow: the note takes its three
+     lines and the readout waits until the note is gone. */
+  #exportReadoutRow:has(#pairOutput:not([hidden])) .export-readout-column:has(.export-note)
+    .export-readout { display: none; }
+  /* The grabber's target reaches 22 px down into the first row, where Size and Format take
+     the tap. It gets those 16 px back above, over the photo, so its strip is still 44 px. */
+  #exportArea > .grabber::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 16px;
+  }
+  /* The tallest sheet. Closer rows, smaller hints and less empty space under the last row let
+     everything down to Tips show without a scroll (frame E11). */
+  #exportSheet .sheet-body { gap: 4px; margin-bottom: -16px; }
+  #exportSheet .sheet-hint { font-size: 12px; line-height: 15px; }
+}
 /* The save row is 48 px (its buttons are the tall ones). With less side padding, "Share now"
    keeps its whole label beside Download and Copy on a 375 px phone. */
 #exportSaveRow { height: 48px; }
@@ -1251,8 +1269,9 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* With Quality hidden (PNG), Interpolation is the list's first row and has no line above. */
 #qualityRow[hidden] + .sheet-row { border-top: 0; }
 #editsPairHint { color: var(--ink); }
-/* The source line and the version, one under the other; a long file name wraps anywhere. */
-.export-info-line { display: block; overflow-wrap: anywhere; }
+/* The source line and the version, one under the other, in the sheet's smallest type; a long
+   file name wraps anywhere. */
+.export-info-line { display: block; font-size: 12px; line-height: 15px; overflow-wrap: anywhere; }
 @media (min-width: 761px) {
   /* Corner shots is listed before Export's options in the side panel (frame DT6). */
   #exportSheet { order: 1; }

@@ -26,7 +26,7 @@
   ];
   const EXPORT_INTERPOLATIONS = [
     { value: 'bilinear', label: 'Bilinear' },
-    { value: 'bicubic', label: 'Bicubic (sharper, slower)' },
+    { value: 'bicubic', label: 'Bicubic (sharper, slower)', shortLabel: 'Bicubic' },
   ];
   // Fill outside photo's fixed choices; any other color is Custom.
   const FILL_PRESETS = [
@@ -95,9 +95,7 @@
   // The second row: the readout with any note under it (the amber mark leads the note), and
   // Together | Separately at the right while a pair is open.
   function buildReadoutRow() {
-    const note = makeEl('span', { class: 'export-note', id: 'exportMessage', hidden: true },
-      CF.makeIcon('warning', NOTE_ICON_PX),
-      makeEl('span', { class: 'export-note-text' }));
+    const notes = makeEl('div', { class: 'export-notes', id: 'exportMessage', hidden: true });
     const pairOutput = CF.buildSegmented({
       id: 'pairOutput',
       label: 'Pair output',
@@ -109,7 +107,7 @@
     return CF.buildControlRow('exportReadoutRow',
       makeEl('div', { class: 'export-readout-column' },
         makeEl('span', { class: 'export-readout', id: 'exportReadout' }),
-        note),
+        notes),
       pairOutput);
   }
 
@@ -190,7 +188,10 @@
   // A native <select> with these choices ([{ value, label }]).
   function buildSelect(id, label, choices) {
     return makeEl('select', { id, 'aria-label': label },
-      choices.map(choice => makeEl('option', { value: choice.value }, choice.label)));
+      choices.map(choice => makeEl('option', {
+        value: choice.value,
+        'data-short': choice.shortLabel,
+      }, choice.label)));
   }
 
   // Interpolation: Bilinear or Bicubic.
@@ -373,16 +374,21 @@
     const interp = byId('interp');
     interp.value = state.export.interp;
     const chosen = interp.selectedOptions[0];
-    byId('interpValue').textContent = chosen ? chosen.textContent : '';
+    byId('interpValue').textContent = chosen ? chosen.dataset.short || chosen.textContent : '';
     syncFill(state.export.fill);
     byId('pairOutput').hidden = !app.pair;
     CF.updateSegmented(byId('pairOutput'), app.pairOutput);
   }
 
-  // The export notes: why the output isn't what you might expect. pairLayout: the Together
-  // layout when a pair is saved Together (its cap replaces the open side's).
+  // The export notes: why the output isn't what you might expect, one string each. The phone
+  // has room for one at a time, so they come in the order to deal with them: the next shows
+  // once the first is gone. pairLayout: the Together layout when a pair is saved Together (its
+  // cap replaces the open side's).
   function exportNotes(state, geometry, pairLayout) {
     const notes = [];
+    if (app.levelsPending) {
+      notes.push('Levels has unapplied changes; export uses the applied levels.');
+    }
     const isClamped = pairLayout ? pairLayout.scale < 1 : geometry.output.isClamped;
     if (isClamped) {
       const megapixels = Math.round(CONFIG.maxOutputArea / 1e6 * 10) / 10;
@@ -391,10 +397,14 @@
     if (state.export.format === 'jpeg' && state.export.fill === 'transparent') {
       notes.push('JPEG has no transparency; empty areas will be white.');
     }
-    if (app.levelsPending) {
-      notes.push('Levels has unapplied changes; export uses the applied levels.');
-    }
-    return notes.join(' ');
+    return notes;
+  }
+
+  // One note: white text led by the amber warning mark (frame E4).
+  function buildNote(text) {
+    return makeEl('span', { class: 'export-note' },
+      CF.makeIcon('warning', NOTE_ICON_PX),
+      makeEl('span', { class: 'export-note-text' }, text));
   }
 
   // The photo as the app received it: pixels, type, bytes and name. What the picker handed over,
@@ -449,18 +459,17 @@
     const isValid = !!geometry && geometry.ok;
     syncSaveButtons(isValid);
     byId('btnAddBack').hidden = !!app.pair;
-    const note = byId('exportMessage');
+    const noteList = byId('exportMessage');
     if (!isValid) {
       byId('exportReadout').textContent = '';
-      note.hidden = true;
+      noteList.replaceChildren();
+      noteList.hidden = true;
       return;
     }
     const pairLayout = syncExportReadout(state, geometry);
     const notes = exportNotes(state, geometry, pairLayout);
-    note.querySelector('.export-note-text').textContent = notes;
-    // The row has room for two lines of note; the whole text is also the tooltip.
-    note.title = notes;
-    note.hidden = !notes;
+    noteList.replaceChildren(...notes.map(buildNote));
+    noteList.hidden = !notes.length;
   }
 
   // The output readout: the size and format, or for a pair the choice and its size. Returns the
@@ -477,9 +486,15 @@
     }
     const longEdge = state.export.longEdge;
     const isSmall = longEdge && output.scale >= 1 && Math.max(crop.width, crop.height) < longEdge;
-    const details = ` px · ${format}` + (isSmall ? ' · full crop, not upscaled' : '');
+    // The tail gives way on the phone while a note shows: the row holds one readout line then.
+    const tail = makeEl('span', { class: 'export-readout-tail' }, ' · full crop, not upscaled');
     const outputSize = makeEl('b', null, `${output.width} × ${output.height}`);
-    byId('exportReadout').replaceChildren('Output ', outputSize, details);
+    byId('exportReadout').replaceChildren(
+      'Output ',
+      outputSize,
+      ` px · ${format}`,
+      isSmall ? tail : '',
+    );
     return null;
   }
 

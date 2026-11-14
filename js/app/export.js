@@ -365,7 +365,7 @@
     if (Math.max(width, height) >= targetPx) return null;
     return {
       targetPx,
-      text: `The crop is ${width} × ${height} px at the photo's resolution.`,
+      text: `The crop is ${width} × ${height} px at the photo’s resolution.`,
     };
   }
 
@@ -433,6 +433,8 @@
   async function sharePending() {
     const pending = app.pendingSave;
     if (!pending) return;
+    // The toast that said to tap Share now has done its job.
+    CF.hideToast();
     const outcome = await shareFiles(pending.files, false);
     if (outcome !== 'cancelled') app.pendingSave = null;
     if (outcome === 'shared') pending.onShared();

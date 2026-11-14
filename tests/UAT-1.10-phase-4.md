@@ -2,7 +2,7 @@
 
 Phase 4 of the 1.10 redesign: Export rebuilt in four rows with its options sheet, Corner shots in a sheet of its own, the progress line, the question card, the edits files in Export's sheet, and the toasts restyled. Run on the dev build, desktop and iPhone: the cases below, then the smoke test. The redesign is released once, after phase 6, so this script has no Live column and no After deploy section.
 
-- **Version under test:** `1.10.0-dev.10` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the line above **Tips** in Export's options sheet.
+- **Version under test:** `1.10.0-dev.11` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the line above **Tips** in Export's options sheet.
 - **Automated tests first:** `node tests/selftest.js` and `tests/sample-regression.js` must both pass (see `tests/README.md`). Claude runs these, plus the `verify` skill's layout, subfolder and `file://` checks, before handing over a build.
 - **IDs** are the permanent IDs from `tests/uat/catalog.md` (`D` Desktop, `P` Phone, `E` Environments, then section.row). 🆕 marks a case for behavior new in this phase; ✏️ a case whose behavior, or the controls its steps go through, changed in this phase. Unmarked rows are connected cases, copied from the catalog unchanged.
 - **One row per behavior, on one device.** A behavior is tested once, on the device that can judge it best; the rest is shared out so both devices exercise every feature. Each row is one flow with one verdict.
@@ -137,7 +137,7 @@ Held over from phase 3: the verdict of these rows is the exported or shared file
 | D8.9 | Cancel the picker | Click **Next card →**, then cancel the picker | Still on Export with the same photo, and **Next card →** still showing |  |  |
 | D8.10 | Resume keeps Next card | Reload, **Resume** | Back on Export with **Next card →** showing |  |  |
 | D8.11 ✏️ | Source and version lines | Open `14_front_portrait_raw_white`, go to Export, look under **Reset export settings** in the panel's Export options | A Source line gives the photo as the app received it (its pixel size and megapixels, `image/jpeg`, file size and name, matching the file); under it a muted line reads "Card Finisher" and the version from the logo tooltip |  |  |
-| D8.12 🆕 | Options in the panel | Look at the panel under Export's four rows | Two headings, both always open, with no grabber and no sheet: **Corner shots** (section 9) and **Export options**. Export options lists Quality, Interpolation, Fill outside photo, **Save edits** and **Load edits** with their hint, **Reset export settings**, the Source line and the version, then Export's four tips under **Tips and keys** |  |  |
+| D8.12 🆕 | Options in the panel | Look at the panel under Export's four rows | Two headings, both always open, with no grabber and no sheet: **Corner shots** (section 9) and **Export options**. Export options lists Quality, Interpolation, Fill outside photo, **Save edits** and **Load edits** with their hint, **Reset export settings**, the Source line and the version, then Export's four tips under **Tips** |  |  |
 | D8.13 🆕 | Export at 375 px | In DevTools turn on the device toolbar and set the width to 375 px, reload, open a photo, go to Export | Size and Format share one row: all seven parts are whole, none wrapped or cut off, and each takes a click on the first try. Under the readout, **Share** in red, **Download** and **Copy** fit one row with their labels whole; nothing scrolls sideways |  |  |
 | D8.14 🆕 | Reset export settings | Click **PNG** and **3000**, set Interpolation to Bicubic and Fill outside photo to Black, then click **Reset export settings** in the panel's Export options | Back to **2000** and **JPEG**, with Quality 92%, Bilinear and White; the readout follows |  |  |
 | D8.15 🆕 | Load edits saved under another name | On `IMG_9136` click **Save edits**. Open `IMG_9060` (the same pixel size), go to Export, **Load edits** with that file, then press Ctrl+Z | An amber toast with a triangle: "Edits were saved for “IMG_9136.JPEG”. Applied anyway — sizes match."; the corners, crop and export settings are the saved ones. One Ctrl+Z takes the whole load back |  |  |
@@ -157,7 +157,7 @@ Held over from phase 3: the verdict of these rows is the exported or shared file
 | P8.7 ✏️ | 48 MP is capped | Open a 48 MP photo, tap **Original**, then **Download** | A note under the readout, with the amber mark, says the output is clamped to the 16.7 MP canvas limit; the file is capped at 16.7 MP |  |  |
 | P8.8 ✏️ | WebP falls back | Tap **WebP** and **Download** | A PNG. The toast after it is amber with a triangle: "Exported … WEBP isn’t supported by this browser, so it was saved as PNG.", on three lines at most with no word cut off, and it stays for a few seconds. If Safari saves a `.webp` instead, it encodes WebP now: mark ➖ and say so in Notes |  |  |
 | P8.9 ✏️ | Save edits | Tap the grabber to open Export's options sheet, **Save edits** | **Save edits** and **Load edits** sit side by side under an Edits heading, their hint under them; the JSON file downloads |  |  |
-| P8.10 ✏️ | Options sheet | Open the options sheet, scroll to its end, tap **Tips** | "Export options": Quality with its slider and %, Interpolation, Fill outside photo, Edits, **Reset export settings**, the Source line, then "Card Finisher" and the version, and **Tips**; the four Export tips unfold in place, with no keyboard keys listed. Corner shots isn't in this sheet |  |  |
+| P8.10 ✏️ | Options sheet | Open the options sheet, tap **Tips** | "Export options": Quality with its slider and %, Interpolation, Fill outside photo, Edits, **Reset export settings**, the Source line, then "Card Finisher" and the version, and **Tips**; the four Export tips unfold in place, with no keyboard keys listed. Corner shots isn't in this sheet |  |  |
 | P8.11 | Source line | Open a 12 MP photo from Photos, go to Export, open the options sheet, look above the version line | The Source line gives 3024 × 4032 px (12.2 MP) and `image/jpeg`: the picker keeps every pixel and converts HEIC to JPEG |  |  |
 | P8.12 | (HTTPS) Share to Photos | **Share** at 2000 px, then Save Image | The share sheet opens and the image lands in Photos; the app is still on Export with every edit intact | ➖ |  |
 | P8.13 | (HTTPS) Cancel sharing | Open a new photo, go to Export, **Share**, then tap outside the sheet | The sheet closes; nothing is saved; no **Next card →** | ➖ |  |
@@ -166,7 +166,7 @@ Held over from phase 3: the verdict of these rows is the exported or shared file
 | P8.16 | (HTTPS) Copy | **Copy**, paste into another app | The image pastes | ➖ |  |
 | P8.17 🆕 | Progress line | Open a full-size photo (12 MP or more), go to Export, tap **Original**, then **Download** | While it exports, a thin red line grows along the control area's top edge and the save row dims; both clear when the file is saved |  |  |
 | P8.18 🆕 | Pickers in the sheet | In the options sheet tap **Interpolation** and choose Bicubic; tap **Fill outside photo** and choose Black; then choose **Custom…**, tap the **Custom color** row that appears under it, and pick a colour | Each row opens an iOS picker: Bilinear and Bicubic; Transparent, White, Black and Custom…. The row then shows the choice (Fill with a swatch of its colour). With Custom… chosen a **Custom color** row shows under Fill; it opens the iOS colour picker and the swatch takes the colour |  |  |
-| P8.19 🆕 | Transparent with JPEG | With **JPEG** chosen, set **Fill outside photo** to Transparent, close the sheet, look, then tap **PNG** | Under the readout, with the amber mark: "JPEG has no transparency; empty areas will be white."; with PNG the note goes |  |  |
+| P8.19 🆕 | Transparent with JPEG | With **JPEG** chosen, set **Fill outside photo** to Transparent, close the sheet, look, then tap **PNG** | Under the readout, with the amber mark: "JPEG has no transparency; empty areas will be white."; with PNG the note goes. The phone shows one note at a time: while Levels has an unapplied draft its note shows first, and this one follows once the draft is applied or discarded |  |  |
 
 ---
 
@@ -213,7 +213,7 @@ AC numbers here refer to the Corner Shots Request page in Claude.
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| D10.1 ✏️ | Download asks | Click **Download** | A card centered over the dimmed photo: **Upscale to 2000 px?**, "The crop is W × H px at the photo's resolution.", **Yes** in red, **No** and **Cancel**; the panel beside it stays readable |  |  |
+| D10.1 ✏️ | Download asks | Click **Download** | A card centered over the dimmed photo: **Upscale to 2000 px?**, "The crop is W × H px at the photo’s resolution.", **Yes** in red, **No** and **Cancel**; the panel beside it stays readable |  |  |
 | D10.2 | Yes upscales the export | **Yes**, open the file | The long edge is exactly 2000 px, visibly crisper than the real-size export at 100 %, with no bright or dark rim along the card's edge; the toast gives the 2000 px size; **Next card →** shows |  |  |
 | D10.3 ✏️ | No and Cancel | **Download**, **No**; **Download**, **Cancel**; then **Download** and click the dimmed photo outside the card | No saves the file at the readout's size; Cancel and the click outside each close the card, and nothing downloads |  |  |
 | D10.4 | Copy asks too | **Copy**, **Yes**, paste into another app | The same card; a PNG with a 2000 px long edge pastes |  |  |
@@ -221,9 +221,9 @@ AC numbers here refer to the Corner Shots Request page in Claude.
 | D10.6 ✏️ | Follows the Size | Click **3000**, **Download** | The card says **Upscale to 3000 px?**; **Yes** gives a 3000 px long edge |  |  |
 | D10.7 ✏️ | No card when it isn't needed | Click **Original**, **Download**; then click a Size smaller than the crop's long edge (the readout no longer says "not upscaled"), **Download** | No card either time; the files are the full crop, then the chosen Size on the long edge |  |  |
 | D10.8 ✏️ | The card stays through a resize | **Download** at 2000, then resize the window | The card stays up; **Yes** still exports |  |  |
-| D10.9 ✏️ | Corners ask too | In the panel's Corner shots section click **Download corners** | The same kind of card: **Upscale to 2000 px?** with the line "The sheet is N px at the photo's resolution." |  |  |
+| D10.9 ✏️ | Corners ask too | In the panel's Corner shots section click **Download corners** | The same kind of card: **Upscale to 2000 px?** with the line "The sheet is N px at the photo’s resolution." |  |  |
 | D10.10 | Yes upscales the sheet | **Yes**, open the file | The sheet is exactly 2000 px square, visibly crisper than the real-size sheet at 100 %, with no rim along the card's edge |  |  |
-| D10.11 ✏️ | 4 photos upscale each | **4 photos**, **Download corners**, look, then **Yes** | The card's line names each corner's size ("Each corner is N px at the photo's resolution."); four files, each 2000 px square |  |  |
+| D10.11 ✏️ | 4 photos upscale each | **4 photos**, **Download corners**, look, then **Yes** | The card's line names each corner's size ("Each corner is N px at the photo’s resolution."); four files, each 2000 px square |  |  |
 | D10.12 | No corner card at the target | Open `SITE?cornerShots.upscaleTargetPx=100`, open a photo, **Download corners** | No card; the sheet downloads at the real size |  |  |
 | D10.13 | Sharpening can be turned off | Open `SITE?upscale.sharpenAmount=0`, open the photo, **Download**, **Yes** | A 2000 px file that is softer than D10.2's at 100 % |  |  |
 
@@ -268,7 +268,7 @@ AC numbers here refer to the Front + Back Pairing page in Claude. These rows are
 | D11.20 | New photo ends the pair | **Open** another photo, **New photo** | It opens as a single photo; no **Front / Back** in the top bar (AC17) |  |  |
 | D11.21 ✏️ | Drop asks | Pair again, drag a photo onto the photo area | A card over the dimmed photo, titled **New photo**, asks **New photo · Replace back · Cancel**, neither choice in red (AC17) |  |  |
 | D11.22 | Drop on Overlay adds a logo | **Cancel**. On Overlay, drag a PNG onto the photo | It becomes the logo, with no question (AC17) |  |  |
-| D11.23 ✏️ | Upscale: Together | Choose Together and **2000**, **Download**, **Yes**, open the file | The card says "The image is W × H px at the photos' resolution."; the file's long edge is exactly 2000 px, both sides enlarged alike with the gutter between them |  |  |
+| D11.23 ✏️ | Upscale: Together | Choose Together and **2000**, **Download**, **Yes**, open the file | The card says "The image is W × H px at the photos’ resolution."; the file's long edge is exactly 2000 px, both sides enlarged alike with the gutter between them |  |  |
 | D11.24 | Upscale: Separately | Choose Separately, **Download**, **Yes** | The card gives both sides' sizes; `-front` and `-back` each have a 2000 px long edge |  |  |
 | D11.25 🆕 | Copy hides for Separately | With **Separately** chosen, look at the save row, then click **Together** | Separately: **Share** and **Download** only, with no **Copy** (a clipboard holds one image). Together: **Copy** is back |  |  |
 
@@ -277,7 +277,7 @@ AC numbers here refer to the Front + Back Pairing page in Claude. These rows are
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| P11.5 ✏️ | Export fits | **Swap** back. Go to Export | The Size and Format row as for a single photo; a two-part **Together / Separately** control beside the readout, Together in white, with both labels and the readout whole; no **Add back**, so **Corner shots** has the bottom row; the photo area shows the joined image, front on the left, the same height as on other steps (AC10, AC13) |  |  |
+| P11.5 ✏️ | Export fits | **Swap** back. Go to Export | The Size and Format row as for a single photo; a two-part **Together / Separately** control beside the readout, Together in white, with both labels and the readout whole (while Levels has an unapplied draft its note takes the readout's place there, whole, until the draft is applied or discarded); no **Add back**, so **Corner shots** has the bottom row; the photo area shows the joined image, front on the left, the same height as on other steps (AC10, AC13) |  |  |
 | P11.6 | Together Download | **Download** | One joined image, `<front>-pair` (AC11) |  |  |
 | P11.7 ✏️ | Separately Download | Tap **Separately**, **Download** | Note whether both files arrive; Safari may show only the first (AC12) |  |  |
 | P11.8 ✏️ | Unpair asks on a card | Tap the Unpair icon beside **Front / Back**, then tap the dimmed photo outside the card | A card over the dimmed photo, titled **Unpair**, asks **Keep front · Keep back · Cancel**, with neither choice in red; the controls below don't move; the tap outside closes it, still paired (AC6) |  |  |
@@ -324,7 +324,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`. 
 ### Desktop
 *Setup: Chrome with DevTools open on the Console tab, in a window wider than 760 px. The 14 pair from `samples/` (`14_front_portrait_raw_white`, `14_back_portrait_raw_white`) and a transparent PNG logo to hand. When a Download or Copy asks **Upscale to 2000 px?**, answer **No**.*
 
-| ID | Test | Steps | Expected | Pre-release (dev.10) | Notes |
+| ID | Test | Steps | Expected | Pre-release (dev.11) | Notes |
 |---|---|---|---|---|---|
 | SD1 | Right build | Open the page; look at the tab, the console and the logo's tooltip | The tab shows the P1 icon; the console's version line and the tooltip read the version under test (`-dev` pre-release) |  |  |
 | SD2 | Drop and detect | Drag `14_front_portrait_raw_white` onto the page | It loads with four corners on or near the card |  |  |
@@ -346,7 +346,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`. 
 ### Phone
 *Setup: iPhone Safari; clear the LAN address's website data in Safari's settings (Advanced → Website Data) first, so no cached build runs. In Photos: a slabbed card's front and back, shot the same way up. A logo saved from an earlier run (or a PNG to upload). If Safari shows a downloaded image in the tab, go Back and tap **Resume**.*
 
-| ID | Test | Steps | Expected | Pre-release (dev.10) | Notes |
+| ID | Test | Steps | Expected | Pre-release (dev.11) | Notes |
 |---|---|---|---|---|---|
 | SP1 | Open and detect | **Open**, choose the slab's front | It loads and the corners sit on the card; top bar, photo, control area and tab bar, with nothing over the photo and no button text cut off |  |  |
 | SP2 | Long-press and drag | Press and hold a corner for 2 s, then drag it | No iOS magnifier or callout; the loupe pins to the top corner away from your finger |  |  |
@@ -355,7 +355,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`. 
 | SP5 | Crop | Tap **Crop** in the tab bar, swipe the preset row, tap 5:4 | The chip reads 4:5 and the box is portrait; the photo is the same height as on Rotate |  |  |
 | SP6 | Levels | Tap **Levels**, **Auto**, press and hold the photo, then **Apply** | The colors adjust; the hold shows the photo without levels, with no magnifier; Apply clears the dot |  |  |
 | SP7 | Overlay | Tap **Overlay**, **Use saved overlay** (or **Add logo**), pinch on the logo, tap the bottom-right ring | The logo resizes while the photo stays still, then snaps to the corner |  |  |
-| SP8 ✏️ | Right build | Tap **Export**, tap the grabber to open its options sheet, scroll to its end | Export's four rows fit the control area with nothing cut off. In the sheet the line above **Tips** reads the version under test (`-dev` pre-release); the Source line above it gives the photo's real pixel size |  |  |
+| SP8 ✏️ | Right build | Tap **Export**, tap the grabber to open its options sheet | Export's four rows fit the control area with nothing cut off. In the sheet the line above **Tips** reads the version under test (`-dev` pre-release); the Source line above it gives the photo's real pixel size |  |  |
 | SP9 ✏️ | Download with upscale | Close the sheet with **✕**, **Download**; if a card asks **Upscale to 2000 px?**, tap **Yes** | The image has the crop, levels and logo as on screen; no crash |  |  |
 | SP10 ✏️ | Next card | Look at Export's bottom row (after Back and **Resume** if Safari showed the image) | On Export with every edit intact; **Next card →** sits in white beside **Add back** and **Corner shots** |  |  |
 | SP11 | Add back | **Add back**, choose the slab's back | It opens on Perspective with corners on the card; the top bar fits **Front / Back** and the Unpair icon in one row |  |  |

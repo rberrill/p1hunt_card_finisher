@@ -300,6 +300,15 @@
   // Whether the card that's up asks one of the pair's questions (Unpair, New photo).
   let isPromptForPair = false;
 
+  // A question must be answered before going on, so while its card is up the bars and the
+  // panel take no click and no keyboard focus. A wide screen leaves them undimmed, to be read
+  // (frame DT7); on the phone the card's backdrop covers them anyway.
+  function setBarsInert(isInert) {
+    [byId('topBarHost'), elements.panel, byId('tabBarHost')].forEach(el => {
+      el.inert = isInert;
+    });
+  }
+
   // The question card (the Alert card part), built on first use and kept in the stage, where a
   // wide screen dims only the photo. Its ids are the ones the old markup had.
   function promptCard() {
@@ -315,6 +324,7 @@
     layer.addEventListener('alertclose', () => {
       isPromptForPair = false;
       elements.root.classList.remove('prompting');
+      setBarsInert(false);
     });
     elements.stage.append(layer);
     return layer;
@@ -328,6 +338,7 @@
   function showPrompt({ title, text, choices, isForPair = false }) {
     isPromptForPair = isForPair;
     elements.root.classList.add('prompting');
+    setBarsInert(true);
     CF.showAlert(promptCard(), { title, text, choices });
   }
 
@@ -562,13 +573,13 @@
     if (isTogether() || kind === 'copy') {
       const layout = togetherLayout(sides);
       if (!isUnder(layout)) return null;
-      return { targetPx, text: `The image is ${size(layout)} px at the photos' resolution.` };
+      return { targetPx, text: `The image is ${size(layout)} px at the photos’ resolution.` };
     }
     const front = CF.exportGeometry(sides.front.state, false).output;
     const back = CF.exportGeometry(sides.back.state, false).output;
     if (!isUnder(front) && !isUnder(back)) return null;
     const text = `The front is ${size(front)} px and the back ${size(back)} px`
-      + ` at the photos' resolution.`;
+      + ` at the photos’ resolution.`;
     return { targetPx, text };
   }
 

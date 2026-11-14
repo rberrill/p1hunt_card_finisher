@@ -158,7 +158,7 @@
       return;
     }
     const what = app.cornerShotsOutput === 'photos' ? 'Each corner is' : 'The sheet is';
-    const text = `${what} ${realFilePx} px at the photo's resolution.`;
+    const text = `${what} ${realFilePx} px at the photo’s resolution.`;
     CF.askUpscale(targetPx, text, isUpscaled => renderAndSave(kind, isUpscaled));
   }
 
@@ -216,6 +216,8 @@
   // Shares the corner files in one share sheet. On 'pending' (a slow render) the sheet's
   // Share button becomes "Share now"; any edit cancels it. Returns CF.shareFiles' outcome.
   async function shareCornerShots(files) {
+    // A tap on Share now: the toast that said to tap it has done its job.
+    if (app.pendingCorners) CF.hideToast();
     const outcome = await CF.shareFiles(files, !app.pendingCorners);
     if (outcome === 'pending') app.pendingCorners = files;
     else if (outcome !== 'cancelled') app.pendingCorners = null;
