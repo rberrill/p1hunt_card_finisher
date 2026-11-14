@@ -392,7 +392,7 @@ AC numbers here refer to the Front + Back Pairing page in Claude.
 | D11.10 | Separately | **⇄ Swap** back. Choose **Separately**, **Download**, open both files | `<front>-front.jpg` and `<back>-back.jpg` (Chrome may ask once to allow several downloads), each with its side's framing and levels as on screen (AC12) |  |  |
 | D11.11 | Logo on one side only | Add a logo on the back's Overlay step; choose Together; **Download** | The logo is on the back's half only (AC11) |  |  |
 | D11.12 | Format applies to both | Choose PNG on the back, click **Front**, go to Export | PNG is chosen there too (AC10) |  |  |
-| D11.13 | Next card follows both sides | Choose JPEG, **Download**; then click **Back**, change the Fine rotation, go to Export | **Next card →** shows after the Download, and is gone after the edit to the other side (AC16) |  |  |
+| D11.13 | Next card follows both sides | Choose JPEG, **Download**; then click **Back**, drag the Straighten ruler on Rotate, go to Export | **Next card →** shows after the Download, and is gone after the edit to the other side (AC16) |  |  |
 | D11.14 | Copy the Together image | **Copy**, paste into another app | The joined image pastes (AC14) |  |  |
 | D11.15 | Share both files | Choose Separately, **Share** | One share dialog holding both images (AC14) |  |  |
 | D11.16 | Save edits saves this side | In the side panel, read the Edits hint, then **Save edits** | The hint starts "Saves the side you're on."; the file is the back's (AC20) |  |  |

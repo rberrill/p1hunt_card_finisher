@@ -217,7 +217,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`, 
 | SD1 | Right build | Open the page; look at the tab, the console and the logo's tooltip | The tab shows the P1 icon; the console's version line and the tooltip read the version under test (`-dev` pre-release) |  |  |
 | SD2 | Drop and detect | Drag `14_front_portrait_raw_white` onto the page | It loads with four corners on or near the card |  |  |
 | SD3 | Corner by mouse and keys | Drag a corner onto the card's corner, press an arrow key twice, then Ctrl+Z | The loupe sits up-right of the cursor and the Result preview updates; the keys nudge the handle; Ctrl+Z moves it back |  |  |
-| SD4 | Rotate | Press 2, type `1.5` in the degrees box | Rotate opens; the photo turns 1.5°, with a grid |  |  |
+| SD4 ✏️ | Rotate | Press 2, click the angle and type `1.5`, then Enter | Rotate opens; the photo turns 1.5°, with a grid |  |  |
 | SD5 | Crop | Press 3, click 5:4 | The chip reads 4:5 and the box is portrait (it follows the card) |  |  |
 | SD6 | Levels | Press 4, **Auto**, hold **C**, then **Apply** | The colors adjust; C shows the photo without levels; Apply clears the dot |  |  |
 | SD7 | Overlay | Press 5, **Add logo** with the PNG, click the bottom-right ring | The logo snaps to the bottom-right corner, inside the photo |  |  |
@@ -239,7 +239,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`, 
 | SP1 ✏️ | Open and detect | **Open**, choose the slab's front | It loads and the corners sit on the card; top bar, photo, control area and tab bar, with nothing over the photo and no button text cut off |  |  |
 | SP2 | Long-press and drag | Press and hold a corner for 2 s, then drag it | No iOS magnifier or callout; the loupe pins to the top corner away from your finger |  |  |
 | SP3 | Nudge and Undo | Tap ▶ twice, then Undo | The handle moves and the loupe stays up; one Undo takes both taps back |  |  |
-| SP4 ✏️ | Tab bar and Rotate | Tap **Rotate** in the tab bar, drag the Fine slider | Rotate opens, its tab lit; the photo rotates, with a grid |  |  |
+| SP4 ✏️ | Tab bar and Rotate | Tap **Rotate** in the tab bar, drag the Straighten ruler | Rotate opens, its tab lit; the photo rotates, with a grid |  |  |
 | SP5 ✏️ | Crop | Tap **Crop** in the tab bar, swipe the preset row, tap 5:4 | The chip reads 4:5 and the box is portrait; the photo is the same height as on Rotate |  |  |
 | SP6 ✏️ | Levels | Tap **Levels**, **Auto**, press and hold the photo, then **Apply** | The colors adjust; the hold shows the photo without levels, with no magnifier; Apply clears the dot |  |  |
 | SP7 ✏️ | Overlay | Tap **Overlay**, **Use saved overlay** (or **Add logo**), pinch on the logo, tap the bottom-right ring | The logo resizes while the photo stays still, then snaps to the corner |  |  |
