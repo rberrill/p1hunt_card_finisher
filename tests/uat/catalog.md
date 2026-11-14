@@ -352,6 +352,7 @@ AC numbers here refer to the Corner Shots Request page in Claude.
 | P9.6 | (HTTPS) Share four to Photos | **4 photos**, **Share corners**, then Save 4 Images | All four land in Photos (AC8) | ➖ |  |
 | P9.7 | (HTTPS) Share now after a slow render | **4 photos** on a full-size photo, **Share corners**; if **Share now** shows, tap it | The share sheet opens with four images (AC8) | ➖ |  |
 | P9.8 | 4 photos in the sheet | In the Corner shots sheet tap **4 photos**, close the sheet with ✕, then tap **Corner shots** again | The readout changes from the sheet's size to "4 photos" and each photo's size in px; reopened, **4 photos** is still chosen |  |  |
+| P9.9 | Safari's bar keeps its color | In a Safari tab, tap **Corner shots**, look at Safari's address bar at the bottom, close the sheet, then open Export's options sheet and look again | Safari's bar stays dark, as on every other screen, with either sheet open. It never turns red |  |  |
 
 ---
 

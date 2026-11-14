@@ -2,7 +2,7 @@
 
 Phase 4 of the 1.10 redesign: Export rebuilt in four rows with its options sheet, Corner shots in a sheet of its own, the progress line, the question card, the edits files in Export's sheet, and the toasts restyled. Run on the dev build, desktop and iPhone: the cases below, then the smoke test. The redesign is released once, after phase 6, so this script has no Live column and no After deploy section.
 
-- **Version under test:** `1.10.0-dev.11` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the line above **Tips** in Export's options sheet.
+- **Version under test:** `1.10.0-dev.12` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the line above **Tips** in Export's options sheet.
 - **Automated tests first:** `node tests/selftest.js` and `tests/sample-regression.js` must both pass (see `tests/README.md`). Claude runs these, plus the `verify` skill's layout, subfolder and `file://` checks, before handing over a build.
 - **IDs** are the permanent IDs from `tests/uat/catalog.md` (`D` Desktop, `P` Phone, `E` Environments, then section.row). 🆕 marks a case for behavior new in this phase; ✏️ a case whose behavior, or the controls its steps go through, changed in this phase. Unmarked rows are connected cases, copied from the catalog unchanged.
 - **One row per behavior, on one device.** A behavior is tested once, on the device that can judge it best; the rest is shared out so both devices exercise every feature. Each row is one flow with one verdict.
@@ -203,6 +203,7 @@ AC numbers here refer to the Corner Shots Request page in Claude.
 | P9.6 | (HTTPS) Share four to Photos | **4 photos**, **Share corners**, then Save 4 Images | All four land in Photos (AC8) | ➖ |  |
 | P9.7 | (HTTPS) Share now after a slow render | **4 photos** on a full-size photo, **Share corners**; if **Share now** shows, tap it | The share sheet opens with four images (AC8) | ➖ |  |
 | P9.8 🆕 | 4 photos in the sheet | In the Corner shots sheet tap **4 photos**, close the sheet with ✕, then tap **Corner shots** again | The readout changes from the sheet's size to "4 photos" and each photo's size in px; reopened, **4 photos** is still chosen |  |  |
+| P9.9 🆕 | Safari's bar keeps its color | In a Safari tab, tap **Corner shots**, look at Safari's address bar at the bottom, close the sheet, then open Export's options sheet and look again | Safari's bar stays dark, as on every other screen, with either sheet open. It never turns red |  |  |
 
 ---
 
@@ -324,7 +325,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`. 
 ### Desktop
 *Setup: Chrome with DevTools open on the Console tab, in a window wider than 760 px. The 14 pair from `samples/` (`14_front_portrait_raw_white`, `14_back_portrait_raw_white`) and a transparent PNG logo to hand. When a Download or Copy asks **Upscale to 2000 px?**, answer **No**.*
 
-| ID | Test | Steps | Expected | Pre-release (dev.11) | Notes |
+| ID | Test | Steps | Expected | Pre-release (dev.12) | Notes |
 |---|---|---|---|---|---|
 | SD1 | Right build | Open the page; look at the tab, the console and the logo's tooltip | The tab shows the P1 icon; the console's version line and the tooltip read the version under test (`-dev` pre-release) |  |  |
 | SD2 | Drop and detect | Drag `14_front_portrait_raw_white` onto the page | It loads with four corners on or near the card |  |  |
@@ -346,7 +347,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`. 
 ### Phone
 *Setup: iPhone Safari; clear the LAN address's website data in Safari's settings (Advanced → Website Data) first, so no cached build runs. In Photos: a slabbed card's front and back, shot the same way up. A logo saved from an earlier run (or a PNG to upload). If Safari shows a downloaded image in the tab, go Back and tap **Resume**.*
 
-| ID | Test | Steps | Expected | Pre-release (dev.11) | Notes |
+| ID | Test | Steps | Expected | Pre-release (dev.12) | Notes |
 |---|---|---|---|---|---|
 | SP1 | Open and detect | **Open**, choose the slab's front | It loads and the corners sit on the card; top bar, photo, control area and tab bar, with nothing over the photo and no button text cut off |  |  |
 | SP2 | Long-press and drag | Press and hold a corner for 2 s, then drag it | No iOS magnifier or callout; the loupe pins to the top corner away from your finger |  |  |

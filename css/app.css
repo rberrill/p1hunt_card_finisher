@@ -613,7 +613,11 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 .nudge-key:active:not(:disabled) { background: var(--pressed); }
 
 /* ---- part: sheet ---- */
-.sheet-layer { position: fixed; inset: 0; z-index: 30; }
+/* Placed against the app's box (the whole screen), not fixed to the viewport. iOS 26 Safari
+   colors its own bar from whatever a fixed element shows at the screen's bottom edge, and a
+   sheet starts its rise from below that edge: the Corner shots sheet's red button was there at
+   that moment, and the bar stayed red. With nothing fixed, the bar keeps the page's color. */
+.sheet-layer { position: absolute; inset: 0; z-index: 30; }
 .sheet-scrim { position: absolute; inset: 0; background: var(--scrim); }
 /* At most about 470 px tall; taller content scrolls inside. */
 .sheet {
@@ -1321,7 +1325,11 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* ---- shell: the phone ---- */
 @media (max-width: 760px) {
   .workspace { flex-direction: column; }
-  .panel { width: auto; flex: none; border: 0; }
+  /* The sheets fill the app's box, so the panel they sit in is not their containing block. */
+  #app { position: relative; }
+  .panel { width: auto; flex: none; border: 0; position: static; }
+  /* A sheet at rest lies below the screen's bottom edge: cut there, so it adds no scroll. */
+  .sheet-layer { overflow: hidden; }
   /* An open sheet always reaches above the control area it rose from. */
   .sheet { min-height: calc(var(--sheet-rest) + 72px); }
   /* While a sheet is rising, open or closing, its grabber stands in for the control area's. */

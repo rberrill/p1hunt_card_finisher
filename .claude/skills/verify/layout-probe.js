@@ -302,7 +302,11 @@
     CF.updateToast(toastEl, { text: 'The saved photo is gone.', kind: 'warn', isShown: true });
     const stageLike = CF.makeEl('div', { class: 'probe-stage' }, toastEl);
     stageLike.style.cssText = 'position:relative;height:120px';
-    host.append(stageLike, sheet, card);
+    host.append(stageLike, card);
+    // A sheet fills the box it is placed against: on the phone that is the app's (the whole
+    // screen), as for the steps' own sheets; a wide screen lists it inline.
+    const sheetHost = CF.phoneLayout.matches ? document.getElementById('app') : host;
+    sheetHost.append(sheet);
     let closedCount = 0;
     sheet.addEventListener('sheetclose', () => closedCount++);
     CF.openSheet(sheet);
@@ -327,6 +331,7 @@
     scrim.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
     scrim.click();
     await wait(SHEET_SETTLE_MS);
+    sheet.remove();
     let answer = 'none';
     const choices = [
       { label: 'Yes', isMain: true, action: () => { answer = 'yes'; } },
