@@ -37,10 +37,10 @@
   function revealSelectedChip(row) {
     const chip = row.querySelector('.preset-chip[aria-pressed="true"]');
     if (!chip) return;
-    const overflowRight = chip.offsetLeft + chip.offsetWidth - (row.scrollLeft + row.clientWidth);
-    const overflowLeft = row.scrollLeft - chip.offsetLeft;
-    if (overflowRight > 0) row.scrollLeft += overflowRight;
-    else if (overflowLeft > 0) row.scrollLeft -= overflowLeft;
+    const rowRect = row.getBoundingClientRect();
+    const chipRect = chip.getBoundingClientRect();
+    if (chipRect.right > rowRect.right) row.scrollLeft += chipRect.right - rowRect.right;
+    else if (chipRect.left < rowRect.left) row.scrollLeft -= rowRect.left - chipRect.left;
   }
 
   Object.assign(CF, { buildChip, updateChip, buildChipRow, revealSelectedChip });

@@ -10,6 +10,22 @@
   'use strict';
   const { makeEl } = CF;
 
+  // Builds the control area: the 200 px block under the photo that holds a step's rows. Its
+  // grabber (id `${id}Grabber`) opens the step's sheet, and its progress line (id
+  // `${id}Progress`) runs along its top edge during an export. The caller binds the grabber.
+  function buildControlArea(id, ...children) {
+    return makeEl('div', { class: 'control-area', id },
+      makeEl('button', {
+        class: 'grabber',
+        id: id && `${id}Grabber`,
+        type: 'button',
+        'aria-label': 'Options',
+        'aria-haspopup': 'dialog',
+      }),
+      CF.buildProgressLine(id && `${id}Progress`),
+      ...children);
+  }
+
   // Builds a label row: the adjustment's name in small capitals, its value in bold, then a
   // readout pushed to the right. Extra children (a text button such as Reset) follow the value.
   function buildAdjustmentLine({ id, name }, ...extras) {
@@ -52,6 +68,7 @@
   }
 
   Object.assign(CF, {
+    buildControlArea,
     buildAdjustmentLine,
     updateAdjustmentLine,
     buildLabelRow,

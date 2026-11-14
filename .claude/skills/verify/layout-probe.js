@@ -126,8 +126,7 @@
       keys: ['left', 'up', 'down', 'right'].map(name => ({ value: name, icon: name, label: name })),
     });
     const next = CF.buildActionButton({ label: 'Next handle', icon: 'right', isWide: true });
-    const area = CF.makeEl('div', { class: 'control-area' },
-      CF.makeEl('button', { class: 'grabber', type: 'button', 'aria-label': 'Options' }),
+    const area = CF.buildControlArea('probeArea',
       line,
       CF.buildControlRow(null, pad, next),
       CF.buildToolRow(null, ...tools));
@@ -156,6 +155,7 @@
       sideSwitch: size(bar.querySelector('#sideSwitch')),
       sideHalves: [...bar.querySelectorAll('#sideSwitch .segment')].map(touchSize),
       tabBarHeight: size(tabs).height,
+      grabberPill: getComputedStyle(sample.area.querySelector('.grabber'), '::before').width,
       tabs: stepTabs.map(touchSize),
       tabsOverflowPx: round(rectOf(stepTabs[5]).right - rectOf(tabs).right),
       tabFontPx: parseFloat(getComputedStyle(stepTabs[0]).fontSize),
@@ -179,7 +179,7 @@
     CF.updateStatus(status, { ...warning, actionLabel: 'Cancel' });
     const ruler = CF.buildRuler({ id: 'probeFine', min: -45, max: 45, step: 0.1, label: 'Angle' });
     const slider = CF.buildSlider({ id: 'probeSlider', min: 0, max: 100, step: 1, label: 'x' });
-    CF.updateSlider(slider, 60);
+    CF.updateSlider(slider, { value: 60 });
     const share = { label: 'Share', icon: 'share', look: 'main', size: 'tall' };
     const main = CF.buildActionButton(share);
     const chips = ['Free', 'Original', '1:1', '3:4', '4:5', '2:3', '9:16', '5:7 card']
@@ -191,9 +191,25 @@
       options: [{ value: 'white', label: 'Pick white' }, { value: 'black', label: 'Pick black' }],
     });
     CF.updateSegmented(picks, 'white');
-    const area = CF.makeEl('div', { class: 'control-area' },
+    const plain = CF.buildActionButton({ label: 'Download', icon: 'download' });
+    // Export's first row: Size and Format side by side, the tightest row in the plan.
+    const sizes = CF.buildSegmented({
+      label: 'Size',
+      isFitted: true,
+      isDense: true,
+      options: ['1080', '2000', '3000', 'Original'].map(name => ({ value: name, label: name })),
+    });
+    const formats = CF.buildSegmented({
+      label: 'Format',
+      isFitted: true,
+      isDense: true,
+      options: ['JPEG', 'PNG', 'WebP'].map(name => ({ value: name, label: name })),
+    });
+    const exportRow = CF.buildControlRow(null, sizes, formats);
+    exportRow.style.justifyContent = 'space-between';
+    const area = CF.buildControlArea(null,
       status, CF.buildControlRow(null, ruler), CF.buildControlRow(null, slider),
-      CF.buildControlRow(null, main), chipRow, CF.buildControlRow(null, picks));
+      CF.buildControlRow(null, main, plain), chipRow, CF.buildControlRow(null, picks), exportRow);
     area.style.height = 'auto';
     host.append(area);
     CF.revealSelectedChip(chipRow);
@@ -213,6 +229,18 @@
     fire('pointerdown', rulerRect.left + 100);
     fire('pointermove', rulerRect.left + 122);
     fire('pointerup', rulerRect.left + 122);
+    const valueAfterDrag = Number(input.value);
+    const eventsAfterDrag = events.join(',');
+    // A slow drag: five moves that end 5 px left (0.5 of a unit at 11 px a unit, in 0.1 steps).
+    // Moves that don't change the value must not fire `input`.
+    events.length = 0;
+    fire('pointerdown', rulerRect.left + 100);
+    for (const x of [99, 99, 97, 97, 95]) fire('pointermove', rulerRect.left + x);
+    fire('pointerup', rulerRect.left + 95);
+    // The row's gap between the two controls (css/app.css, .control-row).
+    const ROW_GAP_PX = 8;
+    const exportRowSparePx = rectOf(exportRow).width
+      - rectOf(sizes).width - rectOf(formats).width - ROW_GAP_PX;
     const chipRect = rectOf(chips[6]);
     return {
       status: size(status),
@@ -220,8 +248,13 @@
       statusButtonTouch: touchSize(status.querySelector('.action-button')),
       ruler: size(ruler),
       rulerPointer: size(ruler.querySelector('.ruler-pointer')),
-      rulerValueAfterDrag: Number(input.value),
-      rulerEvents: events.join(','),
+      rulerValueAfterDrag: valueAfterDrag,
+      rulerEvents: eventsAfterDrag,
+      rulerValueAfterSlowDrag: Number(input.value),
+      rulerSlowDragEvents: events.join(','),
+      plainButton: size(plain),
+      exportRowSparePx: round(exportRowSparePx),
+      exportSegments: [...exportRow.querySelectorAll('.segment')].map(touchSize),
       slider: size(slider),
       sliderFillPx: round(rectOf(slider.querySelector('.slider-fill')).width),
       tallButton: size(main),
@@ -230,7 +263,7 @@
       selectedChipVisible: chipRect.left >= rectOf(chipRow).left - 1
         && chipRect.right <= rectOf(chipRow).right + 1,
       segmented: size(picks),
-      segments: [...picks.querySelectorAll('.segment')].map(size),
+      segmentTouches: [...picks.querySelectorAll('.segment')].map(touchSize),
       selectedSegment: picks.querySelector('[aria-pressed="true"]').dataset.value,
     };
   }
@@ -274,8 +307,10 @@
     ];
     const question = { title: 'Upscale to 2000 px?', text: 'The crop is 994 × 994 px.', choices };
     CF.showAlert(card, question);
+    const cardRect = rectOf(card.querySelector('.alert-card'));
     const cardSizes = {
       card: size(card.querySelector('.alert-card')),
+      cardCenterY: round(cardRect.top + cardRect.height / 2),
       choices: [...card.querySelectorAll('.alert-choices .action-button')].map(size),
       cancel: size(card.querySelector('.alert-cancel')),
       mainChoice: card.querySelector('.is-main .action-label').textContent,
@@ -295,6 +330,7 @@
       cardHiddenAfter: card.hidden,
       toast: size(toastEl),
       toastInsetPx: round(rectOf(toastEl).left - rectOf(stageLike).left),
+      toastBottomPx: round(rectOf(stageLike).bottom - rectOf(toastEl).bottom),
     };
   }
 

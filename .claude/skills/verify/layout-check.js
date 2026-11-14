@@ -70,8 +70,9 @@ function shellChecks(label, shell, isPhone) {
       shell.tools.every(tool => tool.height === 70 && tool.width >= MIN_TARGET_PX)
         && !shell.toolLabelsClipped,
       `${toolWidths[0]} px wide each`],
-    [`${label}: grabber is a 44 px tall target`,
-      shell.grabber.height >= MIN_TARGET_PX && shell.grabber.width >= MIN_TARGET_PX,
+    [`${label}: grabber is a 36 px pill in a 44 px tall target`,
+      shell.grabberPill === '36px' && shell.grabber.height >= MIN_TARGET_PX
+        && shell.grabber.width >= MIN_TARGET_PX,
       JSON.stringify(shell.grabber)],
     [`${label}: nudge keys are 52 × 44`,
       shell.padKeys.every(key => key.width === 52 && key.height === 44), ''],
@@ -82,13 +83,14 @@ function shellChecks(label, shell, isPhone) {
     [`${label}: six tabs fit, each a 44 px target`,
       shell.tabsOverflowPx <= 0 && shell.tabs.every(isTarget),
       `widths ${list(tabWidths)} px; label ${shell.tabFontPx} px`],
-    [`${label}: tabs are 52 px tall, the mark an 8 px dot`,
-      shell.tabs.every(tab => tab.height === 52) && shell.tabMark.width === 8, ''],
+    [`${label}: the tab bar and its tabs are 52 px tall, the mark an 8 px dot`,
+      shell.tabBarHeight === 52 && shell.tabs.every(tab => tab.height === 52)
+        && shell.tabMark.width === 8, `bar ${shell.tabBarHeight} px`],
   ]);
 }
 
 // Checks of the controls and the layers.
-function partChecks(label, { controls, layers }, isPhone) {
+function partChecks(label, { controls, layers }, isPhone, height) {
   const checks = [
     [`${label}: status takes a 44 px row; its 36 px button is a 44 px target`,
       controls.status.height === 44 && controls.statusButton.height === 36
@@ -100,14 +102,19 @@ function partChecks(label, { controls, layers }, isPhone) {
     [`${label}: a 22 px drag on the ruler moves the value two units`,
       controls.rulerValueAfterDrag === -2 && controls.rulerEvents === 'input,change',
       `value ${controls.rulerValueAfterDrag}; events ${controls.rulerEvents}`],
+    [`${label}: a slow 5 px drag in 0.1 steps fires input only when the value changes`,
+      controls.rulerValueAfterSlowDrag === -1.5
+        && controls.rulerSlowDragEvents === 'input,input,input,change',
+      `value ${controls.rulerValueAfterSlowDrag}; events ${controls.rulerSlowDragEvents}`],
     [`${label}: slider is 44 px tall and filled to its thumb`,
       controls.slider.height === 44 && controls.sliderFillPx > 0,
       `fill ${controls.sliderFillPx} of ${controls.slider.width} px at 60%`],
     [`${label}: buttons are 44 px (48 in a save row)`,
-      controls.tallButton.height === 48 && controls.chip.height === 44, ''],
+      controls.tallButton.height === 48 && controls.plainButton.height === 44
+        && controls.chip.height === 44, ''],
     [`${label}: segments are 44 px tall and at least 44 px wide`,
       controls.segmented.height === 44
-        && controls.segments.every(segment => segment.width >= MIN_TARGET_PX)
+        && controls.segmentTouches.every(isTarget)
         && controls.selectedSegment === 'white', ''],
     [`${label}: sheet is at most 470 px, at the bottom, rows at least 46 px`,
       layers.sheet.height <= 470 && layers.sheetBottomGapPx === 0
@@ -123,9 +130,20 @@ function partChecks(label, { controls, layers }, isPhone) {
     [`${label}: a choice runs its action; a tap outside runs none`,
       layers.answerAfterYes === 'yes' && layers.answerAfterOutsideTap === 'none'
         && layers.cardHiddenAfter, ''],
-    [`${label}: toast is at least 44 px tall, inset 16 px`,
-      layers.toast.height >= MIN_TARGET_PX && layers.toastInsetPx === 16, ''],
+    [`${label}: toast is at least 44 px tall, inset 16 px, 12 px above the photo's edge`,
+      layers.toast.height >= MIN_TARGET_PX && layers.toastInsetPx === 16
+        && layers.toastBottomPx === 12, ''],
   ];
+  const exportDetail = `${controls.exportRowSparePx} px spare`;
+  checks.push([`${label}: Size and Format share one row, every choice a 44 px target`,
+    controls.exportRowSparePx >= 0 && controls.exportSegments.every(isTarget), exportDetail]);
+  if (isPhone) {
+    // Between the top bar (48 px) and the control area with the tab bar under it (252 px).
+    const photoCenterY = 48 + (height - 48 - 252) / 2;
+    checks.push([`${label}: alert card is centered where the photo is`,
+      Math.abs(layers.cardCenterY - photoCenterY) <= 1,
+      `card center ${layers.cardCenterY}, photo center ${photoCenterY}`]);
+  }
   const chipDetail = `scrolls ${controls.chipRowScrollsPx} px`;
   if (isPhone) {
     checks.push([`${label}: chips are one sideways-scrolling row resting on the selected one`,
@@ -151,7 +169,7 @@ async function main() {
       checks.push(...stepChecks(label, steps, isPhone));
       const parts = await browser.evaluate('window.__layoutProbe.measureParts()');
       checks.push(...shellChecks(label, parts.shell, isPhone));
-      checks.push(...partChecks(label, parts, isPhone));
+      checks.push(...partChecks(label, parts, isPhone, height));
       console.log(`${label}: photo ${steps[0].photoHeight} px, control area `
         + `${steps[0].areaHeight} px, tools ${parts.shell.tools[0].width} px wide`);
       await browser.evaluate('window.__straightener.Session.clear()');

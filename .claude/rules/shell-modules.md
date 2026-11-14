@@ -45,20 +45,22 @@ Fifteen parts build every screen of the 1.10 layout (the plan's component invent
 - **One module per part**, with its rules under its own banner in `css/app.css`. A part exports a `build…` function, which returns an element and attaches only the part's own behavior (hold to repeat, the ruler's drag, a sheet's close), and an `update…` function, which writes values into it. A value left out of an update stays as it is.
 - **A step composes parts; it doesn't restyle them.** The step's module builds its control area and its sheet from parts, binds their events and syncs them from the state. If a part can't do what a step needs, the part changes (through the lead), not the step.
 - **State is in attributes**, so CSS and screen readers agree: `aria-pressed` (a mode or switch tool, a chip, a segment), `aria-selected` (a tab), `disabled`, `hidden`. Looks are `is-…` classes (`is-main`, `is-tall`, `is-warn`).
+- **Not in the parts yet** (they come with the phase that mounts them): the sheet's drag and its open and close motion (phase 2), the toast riding above a sheet and the alert card's and progress line's fades (phases 4 and 6).
+- **Fixed heights are tokens** in `:root` (`--top-bar-height`, `--control-area-height`, `--tab-bar-height`); use them, not the numbers.
 - **Class names are whole words** (the wireframes' `tb`, `ca`, `lr` are `top-bar`, `control-area`, `label-row`).
 
 | Part | Module | Functions | Classes |
 |---|---|---|---|
 | Top bar | `top-bar.js` | `buildTopBar`, `updateTopBar`, `buildIconButton` | `.top-bar`, `.top-bar-center`, `.icon-button` |
 | Tab bar | `tab-bar.js` | `buildTabBar`, `updateTabBar` | `.tab-bar`, `.step-tab` (`data-step`), `.step-tab-mark` |
-| Adjustment line | `adjustment-line.js` | `buildAdjustmentLine`, `updateAdjustmentLine`, `buildLabelRow`, `buildControlRow`, `buildToolRow`, `buildTextButton` | `.control-area`, `.grabber`, `.label-row`, `.control-row`, `.tool-row`, `.line-label`, `.line-value`, `.line-readout`, `.text-button` |
+| Adjustment line | `adjustment-line.js` | `buildControlArea` (with its grabber and progress line), `buildAdjustmentLine`, `updateAdjustmentLine`, `buildLabelRow`, `buildControlRow`, `buildToolRow`, `buildTextButton` | `.control-area`, `.grabber`, `.label-row`, `.control-row`, `.tool-row`, `.line-label`, `.line-value`, `.line-readout`, `.text-button` |
 | Status | `status.js` | `buildStatus`, `updateStatus` | `.status-line` |
 | Ruler | `ruler.js` | `buildRuler`, `updateRuler` | `.ruler` (wraps the range input; Rotate's keeps the id `fine`) |
 | Slider | `slider.js` | `buildSlider`, `updateSlider` | `.slider` (wraps a range input) |
 | Tool | `tool.js` | `buildTool`, `updateTool` | `.tool`, `.tool-mode`, `.tool-action`, `.tool-switch` |
 | Action button | `action-button.js` | `buildActionButton`, `updateActionButton` | `.action-button` (`is-main`, `is-next`, `is-quiet`, `is-small`, `is-tall`, `is-wide`) |
 | Chip | `chip.js` | `buildChip`, `updateChip`, `buildChipRow`, `revealSelectedChip` | `.chip-row`, `.preset-chip` (`data-value`) |
-| Segmented control | `segmented-control.js` | `buildSegmented`, `updateSegmented`, `bindSegmented` | `.segmented-control` (`is-fitted`, `is-compact`), `.segment` (`data-value`) |
+| Segmented control | `segmented-control.js` | `buildSegmented`, `updateSegmented`, `bindSegmented`, `buildSwatch`, `updateSwatch` | `.segmented-control` (`is-fitted`, `is-dense`, `is-compact`), `.segment` (`data-value`), `.segment-swatch` |
 | Nudge pad | `nudge-pad.js` | `buildNudgePad`, `updateNudgePad`, `bindNudgePad` | `.nudge-pad`, `.nudge-key` (`data-key`) |
 | Sheet | `sheet.js` | `buildSheet`, `openSheet`, `closeSheet` (fires `sheetclose`), `updateSheet`, `buildSheetList`, `buildSheetRow`, `buildSwitchRow`, `buildTipsRow`, `buildSheetHeading`, `buildSheetHint` | `.sheet-layer`, `.sheet`, `.sheet-list`, `.sheet-row`, `.switch`, `.sheet-hint` |
 | Alert card | `alert-card.js` | `buildAlertCard`, `updateAlertCard`, `showAlert`, `hideAlert` | `.alert-layer`, `.alert-card` |

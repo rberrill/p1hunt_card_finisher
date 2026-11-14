@@ -14,10 +14,13 @@
   //   label      what it chooses, for screen readers
   //   options    [{ value, label, lead }]; lead is an element shown before the label (a swatch)
   //   isFitted   each choice is as wide as its label, instead of sharing the row evenly
+  //   isDense    smaller labels and tighter sides, where two controls share a row (Export's
+  //              Size and Format)
   //   isCompact  the 36 px size, for the top bar
-  function buildSegmented({ id, label, options, isFitted, isCompact }) {
+  function buildSegmented({ id, label, options, isFitted, isDense, isCompact }) {
     const classes = ['segmented-control'];
     if (isFitted) classes.push('is-fitted');
+    if (isDense) classes.push('is-dense');
     if (isCompact) classes.push('is-compact');
     const segments = options.map(option => makeEl('button', {
       class: 'segment',
@@ -48,5 +51,25 @@
     });
   }
 
-  Object.assign(CF, { buildSegmented, updateSegmented, bindSegmented });
+  // A round swatch to lead a choice's label (Levels' picks): dashed and empty until a color
+  // is picked.
+  function buildSwatch(id) {
+    return makeEl('span', { class: 'segment-swatch', id });
+  }
+
+  // Fills a swatch with a picked color ([red, green, blue], 0 to 255), or empties it (null).
+  function updateSwatch(swatch, color) {
+    const rgb = color && color.map(Math.round).join(', ');
+    swatch.style.background = color ? `rgb(${rgb})` : '';
+    swatch.classList.toggle('is-set', !!color);
+    swatch.title = color ? `RGB ${rgb}` : 'Not set';
+  }
+
+  Object.assign(CF, {
+    buildSegmented,
+    updateSegmented,
+    bindSegmented,
+    buildSwatch,
+    updateSwatch,
+  });
 })(window.CF);

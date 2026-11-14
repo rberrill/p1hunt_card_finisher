@@ -23,7 +23,8 @@
       CF.buildActionButton({ id: id && `${id}Action`, label: '', size: 'small' }));
   }
 
-  // Shows a message, or hides the row when text is empty. kind: 'info' | 'warn' | 'error'.
+  // Shows a message, or hides the row when text is empty. Each call states the whole message
+  // (unlike the other parts' updates, nothing carries over). kind: 'info' | 'warn' | 'error'.
   // actionLabel names the button; without it the button is hidden. Returns true while shown, so
   // the step can hide the label row it replaces.
   function updateStatus(status, { kind = 'info', text, actionLabel }) {

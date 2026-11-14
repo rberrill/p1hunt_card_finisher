@@ -73,6 +73,7 @@
   // The icon `name` as an SVG element, sizePx square. It takes the color of the text around it;
   // css/app.css (.icon) sets the stroke.
   function makeIcon(name, sizePx = 22) {
+    if (!ICONS[name]) throw new Error(`No icon named ${name}`);
     return makeSvgEl('svg', {
       class: 'icon',
       viewBox: ICON_GRID,

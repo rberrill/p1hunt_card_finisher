@@ -44,9 +44,14 @@
     return slider;
   }
 
-  // Shows `value` (in the input's own units).
-  function updateSlider(slider, value) {
-    slider.querySelector('input').value = value;
+  // Updates a slider; a value left out stays as it is. value: in the input's own units.
+  function updateSlider(slider, { value, isDisabled }) {
+    const input = slider.querySelector('input');
+    if (value !== undefined) input.value = value;
+    if (isDisabled !== undefined) {
+      input.disabled = !!isDisabled;
+      slider.classList.toggle('is-disabled', !!isDisabled);
+    }
     drawSliderFill(slider);
   }
 

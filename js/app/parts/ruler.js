@@ -59,6 +59,9 @@
   function bindRulerDrag(ruler, input) {
     let drag = null;
     const step = Number(input.step) || 1;
+    // The step's decimal places (0.1 has one): a stepped value is rounded to them, so 0.1 × 3
+    // is 0.3 and not 0.30000000000000004, which would never equal the input's own '0.3'.
+    const decimals = (String(step).split('.')[1] || '').length;
     ruler.addEventListener('pointerdown', event => {
       if (input.disabled) return;
       drag = { startX: event.clientX, startValue: Number(input.value) };
@@ -68,7 +71,7 @@
     ruler.addEventListener('pointermove', event => {
       if (!drag) return;
       const raw = drag.startValue - (event.clientX - drag.startX) / RULER_TICK_PX;
-      const stepped = Math.round(raw / step) * step;
+      const stepped = Number((Math.round(raw / step) * step).toFixed(decimals));
       const value = Math.min(Number(input.max), Math.max(Number(input.min), stepped));
       if (value === Number(input.value)) return;
       input.value = value;
@@ -109,9 +112,14 @@
     return ruler;
   }
 
-  // Shows `value` (in the input's own units).
-  function updateRuler(ruler, value) {
-    ruler.querySelector('input').value = value;
+  // Updates a ruler; a value left out stays as it is. value: in the input's own units.
+  function updateRuler(ruler, { value, isDisabled }) {
+    const input = ruler.querySelector('input');
+    if (value !== undefined) input.value = value;
+    if (isDisabled !== undefined) {
+      input.disabled = !!isDisabled;
+      ruler.classList.toggle('is-disabled', !!isDisabled);
+    }
     drawRuler(ruler);
   }
 
