@@ -25,13 +25,13 @@ Edits Rich makes on GitHub's website go on `main`, never on `release`.
 - The working tree is clean.
 - `release` is an ancestor of `main`: `git merge-base --is-ancestor origin/release HEAD`. If not, stop and ask; something was committed to `release`.
 - Run the `verify` skill at full scope. Everything passes.
-- Privacy audit: `git diff --stat vPREV..HEAD` and `git ls-files`. Nothing local-only is tracked (`CLAUDE.local.md`, `tests/UAT-*.md`, `tests/uat/`, `archive/`, `.claude/settings.local.json`), and every new file is meant to be public.
+- Privacy audit: `git diff --stat vPREV..HEAD` and `git ls-files`. Nothing local-only is tracked (`CLAUDE.local.md`, `archive/`, `tests/uat/edits-over-8mb.json`, `.claude/settings.local.json`), and every new file is meant to be public.
 
 ## 2. Version commit
 
 - `node .claude/skills/release/set-version.js X.Y.Z` sets `appVersion` in `js/config.js` and every `?v=` in `index.html`.
 - CHANGELOG: `## [X.Y.0] - Unreleased` becomes `## [X.Y.Z] - YYYY-MM-DD`. Update the README if features or usage changed.
-- Local (the `uat` skill): record Rich's sign-off in `tests/UAT-X.Y.md`, then check that its 🆕, changed and retired cases are already in `tests/uat/catalog.md` (they go in when the script is written).
+- The `uat` skill: record Rich's sign-off in `tests/UAT-X.Y.md` (it goes in this commit), then check that its 🆕, changed and retired cases are already in `tests/uat/catalog.md` (they go in when the script is written).
 - `node tests/selftest.js`, then commit `X.Y.Z: version, changelog date` and `git push origin main`.
 
 ## 3. Tag and deploy
@@ -93,8 +93,8 @@ Pages takes a minute or two to deploy, and caches files for about 10 minutes.
 
 - `node .claude/skills/release/set-version.js X.Y+1.0-dev`.
 - Add `## [X.Y+1.0] - Unreleased` above the release in the CHANGELOG.
+- Start `tests/UAT-X.Y+1.md` (the `uat` skill: header, empty scope, setup, smoke test) and move the released version's file to `archive/` (local, so it leaves the repo; its sign-off is in the release tag's message).
 - Commit `Start X.Y+1.0-dev` and push `main`.
-- Local: start `tests/UAT-X.Y+1.md` (the `uat` skill: header, empty scope, setup, smoke test) and move the released version's file to `archive/`.
 
 ## Hotfix while `main` has unreleased work
 

@@ -5,7 +5,9 @@ description: Maintain Rich's manual acceptance tests - the catalog of every case
 
 # UAT: catalog, smoke test, version script
 
-All three files are local only (gitignored), so they may hold the LAN address.
+All three files are committed (Rich, 2026-11-13), and the repo is public, so they follow the public-repo rule:
+- Write the phone's address as `http://<PC-LAN-address>:8765`; the real address is in `CLAUDE.local.md`. `tests/selftest.js` fails on a private address or a local path in them.
+- `tests/uat/edits-over-8mb.json` (case D13.8) stays local: it is 8 MB of padding. If it is missing, write any JSON file over 8 MB to that path.
 
 **Where it runs.** GitHub Pages only serves the `release` branch, so there is no HTTPS copy of a build before release.
 - **Before release:** Rich runs the version script on the dev build: desktop Chrome on `localhost` (treated as secure, so Share and Copy work there) and iPhone Safari over the LAN on plain HTTP (Share and Copy hidden).

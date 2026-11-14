@@ -16,7 +16,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
    Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away (Claude's working habit, not a rule Rich set).
 2. **Write for the reviewer.** Code is read more than it's run: whole-word names, one statement per line, lines of 100 characters at most, a comment on every function. The detail is in `.claude/rules/code-style.md` (it loads with any code file). Apply it to everything you touch, and don't add to the debt.
 3. **Build, then verify yourself** with the `verify` skill. Report measured results, not assumptions. The only thing a browser can't check is the real iOS share sheet.
-4. **UAT** (the `uat` skill) has three files, all local:
+4. **UAT** (the `uat` skill) has three files, all in the repo (Rich, 2026-11-13):
    - **the catalog** of every case, by feature: each behavior has one row, on one device (the phone for touch, iOS and Safari; desktop for keyboard, DevTools and opened files; the rest shared out), and nothing the automated tests already prove (Rich, 2026-11-10);
    - **the release smoke test:** each device finishes a real listing down a different path;
    - **each version's script:** its new and connected cases plus the smoke test.
@@ -105,7 +105,8 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 | `.claude/skills/` | `verify` (end-to-end checks), `uat` (Rich's acceptance script), `release` (Rich-triggered), `feature-request` (a request's Markdown file and its page) |
 | `.claude/hooks/` | SessionStart: project state. Stop: runs selftest when app code changed |
 | `CHANGELOG.md`, `README.md`, `SECURITY.md` | Public docs (see `.claude/rules/public-docs.md`) |
-| `tests/uat/` (catalog, smoke), `tests/UAT-X.Y.md`, `archive/`, `CLAUDE.local.md` | Local only (gitignored) |
+| `tests/uat/` (catalog, smoke), `tests/UAT-X.Y.md` | Rich's manual acceptance tests (the `uat` skill) |
+| `archive/`, `CLAUDE.local.md`, `tests/uat/edits-over-8mb.json` | Local only (gitignored) |
 
 **Branches:**
 - `main` holds all work. Commit and push it as you go; that never changes the live site.

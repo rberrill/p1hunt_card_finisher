@@ -1,9 +1,8 @@
-# Local only, never pushed: personal and machine notes, the UAT scripts (they hold sign-offs and the
-# LAN address), retired docs, and per-machine Claude settings. CLAUDE.md and the rest of .claude/ are public.
+# Local only, never pushed: personal and machine notes, retired docs, the 8 MB padding file for
+# UAT case D13.8, and per-machine Claude settings. CLAUDE.md and the rest of .claude/ are public.
 CLAUDE.local.md
 archive/
-tests/UAT-*.md
-tests/uat/
+tests/uat/edits-over-8mb.json
 .claude/settings.local.json
 .claude/worktrees/
 
