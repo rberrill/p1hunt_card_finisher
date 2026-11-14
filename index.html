@@ -165,51 +165,8 @@
       </section>
 
       <!-- ==== step: Rotate (js/app/rotate.js) ==== -->
-      <section data-panel="rotate">
-        <div class="controls">
-          <div class="inline">
-            <label for="fine">Fine</label>
-            <input type="range" id="fine" min="-45" max="45" step="0.1">
-            <input type="number" id="fineNumber" min="-45" max="45" step="0.1"
-                aria-label="Fine rotation degrees">
-            <button class="btn" id="btnFineZero">0°</button>
-          </div>
-          <details class="more">
-            <summary>More options</summary>
-            <div class="group">
-              <h3>Flip</h3>
-              <div class="row">
-                <button class="btn" id="btnFlipH" title="Flip horizontal">
-                  <svg viewBox="0 0 24 24"><path d="M12 3v18M8 7 3 12l5 5M16 7l5 5-5 5"/></svg>
-                  Flip H
-                </button>
-                <button class="btn" id="btnFlipV" title="Flip vertical">
-                  <svg viewBox="0 0 24 24"><path d="M3 12h18M7 8l5-5 5 5M7 16l5 5 5-5"/></svg>Flip V
-                </button>
-              </div>
-            </div>
-            <div class="group">
-              <label class="toggle">
-                  <input type="checkbox" id="fillFrame"> Fill frame (no empty corners)
-              </label>
-              <label class="toggle"><input type="checkbox" id="showGrid" checked> Grid</label>
-            </div>
-            <button class="btn wide" data-reset="rotate">Reset rotation</button>
-          </details>
-        </div>
-        <div class="action-bar">
-          <button class="btn" id="btnRotateLeft" title="Rotate 90° left">
-            <svg viewBox="0 0 24 24">
-                <path d="M3 4v6h6"/><path d="M3.5 15a8.5 8.5 0 1 0 2-8.5L3 10"/>
-            </svg>90°
-          </button>
-          <button class="btn" id="btnRotateRight" title="Rotate 90° right">
-            <svg viewBox="0 0 24 24">
-                <path d="M21 4v6h-6"/><path d="M20.5 15a8.5 8.5 0 1 1-2-8.5L21 10"/>
-            </svg>90°
-          </button>
-        </div>
-      </section>
+      <!-- Its control area and options sheet are built by buildRotateControls(). -->
+      <section data-panel="rotate"></section>
 
       <!-- ==== step: Crop (js/app/crop.js) ==== -->
       <section data-panel="crop">
