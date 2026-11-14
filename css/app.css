@@ -197,21 +197,6 @@ input[type="number"] { width: 96px; }
   margin-bottom: 6px;
 }
 .readout b { color: var(--text); font-weight: 600; }
-/* Corner shots (Export → More options): four live thumbnails in a row, tl tr bl br. */
-.corner-thumbs {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  max-width: 280px;
-  margin-bottom: 8px;
-}
-.corner-thumbs canvas {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  background: var(--stage);
-  border-radius: 4px;
-}
 .mini {
   width: 100%;
   max-width: 280px;
@@ -1352,6 +1337,44 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   /* The panel's scrollbar takes about 15 px from the 380, which Size and Format need: their
      row reaches 6 px into the panel's padding on each side. */
   #exportChoices { margin: 0 -6px; }
+}
+
+/* ---- step: Corner shots ---- */
+/* Owned by js/app/corner-shots.js. Its own sheet in Export's section (frames CS1 to CS6):
+   the thumbnails, 4 photos | 1 sheet, the readout, the save row and the hint. */
+/* Four live thumbnails in a row: tl tr bl br. */
+.corner-thumbs {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.corner-thumbs canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--stage);
+}
+/* The output control keeps its 44 px in the sheet's column. */
+#cornerOutput { flex: none; }
+/* One line; it keeps its height while empty (invalid corners), so nothing under it moves. */
+.corner-readout {
+  min-height: 17px;
+  flex: none;
+  font-size: 13px;
+  line-height: 17px;
+  font-variant-numeric: tabular-nums;
+  color: var(--quiet);
+}
+.corner-readout b { color: var(--ink); font-weight: 700; }
+/* The save row is 48 px, for its tall buttons. Each grows from its own width, with less side
+   padding, so "Download corners" keeps its whole label beside Share on a 375 px phone. */
+#cornerSaveRow { height: 48px; }
+#cornerSaveRow .action-button { flex: 1 1 auto; padding: 0 10px; }
+@media (min-width: 761px) {
+  /* Listed inline in the panel: its progress line still sits on its own top edge. */
+  #cornerShotsSheet .sheet { position: relative; }
 }
 
 /* ---- shell: the phone ---- */
