@@ -439,18 +439,20 @@
     CF.syncReadouts();
   }
 
-  // The progress line an export draws on: the top edge of the sheet that is open (Corner
-  // shots), or else of the open step's control area.
-  function progressLine() {
-    const openLayer = [...document.querySelectorAll('.sheet-layer')].find(CF.isSheetOpen);
-    const host = openLayer || byId(`${app.tab}Area`);
-    return host ? host.querySelector('.progress-line') : null;
+  // The progress line an export draws on: the top edge of `host` when the caller names one
+  // (Corner shots' sheet), else of the sheet that is open on the phone, else of the open
+  // step's control area. A wide screen lists every sheet inline, so none counts as open there.
+  function progressLine(host) {
+    const sheets = CF.phoneLayout.matches ? [...document.querySelectorAll('.sheet-layer')] : [];
+    const holder = host || sheets.find(CF.isSheetOpen) || byId(`${app.tab}Area`);
+    return holder ? holder.querySelector('.progress-line') : null;
   }
 
   // Runs task(onProgress) with the progress line showing and the export buttons disabled, so
-  // only one export runs at a time. Returns the task's promise.
-  async function runWithProgress(task) {
-    const line = progressLine();
+  // only one export runs at a time. host: the element whose progress line to draw on, when it
+  // isn't the open sheet or control area. Returns the task's promise.
+  async function runWithProgress(task, host) {
+    const line = progressLine(host);
     const showProgress = fraction => {
       if (line) CF.updateProgressLine(line, fraction);
     };
