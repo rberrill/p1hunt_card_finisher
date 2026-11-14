@@ -2,7 +2,7 @@
 
 Phase 2 of the 1.10 redesign: the new shell (top bar, control area with its grabber and options sheet, tab bar, start screen, the desktop frame) and the rebuilt Perspective and Rotate. Run on the dev build, desktop and iPhone: the cases below, then the smoke test. The redesign is released once, after phase 6, so this script has no Live column and no After deploy section.
 
-- **Version under test:** `1.10.0-dev.3` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the last line of Export's options sheet.
+- **Version under test:** `1.10.0-dev.4` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the last line of Export's options sheet.
 - **Automated tests first:** `node tests/selftest.js` and `tests/sample-regression.js` must both pass (see `tests/README.md`). Claude runs these, plus the `verify` skill's layout, subfolder and `file://` checks, before handing over a build.
 - **IDs** are the permanent IDs from `tests/uat/catalog.md` (`D` Desktop, `P` Phone, `E` Environments, then section.row). 🆕 marks a case for behavior new in this phase; ✏️ a case whose behavior changed in this phase. Unmarked rows are connected cases, copied from the catalog unchanged.
 - **One row per behavior, on one device.** A behavior is tested once, on the device that can judge it best; the rest is shared out so both devices exercise every feature. Each row is one flow with one verdict.
@@ -207,9 +207,51 @@ No cases in this phase.
 
 ## Smoke test
 
-Run on both devices after the sections above, in one **Pre-release** column.
+Run on both devices after the sections above. Copied from `tests/uat/smoke.md`, re-cut to the new layout (✏️: the steps changed, the verdict didn't). There is no Live column: the redesign is released once, after phase 6.
 
-Smoke test: rows from tests/uat/smoke.md as re-cut for phase 2 (being updated separately).
+### Desktop
+*Setup: Chrome with DevTools open on the Console tab, in a window wider than 760 px. The 14 pair from `samples/` (`14_front_portrait_raw_white`, `14_back_portrait_raw_white`) and a transparent PNG logo to hand. When a Download or Copy asks **Upscale to 2000 px?**, answer **No**.*
+
+| ID | Test | Steps | Expected | Pre-release (dev.4) | Notes |
+|---|---|---|---|---|---|
+| SD1 | Right build | Open the page; look at the tab, the console and the logo's tooltip | The tab shows the P1 icon; the console's version line and the tooltip read the version under test (`-dev` pre-release) |  |  |
+| SD2 | Drop and detect | Drag `14_front_portrait_raw_white` onto the page | It loads with four corners on or near the card |  |  |
+| SD3 | Corner by mouse and keys | Drag a corner onto the card's corner, press an arrow key twice, then Ctrl+Z | The loupe sits up-right of the cursor and the Result preview updates; the keys nudge the handle; Ctrl+Z moves it back |  |  |
+| SD4 | Rotate | Press 2, type `1.5` in the degrees box | Rotate opens; the photo turns 1.5°, with a grid |  |  |
+| SD5 | Crop | Press 3, click 5:4 | The chip reads 4:5 and the box is portrait (it follows the card) |  |  |
+| SD6 | Levels | Press 4, **Auto**, hold **C**, then **Apply** | The colors adjust; C shows the photo without levels; Apply clears the dot |  |  |
+| SD7 | Overlay | Press 5, **Add logo** with the PNG, click the bottom-right ring | The logo snaps to the bottom-right corner, inside the photo |  |  |
+| SD8 | Download | Press 6, **Download**, open the file | `<name>-straight.jpg`; the crop, rotation, levels and logo match the screen; **Next card →** shows |  |  |
+| SD9 | Copy | **Copy**, paste into another app | The image pastes |  |  |
+| SD10 ✏️ | Edits round trip | In the side panel, **Save edits**; reload, **Start fresh**; open the same photo, go to Export, **Load edits**, **Download** | The second file looks identical to SD8's, logo included |  |  |
+| SD11 ✏️ | Add back | **Add back**, choose `14_back_portrait_raw_white` | It opens on Perspective; the top bar shows **Front / Back** with Back lit, and the Unpair icon beside it |  |  |
+| SD12 | Pair export | Go to Export, look at the photo area; choose **Separately**, **Download** | The preview joins both cards, front on the left; two files arrive, `-front` (with the logo) and `-back` |  |  |
+| SD13 | Corner shots | In the side panel's **Corner shots** box choose **4 photos**, **Download corners** | Four close-up files, `-corner-tl`, `-tr`, `-br`, `-bl`, with no logo |  |  |
+| SD14 | Resume the pair | Reload, **Resume** | The prompt names both photos; both sides come back, on the side and step you left |  |  |
+| SD15 ✏️ | Narrow window | Narrow the window below 760 px, then widen it | The tab bar at the bottom replaces the top bar's step pill; widening brings the pill back |  |  |
+| SD16 | Clean console | Look at the console | No red errors (CSP or otherwise) from the whole pass |  |  |
+
+### Phone
+*Setup: iPhone Safari; clear the LAN address's website data in Safari's settings (Advanced → Website Data) first, so no cached build runs. In Photos: a slabbed card's front and back, shot the same way up. A logo saved from an earlier run (or a PNG to upload). If Safari shows a downloaded image in the tab, go Back and tap **Resume**.*
+
+| ID | Test | Steps | Expected | Pre-release (dev.4) | Notes |
+|---|---|---|---|---|---|
+| SP1 ✏️ | Open and detect | **Open**, choose the slab's front | It loads and the corners sit on the card; top bar, photo, control area and tab bar, with nothing over the photo and no button text cut off |  |  |
+| SP2 | Long-press and drag | Press and hold a corner for 2 s, then drag it | No iOS magnifier or callout; the loupe pins to the top corner away from your finger |  |  |
+| SP3 | Nudge and Undo | Tap ▶ twice, then Undo | The handle moves and the loupe stays up; one Undo takes both taps back |  |  |
+| SP4 ✏️ | Tab bar and Rotate | Tap **Rotate** in the tab bar, drag the Fine slider | Rotate opens, its tab lit; the photo rotates, with a grid |  |  |
+| SP5 ✏️ | Crop | Tap **Crop** in the tab bar, swipe the preset row, tap 5:4 | The chip reads 4:5 and the box is portrait; the photo is the same height as on Rotate |  |  |
+| SP6 ✏️ | Levels | Tap **Levels**, **Auto**, press and hold the photo, then **Apply** | The colors adjust; the hold shows the photo without levels, with no magnifier; Apply clears the dot |  |  |
+| SP7 ✏️ | Overlay | Tap **Overlay**, **Use saved overlay** (or **Add logo**), pinch on the logo, tap the bottom-right ring | The logo resizes while the photo stays still, then snaps to the corner |  |  |
+| SP8 ✏️ | Right build | Tap **Export**, tap the grabber to open its options sheet, scroll to its end | The last line reads the version under test (`-dev` pre-release); the Source line above it gives the photo's real pixel size |  |  |
+| SP9 ✏️ | Download with upscale | Close the sheet with **✕**, **Download**; if it asks **Upscale to 2000 px?**, tap **Yes** | The image has the crop, levels and logo as on screen; no crash |  |  |
+| SP10 | Next card | Look under the readout (after Back and **Resume** if Safari showed the image) | On Export with every edit intact; **Next card →** sits beside **Add back** |  |  |
+| SP11 ✏️ | Add back | **Add back**, choose the slab's back | It opens on Perspective with corners on the card; the top bar fits **Front / Back** and the Unpair icon in one row |  |  |
+| SP12 ✏️ | Corner sheet | Go to Export, tap **Corner shots**, **1 sheet**, **Download corners** (answer **No** if asked) | Export's options sheet opens at the Corner shots box; a 2×2 sheet of this side's corners downloads, with no logo |  |  |
+| SP13 ✏️ | Pair preview and Download | Drag the sheet down to close it; with **Together** chosen, **Download** (answer **No** if asked) | The photo area shows both sides, front first; one joined image downloads, the logo on the front only |  |  |
+| SP14 | (HTTPS) Share to Photos | **Share** → Save Image, then open it in Photos | The joined image is in Photos and matches the screen; Safari is still on Export with every edit intact | ➖ |  |
+| SP15 | Resume after closing | Swipe Safari away, reopen the page, **Resume** | The prompt names both photos; both sides and their edits come back |  |  |
+| SP16 ✏️ | Unpair | Tap the Unpair icon, **Keep front** | A card over the dimmed photo asks which side to keep; the front stays as a single photo with its edits |  |  |
 
 ---
 
