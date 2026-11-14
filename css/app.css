@@ -230,39 +230,6 @@ main { flex: 1; display: flex; min-height: 0; }
   color: var(--text);
   font-weight: 600;
 }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
-.chip {
-  min-height: 44px;
-  min-width: 52px;
-  padding: 0 12px;
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: var(--panel2);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.chip[aria-pressed="true"] { border-color: var(--accent); background: rgba(229, 50, 45, .18); }
-.chip:disabled { opacity: .35; }
-.swatch {
-  width: 18px;
-  height: 18px;
-  flex: none;
-  border-radius: 4px;
-  border: 1px solid var(--line);
-}
-.levels-row > .btn { flex: 1; min-width: 0; padding: 0 6px; }
-.overlay-thumb {
-  width: 44px;
-  height: 44px;
-  flex: none;
-  object-fit: contain;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: repeating-conic-gradient(var(--panel2) 0 25%, var(--panel) 0 50%) 0 0 / 12px 12px;
-}
-.swatch.unset {
-  background: repeating-linear-gradient(45deg, var(--panel2) 0 6px, var(--panel) 6px 12px);
-}
 label.field { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; }
 label.field .value { float: right; color: var(--text); font-variant-numeric: tabular-nums; }
 input[type="range"] {
@@ -289,14 +256,6 @@ input[type="color"] {
   background: var(--panel2);
   padding: 4px;
 }
-.toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
-.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
-.inline { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.inline label { color: var(--muted); font-size: 13px; }
-.inline input[type="range"] { flex: 1; width: auto; min-width: 0; }
-.inline .value { min-width: 3em; text-align: right; font-variant-numeric: tabular-nums; }
-.inline input[type="number"] { width: 76px; }
-.inline .btn { flex: none; }
 /* One status line, shown only when there is something to act on. */
 .status {
   padding: 5px 10px;
@@ -361,23 +320,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.nudge { display: none; gap: 6px; margin-bottom: 8px; }
-.nudge button {
-  flex: 0 0 48px;
-  min-height: 44px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--panel2);
-  color: var(--text);
-  font-size: 15px;
-  padding: 0;
-  touch-action: none;
-  cursor: pointer;
-}
-.nudge .cycle { flex: 1; font-size: 14px; }
-@media (pointer: coarse), (max-width: 760px) {
-  #app:not(.previewing) .nudge { display: flex; }
 }
 
 /* ---- debug tuning panel ---- */
@@ -1495,20 +1437,8 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 @media (max-width: 760px) {
   #pairOutput { flex-basis: 0%; }
   main { flex-direction: column; }
-  .nudge { margin-bottom: 6px; }
   .status { padding: 4px 10px; margin-bottom: 2px; }
   .action-bar > .btn { padding: 0 6px; }
-  /* Crop presets: one row that scrolls sideways (swipe). Wide screens wrap instead, since a
-     mouse can't swipe. */
-  .chips.scroller {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    margin: 0 -12px 6px;
-    padding: 0 12px;
-  }
-  .chips.scroller::-webkit-scrollbar { display: none; }
-  .chips.scroller .chip { flex: none; }
 
   /* ---- the 1.10 parts on the phone ---- */
   /* Crop presets: one row that scrolls sideways and runs off the right edge, so it reads as

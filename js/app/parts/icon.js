@@ -37,6 +37,7 @@
     fillFrame: 'M4 4h16v16H4zM9 15l6-6M11 9h4v4',
     auto: 'M5 19 16 8M14 6l4 4M18 2v3M16.5 3.5h3M6 5v2M5 6h2',
     close: 'M6 6l12 12M18 6 6 18',
+    bin: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5',
     image: 'M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5M15 9h.01',
     plus: 'M12 5v14M5 12h14',
     minus: 'M5 12h14',

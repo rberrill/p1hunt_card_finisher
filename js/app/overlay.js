@@ -830,9 +830,6 @@
     { value: 'shrink', icon: 'minus', label: 'Smaller' },
     { value: 'grow', icon: 'plus', label: 'Larger' },
   ];
-  // Delete saved's icon, a bin, on the icons' 24 px grid. Remove has the cross, and the two
-  // tools sit side by side. It belongs in parts/icon.js (CF.ICONS), which this phase can't edit.
-  const BIN_ICON_PATH = 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5';
 
   // Builds Overlay's control area and options sheet into its section (the shell's contract).
   // The sheet holds only the Tips: all four buttons are tools (Rich, 14 November).
@@ -888,10 +885,9 @@
       id: 'toolOverlayDeleteSaved',
       kind: 'action',
       label: 'Delete saved',
-      icon: 'close',
+      icon: 'bin',
       title: 'Delete the logo saved in this browser',
     });
-    deleteSavedTool.querySelector('.icon path').setAttribute('d', BIN_ICON_PATH);
     return CF.buildToolRow('overlayTools',
       CF.buildTool({
         id: 'toolOverlayReplace',

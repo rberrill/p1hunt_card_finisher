@@ -153,7 +153,7 @@
   }
 
   // Builds an element without parsing HTML:
-  //   makeEl('button', { class: 'chip', 'data-crop': id }, label).
+  //   makeEl('button', { class: 'sheet-hint', id }, label).
   // Strings become text nodes, so data can never turn into markup (the self-test bans innerHTML).
   // An attribute that is null, undefined or false is left off; true sets it empty.
   function makeEl(tag, attributes, ...children) {

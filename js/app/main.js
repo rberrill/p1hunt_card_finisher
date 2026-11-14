@@ -76,7 +76,7 @@
     const cancelTouchDefault = event => {
       if (event.cancelable) event.preventDefault();
     };
-    const holdButtons = document.querySelectorAll('[data-nudge], [data-overlay-nudge]');
+    const holdButtons = document.querySelectorAll('[data-nudge]');
     const holdTargets = [canvas, ...holdButtons];
     for (const el of holdTargets) {
       el.addEventListener('touchstart', cancelTouchDefault, { passive: false });
