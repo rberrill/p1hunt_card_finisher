@@ -17,6 +17,7 @@ The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure he
 | Both | Reduced motion (scripted) | with `prefers-reduced-motion`, only opacity transitions |
 | Phone | Action bar fits | no button has `scrollWidth > clientWidth`; the bar's bottom is inside the safe area |
 | Phone | Header is one row | header height matches a single button row |
+| Phone | The sheet is the control area's drawer | drag the grabber up and stop: the sheet's top edge is under the finger, it rose from the control area's top edge (not from the bottom of the screen), and the control area's own grabber pill has opacity 0 while the sheet shows; on a step its phase hasn't converted the pill is whole (not clipped by the scrolling controls) |
 | Phone | Nothing blocks the photo (scripted) | with no sheet open and no alert waiting on an answer, no element intersects `#stage` (the grabber's pill straddles the control area's top edge by design) |
 
 ## 2. Navigation

@@ -2,8 +2,9 @@
    js/app/parts/sheet.js: the Sheet part. A step's options, the Corner shots and the Levels
    tips: a panel that rises over the lower half of the photo, above a dimmed backdrop. A tap on
    the backdrop or on its close button closes it, and so does a drag down on its top edge; a
-   drag up on a grabber opens it, following the finger. It never resizes the photo. On a wide
-   screen css/app.css shows it inline instead, always open.
+   drag up on a grabber opens it, following the finger. Closed, it rests (unseen) with its top
+   edge on the control area's, so it rises from where the grabber is and takes its place. It
+   never resizes the photo. On a wide screen css/app.css shows it inline instead, always open.
    Shell modules share one namespace, CF (created in core.js). Names from core are destructured
    below; anything from another module is called as CF.name. tests/selftest.js checks these
    boundaries.
@@ -23,6 +24,8 @@
   // How long the sheet takes to close, in ms (css/app.css, .sheet-layer); its hidden attribute
   // is set once the slide has finished.
   const SHEET_CLOSE_MS = 200;
+  // A dragged sheet is fully opaque once it has risen this far, in CSS px.
+  const SHEET_FADE_PX = 24;
 
   // Builds a closed sheet: a layer holding the backdrop and the panel (its grabber, a title row
   // with the close button, a progress line on its top edge, then `content`). Returns the layer.
@@ -95,19 +98,39 @@
     layer.dispatchEvent(new Event('sheetclose'));
   }
 
-  // Shows the sheet raised by `openFraction` (0 closed, 1 open) under a finger: no easing.
-  function dragTo(layer, openFraction) {
+  // How far the sheet travels between closed and open, in CSS px. Closed, its top edge rests
+  // on the control area's top edge (css/app.css, --sheet-rest), so this is less than its height.
+  // Measured by trying both positions with the motion off; nothing is painted in between.
+  function sheetTravelPx(layer) {
+    const sheet = layer.querySelector('.sheet');
+    const wasOpen = isSheetOpen(layer);
+    layer.classList.add('is-dragging');
+    sheet.style.transform = '';
+    layer.classList.remove('is-open');
+    const closedTop = sheet.getBoundingClientRect().top;
+    layer.classList.add('is-open');
+    const openTop = sheet.getBoundingClientRect().top;
+    layer.classList.toggle('is-open', wasOpen);
+    return closedTop - openTop;
+  }
+
+  // Shows the sheet raised by `openFraction` (0 closed, 1 open) of its travel under a finger:
+  // no easing. It fades in over its first few pixels, as it takes the control area's place.
+  function dragTo(layer, openFraction, travelPx) {
     const fraction = Math.min(1, Math.max(0, openFraction));
     const sheet = layer.querySelector('.sheet');
     layer.classList.add('is-dragging');
-    sheet.style.transform = `translateY(${(1 - fraction) * 100}%)`;
+    sheet.style.transform = `translateY(${(1 - fraction) * travelPx}px)`;
+    sheet.style.opacity = Math.min(1, fraction * travelPx / SHEET_FADE_PX);
     layer.querySelector('.sheet-scrim').style.opacity = fraction;
   }
 
   // Hands the sheet back to its classes after a drag.
   function clearDrag(layer) {
     layer.classList.remove('is-dragging');
-    layer.querySelector('.sheet').style.transform = '';
+    const sheet = layer.querySelector('.sheet');
+    sheet.style.transform = '';
+    sheet.style.opacity = '';
     layer.querySelector('.sheet-scrim').style.opacity = '';
   }
 
@@ -131,36 +154,36 @@
       const layer = getLayer();
       if (!layer) return;
       handle.setPointerCapture(event.pointerId);
-      press = { layer, startY: event.clientY, wasOpen: isSheetOpen(layer), heightPx: 0 };
+      press = { layer, startY: event.clientY, wasOpen: isSheetOpen(layer), travelPx: 0 };
     });
     handle.addEventListener('pointermove', event => {
       if (!press) return;
       const dy = event.clientY - press.startY;
-      if (!press.heightPx && Math.abs(dy) < TAP_SLOP_PX) return;
-      if (!press.heightPx) {
+      if (!press.travelPx && Math.abs(dy) < TAP_SLOP_PX) return;
+      if (!press.travelPx) {
         clearTimeout(press.layer.closeTimer);
         press.layer.hidden = false;
-        press.heightPx = press.layer.querySelector('.sheet').getBoundingClientRect().height;
+        press.travelPx = sheetTravelPx(press.layer);
       }
       const start = press.wasOpen ? 1 : 0;
-      dragTo(press.layer, start - dy / press.heightPx);
+      dragTo(press.layer, start - dy / press.travelPx, press.travelPx);
     });
     const end = event => {
       if (!press) return;
-      const { layer, startY, wasOpen, heightPx } = press;
+      const { layer, startY, wasOpen, travelPx } = press;
       press = null;
       // A cancelled press (the browser took the gesture) puts the sheet back as it was.
       if (event.type === 'pointercancel') {
-        if (!heightPx) return;
+        if (!travelPx) return;
         settleSheet(layer, wasOpen);
         return;
       }
-      if (!heightPx) {
+      if (!travelPx) {
         if (wasOpen) closeSheet(layer);
         else openSheet(layer);
         return;
       }
-      const moved = (startY - event.clientY) / heightPx;
+      const moved = (startY - event.clientY) / travelPx;
       const shouldOpen = wasOpen ? moved > -SHEET_SETTLE_FRACTION : moved > SHEET_SETTLE_FRACTION;
       settleSheet(layer, shouldOpen);
     };

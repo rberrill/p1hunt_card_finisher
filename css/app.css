@@ -1074,7 +1074,14 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 .top-bar-brand, .top-bar-steps, .icon-button-label { display: none; }
 /* The old controls of a step its phase hasn't converted: they may be taller than the area for
    now, so the area scrolls on those steps only. */
-.control-area.is-interim { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.interim-controls {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -16px;
+  padding: 0 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
 /* The grabber's target straddles the area's top edge; where it overlaps a control in the
    label row (Rotate's angle, for one), the control takes the tap. */
@@ -1176,16 +1183,25 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 #app.has-img[data-tab="overlay"] .stage.drag-over::after { content: 'Drop to add as the logo'; }
 
 /* ---- shell: sheets open and close (motion M1) ---- */
-/* Open 280 ms, fast then settling; close 200 ms, accelerating away. A finger drag has no
-   easing (.is-dragging). */
+/* The sheet is the control area's drawer. Closed, it rests unseen with its grabber on the
+   control area's grabber (--sheet-rest: how much of it stays below that edge); opening, it
+   fades in and rises from there, so there is one handle, not two. Open 280 ms, fast then
+   settling; close 200 ms, accelerating away. A finger drag has no easing (.is-dragging). */
+.sheet-layer {
+  --sheet-rest: calc(
+    var(--control-area-height) + var(--tab-bar-height) + env(safe-area-inset-bottom) + 7px
+  );
+}
 .sheet-layer .sheet {
-  transform: translateY(100%);
-  transition: transform 200ms cubic-bezier(.4, 0, 1, 1);
+  opacity: 0;
+  transform: translateY(calc(100% - var(--sheet-rest)));
+  transition: transform 200ms cubic-bezier(.4, 0, 1, 1), opacity 200ms linear;
 }
 .sheet-layer .sheet-scrim { opacity: 0; transition: opacity 200ms linear; }
 .sheet-layer.is-open .sheet {
+  opacity: 1;
   transform: none;
-  transition: transform 280ms cubic-bezier(.2, .8, .2, 1);
+  transition: transform 280ms cubic-bezier(.2, .8, .2, 1), opacity 120ms linear;
 }
 .sheet-layer.is-open .sheet-scrim { opacity: 1; transition-duration: 280ms; }
 .sheet-layer.is-dragging .sheet,
@@ -1290,6 +1306,11 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 @media (max-width: 760px) {
   .workspace { flex-direction: column; }
   .panel { width: auto; flex: none; border: 0; }
+  /* An open sheet always reaches above the control area it rose from. */
+  .sheet { min-height: calc(var(--sheet-rest) + 72px); }
+  /* While a sheet is rising, open or closing, its grabber stands in for the control area's. */
+  .grabber::before { transition: opacity 120ms linear; }
+  #app:has(.sheet-layer:not([hidden])) .grabber::before { opacity: 0; }
   /* No bars before a photo: nothing in them would work. */
   #app:not(.has-img) .top-bar-host,
   #app:not(.has-img) .panel,
@@ -1386,7 +1407,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
     padding-bottom: 14px;
     border-top: 0;
   }
-  .control-area.is-interim { overflow: visible; }
+  .interim-controls { overflow: visible; }
   .grabber { display: none; }
   .sheet-layer { position: static; }
   .sheet-scrim, .sheet-grabber, .sheet-close, .sheet-tips-group > .sheet-list { display: none; }
@@ -1398,7 +1419,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
     border-radius: 0;
     background: transparent;
   }
-  .sheet-layer .sheet { transform: none; transition: none; }
+  .sheet-layer .sheet { opacity: 1; transform: none; transition: none; }
   .sheet-header { height: auto; margin-bottom: 0; }
   .sheet-title { color: var(--quiet); }
   .sheet-body { overflow: visible; }

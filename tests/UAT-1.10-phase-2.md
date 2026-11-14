@@ -2,7 +2,7 @@
 
 Phase 2 of the 1.10 redesign: the new shell (top bar, control area with its grabber and options sheet, tab bar, start screen, the desktop frame) and the rebuilt Perspective and Rotate. Run on the dev build, desktop and iPhone: the cases below, then the smoke test. The redesign is released once, after phase 6, so this script has no Live column and no After deploy section.
 
-- **Version under test:** `1.10.0-dev.6` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the last line of Export's options sheet.
+- **Version under test:** `1.10.0-dev.7` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the last line of Export's options sheet.
 - **Automated tests first:** `node tests/selftest.js` and `tests/sample-regression.js` must both pass (see `tests/README.md`). Claude runs these, plus the `verify` skill's layout, subfolder and `file://` checks, before handing over a build.
 - **IDs** are the permanent IDs from `tests/uat/catalog.md` (`D` Desktop, `P` Phone, `E` Environments, then section.row). 🆕 marks a case for behavior new in this phase; ✏️ a case whose behavior changed in this phase. Unmarked rows are connected cases, copied from the catalog unchanged.
 - **One row per behavior, on one device.** A behavior is tested once, on the device that can judge it best; the rest is shared out so both devices exercise every feature. Each row is one flow with one verdict.
@@ -100,7 +100,7 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 | --- | --- | --- | --- | --- | --- |
 | P2.3 ✏️ | Unapplied Levels dot | Make a Levels change without Apply, then tap other tabs | A dot on the Levels tab, on every step |  |  |
 | P2.6 🆕 | Tab bar | From Perspective, tap **Crop**, then **Rotate** | One tap opens each step; the tab you're on is lit and the others dim |  |  |
-| P2.7 🆕 | Grabber opens the sheet | On Perspective, tap the grabber; close the sheet with ✕; then drag the grabber up | Both open "Perspective options" over the lower half of the photo, with the top of the photo still in view; the control area under it doesn't change height |  |  |
+| P2.7 🆕 | Grabber opens the sheet | On Perspective, tap the grabber; close the sheet with ✕; then drag the grabber up slowly and stop halfway | Both open "Perspective options" over the lower half of the photo, with the top of the photo still in view. While dragging, the sheet rises from the control area's top edge under your finger and there is one grabber on screen, never two. On Export the grabber is whole, not cut off |  |  |
 | P2.8 🆕 | The sheet closes | Open the sheet and drag it down; open it and tap the photo above it; open it and tap ✕ | Each closes it; the tap on the photo moves no corner |  |  |
 | P2.9 🆕 | Every step has its options | On each of the six steps, open the sheet and scroll it | Each opens with that step's title. Perspective's and Rotate's are new (rows P3.13, P4.5); Crop, Levels, Overlay and Export hold their old More options content, and Export's now includes **Fill outside photo** |  |  |
 
@@ -212,7 +212,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`, 
 ### Desktop
 *Setup: Chrome with DevTools open on the Console tab, in a window wider than 760 px. The 14 pair from `samples/` (`14_front_portrait_raw_white`, `14_back_portrait_raw_white`) and a transparent PNG logo to hand. When a Download or Copy asks **Upscale to 2000 px?**, answer **No**.*
 
-| ID | Test | Steps | Expected | Pre-release (dev.6) | Notes |
+| ID | Test | Steps | Expected | Pre-release (dev.7) | Notes |
 |---|---|---|---|---|---|
 | SD1 | Right build | Open the page; look at the tab, the console and the logo's tooltip | The tab shows the P1 icon; the console's version line and the tooltip read the version under test (`-dev` pre-release) |  |  |
 | SD2 | Drop and detect | Drag `14_front_portrait_raw_white` onto the page | It loads with four corners on or near the card |  |  |
@@ -234,7 +234,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`, 
 ### Phone
 *Setup: iPhone Safari; clear the LAN address's website data in Safari's settings (Advanced → Website Data) first, so no cached build runs. In Photos: a slabbed card's front and back, shot the same way up. A logo saved from an earlier run (or a PNG to upload). If Safari shows a downloaded image in the tab, go Back and tap **Resume**.*
 
-| ID | Test | Steps | Expected | Pre-release (dev.6) | Notes |
+| ID | Test | Steps | Expected | Pre-release (dev.7) | Notes |
 |---|---|---|---|---|---|
 | SP1 ✏️ | Open and detect | **Open**, choose the slab's front | It loads and the corners sit on the card; top bar, photo, control area and tab bar, with nothing over the photo and no button text cut off |  |  |
 | SP2 | Long-press and drag | Press and hold a corner for 2 s, then drag it | No iOS magnifier or callout; the loupe pins to the top corner away from your finger |  |  |

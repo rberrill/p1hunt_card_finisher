@@ -9,7 +9,7 @@
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { byId, elements, app } = CF;
+  const { byId, makeEl, elements, app } = CF;
 
   const STEPS = {
     perspective: 'Perspective',
@@ -123,7 +123,9 @@
     const more = controls.querySelector(':scope > details.more');
     const actionBar = section.querySelector(':scope > .action-bar');
     const kept = [...controls.children].filter(child => child !== more);
-    const area = CF.buildControlArea(`${step}Area`, ...kept, actionBar);
+    // The old controls scroll inside the area, so the grabber on its top edge is never cut.
+    const scroller = makeEl('div', { class: 'interim-controls' }, ...kept, actionBar);
+    const area = CF.buildControlArea(`${step}Area`, scroller);
     area.classList.add('is-interim');
     const moreContent = more ? [...more.children].filter(child => child.tagName !== 'SUMMARY') : [];
     const sheet = CF.buildSheet({ id: `${step}Sheet`, title: SHEET_TITLES[step] }, ...moreContent);

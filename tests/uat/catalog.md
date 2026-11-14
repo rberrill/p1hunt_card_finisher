@@ -75,7 +75,7 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 | --- | --- | --- | --- | --- | --- |
 | P2.3 | Unapplied Levels dot | Make a Levels change without Apply, then tap other tabs | A dot on the Levels tab, on every step |  |  |
 | P2.6 | Tab bar | From Perspective, tap **Crop**, then **Rotate** | One tap opens each step; the tab you're on is lit and the others dim |  |  |
-| P2.7 | Grabber opens the sheet | On Perspective, tap the grabber; close the sheet with ✕; then drag the grabber up | Both open "Perspective options" over the lower half of the photo, with the top of the photo still in view; the control area under it doesn't change height |  |  |
+| P2.7 | Grabber opens the sheet | On Perspective, tap the grabber; close the sheet with ✕; then drag the grabber up slowly and stop halfway | Both open "Perspective options" over the lower half of the photo, with the top of the photo still in view. While dragging, the sheet rises from the control area's top edge under your finger and there is one grabber on screen, never two. On Export the grabber is whole, not cut off |  |  |
 | P2.8 | The sheet closes | Open the sheet and drag it down; open it and tap the photo above it; open it and tap ✕ | Each closes it; the tap on the photo moves no corner |  |  |
 | P2.9 | Every step has its options | On each of the six steps, open the sheet and scroll it | Each opens with that step's title. Perspective's and Rotate's are new (rows P3.13, P4.5); Crop, Levels, Overlay and Export hold their old More options content, and Export's now includes **Fill outside photo** |  |  |
 
