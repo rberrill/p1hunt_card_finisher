@@ -11,6 +11,7 @@
     FULL_CIRCLE,
     Mat3,
     Vec2,
+    byId,
     elements,
     clone,
     makeCanvas,
@@ -271,7 +272,63 @@
     CF.drawLoupeRim(ctx, centerX, centerY, radius);
   }
 
+  /* ---------- the controls ---------- */
+  function bindLevels() {
+    byId('btnAutoLevels').onclick = CF.autoLevelsDraft;
+    const armDropper = which => {
+      app.dropper = app.dropper === which ? null : which;
+      CF.syncUI();
+      if (app.dropper) toast(`Tap the image where it should be ${which}.`);
+    };
+    byId('btnPickWhite').onclick = () => armDropper('white');
+    byId('btnPickBlack').onclick = () => armDropper('black');
+    byId('btnClearLevels').onclick = () => {
+      app.dropper = null;
+      CF.setDraft(draft => {
+        draft.white = null;
+        draft.whiteAt = null;
+        draft.black = null;
+        draft.blackAt = null;
+      });
+    };
+    byId('btnApplyLevels').onclick = CF.applyLevels;
+    byId('btnDiscardLevels').onclick = CF.discardLevels;
+  }
+
+  // A Levels swatch: the picked color, or empty.
+  function setSwatch(id, color) {
+    const swatch = byId(id);
+    const rgb = color && color.map(Math.round).join(', ');
+    swatch.style.background = color ? `rgb(${rgb})` : '';
+    swatch.classList.toggle('unset', !color);
+    swatch.title = color ? `RGB ${rgb}` : 'Not set';
+  }
+
+  function syncLevels() {
+    const state = app.state;
+    // A draft that matches the applied levels isn't pending.
+    const applied = JSON.stringify(state.levels || null);
+    const isSameAsApplied = JSON.stringify(app.levelsDraft) === applied;
+    if (app.levelsPending && isSameAsApplied) {
+      app.levelsPending = false;
+      app.levelsDraft = null;
+    }
+    const levels = CF.draftLevels() || {};
+    setSwatch('swatchWhite', levels.white);
+    setSwatch('swatchBlack', levels.black);
+    byId('btnPickWhite').setAttribute('aria-pressed', String(app.dropper === 'white'));
+    byId('btnPickBlack').setAttribute('aria-pressed', String(app.dropper === 'black'));
+    byId('btnClearLevels').disabled = !levels.white && !levels.black;
+    byId('btnApplyLevels').disabled = !app.levelsPending;
+    byId('btnDiscardLevels').disabled = !app.levelsPending;
+    // No "unapplied" message: the step's dot and the enabled Apply button say it.
+    document.querySelector('[data-tab="levels"]').classList.toggle('pending', app.levelsPending);
+    elements.root.classList.toggle('levels-pending', app.levelsPending);
+  }
+
   Object.assign(CF, {
+    bindLevels,
+    syncLevels,
     draftLevels,
     levelsShown,
     setDraft,
