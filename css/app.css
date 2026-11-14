@@ -1074,6 +1074,10 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 .control-area.is-interim { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .control-area .mini { margin-bottom: 8px; }
 
+/* The grabber's target straddles the area's top edge; where it overlaps a control in the
+   label row (Rotate's angle, for one), the control takes the tap. */
+.control-area .label-row > * { position: relative; z-index: 5; }
+
 /* ---- shell: the start screen ---- */
 .start-screen {
   position: absolute;

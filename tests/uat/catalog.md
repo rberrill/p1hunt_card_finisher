@@ -164,7 +164,7 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 | D5.2 | Portrait card, portrait crops | Click 5:4 | The chip reads **4:5** and the box is portrait; labels read 3:4 · 4:5 · 2:3 · 9:16 · 5:7 card |  |  |
 | D5.3 | Swap | Click **⇄ Swap**, pick 3:2, then **⇄ Swap** again | Landscape, with labels 4:3 · 5:4 · 3:2 · 16:9 · 7:5 card; 3:2 stays landscape; the second Swap gives portrait 2:3 |  |  |
 | D5.4 | Swap is off at 1:1 and Free | Pick 1:1, then Free | Swap is disabled for both |  |  |
-| D5.5 | Rotation turns the crop | Rotate ⟳ 90°, go back to Crop, then Undo | The crop and labels switch to landscape with the card; Undo makes them portrait again |  |  |
+| D5.5 | Rotation turns the crop | On Rotate, **90° right**, go back to Crop, then Undo | The crop and labels switch to landscape with the card; Undo makes them portrait again |  |  |
 | D5.6 | Orientation setting | On Perspective, orientation **Landscape** in the side panel, then Crop | The crop and labels are landscape |  |  |
 
 ### Phone
@@ -381,7 +381,7 @@ AC numbers here refer to the Front + Back Pairing page in Claude.
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
 | D11.1 | Add back opens the picker | Open `14_front_portrait_raw_white`, go to Export, click **Add back**, then cancel the picker | The picker opens and nothing downloads; after the cancel it's the same photo's Export, with no **Front / Back** in the top bar and the crop unchanged (AC2) |  |  |
-| D11.2 | The back starts like a new photo | **Add back** again and choose `14_back_portrait_raw_white` | It opens on Perspective with the corners on the card and no levels; the top bar shows **Front / Back** with Back lit red, and the Unpair icon beside it (AC3, AC4) |  |  |
+| D11.2 | The back starts like a new photo | **Add back** again and choose `14_back_portrait_raw_white` | It opens on Perspective with the corners on the card and no levels; the top bar shows **Front / Back** with Back lit white, and the Unpair icon beside it (AC3, AC4) |  |  |
 | D11.3 | The front became 5:7 | Go to Crop, click **Front** | The front, also on Crop, with its box 5:7 and fitted to the card (AC2, AC5) |  |  |
 | D11.4 | Undo is per side | Rotate the front 1°, click **Back**, press Ctrl+Z | The back's last change is undone; the front keeps its 1° (AC5) |  |  |
 | D11.5 | Swap isn't an undo step | On Crop, **⇄ Swap**, then press Ctrl+Z | The crop stays landscape (AC8) |  |  |
@@ -438,7 +438,7 @@ AC numbers here refer to the Front + Back Pairing page in Claude.
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| D12.1 | Resume | Edit on several steps, leave a Levels change unapplied, reload, **Resume** | The start screen asks "Resume <name>? (just now)" with **Resume** and **Start fresh**; Resume brings back the same photo, edits and step, the corners unmoved, the Levels change still unapplied with its dot, and no "reset" notice |  |  |
+| D12.1 | Resume | Edit on several steps, leave a Levels change unapplied, reload, **Resume** | The start screen's card reads "Last photo · just now" over "Resume <name>?" with **Resume** and **Start fresh**; Resume brings back the same photo, edits and step, the corners unmoved, the Levels change still unapplied with its dot, and no "reset" notice |  |  |
 | D12.2 | Start fresh | Reload, **Start fresh**, reload again | No prompt the second time |  |  |
 | D12.3 | Latest photo wins | Open photo A and edit it, open photo B, reload | The prompt names photo B |  |  |
 | D12.4 | A pair's Start fresh clears both | Pair two photos, reload (the prompt reads "Resume <front> + <back>?"), **Start fresh**, reload again | No prompt the second time (AC18) |  |  |

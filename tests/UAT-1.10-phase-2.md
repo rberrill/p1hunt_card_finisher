@@ -194,7 +194,7 @@ No cases in this phase.
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| D12.1 | Resume | Edit on several steps, leave a Levels change unapplied, reload, **Resume** | The start screen asks "Resume <name>? (just now)" with **Resume** and **Start fresh**; Resume brings back the same photo, edits and step, the corners unmoved, the Levels change still unapplied with its dot, and no "reset" notice |  |  |
+| D12.1 ✏️ | Resume | Edit on several steps, leave a Levels change unapplied, reload, **Resume** | The start screen's card reads "Last photo · just now" over "Resume <name>?" with **Resume** and **Start fresh**; Resume brings back the same photo, edits and step, the corners unmoved, the Levels change still unapplied with its dot, and no "reset" notice |  |  |
 
 ### Phone
 *Setup: a photo open.*

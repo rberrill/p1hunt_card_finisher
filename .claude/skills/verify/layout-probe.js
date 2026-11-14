@@ -51,6 +51,25 @@
 
   // Elements outside the photo area that overlap it (nothing may, unless a sheet or a card is
   // open). The grabber is allowed: its pill straddles the control area's top edge by design.
+  // An element's box as it shows: cut to every ancestor that clips its overflow (a ruler's
+  // scale is wider than the ruler). Null when nothing of it shows.
+  function visibleRect(el) {
+    const box = rectOf(el);
+    let left = box.left;
+    let top = box.top;
+    let right = box.right;
+    let bottom = box.bottom;
+    for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+      if (getComputedStyle(parent).overflow === 'visible') continue;
+      const clip = rectOf(parent);
+      left = Math.max(left, clip.left);
+      top = Math.max(top, clip.top);
+      right = Math.min(right, clip.right);
+      bottom = Math.min(bottom, clip.bottom);
+    }
+    return right > left && bottom > top ? { left, top, right, bottom } : null;
+  }
+
   function overPhoto() {
     const stage = document.getElementById('stage');
     const photo = rectOf(stage);
@@ -58,10 +77,11 @@
     document.querySelectorAll('#app *').forEach(el => {
       const isOwn = stage.contains(el) || el.contains(stage) || el.closest('.grabber');
       if (isOwn || !isShown(el)) return;
-      const rect = rectOf(el);
+      const rect = visibleRect(el);
+      if (!rect) return;
       const overlapsX = rect.left < photo.right - 1 && rect.right > photo.left + 1;
       const overlapsY = rect.top < photo.bottom - 1 && rect.bottom > photo.top + 1;
-      if (overlapsX && overlapsY) found.push(el.id || el.className || el.tagName);
+      if (overlapsX && overlapsY) found.push(el.id || el.getAttribute('class') || el.tagName);
     });
     return found;
   }

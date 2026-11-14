@@ -48,7 +48,17 @@
         close),
       makeEl('div', { class: 'sheet-body' }, ...content)));
     close.addEventListener('click', () => closeSheet(layer));
-    layer.querySelector('.sheet-scrim').addEventListener('click', () => closeSheet(layer));
+    // A tap outside closes it, but only a tap that began on the backdrop: the click that ends
+    // the grabber tap which opened the sheet lands on the new backdrop and must not close it.
+    const scrim = layer.querySelector('.sheet-scrim');
+    let isPressOnScrim = false;
+    scrim.addEventListener('pointerdown', () => {
+      isPressOnScrim = true;
+    });
+    scrim.addEventListener('click', () => {
+      if (isPressOnScrim) closeSheet(layer);
+      isPressOnScrim = false;
+    });
     // A drag down on the sheet's top edge (its grabber and title row) closes it.
     for (const edge of layer.querySelectorAll('.sheet-grabber, .sheet-header')) {
       bindSheetHandle(edge, () => layer);
