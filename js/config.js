@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.10.0-dev.1',
+  appVersion: '1.10.0-dev.2',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -46,6 +46,22 @@ const CONFIG = {
     muted: '#9c9ca4',
     accent: '#e5322d',
     stage: '#2b2b2b',
+    // The 1.10 redesign's palette, used by the parts in js/app/parts/. Matte black, white and
+    // the one red above; amber only on a warning. The six values above it (bg to muted) are the
+    // old layout's and go when its last rule does.
+    page: '#0b0b0c',
+    surface: '#161618',
+    raised: '#232326',
+    control: '#26262a',
+    pressed: '#3a3a40',
+    edge: '#2a2a2e',
+    track: '#4a4a52',
+    grip: '#8a8a92',
+    ink: '#f2f2f3',
+    soft: '#d6d6da',
+    quiet: '#a8abb2',
+    warn: '#e3b341',
+    scrim: 'rgba(0, 0, 0, 0.6)',
   },
   // The handle loupe: magnification, size and offset (CSS px); on touch screens at most
   // loupeMaxFrac of the photo width.

@@ -13,6 +13,15 @@ const { checkStyle } = require('./style-check.js');
 const root = path.join(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const engine = read('js/engine.js');
+// The shell's modules as index.html names them: 'core', 'shell', 'parts/tool' (js/app and its
+// parts folder).
+const listModules = folder => fs.readdirSync(path.join(root, folder))
+  .filter(file => file.endsWith('.js'))
+  .map(file => file.slice(0, -3));
+const appModules = [
+  ...listModules('js/app'),
+  ...listModules('js/app/parts').map(name => 'parts/' + name),
+];
 
 let failedCount = 0;
 let ranCount = 0;
@@ -49,14 +58,12 @@ function report(pass, name, detail) {
     missing.length ? `missing: ${missing.join(', ')}` : `${links.length} files`);
 }
 
-// Shell module boundaries (js/app/*.js share the CF namespace; see the header of each module).
+// Shell module boundaries (js/app/*.js and js/app/parts/*.js share the CF namespace; see the
+// header of each module).
 {
   const html = read('index.html');
-  const order = [...html.matchAll(/<script src="js\/app\/([\w-]+)\.js\?/g)].map(match => match[1]);
-  const onDisk = fs.readdirSync(path.join(root, 'js/app'))
-    .filter(file => file.endsWith('.js'))
-    .map(file => file.slice(0, -3))
-    .sort();
+  const order = [...html.matchAll(/<script src="js\/app\/([\w/-]+)\.js\?/g)].map(match => match[1]);
+  const onDisk = [...appModules].sort();
   const scripts = [...html.matchAll(/<script src="([^"?]+)/g)].map(match => match[1]);
   const isBefore = (first, second) => scripts.indexOf(first) < scripts.indexOf(second);
   const isOrderOk = order[0] === 'core'
@@ -134,7 +141,7 @@ function report(pass, name, detail) {
   // Add to this list when the shell starts using a new browser API or app global.
   const GLOBALS = new Set((
     'Array ArrayBuffer Blob CONFIG CONFIG_LIMITS CardEngine CardEngineModule ClipboardItem '
-    + 'Date Error '
+    + 'Date Error Event '
     + 'File Image ImageData Infinity JSON Map Math Number Object Promise ResizeObserver String URL '
     + 'URLSearchParams Uint8Array Uint8ClampedArray Worker clearInterval clearTimeout console '
     + 'DOMParser XMLSerializer TextDecoder atob btoa parseFloat '
@@ -165,9 +172,7 @@ function report(pass, name, detail) {
 // or code: no HTML-string sinks or eval anywhere in js/, and index.html keeps a strict Content
 // Security Policy with no inline script, style or event-handler attributes and no off-site assets.
 {
-  const appFiles = fs.readdirSync(path.join(root, 'js/app'))
-    .filter(file => file.endsWith('.js'))
-    .map(file => `js/app/${file}`);
+  const appFiles = appModules.map(name => `js/app/${name}.js`);
   const files = ['js/config.js', 'js/engine.js', ...appFiles];
   const SINKS = new RegExp([
     /\.(?:inner|outer)HTML\s*=/.source,

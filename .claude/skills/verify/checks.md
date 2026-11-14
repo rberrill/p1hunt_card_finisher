@@ -1,6 +1,6 @@
 # Behavior and layout checks
 
-The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure here points to the catalog rows it would break. Those rows are the connected cases to add to the version's UAT. A behavior these checks prove has no catalog row unless a real iPhone adds something to the verdict (the `uat` skill), so a check dropped from here needs a catalog row in its place. Run the sections a change touches; run them all for a release. "Phone" means 390×844 (and 375×667 for layout rows) with touch emulation; "Desktop" means 1280×800.
+The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure here points to the catalog rows it would break. Those rows are the connected cases to add to the version's UAT. A behavior these checks prove has no catalog row unless a real iPhone adds something to the verdict (the `uat` skill), so a check dropped from here needs a catalog row in its place. Run the sections a change touches; run them all for a release. Rows marked (scripted) are measured by `layout-check.js`; the rest are driven by hand or with `browser.js`. "Phone" means 390×844 (and 375×667 for layout rows) with touch emulation; "Desktop" means 1280×800.
 
 ## 1. Start and layout
 
@@ -10,11 +10,14 @@ The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure he
 | Both | `?selftest=1` | toast reads `main n/n, worker n/n`, all passing |
 | Desktop | Wide layout | tabs visible, step menu button hidden, every More section open |
 | Phone | No sideways scroll | `document.documentElement.scrollWidth <= innerWidth` on every step |
-| Phone | Photo area the same on every step | `#stage` height identical across all six steps (545 px at 390×844 since 1.3) |
-| Phone | Control area doesn't scroll with More closed | each visible `.controls`: `scrollHeight <= clientHeight`, including with a status line showing |
+| Phone | Photo area the same on every step (scripted) | `#stage` height identical across all six steps: 524 px at 390×844 in the 1.10 layout (the old layout, until phase 2 replaces the shell, is 21 px taller) |
+| Phone | Control area (scripted) | `.control-area` is 200 px on every step with nothing overflowing, including with a status showing (the old layout's `.controls`: 192 px, `scrollHeight <= clientHeight` with More closed) |
+| Phone | Tap targets (scripted for the parts) | every control is a 44 px target at 375 px wide, counting a small control's larger hit area (`touchSize` in `layout-probe.js`) |
+| Both | The fifteen parts (scripted) | each part builds, has the plan's sizes (section 5) and behaves: the ruler's drag, the sheet's close, the alert card's choices |
+| Both | Reduced motion (scripted) | with `prefers-reduced-motion`, only opacity transitions |
 | Phone | Action bar fits | no button has `scrollWidth > clientWidth`; the bar's bottom is inside the safe area |
 | Phone | Header is one row | header height matches a single button row |
-| Phone | Nothing blocks the photo | with no flyout open and no alert waiting on an answer, no element intersects `#stage` |
+| Phone | Nothing blocks the photo (scripted) | with no sheet open and no alert waiting on an answer, no element intersects `#stage` (the grabber's pill straddles the control area's top edge by design) |
 
 ## 2. Navigation
 

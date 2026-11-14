@@ -12,6 +12,20 @@
   --ok: #3fb950;
   --warn: #e3b341;
   --stage: #2b2b2b;
+  /* The 1.10 parts' colors (they mirror CONFIG.theme): matte black, white and the one red
+     above; amber only on a warning. */
+  --page: #0b0b0c;
+  --surface: #161618;
+  --raised: #232326;
+  --control: #26262a;
+  --pressed: #3a3a40;
+  --edge: #2a2a2e;
+  --track: #4a4a52;
+  --grip: #8a8a92;
+  --ink: #f2f2f3;
+  --soft: #d6d6da;
+  --quiet: #a8abb2;
+  --scrim: rgba(0, 0, 0, .6);
 }
 * { box-sizing: border-box; }
 /* The hidden attribute always wins: a class that sets display (.row is flex) would otherwise
@@ -41,8 +55,8 @@ button, select, input { font: inherit; color: inherit; }
 }
 input, select, textarea { -webkit-user-select: auto; user-select: auto; }
 
-/* ---- top bar ---- */
-.top-bar {
+/* ---- the old header (replaced by the top bar part in phase 2) ---- */
+.old-header {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -538,12 +552,641 @@ details.more[open] > summary::after { transform: translateY(2px) rotate(-135deg)
 .debug-head { justify-content: space-between; }
 .debug-button { min-height: 36px; }
 
+/* =====================================================================
+   THE 1.10 PARTS. Fifteen parts build the new layout; each has its rules under its own banner
+   here and a module in js/app/parts/. They use their own colors (the second half of :root),
+   so the old layout above keeps its look until each phase replaces it.
+   ===================================================================== */
+.icon {
+  display: block;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Every part's buttons start from the same blank: no border, the part's own colors. */
+.icon-button, .step-tab, .grabber, .text-button, .tool, .action-button, .preset-chip, .segment,
+.nudge-key, .sheet-close, .sheet-row, .alert-cancel {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.icon-button:disabled, .step-tab:disabled, .text-button:disabled, .tool:disabled,
+.action-button:disabled, .preset-chip:disabled, .segment:disabled, .nudge-key:disabled {
+  opacity: .38;
+  cursor: default;
+}
+.icon-button:focus-visible, .step-tab:focus-visible, .grabber:focus-visible,
+.text-button:focus-visible, .tool:focus-visible, .action-button:focus-visible,
+.preset-chip:focus-visible, .segment:focus-visible, .nudge-key:focus-visible,
+.sheet-close:focus-visible, .sheet-row:focus-visible, .alert-cancel:focus-visible,
+.switch:focus-visible, .ruler:has(:focus-visible), .slider:has(:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ---- part: top bar ---- */
+.top-bar {
+  height: 48px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  background: var(--page);
+  color: var(--ink);
+}
+.icon-button {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+.top-bar-center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- part: tab bar ---- */
+.tab-bar {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  padding: 0 4px env(safe-area-inset-bottom);
+  background: var(--page);
+  border-top: 1px solid var(--edge);
+}
+.step-tab {
+  position: relative;
+  height: 52px;
+  min-width: 44px;
+  padding: 0 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--quiet);
+}
+.step-tab .icon { stroke-width: 1.6; }
+.step-tab[aria-selected="true"] { color: var(--ink); font-weight: 700; }
+.step-tab[aria-selected="true"] .icon { stroke-width: 2; }
+/* The unapplied-Levels mark: a white dot beside the icon. */
+.step-tab-mark {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: 9px;
+  border-radius: 4px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--page);
+}
+
+/* ---- part: adjustment line (the control area and its three rows) ---- */
+.control-area {
+  position: relative;
+  height: 200px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 16px 0;
+  background: var(--surface);
+  border-top: 1px solid var(--edge);
+  color: var(--ink);
+}
+/* The grabber opens the step's sheet (drag it up, or tap it). Its pill straddles the control
+   area's top edge, so the area stays 200 px; the target around it is 44 px tall. */
+.grabber {
+  position: absolute;
+  left: 50%;
+  top: -22px;
+  z-index: 4;
+  width: 88px;
+  height: 44px;
+  margin-left: -44px;
+}
+.grabber::before {
+  content: '';
+  position: absolute;
+  left: 26px;
+  top: 19px;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--grip);
+}
+.label-row, .control-row {
+  height: 44px;
+  flex: none;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.line-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--quiet);
+}
+.line-value {
+  font-size: 17px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.line-spacer { flex: 1; }
+.line-readout {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--quiet);
+}
+.line-readout:empty, .line-value:empty { display: none; }
+.line-readout b { color: var(--ink); font-weight: 700; }
+.text-button {
+  height: 44px;
+  min-width: 44px;
+  padding: 0 2px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tool-row { height: 70px; flex: none; margin-top: 6px; display: flex; gap: 5px; }
+
+/* ---- part: status ---- */
+.status-icon { flex: none; display: grid; color: var(--quiet); }
+.status-icon .icon { stroke-width: 2; }
+.status-line.is-warn .status-icon { color: var(--warn); }
+.status-line.is-error .status-icon { color: var(--accent); }
+/* At most two lines; a longer message is cut with an ellipsis. */
+.status-text {
+  flex: 1;
+  min-width: 0;
+  max-height: 34px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13.5px;
+  line-height: 17px;
+  font-weight: 600;
+}
+
+/* ---- part: ruler ---- */
+.ruler {
+  position: relative;
+  height: 44px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+/* The scale's left edge starts at the middle; ruler.js offsets it so zero is under the pointer
+   and slides it with a transform. */
+.ruler-scale { position: absolute; left: 50%; top: 0; display: block; max-width: none; }
+.ruler-tick { stroke: var(--grip); stroke-width: 1.5; }
+.ruler-tick.is-long { stroke: var(--soft); }
+.ruler-pointer {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 6px;
+  height: 28px;
+  margin-left: -3px;
+  border-radius: 3px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--surface);
+  transition: transform 100ms ease-out;
+}
+/* 36 px while held. */
+.ruler.is-held .ruler-pointer { transform: scaleY(1.286); }
+/* The range input holds the value for the keyboard, screen readers and the tests; the drag is
+   handled by the ruler itself. */
+.ruler-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- part: slider ---- */
+.slider { position: relative; height: 44px; flex: 1; min-width: 0; display: block; }
+.slider::before, .slider-fill {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20px;
+  height: 4px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.slider::before { right: 0; background: var(--track); }
+.slider-fill { background: var(--ink); }
+.slider input {
+  position: absolute;
+  inset: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.slider input:disabled { opacity: .38; cursor: default; }
+.slider input::-webkit-slider-runnable-track { height: 44px; background: transparent; }
+.slider input::-moz-range-track { height: 44px; background: transparent; }
+.slider input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 11px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 100ms ease-out;
+}
+.slider input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 100ms ease-out;
+}
+/* 30 px while held. */
+.slider input:active::-webkit-slider-thumb { transform: scale(1.364); }
+.slider input:active::-moz-range-thumb { transform: scale(1.364); }
+
+/* ---- part: tool ---- */
+.tool {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 16px;
+  background: var(--control);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: -.2px;
+  white-space: nowrap;
+}
+.tool:active:not(:disabled) { background: var(--pressed); }
+.tool-glyph { display: grid; height: 22px; }
+.tool-value {
+  height: 22px;
+  line-height: 22px;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+/* A mode whose line is showing: a solid white fill. */
+.tool-mode[aria-pressed="true"],
+.tool-mode[aria-pressed="true"]:active:not(:disabled) {
+  background: var(--ink);
+  color: var(--page);
+  font-weight: 700;
+}
+.tool-mode[aria-pressed="true"] .icon { stroke-width: 2; }
+/* A switch that is on: a white ring, and On in its corner. */
+.tool-switch[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--ink); }
+.tool-state { position: absolute; top: 7px; right: 9px; font-size: 11px; font-weight: 800; }
+.tool-switch[aria-pressed="false"] .tool-state { color: var(--soft); }
+
+/* ---- part: action button ---- */
+.action-button {
+  position: relative;
+  height: 44px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 16px;
+  border-radius: 22px;
+  background: var(--control);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.action-button .icon { stroke-width: 2; }
+.action-button.is-main { background: var(--accent); font-weight: 800; }
+.action-button.is-next { background: var(--ink); color: var(--page); font-weight: 800; }
+.action-button.is-quiet { background: var(--pressed); }
+.action-button.is-wide { flex: 1; min-width: 0; }
+.action-button.is-tall { height: 48px; border-radius: 24px; }
+.action-button.is-small { height: 36px; padding: 0 13px; font-size: 13.5px; }
+/* A small button still takes a 44 px tall touch. */
+.action-button.is-small::after { content: ''; position: absolute; inset: -4px 0; }
+
+/* ---- part: chip ---- */
+.chip-row { min-height: 44px; flex: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.preset-chip {
+  height: 44px;
+  flex: none;
+  padding: 0 16px;
+  border-radius: 22px;
+  background: var(--control);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.preset-chip[aria-pressed="true"] { background: var(--ink); color: var(--page); font-weight: 800; }
+
+/* ---- part: segmented control ---- */
+.segmented-control {
+  height: 44px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  padding: 2px;
+  border-radius: 22px;
+  background: var(--control);
+}
+.segment {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.segment[aria-pressed="true"] { background: var(--ink); color: var(--page); font-weight: 800; }
+.segmented-control.is-fitted { flex: none; }
+.segmented-control.is-fitted .segment { flex: none; min-width: 44px; padding: 0 11px; }
+/* Front | Back in the top bar: 112 × 36, each half in a 44 px tall touch. */
+.segmented-control.is-compact { height: 36px; flex: none; border-radius: 18px; }
+.segmented-control.is-compact .segment {
+  width: 54px;
+  flex: none;
+  border-radius: 16px;
+  font-size: 13px;
+}
+.segmented-control.is-compact .segment::after { content: ''; position: absolute; inset: -6px 0; }
+
+/* ---- part: nudge pad ---- */
+.nudge-pad {
+  height: 44px;
+  flex: none;
+  display: flex;
+  border-radius: 22px;
+  background: var(--control);
+}
+.nudge-key {
+  width: 52px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  touch-action: none;
+}
+.nudge-key:active:not(:disabled) { background: var(--pressed); }
+
+/* ---- part: sheet ---- */
+.sheet-layer { position: fixed; inset: 0; z-index: 30; }
+.sheet-scrim { position: absolute; inset: 0; background: var(--scrim); }
+/* At most about 470 px tall; taller content scrolls inside. */
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: min(470px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px calc(28px + env(safe-area-inset-bottom));
+  border-radius: 18px 18px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+}
+.sheet-grabber {
+  height: 14px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  margin-bottom: -10px;
+}
+.sheet-grabber::before {
+  content: '';
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--grip);
+}
+.sheet-header {
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: -6px;
+}
+.sheet-title, .sheet-heading {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.sheet-heading { margin: 4px 0 -4px; color: var(--quiet); }
+/* A 30 px circle in a 44 px touch. */
+.sheet-close {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: var(--pressed);
+}
+.sheet-close .icon { stroke-width: 2.2; }
+.sheet-close::after { content: ''; position: absolute; inset: -7px; }
+.sheet-body {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.sheet-list { flex: none; border-radius: 12px; background: var(--raised); }
+.sheet-row {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px 0 14px;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+}
+.sheet-row.is-danger { font-weight: 700; }
+.sheet-row + .sheet-row { border-top: 1px solid var(--pressed); }
+.sheet-row-label { display: inline-flex; align-items: center; gap: 9px; }
+.sheet-row-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--quiet);
+}
+.sheet-row-detail .icon { stroke-width: 2; }
+.sheet-row.is-danger .sheet-row-label .icon { color: var(--accent); }
+/* A checkbox drawn as a switch: white with a black knob while on. */
+.switch {
+  position: relative;
+  width: 50px;
+  height: 30px;
+  flex: none;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 15px;
+  background: var(--track);
+  cursor: pointer;
+}
+.switch::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--ink);
+  transition: transform 120ms ease-out;
+}
+.switch:checked { background: var(--ink); }
+.switch:checked::before { background: var(--page); transform: translateX(20px); }
+.sheet-hint { margin: 0; font-size: 12.5px; line-height: 17px; color: var(--quiet); }
+.sheet-tips { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+
+/* ---- part: alert card ---- */
+/* The layer is the dimmed backdrop; it takes every touch, so nothing behind it can be used. */
+.alert-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--scrim);
+}
+.alert-card {
+  width: 300px;
+  max-width: 100%;
+  padding: 22px 16px 6px;
+  border-radius: 18px;
+  background: var(--raised);
+  color: var(--ink);
+}
+.alert-title { margin: 0; font-size: 18px; font-weight: 800; }
+.alert-text { margin: 8px 0 0; font-size: 14px; line-height: 19px; color: var(--soft); }
+.alert-choices { display: flex; gap: 8px; margin-top: 16px; }
+.alert-choices .action-button { padding: 0 8px; }
+.alert-cancel { width: 100%; height: 46px; font-size: 15px; font-weight: 600; color: var(--quiet); }
+
+/* ---- part: toast ---- */
+.toast-message {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 12px;
+  z-index: 9;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--page);
+  font-size: 13.5px;
+  line-height: 18px;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms linear;
+}
+.toast-message.is-shown { opacity: 1; }
+.toast-message.is-warn { background: var(--warn); }
+.toast-message.is-error { background: var(--accent); color: var(--ink); }
+.toast-icon { flex: none; display: grid; }
+.toast-icon:empty { display: none; }
+.toast-icon .icon { stroke-width: 2; }
+
+/* ---- part: progress line ---- */
+/* Scaled from its left end by progress-line.js, so it never causes a layout. */
+.progress-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  z-index: 3;
+  height: 3px;
+  background: var(--accent);
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 100ms linear;
+}
+.sheet .progress-line { top: 0; border-radius: 2px; }
+
+/* ---- reduced motion ---- */
+/* Travel and scaling go; short fades stay. Progress still moves, in steps, because it is
+   information. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-property: opacity !important;
+  }
+  .ruler.is-held .ruler-pointer,
+  .slider input:active::-webkit-slider-thumb,
+  .slider input:active::-moz-range-thumb { transform: none; }
+}
+
 /* ---- narrow screens: the panel becomes a bottom sheet ---- */
 @media (max-width: 760px) {
   /* Header, photo, a control area of the same height on every step, then the action bar. The
      step tabs are replaced by the step menu (the first action-bar button); opening
      "More options" expands the area. */
-  .top-bar { padding: 4px 6px; flex-wrap: nowrap; }
+  .old-header { padding: 4px 6px; flex-wrap: nowrap; }
   .brand, .tabs { display: none; }
   .actions { width: 100%; justify-content: space-between; }
   /* A pair needs the room for Front | Back and Unpair: Open shows its icon only, and the row
@@ -552,7 +1195,7 @@ details.more[open] > summary::after { transform: translateY(2px) rotate(-135deg)
   #app.paired #btnPreview span { display: none; }
   #app.paired #btnOpen,
   #app.paired #btnPreview { padding: 0; }
-  #app.paired .top-bar { padding: 4px; }
+  #app.paired .old-header { padding: 4px; }
   #app.paired .actions { gap: 2px; }
   .side-switch .btn { min-width: 44px; padding: 0 5px; font-size: 13px; }
   #pairOutput { flex-basis: 0%; }
@@ -581,4 +1224,20 @@ details.more[open] > summary::after { transform: translateY(2px) rotate(-135deg)
   .result-group { display: none; }
   .mini { max-width: 180px; }
   #debugPanel { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; max-height: 45vh; }
+
+  /* ---- the 1.10 parts on the phone ---- */
+  /* Crop presets: one row that scrolls sideways and runs off the right edge, so it reads as
+     scrollable. Wide screens wrap instead, since a mouse can't swipe. */
+  .chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-right: -16px;
+    padding-right: 16px;
+  }
+  .chip-row::-webkit-scrollbar { display: none; }
+}
+/* Phones under 390 px wide: the six tab labels drop a size to fit. */
+@media (max-width: 389px) {
+  .step-tab { padding: 0 5px; font-size: 11px; }
 }

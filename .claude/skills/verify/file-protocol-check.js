@@ -19,6 +19,7 @@ const BROWSER_PATHS = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/usr/bin/google-chrome',
   '/usr/bin/chromium',
+  '/opt/pw-browsers/chromium',
 ];
 const executable = BROWSER_PATHS.find(candidate => candidate && fs.existsSync(candidate));
 if (!executable) {
@@ -29,12 +30,15 @@ if (!executable) {
 const port = 9300 + Math.floor(Math.random() * 500);
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'cf-file-check-'));
 const target = pathToFileURL(path.join(root, 'index.html')).href + '?selftest=1';
+// Chrome refuses to start as root with its sandbox (a container's only user is root).
+const isRoot = typeof process.getuid === 'function' && process.getuid() === 0;
 const browser = spawn(executable, [
   '--headless=new',
   `--remote-debugging-port=${port}`,
   `--user-data-dir=${profile}`,
   '--no-first-run',
   '--no-default-browser-check',
+  ...(isRoot ? ['--no-sandbox'] : []),
   'about:blank',
 ], { stdio: 'ignore' });
 const sleep = durationMs => new Promise(resolve => setTimeout(resolve, durationMs));

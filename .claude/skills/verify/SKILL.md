@@ -20,11 +20,15 @@ Rich runs UAT only after this passes, so it must cover everything a browser can 
 ## Steps
 
 1. **Node:** `node tests/selftest.js`. All checks pass.
-2. **Sample regression:** `preview_start` with `straightener` (port 8766). Refresh the assets (the `?v=` doesn't change during development; see [browser-recipes.md](browser-recipes.md)), load `tests/sample-regression.js` as a script, and await `window.__regression`. All checks pass.
-3. **Behavior and layout:** work through the relevant rows of [checks.md](checks.md) at **390×844**, then **375×667** when layout changed, then **1280×800**. Measure (`scrollWidth`, `getBoundingClientRect`); don't eyeball. Screenshot once per size as proof, retaking any that come back tiled or stale.
+2. **Sample regression:** `node .claude/skills/verify/regression-check.js` runs it headless and prints the table. In the preview pane instead: `preview_start` with `straightener` (port 8766). Refresh the assets (the `?v=` doesn't change during development; see [browser-recipes.md](browser-recipes.md)), load `tests/sample-regression.js` as a script, and await `window.__regression`. All checks pass.
+3. **Behavior and layout:** `node .claude/skills/verify/layout-check.js` measures the photo and control area on every step, and each of the fifteen parts, at all three sizes. Then work through the relevant rows of [checks.md](checks.md) at **390×844**, then **375×667** when layout changed, then **1280×800**. Measure (`scrollWidth`, `getBoundingClientRect`); don't eyeball. Screenshot once per size as proof, retaking any that come back tiled or stale.
 4. **Subfolder:** `preview_start` with `subfolder` (port 8771) and open `http://127.0.0.1:8771/p1hunt-photo-straightener/index.html`. It loads styled, opens a sample, and has no 404s in `read_network_requests`.
 5. **`file://`:** `node .claude/skills/verify/file-protocol-check.js`. All checks pass.
 6. **Clean up:** `__straightener.Session.clear()`, `__straightener.Session.del('overlay')`, `localStorage.clear()`, and `resize_window` with preset `desktop`.
+
+## Where there is no preview pane (a cloud session)
+
+`browser.js` in this folder starts a headless Chrome over the DevTools Protocol and serves the folder (`serveFolder(root, '/sub')` mounts it under a subfolder, as Pages does; its `requests` list shows any 404). Use it for steps 3 and 4: load `layout-probe.js` for its helpers (`openSample` is inside it), drive the app through `window.__straightener` and `CF`, and measure. `Runtime.evaluate` isn't bound by the page's CSP, so scripts can be pasted in. Headless Chrome on Linux decodes one sample differently: R1 fails for `02_black_flat_black` there on untouched code (first seen 2026-11-14), so compare with the release tag before treating it as a regression.
 
 ## Report
 

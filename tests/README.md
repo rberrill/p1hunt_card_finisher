@@ -10,7 +10,7 @@ Exit code 0 means everything passed.
 |---|---|
 | Engine purity | `js/engine.js` has no `window` / `document`, so it runs unchanged in a Web Worker |
 | Cache-busting | Every `?v=` asset link in `index.html` (scripts, styles, icons) equals `CONFIG.appVersion`, and every linked file exists |
-| Module boundaries | `js/app/` modules all load (`core` first, `main` last); no name declared twice; cross-module names go through `CF`; only known globals (the `GLOBALS` list, extended when the shell uses a new browser API); every `CF` name is exported |
+| Module boundaries | `js/app/` and `js/app/parts/` modules all load (`core` first, `main` last); no name declared twice; cross-module names go through `CF`; only known globals (the `GLOBALS` list, extended when the shell uses a new browser API); every `CF` name is exported |
 | Security | No HTML-string sinks, `eval`, `new Function` or string timers in `js/`; `index.html` has a strict CSP before any asset and nothing inline or off-site |
 | Privacy | No GPS location in `samples/` photos; no private network addresses or local drive paths in the published text files |
 | CONFIG consistency | The engine's built-in defaults (`DETECT_DEFAULTS`, `GEOMETRY_DEFAULTS`, `LEVELS_DEFAULTS`, `CORNER_SHOT_DEFAULTS`, `PAIR_DEFAULTS`) match `CONFIG`; every `CONFIG_LIMITS` key is a `CONFIG` number with its default in range |

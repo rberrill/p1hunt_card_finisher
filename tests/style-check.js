@@ -35,6 +35,7 @@ function styledFiles(root) {
       'js/config.js',
       'js/engine.js',
       ...listJs('js/app'),
+      ...listJs('js/app/parts'),
       ...listJs('tests'),
       ...claudeScripts,
     ],

@@ -69,7 +69,7 @@ Pinch or scroll to zoom; drag empty space to pan.
   - `css/app.css`
   - `js/config.js` (settings)
   - `js/engine.js` (image engine)
-  - `js/app/` (interface: twelve small modules on one shared namespace)
+  - `js/app/` (interface: small modules on one shared namespace, with one module per interface part in `js/app/parts/`)
 - The scripts are classic scripts on relative paths, so the app works from disk, from `localhost`, or from any folder on a static host.
 - The image engine is pure functions with no access to the page. Corner detection runs in a Web Worker so the interface stays responsive.
 - Every edit is a small state object, and the export is rendered from it in one resampling pass from the original photo. The work is done in bands to keep memory low on phones.
