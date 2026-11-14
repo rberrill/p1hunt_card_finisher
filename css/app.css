@@ -101,19 +101,6 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
 }
 .btn.wide { width: 100%; }
 .next-row { margin: 2px 0 6px; }
-/* A pair's question: a Resume-style card over the dimmed photo. The backdrop takes every
-   touch, so the photo can't be dragged while it's up. */
-.pair-prompt {
-  position: absolute;
-  inset: 0;
-  z-index: 9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, .6);
-}
-.pair-card { width: 100%; }
 /* The side panel is too narrow for three dropdowns; the phone fits them in one row. */
 #pairOutput { flex-basis: 100%; }
 
@@ -151,25 +138,6 @@ main { flex: 1; display: flex; min-height: 0; }
 .resume b { word-break: break-all; }
 .resume .when { color: var(--muted); font-size: 13px; }
 .resume .row { margin: 0; }
-.toast {
-  position: absolute;
-  left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
-  max-width: min(92%, 520px);
-  background: rgba(16, 16, 18, .94);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 13px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .2s;
-  z-index: 5;
-}
-.toast.show { opacity: 1; }
-.toast.warn { border-left: 3px solid var(--warn); }
-.toast.error { border-left: 3px solid var(--accent); }
 .panel {
   width: 380px;
   flex: none;
@@ -912,7 +880,8 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 .sheet-tips { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 
 /* ---- part: alert card ---- */
-/* The layer is the dimmed backdrop; it takes every touch, so nothing behind it can be used. */
+/* The layer is the dimmed backdrop; it takes every touch, so nothing behind it can be used. It
+   lies over an open sheet too (frames U4 and U5), so a question never closes one. */
 .alert-layer {
   position: fixed;
   inset: 0;
@@ -921,6 +890,11 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   place-items: center;
   padding: 24px;
   background: var(--scrim);
+}
+/* A wide screen dims only the photo it is mounted over (the stage), so the card is centered
+   on the photo and the panel stays readable (frame DT7). */
+@media (min-width: 761px) {
+  .alert-layer { position: absolute; }
 }
 .alert-card {
   width: 300px;
@@ -937,12 +911,17 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 .alert-cancel { width: 100%; height: 46px; font-size: 15px; font-weight: 600; color: var(--quiet); }
 
 /* ---- part: toast ---- */
+/* Over the photo's bottom edge: inset 16 px, 12 px up, above every other layer. core.js sets
+   --toast-lift to the height of the photo an open sheet covers, which puts the toast 12 px
+   above that sheet. The pill grows upward from its bottom edge, to three lines at most, and
+   never takes a touch. Motion M10: it rises 8 px as it fades in (160 ms) and fades out in
+   200 ms; under reduced motion it only fades. */
 .toast-message {
   position: absolute;
   left: 16px;
   right: 16px;
   bottom: 12px;
-  z-index: 9;
+  z-index: 50;
   min-height: 44px;
   display: flex;
   align-items: center;
@@ -956,14 +935,35 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   font-weight: 600;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 200ms linear;
+  transform: translateY(calc(-1 * var(--toast-lift, 0px)));
+  transition: opacity 200ms linear, transform 200ms ease-out;
 }
-.toast-message.is-shown { opacity: 1; }
+/* Shown, only the ride above a sheet is a transition: the fade in belongs to the rise. */
+.toast-message.is-shown {
+  opacity: 1;
+  transition: transform 200ms ease-out;
+  animation: toast-rise 160ms ease-out;
+}
+@keyframes toast-rise {
+  from { opacity: 0; transform: translateY(calc(8px - var(--toast-lift, 0px))); }
+}
 .toast-message.is-warn { background: var(--warn); }
 .toast-message.is-error { background: var(--accent); color: var(--ink); }
 .toast-icon { flex: none; display: grid; }
 .toast-icon:empty { display: none; }
 .toast-icon .icon { stroke-width: 2; }
+/* Three lines at most (frame T4); a longer message ends in an ellipsis. */
+.toast-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+/* A wide screen: bottom center of the photo, 20 px up, as wide as its words up to 460 px
+   (frame DT10). */
+@media (min-width: 761px) {
+  .toast-message { bottom: 20px; width: fit-content; max-width: 460px; margin: 0 auto; }
+}
 
 /* ---- part: progress line ---- */
 /* Scaled from its left end by progress-line.js, so it never causes a layout. */

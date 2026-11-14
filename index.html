@@ -60,21 +60,8 @@
           <span class="action-label">Open photo</span>
         </button>
       </div>
-      <div class="toast" id="toast" role="status" aria-live="polite"></div>
-      <!-- A pair's questions (Unpair, a new photo): a card over the dimmed photo, like Resume.
-           With the step menu, the only things allowed over the photo. A tap outside cancels. -->
-      <div class="pair-prompt" id="pairPrompt" role="dialog" aria-modal="true"
-          aria-labelledby="pairPromptTitle" hidden>
-        <div class="resume pair-card">
-          <div><b id="pairPromptTitle"></b></div>
-          <div class="when" id="pairPromptText"></div>
-          <div class="row">
-            <button class="btn" id="btnPromptFirst"></button>
-            <button class="btn" id="btnPromptSecond"></button>
-          </div>
-          <button class="btn wide" id="btnPromptCancel">Cancel</button>
-        </div>
-      </div>
+      <!-- The toast (#toast) and the question card (#pairPrompt: Upscale, Unpair, New photo)
+           are added here by js/app/core.js and js/app/pair.js, built from js/app/parts/. -->
     </div>
 
     <aside class="panel" id="panel">

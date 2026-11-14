@@ -1,7 +1,7 @@
 /* =====================================================================
    js/app/parts/alert-card.js: the Alert card part. A question the user must answer before going
    on (Upscale, Unpair, New photo or Replace side): a card centered over the dimmed photo with
-   two choices and Cancel. A tap outside the card cancels.
+   two choices and Cancel. A tap outside the card cancels. The card lies above an open sheet.
    Shell modules share one namespace, CF (created in core.js). Names from core are destructured
    below; anything from another module is called as CF.name. tests/selftest.js checks these
    boundaries.
@@ -11,16 +11,22 @@
   const { makeEl } = CF;
 
   // Builds a hidden card. Its two choice buttons and Cancel are bound once, here; what a choice
-  // does comes with each question (showAlert).
-  function buildAlertCard(id) {
+  // does comes with each question (showAlert). buttonIds: { first, second, cancel }, the ids
+  // of the two choices and of Cancel, each optional.
+  function buildAlertCard(id, buttonIds = {}) {
     const titleId = id && `${id}Title`;
-    const choices = [0, 1].map(() => CF.buildActionButton({
+    const choices = [buttonIds.first, buttonIds.second].map(buttonId => CF.buildActionButton({
+      id: buttonId,
       label: '',
       look: 'quiet',
       size: 'tall',
       isWide: true,
     }));
-    const cancel = makeEl('button', { class: 'alert-cancel', type: 'button' }, 'Cancel');
+    const cancel = makeEl('button', {
+      class: 'alert-cancel',
+      id: buttonIds.cancel,
+      type: 'button',
+    }, 'Cancel');
     const layer = makeEl('div', {
       class: 'alert-layer',
       id,
@@ -69,10 +75,14 @@
     layer.querySelector('.alert-choices .action-button').focus({ preventScroll: true });
   }
 
-  // Closes the card without an answer.
+  // Closes the card without an answer, and tells its listeners with an `alertclose` event on
+  // the layer. (A choice closes it the same way, before its action runs.) Nothing happens when
+  // the card isn't up.
   function hideAlert(layer) {
+    if (layer.hidden) return;
     layer.hidden = true;
     layer.alertActions = null;
+    layer.dispatchEvent(new Event('alertclose'));
   }
 
   // A choice was tapped: close the card, then run that choice's action.

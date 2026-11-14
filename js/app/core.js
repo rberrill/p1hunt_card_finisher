@@ -35,7 +35,8 @@
     stage: byId('stage'),
     canvas: byId('view'),
     empty: byId('empty'),
-    toast: byId('toast'),
+    // Built by mountToast() (below), once the parts have loaded.
+    toast: null,
     panel: byId('panel'),
     mini: byId('mini'),
     fileInput: byId('fileInput'),
@@ -139,18 +140,69 @@
     focalFactor: CONFIG.detect.focalFactor,
   });
 
+  /* ---------- toasts ---------- */
+
+  // How long a toast stays when its caller gives no duration, by kind, in ms: info 3 s, a
+  // warning 5 s, an error 6 s (the plan's frames T1 to T3).
+  const TOAST_DURATIONS_MS = { '': 3000, warn: 5000, error: 6000 };
   let toastTimer = 0;
-  // Shows a short message; kind '' | 'warn' | 'error' sets its color.
-  function toast(text, kind = '', durationMs = 3000) {
-    const toastEl = elements.toast;
-    toastEl.textContent = text;
-    toastEl.className = 'toast show ' + kind;
+
+  // Builds the toast (the Toast part) at the end of the stage, once; returns it. The parts
+  // load after this file, so it is built when the page has loaded, or by the first toast if
+  // that comes sooner. Being there before its first message lets a screen reader announce it.
+  function mountToast() {
+    if (!elements.toast) {
+      elements.toast = CF.buildToast('toast');
+      elements.stage.append(elements.toast);
+    }
+    return elements.toast;
+  }
+
+  // How far the toast must rise, in CSS px, to sit above an open sheet: the height of the
+  // stage that sheet covers. 0 with no sheet open, and on a wide screen, where the options are
+  // listed in the panel. The sheet's resting place is measured (its layer's bottom edge less
+  // its own height), because it is still sliding up when `sheetopen` fires.
+  function toastLiftPx() {
+    if (!CF.phoneLayout || !CF.phoneLayout.matches) return 0;
+    const sheet = document.querySelector('.sheet-layer.is-open .sheet');
+    if (!sheet) return 0;
+    const layerBottomPx = sheet.parentElement.getBoundingClientRect().bottom;
+    const sheetTopPx = layerBottomPx - sheet.getBoundingClientRect().height;
+    return Math.max(0, elements.stage.getBoundingClientRect().bottom - sheetTopPx);
+  }
+
+  // Puts the toast in its place: 12 px above the photo's bottom edge or, while a sheet is
+  // open, 12 px above that sheet's top edge (css/app.css, .toast-message reads --toast-lift).
+  function placeToast() {
+    mountToast().style.setProperty('--toast-lift', `${toastLiftPx()}px`);
+  }
+
+  // Shows a short message over the photo's bottom edge; a new one replaces the one that's up.
+  // kind: '' (info) | 'warn' | 'error' sets its color and icon. It stays durationMs, or as
+  // long as its kind does (TOAST_DURATIONS_MS).
+  function toast(text, kind = '', durationMs = TOAST_DURATIONS_MS[kind]) {
+    const toastEl = mountToast();
+    CF.updateToast(toastEl, { text, kind, isShown: false });
+    placeToast();
+    // Reading its size makes the browser take in the hidden state first, so each message
+    // rises in afresh, from its place, even when it replaces one.
+    toastEl.getBoundingClientRect();
+    CF.updateToast(toastEl, { isShown: true });
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(hideToast, durationMs);
+    toastTimer = setTimeout(hideToast, durationMs || TOAST_DURATIONS_MS['']);
   }
+
+  // Takes the toast down now.
   function hideToast() {
-    elements.toast.classList.remove('show');
+    clearTimeout(toastTimer);
+    if (elements.toast) CF.updateToast(elements.toast, { isShown: false });
   }
+
+  document.addEventListener('DOMContentLoaded', mountToast);
+  // A sheet's events don't bubble, so they are caught on their way down to it.
+  document.addEventListener('sheetopen', placeToast, true);
+  document.addEventListener('sheetclose', placeToast, true);
+  window.addEventListener('resize', placeToast);
 
   // Builds an element without parsing HTML:
   //   makeEl('button', { class: 'sheet-hint', id }, label).
