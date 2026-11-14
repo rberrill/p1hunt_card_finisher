@@ -8,15 +8,14 @@ The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure he
 |---|---|---|
 | Both | Load a 4032×3024 photo | preview in well under 1 s |
 | Both | `?selftest=1` | toast reads `main n/n, worker n/n`, all passing |
-| Desktop | Wide layout | tabs visible, step menu button hidden, every More section open |
+| Desktop | Wide layout | steps in the top bar, no tab bar or grabber, every step's options listed inline in the panel (on Export: Corner shots, then Export options) |
 | Phone | No sideways scroll | `document.documentElement.scrollWidth <= innerWidth` on every step |
 | Phone | Photo area the same on every step (scripted) | `#stage` height identical across all six steps: 544 px at 390×844 in a browser (no safe area; the frames draw 524 with 20 px for it) |
-| Phone | Control area (scripted) | `.control-area` is 200 px on every step with nothing overflowing, including with a status showing (a step its phase hasn't converted is `is-interim` and may scroll until then) |
+| Phone | Control area (scripted) | `.control-area` is 200 px on every step with nothing overflowing, including with a status showing |
 | Phone | Tap targets (scripted for the parts) | every control is a 44 px target at 375 px wide, counting a small control's larger hit area (`touchSize` in `layout-probe.js`) |
 | Both | The fifteen parts (scripted) | each part builds, has the plan's sizes (section 5) and behaves: the ruler's drag, the sheet's close, the alert card's choices |
 | Both | Reduced motion (scripted) | with `prefers-reduced-motion`, only opacity transitions |
-| Phone | Action bar fits | no button has `scrollWidth > clientWidth`; the bar's bottom is inside the safe area |
-| Phone | Header is one row | header height matches a single button row |
+| Phone | Labels fit (scripted) | no button in a control area has `scrollWidth > clientWidth`; the tab bar's bottom is inside the safe area |
 | Phone | The sheet is the control area's drawer | drag the grabber up and stop: the sheet's top edge is under the finger, it rose from the control area's top edge (not from the bottom of the screen), and the control area's own grabber pill has opacity 0 while the sheet shows; on a step its phase hasn't converted the pill is whole (not clipped by the scrolling controls) |
 | Phone | Nothing blocks the photo (scripted) | with no sheet open and no alert waiting on an answer, no element intersects `#stage` (the grabber's pill straddles the control area's top edge by design) |
 
@@ -24,10 +23,9 @@ The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure he
 
 | Device | Check | Pass when |
 |---|---|---|
-| Desktop | Resize across 760 px | narrow: tabs hide, step menu appears, More closes, nudge strip shows; wide: back again |
-| Both | → buttons from Perspective | walks all six steps; Levels' button reads Overlay → |
-| Phone | Step menu | lists all six steps and marks the current one; closes on a pick or an outside tap; a dot on the Levels entry and the step button while Levels has an unapplied draft |
-| Phone | More options | opening it expands the control area; switching steps closes it and the photo returns to full size |
+| Desktop | Resize across 760 px | narrow: the tab bar and the grabber show, the steps leave the top bar, sheets close; wide: back again |
+| Phone | Tab bar | six tabs, the current one selected; a tap changes step and closes an open sheet; a white dot on the Levels tab while Levels has an unapplied draft |
+| Phone | Options sheet | the grabber (tap or drag up) opens the step's sheet over the photo; the photo keeps its size; a tap outside, ✕, Escape or a step change closes it |
 
 ## 3. Perspective
 
@@ -82,10 +80,12 @@ The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure he
 | Both | Stubbed share refused (`NotAllowedError`) | button becomes **Share now**; any edit cancels it |
 | Both | No `navigator.share` / no `ClipboardItem` | Share and Copy hidden, not greyed; Download is the main button |
 | Both | Corner shots (capture `CF.Exporter.download`) | sheet: one `-corners` file, 2×2 at 2 × size + 1 gutter, photo to the outer edges; photos: four `-corner-tl/tr/br/bl` files; a full-crop logo appears in the main export but no corner; Next card unchanged; stubbed Share gets all four, refusal gives **Share now**, an edit cancels it |
-| Phone | Corner shots group | with More closed the control area is 192 px and the photo the same height as on Crop; no page scroll sideways with it open |
+| Phone | Corner shots sheet | the Corner shots button opens `cornerShotsSheet` over the photo; the control area stays 200 px and the photo its height; the progress line runs on the sheet's top edge while it saves and both save buttons are disabled; the Saved toast sits 12 px above the sheet; no page scroll sideways |
 | Both | Upscale card | with corners under 2000 px, Download corners shows the card (title, real size, Yes / No / Cancel); Yes gives a 2000 px `-corners` file (992 px tiles, 16 px gutter) and, on 4 photos, four 2000 px files; No gives the real-size file; a click outside gives nothing; `cornerShots.upscaleTargetPx=100` skips the card; stubbed Share after Yes gets the 4032 px file |
 | Both | Upscale card (main export) | with a crop under the Size, Download, Share (unhide the button and stub `navigator.share`) and Copy (stub `CF.Exporter.copy`) show the card (title with the Size, the crop's size, Yes / No / Cancel); Yes gives a file with the Size on its long edge and the toast its size, No the real size, a click outside nothing; Size 3000 asks for 3000, Original never asks; `upscale.sharpenAmount=0` applies; `CF.syncUI()` and a resize leave the card up; a pair (`CF.receivePhoto(file, name, 'addBack')`): Together's joined image fits the Size exactly, Separately's files each get it, Copy copies the joined image, Size 1080 with a bigger joined image gives no card |
-| Both | Section boxes | Corner shots and Edits have the `--bg` box, Quality doesn't; each corner button's label is on one line (range client rects): side by side at 375 and 390, stacked at 1280; no sideways scroll |
+| Both | Export's rows | the control area is 200 px in four rows (44, 44, 48, 44) in every state: ready, a note, three notes, Share now, exported with Next card, a pair with Together \| Separately, Share hidden; one tap changes Size and Format; each choice is a 44 px target at 375; the progress line runs on the control area's top edge during an export |
+| Both | The question card over a sheet | asked from Corner shots, the Upscale card sits above the open sheet, which stays open; Cancel, a tap outside and Escape save nothing |
+| Both | Toasts | info white with no icon, warning amber with a triangle, error red with a circle; at most three lines; 12 px above the photo's bottom edge on the phone, or above an open sheet; bottom center and at most 460 px wide on a wide screen |
 
 ## 11. Front and back
 

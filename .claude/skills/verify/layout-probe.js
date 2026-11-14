@@ -96,13 +96,11 @@
       window.__straightener.setTab(step);
       await wait(120);
       const area = document.querySelector('section.active .control-area');
-      const bar = document.querySelector('section.active .action-bar');
-      const clipped = bar
-        ? [...bar.querySelectorAll('.btn')].filter(el => el.scrollWidth > el.clientWidth).length
-        : 0;
+      // A button whose label doesn't fit (hidden buttons measure 0 and never count).
+      const clipped = [...area.querySelectorAll('button')]
+        .filter(el => el.scrollWidth > el.clientWidth).length;
       steps.push({
         step,
-        isInterim: area.classList.contains('is-interim'),
         photoHeight: round(rectOf(document.getElementById('stage')).height),
         areaHeight: round(rectOf(area).height),
         areaOverflowPx: area.scrollHeight - area.clientHeight,

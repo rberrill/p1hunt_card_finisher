@@ -180,8 +180,10 @@
     const encode = app.cornerShotsOutput === 'photos' ? encodePhotos : encodeSheet;
     const startTime = performance.now();
     try {
+      // The line runs on this sheet's top edge, also where a wide screen lists it inline.
       const files = await CF.runWithProgress(
         onProgress => encode(state, shots, type, onProgress),
+        byId('cornerShotsSheet'),
       );
       await deliverCornerShots(kind, files, startTime, shots, type);
     } catch (error) {
@@ -223,11 +225,14 @@
 
   /* ---------- the sheet: thumbnails, output, readout, save row ---------- */
 
-  // The readout: what will be saved and how big, at the photo's real resolution.
+  // The readout: what will be saved and how big, at the photo's real resolution; or, for a
+  // card too small to give corner shots, that it is (frame CS6).
   function readout(shots, state) {
+    const isPhotos = app.cornerShotsOutput === 'photos';
+    if (!shots.ok) return [`${isPhotos ? '4 photos' : 'Sheet'} · the card is too small`];
     const format = state.export.format.toUpperCase();
     const sizePx = shots.sizePx;
-    if (app.cornerShotsOutput === 'photos') {
+    if (isPhotos) {
       return ['4 photos · ', makeEl('b', null, `${sizePx} × ${sizePx}`), ` px · ${format}`];
     }
     const layout = CardEngine.cornerSheetLayout(sizePx, CONFIG.cornerShots);
@@ -237,19 +242,22 @@
 
   // Syncs the sheet to the edits and the output choice. Called from CF.syncReadouts. Both save
   // buttons are off while the corners are invalid or anything is being saved (frame CS4);
-  // "Share now" stays on, since its files are already rendered.
+  // "Share now" stays on, since its files are already rendered. For a card that is too small
+  // they stay on, and a tap says why nothing is saved (frame CS6).
   function syncCornerShots() {
     const state = app.state;
     if (!state) return;
     const shots = currentShots();
     const isSaving = !!app.exporting;
+    const isTooSmall = !shots.ok && !!shots.reason;
+    const canSave = shots.ok || isTooSmall;
     CF.updateSegmented(byId('cornerOutput'), app.cornerShotsOutput);
-    byId('cornerReadout').replaceChildren(...(shots.ok ? readout(shots, state) : []));
+    byId('cornerReadout').replaceChildren(...(canSave ? readout(shots, state) : []));
     CF.updateActionButton(byId('btnCornerShare'), {
       label: app.pendingCorners ? 'Share now' : 'Share corners',
-      isDisabled: !shots.ok || (isSaving && !app.pendingCorners),
+      isDisabled: !canSave || (isSaving && !app.pendingCorners),
     });
-    CF.updateActionButton(byId('btnCornerDownload'), { isDisabled: !shots.ok || isSaving });
+    CF.updateActionButton(byId('btnCornerDownload'), { isDisabled: !canSave || isSaving });
     requestThumbs();
   }
 

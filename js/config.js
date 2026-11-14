@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.10.0-dev.9',
+  appVersion: '1.10.0-dev.10',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -126,7 +126,7 @@ const CONFIG = {
     // Larger files aren't read as edits (a 5 MB logo is ~6.7 MB in base64).
     editsMaxBytes: 8 * 1024 * 1024,
   },
-  // Corner shots (Export → More options): close-ups of the card's four corners, framed like
+  // Corner shots (its own sheet, from Export): close-ups of the card's four corners, framed like
   // the export. js/engine.js's CORNER_SHOT_DEFAULTS mirror the number keys.
   cornerShots: {
     // A shot's side as a fraction of the card's short edge; the card's corner sits

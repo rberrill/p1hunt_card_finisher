@@ -82,18 +82,6 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
 }
 .btn:hover:not(:disabled) { border-color: #55555c; }
 .btn:disabled { opacity: .4; cursor: default; }
-.btn[aria-pressed="true"] { border-color: var(--accent); background: rgba(229, 50, 45, .18); }
-.btn svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex: none;
-}
-.btn.wide { width: 100%; }
 
 /* ---- stage and panel ---- */
 main { flex: 1; display: flex; min-height: 0; }
@@ -115,20 +103,6 @@ main { flex: 1; display: flex; min-height: 0; }
   touch-action: none;
   outline: none;
 }
-.resume {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  max-width: 340px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  color: var(--text);
-}
-.resume b { word-break: break-all; }
-.resume .when { color: var(--muted); font-size: 13px; }
-.resume .row { margin: 0; }
 .panel {
   width: 380px;
   flex: none;
@@ -138,42 +112,8 @@ main { flex: 1; display: flex; min-height: 0; }
   background: var(--panel);
   border-left: 1px solid var(--line);
 }
-.group { margin-bottom: 16px; }
-.group h3 {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--muted);
-  margin: 0 0 7px;
-  font-weight: 600;
-}
 .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
 .row > .btn { flex: 1; }
-/* Buttons with long labels stack where two won't fit on one line (the desktop side panel). */
-.row.stack-narrow > .btn { flex: 1 1 150px; }
-.segmented {
-  display: flex;
-  background: var(--panel2);
-  border-radius: 11px;
-  padding: 3px;
-  gap: 2px;
-  margin-bottom: 6px;
-}
-.segmented button {
-  flex: 1;
-  min-height: 40px;
-  border: 0;
-  background: transparent;
-  border-radius: 8px;
-  color: var(--muted);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.segmented button[aria-pressed="true"] {
-  background: var(--bg);
-  color: var(--text);
-  font-weight: 600;
-}
 input[type="range"] {
   width: 100%;
   height: 44px;
@@ -190,13 +130,6 @@ input[type="number"] {
   padding: 0 10px;
 }
 input[type="number"] { width: 96px; }
-.readout {
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  font-size: 13px;
-  margin-bottom: 6px;
-}
-.readout b { color: var(--text); font-weight: 600; }
 .mini {
   width: 100%;
   max-width: 280px;
@@ -206,7 +139,6 @@ input[type="number"] { width: 96px; }
   display: block;
   margin: 0 auto 6px;
 }
-.hint { color: var(--muted); font-size: 12px; margin: 4px 0 8px; }
 section[data-panel] { display: none; }
 section[data-panel].active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
@@ -933,16 +865,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 .workspace { flex: 1; display: flex; min-height: 0; }
 .panel { background: var(--surface); }
 .top-bar-brand, .top-bar-steps, .icon-button-label { display: none; }
-/* The old controls of a step its phase hasn't converted: they may be taller than the area for
-   now, so the area scrolls on those steps only. */
-.interim-controls {
-  flex: 1;
-  min-height: 0;
-  margin: 0 -16px;
-  padding: 0 16px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
 
 /* The grabber's target straddles the area's top edge; where it overlaps a control in the
    label row (Rotate's angle, for one), the control takes the tap. Plain text in the row
@@ -1482,7 +1404,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
     padding-bottom: 14px;
     border-top: 0;
   }
-  .interim-controls { overflow: visible; }
   .grabber { display: none; }
   .sheet-layer { position: static; }
   .sheet-scrim, .sheet-grabber, .sheet-close, .sheet-tips-group > .sheet-list { display: none; }

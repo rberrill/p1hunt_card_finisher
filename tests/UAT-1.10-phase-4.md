@@ -28,7 +28,7 @@ Phase 4 of the 1.10 redesign: Export rebuilt in four rows with its options sheet
 - **Toasts.** A white pill for information, amber with a triangle for a warning, red with a circle for an error, on three lines at most (T1, T2, T4: P1.9 🆕; T3 and the desktop place, DT10: D1.9 🆕). A toast sits just above an open sheet (P9.3 ✏️).
 - **A pair on Export.** Together / Separately is a one-tap control beside the readout (D11.7 ✏️, D11.10 ✏️, P11.5 ✏️, P11.7 ✏️), and Copy is hidden for Separately (D11.25 🆕).
 
-**No row:** E10 (an export that fails) and CS6 (a card too small for corner shots). Neither can be produced by hand: the save buttons are off while the corners are invalid. The red toast they use is D1.9's and D8.16's.
+**No row:** E10 (an export that fails) and CS6 (a card too small for corner shots). Neither can be produced by hand: the overlay-not-loaded error needs a stub, and corners small enough to fail are invalid first, which turns the save buttons off. The red toast they use is D1.9's and D8.16's.
 
 **Connected:**
 - D8.5, D9.10, D10.4, D10.5, D11.14, D11.15 (Share and Copy on desktop): `localhost` counts as secure, so they run now. The phone's are the (HTTPS) rows below.
@@ -165,7 +165,7 @@ Held over from phase 3: the verdict of these rows is the exported or shared file
 | P8.15 ✏️ | (HTTPS) Share a full-size photo | **Share** at Original with a full-size iPhone photo (12 MP or 48 MP); if the red button reads **Share now** and a toast says to tap it, tap it | Completes without crashing and the image lands in Photos; note how long it took | ➖ |  |
 | P8.16 | (HTTPS) Copy | **Copy**, paste into another app | The image pastes | ➖ |  |
 | P8.17 🆕 | Progress line | Open a full-size photo (12 MP or more), go to Export, tap **Original**, then **Download** | While it exports, a thin red line grows along the control area's top edge and the save row dims; both clear when the file is saved |  |  |
-| P8.18 🆕 | Pickers in the sheet | In the options sheet tap **Interpolation** and choose Bicubic; tap **Fill outside photo** and choose Black; then choose **Custom…** and pick a colour | Each row opens an iOS picker: Bilinear and Bicubic; Transparent, White, Black and Custom…. The row then shows the choice (Fill with a swatch of its colour); Custom… opens the iOS colour picker and the swatch takes the colour |  |  |
+| P8.18 🆕 | Pickers in the sheet | In the options sheet tap **Interpolation** and choose Bicubic; tap **Fill outside photo** and choose Black; then choose **Custom…**, tap the **Custom color** row that appears under it, and pick a colour | Each row opens an iOS picker: Bilinear and Bicubic; Transparent, White, Black and Custom…. The row then shows the choice (Fill with a swatch of its colour). With Custom… chosen a **Custom color** row shows under Fill; it opens the iOS colour picker and the swatch takes the colour |  |  |
 | P8.19 🆕 | Transparent with JPEG | With **JPEG** chosen, set **Fill outside photo** to Transparent, close the sheet, look, then tap **PNG** | Under the readout, with the amber mark: "JPEG has no transparency; empty areas will be white."; with PNG the note goes |  |  |
 
 ---

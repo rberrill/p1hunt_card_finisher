@@ -22,15 +22,6 @@
   // True for a real step name. A stored step (session records are untrusted) is checked with
   // this, not `STEPS[tab]`, which is truthy for inherited keys such as 'constructor'.
   const isStep = tab => Object.prototype.hasOwnProperty.call(STEPS, tab);
-  // Each step's options sheet title (the plan's approved wording).
-  const SHEET_TITLES = {
-    perspective: 'Perspective options',
-    rotate: 'Rotate options',
-    crop: 'Crop options',
-    levels: 'Levels tips',
-    overlay: 'Overlay options',
-    export: 'Export options',
-  };
 
   /* ---------- steps ---------- */
   function setTab(tab) {
@@ -53,21 +44,6 @@
     syncUI();
     CF.requestRender();
     CF.requestMini();
-  }
-
-  // A segmented control of the old layout (data-segment="name"): onPick(value) when one of its
-  // buttons is tapped. The parts' segmented control has its own (CF.bindSegmented).
-  function bindSegment(name, onPick) {
-    document.querySelectorAll(`[data-segment="${name}"] button`).forEach(button => {
-      button.addEventListener('click', () => onPick(button.dataset.value));
-    });
-  }
-
-  // Lights the old layout's segment with this value.
-  function setSegment(name, value) {
-    document.querySelectorAll(`[data-segment="${name}"] button`).forEach(button => {
-      button.setAttribute('aria-pressed', String(button.dataset.value === value));
-    });
   }
 
   /* ---------- the bars ---------- */
@@ -111,28 +87,7 @@
     byId('btnFit').disabled = !app.img;
   }
 
-  /* ---------- each step's control area and sheet ---------- */
-  // A step whose phase hasn't come yet keeps its old markup (.controls, details.more and
-  // .action-bar). This moves it into a control area (which scrolls for now) and a sheet with
-  // the step's id names, so the shell treats every step alike. The ids inside are unchanged,
-  // so the step's handlers bind as before. Returns without a change for a converted step.
-  function mountInterimStep(section) {
-    const step = section.dataset.panel;
-    const controls = section.querySelector(':scope > .controls');
-    if (!controls) return;
-    const more = controls.querySelector(':scope > details.more');
-    const actionBar = section.querySelector(':scope > .action-bar');
-    const kept = [...controls.children].filter(child => child !== more);
-    // The old controls scroll inside the area, so the grabber on its top edge is never cut.
-    const scroller = makeEl('div', { class: 'interim-controls' }, ...kept, actionBar);
-    const area = CF.buildControlArea(`${step}Area`, scroller);
-    area.classList.add('is-interim');
-    const moreContent = more ? [...more.children].filter(child => child.tagName !== 'SUMMARY') : [];
-    const sheet = CF.buildSheet({ id: `${step}Sheet`, title: SHEET_TITLES[step] }, ...moreContent);
-    controls.replaceWith(area);
-    section.append(sheet);
-  }
-
+  /* ---------- each step's options sheet ---------- */
   // The open step's options sheet; null on a wide screen, where options are always inline.
   function currentSheet() {
     if (!CF.phoneLayout.matches || !app.img) return null;
@@ -151,8 +106,7 @@
     return wasOpen;
   }
 
-  // Fills in the controls that come from CONFIG, builds the bars, and gives every step its
-  // control area and sheet. Each step builds its own controls first.
+  // Builds the bars, then every step's control area and sheet: each step builds its own.
   function buildControls() {
     buildBars();
     CF.buildPerspectiveControls();
@@ -162,7 +116,6 @@
     CF.buildOverlayControls();
     CF.buildExportControls();
     CF.buildCornerShotsControls();
-    document.querySelectorAll('section[data-panel]').forEach(mountInterimStep);
   }
 
   /* ---------- binding the controls ---------- */
@@ -291,8 +244,6 @@
     setTab,
     STEPS,
     isStep,
-    bindSegment,
-    setSegment,
     placeLayout,
     syncFitButton,
     closeSheets,

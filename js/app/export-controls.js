@@ -471,7 +471,8 @@
     if (app.pair) {
       const pair = CF.pairReadout();
       const size = makeEl('b', null, pair.size);
-      byId('exportReadout').replaceChildren(`${pair.label} · `, size, ` px · ${format}`);
+      // The control beside it says Together or Separately, so the readout doesn't (frame F9).
+      byId('exportReadout').replaceChildren(size, ` px · ${format}`);
       return pair.layout;
     }
     const longEdge = state.export.longEdge;

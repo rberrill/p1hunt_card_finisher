@@ -22,14 +22,11 @@ const isTarget = touch => touch.width >= MIN_TARGET_PX && touch.height >= MIN_TA
 const allEqual = values => values.every(value => value === values[0]);
 const list = values => values.join(', ');
 
-// Checks of the page on every step. The old layout is measured as it stands; `isNewShell` (a
-// .control-area is mounted) switches to the plan's numbers.
+// Checks of the page on every step.
 function stepChecks(label, steps, isPhone) {
   const heights = steps.map(step => step.photoHeight);
   const areas = steps.map(step => step.areaHeight);
-  // A step its phase hasn't converted keeps its old controls, which may scroll for now.
-  const overflowing = steps.filter(step => !step.isInterim && step.areaOverflowPx > 0);
-  const interim = steps.filter(step => step.isInterim).map(step => step.step);
+  const overflowing = steps.filter(step => step.areaOverflowPx > 0);
   const over = steps.filter(step => step.overPhoto.length);
   const checks = [
     [`${label}: no sideways scroll on any step`,
@@ -42,11 +39,10 @@ function stepChecks(label, steps, isPhone) {
     [`${label}: photo the same height on every step`, allEqual(heights), `${list(heights)} px`],
     [`${label}: control area the same height on every step`,
       allEqual(areas) && areas[0] === NEW_AREA_PX, `${list(areas)} px`],
-    [`${label}: control area doesn't overflow (converted steps)`,
+    [`${label}: control area doesn't overflow on any step`,
       !overflowing.length,
-      overflowing.map(step => `${step.step} +${step.areaOverflowPx} px`).join('; ')
-        || (interim.length ? `not yet converted: ${list(interim)}` : '')],
-    [`${label}: no clipped action-bar label`,
+      overflowing.map(step => `${step.step} +${step.areaOverflowPx} px`).join('; ')],
+    [`${label}: no clipped button label in a control area`,
       steps.every(step => !step.clippedButtons), ''],
   ]);
 }
