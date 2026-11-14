@@ -107,6 +107,27 @@
 
   const hasGeometry = () => app.geometry && app.geometry.ok;
 
+  // True when a press at this place on the page (client px) would grab a control drawn on the
+  // photo: a corner or edge handle on Perspective, a crop handle on Crop, or the logo's corner
+  // or a snap ring on Overlay. The grabber's target straddles the photo's bottom edge and asks
+  // this, so it never takes a drag that belongs to the photo.
+  function hitsPhotoControl(clientX, clientY) {
+    const view = app.img ? CF.currentView() : null;
+    if (!view) return false;
+    const point = localPoint({ clientX, clientY });
+    if (point[1] > app.cssHeight) return false;
+    if (app.tab === 'perspective') return !app.previewMode && hitHandle(view, point) >= 0;
+    if (app.tab === 'crop') {
+      const part = hasGeometry() ? hitCrop(view, point) : null;
+      return !!part && part !== 'move';
+    }
+    if (app.tab !== 'overlay') return false;
+    // Overlay's cursor names what is under the point: a resize cursor on a corner of the logo,
+    // a pointer on a snap ring, 'move' elsewhere and 'default' with no logo.
+    const cursor = CF.overlayCursor(view, point);
+    return cursor !== 'move' && cursor !== 'default';
+  }
+
   // Starts the gesture a press begins. In order: the Overlay step takes every press; a second
   // finger starts a pinch; the step's own gesture (a handle, the crop box, the dropper); else
   // a pan.
@@ -699,5 +720,6 @@
     onWheel,
     onKeyDown,
     moveHandleBy,
+    hitsPhotoControl,
   });
 })(window.CF);
