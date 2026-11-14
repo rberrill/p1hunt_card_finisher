@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.10.0] - Unreleased
 
+### Changed
+- **A new layout.** The header, the step menu, the "next step →" buttons and the **More options** bar are gone. On a phone the screen is now, top to bottom:
+  - a **top bar** with **Open**; **Front | Back** and **Unpair** while a pair is open; **Fit** while the photo is zoomed in; and **Undo** and **Redo**;
+  - the photo;
+  - the step's controls, in an area the same height on every step, with a grabber on its top edge;
+  - a **tab bar** with the six steps along the bottom.
+- **Options sheets.** Each step's less-used options (what was under More options) are in a sheet that rises over the lower half of the photo: tap the grabber or drag it up. Tap outside the sheet, drag it down, tap ✕ or press Escape to close it. Each sheet ends with a **Tips** row.
+- **On a wide screen** the steps are in the top bar, **Fit** is always there, and every step's options are listed in a panel on the right, with nothing to open.
+- **The start screen** shows no bars on a phone until a photo is open, and offers the last photo on a new **Resume** card.
+- **Perspective:** **Nudge**, **Flatten**, **Candidate**, **Snap** and **Preview** sit in one row of tools, and the detection confidence is always shown. While **Tap to find card** waits for your tap, its message has a **Cancel**.
+- **Rotate:** a **Straighten** ruler to drag; tap the angle to type it, with **±** and **Done** above the phone's keyboard; **Flip** as a mode; **90° left** and **90° right**; and **Fill frame**. **Fill outside photo** moved to Export's options.
+- **Colors and marks.** The outline shown while you drag a file over the page is white and says what dropping it will do. Amber now means a warning and nothing else: unapplied levels show as a white dot on the Levels tab.
+
 ### Fixed
 - When the browser can't save the chosen format (WebP on Safari) and saves a PNG instead, the message saying so was replaced at once by the "Exported…" message, so it was never seen. It's now part of that message, shown as a warning, on Download, Share, a pair's export and the corner shots.
 
