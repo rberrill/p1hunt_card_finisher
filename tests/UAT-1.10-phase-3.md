@@ -317,6 +317,6 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`. 
 | 13. Security |  | ➖ | |
 | Smoke test (pre-release) | | | |
 
-**Decision (phase 3):** ☐ Phase 3 passed, start phase 4 ☐ Fix first
+**Decision (phase 3, 1.10.0-dev.9, 2026-11-14):** ☑ Phase 3 passed, start phase 4 ☐ Fix first (Rich)
 
 **Previous: phase 2 (1.10.0-dev.7):** passed.
