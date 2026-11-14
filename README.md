@@ -8,16 +8,23 @@ It's a single web page that runs entirely in your browser. **Your photos never l
 
 ## What it does
 
-Six steps, in order. On a phone they're the tabs along the bottom of the screen; on a wide screen they're in the top bar. Each step's controls sit under the photo. Its less-used options are in an **options sheet**: tap the grabber on the top edge of the controls, or drag it up, and tap outside, drag down, tap ✕ or press Escape to close it. Each sheet ends with **Tips**. On a wide screen every option is listed in the panel on the right instead.
+Six steps, in order. On a phone they're the tabs along the bottom of the screen; on a wide screen they're in the top bar. Each step's controls sit under the photo. Its less-used options are in an **options sheet**: tap the grabber on the top edge of the controls, or drag it up, and tap outside, drag down, tap ✕ or press Escape to close it. Each sheet ends with **Tips** (on Levels and Overlay the tips are all it holds). On a wide screen every option is listed in the panel on the right instead.
 
 1. **Perspective.** Finds the card's four corners automatically, even inside a case or slab, and corrects the camera angle.
    - Drag corners or edges, with a magnifier that stays clear of your finger. Double-tap a handle to zoom in on it.
    - A row of tools: **Nudge** moves the selected handle a pixel at a time; **Flatten** sets how flat the card comes out (100% gives a flat 5:7 card, as if scanned; 0% squares it up but keeps some depth); **Candidate** tries the next-best detection when the first pick catches a stand or case edge; **Snap** pulls a dragged handle onto the nearest detected edge; and **Preview** shows the corrected result. The detection confidence is always shown.
    - Corners on the wrong card? **Tap to find card** (in the options sheet), then tap the card: detection runs again around that spot. **Cancel** stops it waiting.
 2. **Rotate.** Drag the **Straighten** ruler, or tap the angle to type it (on a phone, **±** and **Done** sit above the keyboard). **90° left** and **90° right** turn the photo, **Flip** mirrors it, and **Fill frame** zooms in so a tilted photo leaves no empty corners.
-3. **Crop.** Free, Original, 1:1, 4:3, 5:4, 3:2, 16:9 and 5:7 card. Presets follow the card's orientation (a portrait card gets 4:5, 2:3, 9:16…), and **Swap** flips them. **Fit to card** frames the card with a little padding.
-4. **Levels.** Set a white point (and optionally a black point) by tapping the image, or start from **Auto**. Press and hold the photo to compare before and after. Changes stay a draft until you **Apply** them.
-5. **Overlay.** Add your logo or watermark (PNG, WebP, JPG or SVG, up to 5 MB) on top of the photo. Drag it, resize it with a corner or a pinch, nudge it, tap a ring on the photo to snap it to a corner, the middle of a side, or the center, and set its opacity. Transparent logos keep their soft edges. Your last logo is remembered in the browser, so next time it's one tap: **Use saved overlay**.
+3. **Crop.** A row of presets: Free, Original, 1:1, 4:3, 5:4, 3:2, 16:9 and 5:7 card. On a phone the row runs off the right edge: swipe it sideways for the rest. Drag inside the crop box to move it, and its handles to resize it; the crop's size is always shown.
+   - Presets follow the card's orientation (a portrait card gets 4:5, 2:3, 9:16…), and **Swap** flips them. **Fit to card** frames the card with a little padding.
+   - **Reset crop** is in the options sheet.
+4. **Levels.** Tap **Pick white**, then tap something on the photo that should be white; **Pick black** is optional. Each shows the color you picked. Or start from **Auto**; **Clear** removes both picks.
+   - The line between **Discard** and **Apply** says what to do next, such as "Tap something white" while a pick waits for your tap.
+   - Press and hold the photo to compare before and after. Changes stay a draft until you **Apply** them.
+5. **Overlay.** **Add logo** puts your logo or watermark (PNG, WebP, JPG or SVG, up to 5 MB) on top of the photo. Transparent logos keep their soft edges.
+   - On the photo: drag the logo, resize it with a corner or a pinch, and tap a ring to snap it to a corner, the middle of a side, or the center.
+   - Under the photo: **Opacity**, arrows that nudge the logo, and **−** and **+** to resize it, then four tools: **Replace logo**, **Reset**, **Remove** and **Delete saved**.
+   - Your last logo is remembered in the browser, so next time it's one tap: **Use saved overlay**. **Delete saved** forgets it, and leaves the logo on the photo you're on.
 6. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size. **Fill outside photo** (in the options sheet) sets the color of any area outside the photo.
    - Where the browser supports it, **Share** opens the share sheet; on iPhone, Save Image puts the result straight into Photos.
    - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
