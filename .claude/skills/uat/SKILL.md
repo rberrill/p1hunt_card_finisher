@@ -77,6 +77,8 @@ List in the proposal, for Rich to agree along with the ACs:
    - the decision line `☐ Ship ☐ Fix first`, decided on the pre-release results;
    - the previous release's one-line result.
 
+**The 1.10 redesign has a script per phase** (Rich, 2026-11-14): `tests/UAT-1.10-phase-N.md`, with that phase's new and connected cases and the smoke test in one Pre-release column. A phase script has no Live column and no After deploy section, because the redesign is released once; phase 6's script is the release script (the full catalog, the smoke test, then the (HTTPS) rows live). Two notes are owed: phase 2's script checks the tab bar and the grabber against Safari's own bar in a Safari tab, and the release script opens the live site from the home screen icon and checks the top and bottom edges.
+
 **Start a version:** create the file with the header, an empty Scope ("none yet"), Setup, the smoke test and the after-deploy section. Move the previous version's file to `archive/`.
 
 ## The smoke test
