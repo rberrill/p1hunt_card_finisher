@@ -1309,6 +1309,23 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* ---- step: Levels ---- */
 /* Owned by js/app/levels.js's phase. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
+/* The instruction between Discard and Apply (frame L1): centered in what the two buttons
+   leave, on one line where it fits and two where it doesn't (a 375 px phone), as the status
+   text is. It takes half of the row's gap on each side and is set at 12.5 px (the sheet's
+   hint size), which the longest line, "Hold the photo to compare", needs to stay whole at
+   390 px. It is never a tap target, so the grabber it sits under still takes its tap. */
+.levels-hint {
+  flex: 1;
+  min-width: 0;
+  max-height: 34px;
+  margin: 0 -4px;
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 17px;
+  text-align: center;
+  color: var(--quiet);
+  pointer-events: none;
+}
 
 /* ---- step: Overlay ---- */
 /* Owned by js/app/overlay.js's phase. Phone-only and wide-only rules go in a

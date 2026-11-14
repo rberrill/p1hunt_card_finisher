@@ -118,42 +118,8 @@
       </section>
 
       <!-- ==== step: Levels (js/app/levels.js) ==== -->
-      <section data-panel="levels">
-        <div class="controls">
-          <div class="row levels-row">
-            <button class="btn" id="btnAutoLevels"
-                title="Estimate white and black points from the framed image">
-              Auto
-            </button>
-            <button class="btn" id="btnPickWhite" aria-pressed="false"
-                title="Pick white: tap something that should be white">
-              <span class="swatch unset" id="swatchWhite"></span>White
-            </button>
-            <button class="btn" id="btnPickBlack" aria-pressed="false"
-                title="Pick black (optional): tap something that should be black">
-              <span class="swatch unset" id="swatchBlack"></span>Black
-            </button>
-            <button class="btn" id="btnClearLevels"
-                title="Clear both points (Apply to remove applied levels)">
-              Clear
-            </button>
-          </div>
-          <details class="more">
-            <summary>More options</summary>
-            <div class="hint">Press and hold the photo to compare with no levels (or hold C).</div>
-            <div class="hint">
-              White: tap a grading label or the card's white border; avoid foil and reflections.
-              Black is optional. Auto estimates both from the framed image; colored backdrops can
-              fool it, so check the result.
-            </div>
-            <div class="hint">Clear, then Apply, removes levels.</div>
-          </details>
-        </div>
-        <div class="action-bar">
-          <button class="btn primary" id="btnApplyLevels">Apply</button>
-          <button class="btn" id="btnDiscardLevels">Discard</button>
-        </div>
-      </section>
+      <!-- Its control area and tips sheet are built by buildLevelsControls(). -->
+      <section data-panel="levels"></section>
 
       <!-- ==== step: Overlay (js/app/overlay.js) ==== -->
       <section data-panel="overlay">
