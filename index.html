@@ -111,93 +111,9 @@
       <section data-panel="overlay"></section>
 
       <!-- ==== step: Export (js/app/export-controls.js) ==== -->
+      <!-- Its control area and options sheet are built by buildExportControls(), ahead of the
+           Corner shots group. -->
       <section data-panel="export">
-        <div class="controls">
-          <div class="row">
-            <select id="format" aria-label="Format" class="grow">
-              <option value="jpeg">JPEG</option>
-              <option value="png">PNG</option>
-              <option value="webp">WebP</option>
-            </select>
-            <select id="size" aria-label="Size (long edge)" class="grow"></select>
-            <select id="pairOutput" aria-label="Pair output" class="grow" hidden>
-              <option value="together">Together</option>
-              <option value="separately">Separately</option>
-            </select>
-          </div>
-          <div class="readout" id="exportReadout"></div>
-          <div class="status" id="exportMessage"></div>
-          <!-- Add back starts a front + back pair. Corner shots, until the export, opens More
-               options at its group, so the feature can be found. Next card takes its place once
-               this photo's current edits have been exported. They sit here, not in the action
-               bar, which is full once Share and Copy show. -->
-          <div class="row next-row">
-            <button class="btn" id="btnAddBack" hidden
-                title="Keep this photo as the front and open the back">Add back</button>
-            <button class="btn" id="btnCornerShots" hidden
-                title="Close-ups of the card's four corners">Corner shots</button>
-            <button class="btn" id="btnNextCard" hidden
-                title="Open the next photo">Next card →</button>
-          </div>
-          <details class="more">
-            <summary>More options</summary>
-            <div class="group" id="qualityRow">
-              <label class="field" for="quality">
-                  Quality <span class="value" id="qualityValue"></span>
-              </label>
-              <input type="range" id="quality" min="0.5" max="1" step="0.01">
-            </div>
-            <div class="group">
-              <label class="field" for="interp">Interpolation</label>
-              <select id="interp">
-                <option value="bilinear">Bilinear</option>
-                <option value="bicubic">Bicubic (sharper, slower)</option>
-              </select>
-            </div>
-            <div class="group">
-              <h3>Fill outside photo</h3>
-              <div class="row">
-                <select id="fill" class="grow">
-                  <option value="transparent">Transparent</option>
-                  <option value="#ffffff">White</option>
-                  <option value="#000000">Black</option>
-                  <option value="custom">Custom…</option>
-                </select>
-                <input type="color" id="fillColor" value="#ffffff" aria-label="Custom fill color">
-              </div>
-            </div>
-            <div class="group section-box">
-              <h3>Edits</h3>
-              <div class="row">
-                <button class="btn" id="btnSaveEdits">Save edits</button>
-                <button class="btn" id="btnLoadEdits">Load edits</button>
-              </div>
-              <div class="hint">
-                <span id="editsPairHint" hidden>Saves the side you’re on.</span>
-                Edits are a small JSON file. Re-open the same photo, load it, and the export is
-                identical.
-              </div>
-            </div>
-            <button class="btn wide" data-reset="export">Reset export settings</button>
-            <!-- The photo as received and the version, for bug reports: phones have no tooltip or
-                 console. The source line shows what the picker handed over (iOS may transcode or
-                 resize). -->
-            <div class="hint" id="sourceInfo"></div>
-            <div class="hint" id="versionInfo"></div>
-          </details>
-        </div>
-        <div class="action-bar">
-          <button class="btn primary" id="btnShare" hidden
-              title="Share or save the image (Save Image puts it in Photos)">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 3v12"/><path d="m8 7 4-4 4 4"/>
-              <path d="M8 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-2"/>
-            </svg>
-            <span>Share</span>
-          </button>
-          <button class="btn primary" id="btnDownload">Download</button>
-          <button class="btn" id="btnCopy">Copy</button>
-        </div>
         <!-- Corner shots (js/app/corner-shots.js): its own sheet, built around this group by
              buildCornerShotsControls. -->
         <div class="group" id="cornerShots">

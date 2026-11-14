@@ -81,12 +81,6 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
   touch-action: manipulation;
 }
 .btn:hover:not(:disabled) { border-color: #55555c; }
-.btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  font-weight: 600;
-}
 .btn:disabled { opacity: .4; cursor: default; }
 .btn[aria-pressed="true"] { border-color: var(--accent); background: rgba(229, 50, 45, .18); }
 .btn svg {
@@ -100,7 +94,6 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
   flex: none;
 }
 .btn.wide { width: 100%; }
-.next-row { margin: 2px 0 6px; }
 /* A pair's question: a Resume-style card over the dimmed photo. The backdrop takes every
    touch, so the photo can't be dragged while it's up. */
 .pair-prompt {
@@ -114,8 +107,6 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
   background: rgba(0, 0, 0, .6);
 }
 .pair-card { width: 100%; }
-/* The side panel is too narrow for three dropdowns; the phone fits them in one row. */
-#pairOutput { flex-basis: 100%; }
 
 /* ---- stage and panel ---- */
 main { flex: 1; display: flex; min-height: 0; }
@@ -179,13 +170,6 @@ main { flex: 1; display: flex; min-height: 0; }
   background: var(--panel);
   border-left: 1px solid var(--line);
 }
-.controls {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 12px 14px;
-  -webkit-overflow-scrolling: touch;
-}
 .group { margin-bottom: 16px; }
 .group h3 {
   font-size: 11px;
@@ -197,14 +181,6 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
 .row > .btn { flex: 1; }
-/* A section in More options whose buttons save something other than the main export (Corner
-   shots, Edits): an inset box, so its Share or Download doesn't read as the export's. */
-.section-box {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px;
-}
 /* Buttons with long labels stack where two won't fit on one line (the desktop side panel). */
 .row.stack-narrow > .btn { flex: 1 1 150px; }
 .segmented {
@@ -230,8 +206,6 @@ main { flex: 1; display: flex; min-height: 0; }
   color: var(--text);
   font-weight: 600;
 }
-label.field { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; }
-label.field .value { float: right; color: var(--text); font-variant-numeric: tabular-nums; }
 input[type="range"] {
   width: 100%;
   height: 44px;
@@ -239,7 +213,7 @@ input[type="range"] {
   accent-color: var(--accent);
   touch-action: pan-y;
 }
-select, input[type="number"] {
+input[type="number"] {
   min-height: 44px;
   width: 100%;
   background: var(--panel2);
@@ -248,26 +222,6 @@ select, input[type="number"] {
   padding: 0 10px;
 }
 input[type="number"] { width: 96px; }
-input[type="color"] {
-  width: 54px;
-  min-height: 44px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel2);
-  padding: 4px;
-}
-/* One status line, shown only when there is something to act on. */
-.status {
-  padding: 5px 10px;
-  border-radius: 8px;
-  background: var(--panel2);
-  border-left: 3px solid var(--warn);
-  font-size: 13px;
-  line-height: 1.35;
-  margin-bottom: 6px;
-}
-.status:empty { display: none; }
-.status.error { border-left-color: var(--accent); }
 .readout {
   font-variant-numeric: tabular-nums;
   color: var(--muted);
@@ -303,17 +257,6 @@ input[type="color"] {
 section[data-panel] { display: none; }
 section[data-panel].active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
-/* ---- the old action bar (inside the control area of a step its phase hasn't converted) ---- */
-.action-bar { flex: none; display: flex; gap: 6px; padding: 6px 0 8px; }
-.action-bar > .btn {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* ---- debug tuning panel ---- */
 #debugPanel {
   position: fixed;
@@ -341,7 +284,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 
 /* Classes for what used to be inline style attributes (the Content Security Policy blocks
   those). */
-.grow { flex: 1; }
 .debug-head { justify-content: space-between; }
 .debug-button { min-height: 36px; }
 
@@ -1302,6 +1244,116 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 #overlayTools { justify-content: flex-end; }
 #overlayTools .tool { flex: 0 0 calc((100% - 15px) / 4); }
 
+/* ---- step: Export ---- */
+/* Owned by js/app/export-controls.js's phase. Phone-only and wide-only rules go in a
+   media block inside this banner (max-width: 760px or min-width: 761px). */
+/* Four rows in the area's 200 px: 44, 44, 48 and 44, with the area's 4 px between them
+   (frame E1). Its rows keep 6 px between their controls. */
+#exportArea .control-row { gap: 6px; }
+/* Size at the left edge, Format at the right. The grabber's target reaches 22 px down into
+   this row; a choice under it takes the tap (as a control in a label row does), so every
+   choice keeps its 44 px and the grabber keeps the strip above them. */
+#exportChoices { justify-content: space-between; }
+#exportChoices .segmented-control { position: relative; z-index: 5; }
+/* The readout, with any note under it. Both fit the row's 44 px: the readout takes two lines
+   while there is no note (a pair's is long), and one line above a note's two. */
+.export-readout-column {
+  flex: 1;
+  min-width: 0;
+  max-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+.export-readout, .export-note-text {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.export-readout {
+  flex: none;
+  font-size: 13px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--quiet);
+}
+.export-readout:empty { display: none; }
+.export-readout b { color: var(--ink); font-weight: 700; }
+.export-readout-column:has(.export-note:not([hidden])) .export-readout { -webkit-line-clamp: 1; }
+/* A note: white text led by the amber warning mark (frame E4). */
+.export-note {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 12.5px;
+  line-height: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.export-note .icon { color: var(--warn); stroke-width: 2.2; }
+/* The save row is 48 px (its buttons are the tall ones). With less side padding, "Share now"
+   keeps its whole label beside Download and Copy on a 375 px phone. */
+#exportSaveRow { height: 48px; }
+#exportSaveRow .action-button { padding: 0 12px; }
+/* The bottom row's three buttons share the width (frame E6). */
+#exportMoreRow .action-button { padding: 0 6px; font-size: 14px; }
+/* Next card's arrow follows its label. */
+#btnNextCard { flex-direction: row-reverse; }
+/* A row of the sheet with the phone's own picker: the <select> or color input covers the
+   row, unseen, so a tap anywhere on the row opens it. */
+.export-picker-row { position: relative; }
+.export-picker {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.export-picker-row:has(:focus-visible) { outline: 2px solid var(--ink); outline-offset: -2px; }
+.export-picker-row:has(:disabled) { opacity: .38; }
+/* Fill's swatch (frame E11): the color, or flat checker squares for Transparent. */
+.export-fill-swatch {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-right: 3px;
+  border: 1px solid var(--track);
+  border-radius: 4px;
+}
+.export-fill-swatch.is-transparent {
+  background: repeating-conic-gradient(var(--track) 0 25%, var(--ink) 0 50%) 0 0 / 8px 8px;
+}
+/* Quality: the slider between its name and its percent. */
+.export-quality-row { cursor: default; }
+.export-quality-row .slider { margin: 0 6px; }
+.export-quality-value {
+  min-width: 38px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+/* With Quality hidden (PNG), Interpolation is the list's first row and has no line above. */
+#qualityRow[hidden] + .sheet-row { border-top: 0; }
+#editsPairHint { color: var(--ink); }
+/* The source line and the version, one under the other; a long file name wraps anywhere. */
+.export-info-line { display: block; overflow-wrap: anywhere; }
+@media (min-width: 761px) {
+  /* Corner shots is listed before Export's options in the side panel (frame DT6). */
+  #exportSheet { order: 1; }
+  /* The panel's scrollbar takes about 15 px from the 380, which Size and Format need: their
+     row reaches 6 px into the panel's padding on each side. */
+  #exportChoices { margin: 0 -6px; }
+}
+
 /* ---- shell: the phone ---- */
 @media (max-width: 760px) {
   .workspace { flex-direction: column; }
@@ -1431,10 +1483,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 
 /* ---- narrow screens: the old layout's rules on the phone ---- */
 @media (max-width: 760px) {
-  #pairOutput { flex-basis: 0%; }
   main { flex-direction: column; }
-  .status { padding: 4px 10px; margin-bottom: 2px; }
-  .action-bar > .btn { padding: 0 6px; }
 
   /* ---- the 1.10 parts on the phone ---- */
   /* Crop presets: one row that scrolls sideways and runs off the right edge, so it reads as
