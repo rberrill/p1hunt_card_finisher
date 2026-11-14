@@ -18,8 +18,8 @@
   // Some browsers drop a download started in the same moment as another, so the four photos
   // start this far apart.
   const DOWNLOAD_GAP_MS = 250;
-  // The gap left above the Corner shots group when its button scrolls to it, so the box's top
-  // edge doesn't sit flush against the control area's edge.
+  // The gap left above Corner shots when its button scrolls the panel to it, so its heading
+  // doesn't sit flush against the panel's edge.
   const CORNER_SCROLL_MARGIN_PX = 8;
 
   /* ---------- the output choice (a preference) ---------- */
@@ -295,19 +295,26 @@
     ctx.restore();
   }
 
-  // Builds Corner shots' controls (called by the shell before any binding). Until phase 4
-  // converts them they are the old markup in index.html, so there is nothing to build.
-  function buildCornerShotsControls() {}
-
-  // The Corner shots button on Export: opens More options and scrolls its Corner shots group to
-  // the top of the control area.
-  function openCornerShots() {
+  // Builds Corner shots' sheet (called by the shell before any binding): its own sheet in
+  // Export's section, around the group in index.html.
+  function buildCornerShotsControls() {
     const group = byId('cornerShots');
-    const layer = group.closest('.sheet-layer');
-    if (CF.phoneLayout.matches) CF.openSheet(layer);
-    const scroller = CF.phoneLayout.matches ? group.closest('.sheet-body') : elements.panel;
-    const offsetPx = group.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
-    scroller.scrollTop += offsetPx - CORNER_SCROLL_MARGIN_PX;
+    const sheet = CF.buildSheet({ id: 'cornerShotsSheet', title: 'Corner shots' }, group);
+    byId('exportMessage').closest('section').append(sheet);
+  }
+
+  // The Corner shots button on Export: opens the Corner shots sheet. A wide screen lists it in
+  // the panel, so there it scrolls the panel to it.
+  function openCornerShots() {
+    const layer = byId('cornerShotsSheet');
+    if (CF.phoneLayout.matches) {
+      CF.closeSheets();
+      CF.openSheet(layer);
+      return;
+    }
+    const panel = elements.panel;
+    const offsetPx = layer.getBoundingClientRect().top - panel.getBoundingClientRect().top;
+    panel.scrollTop += offsetPx - CORNER_SCROLL_MARGIN_PX;
   }
 
   // Wires the group's controls. Share shows only where the browser can share files, as for
