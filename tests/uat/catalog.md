@@ -46,7 +46,7 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 | --- | --- | --- | --- | --- | --- |
 | P1.1 | Start screen and Open | Open the page, look, then tap **Open photo** and choose a photo from Photos | No top bar or tab bar on the start screen: the app icon, "Finish a card photo" and a red **Open photo**. While it loads, "Loading…" sits at the bottom of the photo area; then the bars arrive and the corners are detected |  |  |
 | P1.2 | Phone layout | Look at the screen | Top bar (Open on the left, Undo and Redo on the right, no Fit), the photo, the control area with a grabber pill on its top edge, then the tab bar with six steps. Nothing overlaps the photo |  |  |
-| P1.3 | Every step fits | Tap each of the six tabs in turn | The photo is the same height on every step; the tab you're on is lit; no tab label or button text is cut off; the tab bar clears the home indicator. On Crop, Levels, Overlay and Export the control area scrolls for now |  |  |
+| P1.3 | Every step fits | Tap each of the six tabs in turn | The photo is the same height on every step; the tab you're on is lit; no tab label or button text is cut off; the tab bar clears the home indicator. Only on Export does the control area still scroll, for now |  |  |
 | P1.4 | Turn the phone | Rotate to landscape and back | Nothing breaks; the layout recovers |  |  |
 | P1.5 | Home-screen icon | Safari's Share button → **Add to Home Screen**, then look at the home screen | The icon is the red P and white 1 on a full black tile, not a screenshot of the page |  |  |
 | P1.6 | Resume card | Edit the photo, wait a few minutes, reload the page | The Resume card has a drawn thumbnail, reads "Last photo · N min ago" over "Resume <name>?", with **Resume** in red, **Start fresh** beside it and **Open photo** below in grey; still no bars |  |  |
@@ -73,11 +73,11 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| P2.3 | Unapplied Levels dot | Make a Levels change without Apply, then tap other tabs | A dot on the Levels tab, on every step |  |  |
+| P2.3 | Unapplied Levels dot | Make a Levels change without Apply, then tap other tabs | A white dot on the Levels tab, on every step |  |  |
 | P2.6 | Tab bar | From Perspective, tap **Crop**, then **Rotate** | One tap opens each step; the tab you're on is lit and the others dim |  |  |
 | P2.7 | Grabber opens the sheet | On Perspective, tap the grabber; close the sheet with ✕; then drag the grabber up slowly and stop halfway | Both open "Perspective options" over the lower half of the photo, with the top of the photo still in view. While dragging, the sheet rises from the control area's top edge under your finger and there is one grabber on screen, never two. On Export the grabber is whole, not cut off |  |  |
 | P2.8 | The sheet closes | Open the sheet and drag it down; open it and tap the photo above it; open it and tap ✕ | Each closes it; the tap on the photo moves no corner |  |  |
-| P2.9 | Every step has its options | On each of the six steps, open the sheet and scroll it | Each opens with that step's title. Perspective's and Rotate's are new (rows P3.13, P4.5); Crop, Levels, Overlay and Export hold their old More options content, and Export's now includes **Fill outside photo** |  |  |
+| P2.9 | Every step has its options | On each of the six steps, open the sheet and scroll it | Each opens with that step's title: Perspective options, Rotate options, Crop options, Levels tips, Overlay options, Export options. Export's still holds its old More options content, with **Fill outside photo**; the others are rows P3.13, P4.5, P5.5, P6.10 and P7.19 |  |  |
 
 ---
 
@@ -156,68 +156,75 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 ## 5. Crop
 
 ### Desktop
-*Setup: a portrait card (`IMG_9136`) open on Crop.*
+*Setup: a portrait card (`IMG_9136`) open on Crop. Crop's options are listed in the panel under its controls.*
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| D5.1 | Presets | Look at the preset row, then click each preset | Every preset and **⇄ Swap** is visible, wrapping onto more lines; each click reshapes the box and highlights the preset |  |  |
+| D5.1 | Presets | Look at the panel, then click each preset | The label row reads "Crop" and the box's size in px. All eight presets show at once, wrapping onto more lines, with **Fit to card** and **Swap** as tools under them; each click reshapes the box, fills that preset white and updates the size |  |  |
 | D5.2 | Portrait card, portrait crops | Click 5:4 | The chip reads **4:5** and the box is portrait; labels read 3:4 · 4:5 · 2:3 · 9:16 · 5:7 card |  |  |
-| D5.3 | Swap | Click **⇄ Swap**, pick 3:2, then **⇄ Swap** again | Landscape, with labels 4:3 · 5:4 · 3:2 · 16:9 · 7:5 card; 3:2 stays landscape; the second Swap gives portrait 2:3 |  |  |
-| D5.4 | Swap is off at 1:1 and Free | Pick 1:1, then Free | Swap is disabled for both |  |  |
+| D5.3 | Swap | Click the **Swap** tool, pick 3:2, then click **Swap** again | Landscape, with labels 4:3 · 5:4 · 3:2 · 16:9 · 7:5 card; 3:2 stays landscape; the second Swap gives portrait 2:3 |  |  |
+| D5.4 | Swap is off at 1:1 and Free | Pick 1:1, then Free, then Original | The **Swap** tool is dimmed for 1:1 and Free, and back for Original |  |  |
 | D5.5 | Rotation turns the crop | On Rotate, **90° right**, go back to Crop, then Undo | The crop and labels switch to landscape with the card; Undo makes them portrait again |  |  |
 | D5.6 | Orientation setting | On Perspective, orientation **Landscape** in the side panel, then Crop | The crop and labels are landscape |  |  |
+| D5.7 | Reset crop | Pick 3:2, drag the box off the card and resize it, click **Reset crop** in the panel's options, then press Ctrl+Z | Reset puts the crop back to 1:1, fitted to the card; Ctrl+Z brings your 3:2 box back |  |  |
+| D5.8 | Keys in the tips | Look at **Tips and keys** in the panel's options | Crop's tip (drag inside the box to move it, its handles to resize), then its key: Shift keeps the aspect while you drag a Free crop |  |  |
 
 ### Phone
 *Setup: a portrait card open on Crop.*
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| P5.1 | Preset row scrolls | Swipe the aspect row sideways | It scrolls to reveal every preset and **⇄ Swap** at the end |  |  |
-| P5.2 | Move and resize the box | Drag inside the box with your finger, then drag a handle | It moves, then resizes |  |  |
-| P5.3 | Fit to card | Tap **Fit to card** | The box fits the card with padding at the current aspect |  |  |
+| P5.1 | Preset row scrolls | Look at the control area, then swipe the preset row sideways | The label row reads "Crop" and the box's size in px. The presets are one row that runs off the right edge, with a chip cut off there; the swipe reveals all eight, ending at **5:7 card**. **Fit to card** and **Swap** are tools in the row below and stay in view; the control area itself doesn't scroll |  |  |
+| P5.2 | Move and resize the box | Drag inside the box with your finger, drag a corner handle, then drag the handle in the middle of the box's bottom edge | It moves, then resizes, and the size in the label row follows. The drag from the bottom handle resizes the box, even close to the grabber, and doesn't open the options sheet |  |  |
+| P5.3 | Fit to card | Drag the box off the card, then tap the **Fit to card** tool | The box fits the card again, with padding, at the current aspect |  |  |
+| P5.4 | The row rests on the selected preset | Swipe to the end of the row and tap **5:7 card**, swipe the row back to its start, tap the **Rotate** tab, then the **Crop** tab | 5:7 card fills white. Back on Crop the row is scrolled to it again, without a swipe |  |  |
+| P5.5 | Options sheet | Open the sheet with the grabber, tap **Tips** | "Crop options": **Reset crop** and **Tips**; Crop's one tip unfolds in place, with no keyboard keys listed |  |  |
 
 ---
 
 ## 6. Levels
 
 ### Desktop
-*Setup: `IMG_9136` open on Levels, no levels applied.*
+*Setup: `IMG_9136` open on Levels, no levels applied. Levels' tips are listed in the panel under its controls.*
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| D6.1 | Light black point rejected | Click **Black**, then click something light | Rejected with a message; nothing changes |  |  |
+| D6.1 | Light black point rejected | Click **Pick black**, then click something light | An amber toast: "That spot is too light to be a black point. Pick something dark, or skip the black point."; the black swatch stays empty and the photo doesn't change |  |  |
 | D6.2 | C key compare | Click **Auto**, then hold the **C** key | The image shows without levels while held, then returns |  |  |
 | D6.3 | Undo and Redo | **Apply**, Undo, then Redo | One Undo removes the levels; Redo brings them back |  |  |
 | D6.4 | Levels don't carry over | With levels applied, open a new photo | The new photo has no levels |  |  |
+| D6.5 | Tips in the panel | Look under Levels' tools in the panel | Levels' three tips are listed there, with nothing to open, followed by its key: hold C, or press and hold the photo, to compare |  |  |
 
 ### Phone
 *Setup: a photo open on Levels, no levels applied.*
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| P6.1 | One row | Look at the control area | **Auto · White · Black · Clear** on one line |  |  |
-| P6.2 | Auto | Tap **Auto** | The image changes and the swatches fill in; Apply and Discard enable; a dot on the Levels tab |  |  |
-| P6.3 | White pick by touch | Tap **White**, touch and hold the card's white border, move slightly, then lift | A loupe with a sampling circle while held; the pick lands where you lift |  |  |
+| P6.1 | Levels layout | Look at the control area | The label row holds **Discard**, the line "Pick white, or try Auto" and **Apply** in red, both buttons dimmed. Under it **Pick white** and **Pick black**, each with an empty swatch; then the tools **Auto** and **Clear**, Clear dimmed. All of it is in view: the control area doesn't scroll |  |  |
+| P6.2 | Auto | Tap **Auto** | The image changes and a toast says what Auto set; the swatches fill in; **Discard** and **Apply** light up; the line now reads "Hold the photo to compare"; a white dot on the Levels tab |  |  |
+| P6.3 | White pick by touch | Tap **Pick white**, touch and hold the card's white border, move slightly, then lift | **Pick white** fills white while it's armed. A loupe with a sampling circle while held; the pick lands where you lift: a W ring marks the spot, the swatch takes its color and Pick white is no longer armed |  |  |
 | P6.4 | Hold to compare | Press and hold the photo still, release, then drag the photo | The photo shows without levels while held, with no magnifier or callout; the drag pans without comparing |  |  |
-| P6.5 | Apply | Tap **Apply** | The dot clears; Apply and Discard disable |  |  |
+| P6.5 | Apply | Tap **Apply** in the label row | The dot leaves the Levels tab; **Apply** and **Discard** dim; the swatches stay filled |  |  |
 | P6.6 | Discard | Make a change, then **Discard** | The draft is dropped; applied levels are unchanged |  |  |
 | P6.7 | Clear and Apply | **Clear**, then **Apply** | Levels removed; original colors |  |  |
 | P6.8 | Unapplied warning on Export | Make a change without Apply, go to Export | Export warns that levels are unapplied |  |  |
+| P6.9 | The armed instruction stays | Back on Levels, tap **Pick black**, wait about 5 s without touching the photo, tap **Pick white**, then tap **Pick white** again | The label row reads "Tap something black" for as long as that pick is armed, then "Tap something white"; no toast appears over the photo at any point. The last tap disarms the pick and the line it replaced comes back |  |  |
+| P6.10 | Tips sheet | Tap the grabber | The sheet is titled "Levels tips" and shows the three Levels tips at once: no options and no Tips row to open. No keyboard keys are listed |  |  |
 
 ---
 
 ## 7. Overlay
 
 ### Desktop
-*Setup: a photo open on Overlay, no logo yet.*
+*Setup: a photo open on Overlay, no logo yet. Overlay's options are listed in the panel under its controls.*
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| D7.1 | Add a PNG | **Add logo** with a transparent PNG | The logo appears centered at about ¼ of the photo width, its shape kept; the button now reads **Replace logo** (AC4, AC9) |  |  |
+| D7.1 | Add a PNG | Click **Add logo** (in red) with a transparent PNG | The logo appears centered at about ¼ of the photo width, its shape kept. The hint and **Add logo** give way to the Opacity slider, the move and size pads, and four tools: **Replace logo**, **Reset**, **Remove** and **Delete saved** (AC4, AC9) |  |  |
 | D7.2 | JPG and WebP | **Replace logo** with the JPG, then with the WebP | Each replaces the logo |  |  |
 | D7.3 | SVG stays sharp | **Replace logo** with the SVG, resize it large, export at Original and open the file | The logo's edges are sharp |  |  |
-| D7.4 | Not an image | **Replace logo** with the renamed text file, then with the corrupt image | A red status line each time; the current logo is unchanged (AC5) |  |  |
-| D7.5 | Over 5 MB | **Replace logo** with the file over 5 MB | Rejected; the message names the 5 MB limit (AC6) |  |  |
+| D7.4 | Not an image | **Replace logo** with the renamed text file, then with the corrupt image | Each time the reason takes the label row, with a red icon, where the Opacity slider was; the current logo is unchanged (AC5) |  |  |
+| D7.5 | Over 5 MB | **Replace logo** with the file over 5 MB | Rejected; the label row reads "That file is N MB. The overlay limit is 5 MB." (AC6) |  |  |
 | D7.6 | Drop adds a logo here | Drag a PNG onto the photo | It becomes the logo |  |  |
 | D7.7 | Drop elsewhere opens a photo | Go to Crop, drag a PNG onto the photo | It opens as a new photo (then reopen your photo and return to Overlay) |  |  |
 | D7.8 | Paste adds a logo | Copy an image, press Ctrl+V | It becomes the logo |  |  |
@@ -225,34 +232,37 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 | D7.10 | Keys and wheel resize | Press + and −, then scroll the mouse wheel | The logo resizes; the photo doesn't zoom |  |  |
 | D7.11 | Levels don't touch the logo | Apply a Levels white pick, return to Overlay | The logo's colors are unchanged (Q3) |  |  |
 | D7.12 | Export with the logo | Set a semi-transparent logo; export as JPEG, PNG and WebP; open the files | Each is one flat image; the logo matches the preview in place, size, opacity and soft edges (AC8, AC23) |  |  |
-| D7.13 | Saved logo is offered, not applied | Place a logo bottom-right at 60%, open a different photo, go to Overlay | Not added; a thumbnail with **Use saved overlay** is shown (AC20, Q7) |  |  |
+| D7.13 | Saved logo is offered, not applied | Place a logo bottom-right at 60%, open a different photo, go to Overlay | Not added. The panel shows the hint line, the logo's thumbnail beside **Use saved overlay**, and **Add logo** in red; **Delete saved** is the only tool (AC20, Q7) |  |  |
 | D7.14 | Use saved overlay | Click **Use saved overlay** | Applied bottom-right at 60%, the last-used settings (AC20, Q8) |  |  |
-| D7.15 | Delete saved overlay | **Delete saved overlay**, then open a new photo and go to Overlay | The thumbnail goes and the logo stays on the current photo; the new photo is offered none, just the hint and **Add logo** (AC21, Q9) |  |  |
+| D7.15 | Delete saved | With that logo placed, click the **Delete saved** tool, then open a new photo and go to Overlay | It doesn't ask first. The logo stays on the current photo and **Delete saved** dims; the new photo is offered none, just the hint and **Add logo** (AC21, Q9) |  |  |
 | D7.16 | Start fresh keeps the logo | Save a logo again, reload, **Start fresh**, open a new photo | The saved logo is still offered |  |  |
 | D7.17 | Private window | In a private window, add a logo | It works on the photo; a notice says it can't be saved in this browser (AC22) |  |  |
+| D7.18 | Keys in the tips | Look at **Tips and keys** in the panel's options | Overlay's three tips, then its keys: the arrows move the logo (Shift for bigger steps), + and − resize it, and the wheel resizes it too |  |  |
 
 ### Phone
 *Setup: a photo open on Overlay, no logo yet. The PNG logo is in Photos or Files.*
 
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| P7.1 | Overlay layout | Look at the screen | The photo is the same height as on other steps; **Add logo** shows with no text cut off (AC2) |  |  |
-| P7.2 | Add a logo | **Add logo**, choose the PNG | The logo appears centered at about ¼ of the photo width; the button reads **Replace logo**, not cut off (AC4, AC9) |  |  |
+| P7.1 | Overlay layout | Look at the screen | The photo is the same height as on other steps. The control area holds the hint "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." and **Add logo** in red (with **Use saved overlay** and its thumbnail between them if a logo is saved); no text is cut off and nothing scrolls (AC2) |  |  |
+| P7.2 | Add a logo | **Add logo**, choose the PNG | The logo appears centered at about ¼ of the photo width, with nine rings on the photo. The control area now holds Opacity with its slider and %, the move pad beside the − + pad, and four tools (**Replace logo**, **Reset**, **Remove**, **Delete saved**), all in view at once with no label cut off (AC4, AC9) |  |  |
 | P7.3 | Drag the logo | Drag starting on the logo, then starting on empty photo | The logo moves both times; the photo doesn't pan (AC10, Q5) |  |  |
 | P7.4 | Stays inside | Drag the logo far past an edge | It stops with the whole logo inside the photo (AC10) |  |  |
 | P7.5 | Corner resize | Drag a corner handle | Resizes with the shape locked (AC11) |  |  |
 | P7.6 | Pinch | Pinch with both fingers on the logo, then on empty photo | The logo resizes both times; the photo stays still (AC13) |  |  |
-| P7.7 | Nudge and size buttons | Tap ▲ ▼ ◀ ▶ and − +, then hold one | Small steps; the buttons are easy to hit; holding repeats (AC14) |  |  |
-| P7.8 | Snap rings | Tap each of the nine rings (corners, side middles, center), then Undo | The logo jumps to each spot with a small margin; Undo puts it back one snap (AC15) |  |  |
+| P7.7 | Move and size pads | Tap ◀ ▲ ▼ ▶ and − +, then hold one | The two pads share one row. Small steps; the buttons are easy to hit; holding repeats (AC14) |  |  |
+| P7.8 | Snap rings | Tap each of the nine rings (corners, side middles, center), then Undo | The logo jumps to each spot with a small margin; the three bottom rings take the tap without opening the options sheet; Undo puts it back one snap (AC15) |  |  |
 | P7.9 | Rings and drags | Drag the logo, then start a drag on a ring | The rings are hidden during a drag; a drag from a ring moves the logo without snapping |  |  |
-| P7.10 | Crop change keeps the place | Go to Crop, change 1:1 to 4:5, return | The logo keeps its relative place, fully inside (Q1) |  |  |
-| P7.11 | Opacity | Slide Opacity | The preview updates live; % shown (AC16) |  |  |
+| P7.10 | Crop change keeps the place | Go to Crop, pick a different preset (4:5 if it was 1:1), return | The logo keeps its relative place, fully inside (Q1) |  |  |
+| P7.11 | Opacity | Slide **Opacity** in the label row | The logo fades live and the % at the end of the row follows (AC16) |  |  |
 | P7.12 | One undo per gesture | Undo after a slide, a drag and a pinch | Each undoes as one step |  |  |
-| P7.13 | Reset | Tap the grabber to open the options sheet, **Reset** | Back to center, ¼ width, 100% (AC18) |  |  |
-| P7.14 | Remove and Undo | In the options sheet, **Remove overlay**, then Undo | The logo is gone from this photo; Undo brings it back (AC17) |  |  |
+| P7.13 | Reset | Tap the **Reset** tool | Back to center, ¼ width, 100% (AC18) |  |  |
+| P7.14 | Remove and Undo | Tap the **Remove** tool, then Undo | The logo is gone from this photo and the control area is back to the hint, **Use saved overlay** and **Add logo**; Undo brings the logo and its controls back (AC17) |  |  |
 | P7.15 | Only on Overlay and Export | Look at Perspective, Rotate, Crop and Levels | The logo doesn't show there (Q4) |  |  |
 | P7.16 | Saved logo survives closing | With a logo placed, swipe Safari away, reopen the app, start a new photo, go to Overlay | The saved logo is offered with **Use saved overlay** (AC19) |  |  |
 | P7.17 | (HTTPS) Share with the logo | Set a semi-transparent logo, **Share** → Save Image | The saved photo in Photos includes the logo, matching the preview | ➖ |  |
+| P7.18 | Delete saved from the offer | With the saved logo offered but not used (as P7.16 leaves it), look at the tools, then tap **Delete saved** | **Delete saved** is the only tool. It doesn't ask first: the thumbnail and **Use saved overlay** go, leaving the hint and **Add logo** |  |  |
+| P7.19 | Options sheet | Open the sheet with the grabber, tap **Tips** | "Overlay options" holds only **Tips**; the three Overlay tips unfold in place, with no keyboard keys listed |  |  |
 
 ---
 
@@ -384,12 +394,12 @@ AC numbers here refer to the Front + Back Pairing page in Claude.
 | D11.2 | The back starts like a new photo | **Add back** again and choose `14_back_portrait_raw_white` | It opens on Perspective with the corners on the card and no levels; the top bar shows **Front / Back** with Back lit white, and the Unpair icon beside it (AC3, AC4) |  |  |
 | D11.3 | The front became 5:7 | Go to Crop, click **Front** | The front, also on Crop, with its box 5:7 and fitted to the card (AC2, AC5) |  |  |
 | D11.4 | Undo is per side | Rotate the front 1°, click **Back**, press Ctrl+Z | The back's last change is undone; the front keeps its 1° (AC5) |  |  |
-| D11.5 | Swap isn't an undo step | On Crop, **⇄ Swap**, then press Ctrl+Z | The crop stays landscape (AC8) |  |  |
-| D11.6 | Edits stay separate | **⇄ Swap** back. On the back, **Auto** levels and **Apply**, then click **Front** | The front has no levels (AC9) |  |  |
+| D11.5 | Swap isn't an undo step | On Crop, click the **Swap** tool, then press Ctrl+Z | The crop stays landscape (AC8) |  |  |
+| D11.6 | Edits stay separate | **Swap** back. On the back, **Auto** levels and **Apply**, then click **Front** | The front has no levels (AC9) |  |  |
 | D11.7 | Output dropdown and preview | Go to Export | A **Together / Separately** dropdown on its own line under Format and Size, Together chosen; the readout reads "Together · W × H px · JPEG"; the photo area shows both cards, front on the left, a thin line in the fill colour between them, no border (AC10, AC11, AC13) |  |  |
 | D11.8 | Together download | **Download**, open the file | One `<front>-pair.jpg` at the readout's size, matching the preview (AC11) |  |  |
-| D11.9 | Landscape stacks | On Crop, **⇄ Swap**; on Export, **Download** | The front is on top and the back below (AC11) |  |  |
-| D11.10 | Separately | **⇄ Swap** back. Choose **Separately**, **Download**, open both files | `<front>-front.jpg` and `<back>-back.jpg` (Chrome may ask once to allow several downloads), each with its side's framing and levels as on screen (AC12) |  |  |
+| D11.9 | Landscape stacks | On Crop, **Swap**; on Export, **Download** | The front is on top and the back below (AC11) |  |  |
+| D11.10 | Separately | **Swap** back. Choose **Separately**, **Download**, open both files | `<front>-front.jpg` and `<back>-back.jpg` (Chrome may ask once to allow several downloads), each with its side's framing and levels as on screen (AC12) |  |  |
 | D11.11 | Logo on one side only | Add a logo on the back's Overlay step; choose Together; **Download** | The logo is on the back's half only (AC11) |  |  |
 | D11.12 | Format applies to both | Choose PNG on the back, click **Front**, go to Export | PNG is chosen there too (AC10) |  |  |
 | D11.13 | Next card follows both sides | Choose JPEG, **Download**; then click **Back**, drag the Straighten ruler on Rotate, go to Export | **Next card →** shows after the Download, and is gone after the edit to the other side (AC16) |  |  |
@@ -412,9 +422,9 @@ AC numbers here refer to the Front + Back Pairing page in Claude.
 | --- | --- | --- | --- | --- | --- |
 | P11.1 | Top bar fits | Open `14_front_portrait_raw_white`, go to Export, **Add back**, choose `14_back_portrait_raw_white`; look at the top bar on Perspective, then pinch to zoom the photo | Open, **Front / Back**, the Unpair icon, Undo and Redo in one row; zoomed, Fit joins them, still in one row; nothing cut off (AC4) |  |  |
 | P11.2 | Switch keeps the step | Tap **Front**, then **Back** and **Front** a few times | Each side opens on Perspective too; note how long a switch takes (judge speed on the live site; over the LAN it is slower) (AC5) |  |  |
-| P11.3 | Crop is locked to 5:7 | Go to Crop | Only **5:7 card** can be picked (AC7) |  |  |
-| P11.4 | Swap turns both sides | **⇄ Swap**, then tap **Front** | Both sides are landscape (AC8) |  |  |
-| P11.5 | Export fits | **⇄ Swap** back. Go to Export | JPEG, 2000 px and Together in one row, labels whole; **Corner shots** fills the row under the readout; the photo area shows the joined image, front on the left, the same height as on other steps (AC10, AC13) |  |  |
+| P11.3 | Crop is locked to 5:7 | Go to Crop, then tap another preset | Every preset but **5:7 card** is dimmed and the tap picks nothing; the row rests scrolled to 5:7 card, and the label row reads "Pair: 5:7 only" beside the size (AC7) |  |  |
+| P11.4 | Swap turns both sides | Tap the **Swap** tool, then tap **Front** | Both sides are landscape (AC8) |  |  |
+| P11.5 | Export fits | **Swap** back. Go to Export | JPEG, 2000 px and Together in one row, labels whole; **Corner shots** fills the row under the readout; the photo area shows the joined image, front on the left, the same height as on other steps (AC10, AC13) |  |  |
 | P11.6 | Together Download | **Download** | One joined image, `<front>-pair` (AC11) |  |  |
 | P11.7 | Separately Download | Choose **Separately**, **Download** | Note whether both files arrive; Safari may show only the first (AC12) |  |  |
 | P11.8 | Unpair asks on a card | Tap the Unpair icon beside **Front / Back**, then tap the dimmed photo outside the card | A card over the dimmed photo asks **Keep front · Keep back · Cancel**; the controls below don't move; the tap outside closes it, still paired (AC6) |  |  |
