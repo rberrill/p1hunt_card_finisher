@@ -329,7 +329,7 @@
     settingsTimer = setTimeout(async () => {
       try {
         const record = await CF.Session.get('overlay');
-        if (!record || record.id !== saved.id) return;
+        if (!saved || !record || record.id !== saved.id) return;
         record.settings = saved.settings;
         await CF.Session.put('overlay', record);
       } catch (error) { /* not saved */ }
@@ -358,10 +358,13 @@
 
   // Clears storage only; the logo on this photo stays until Remove.
   async function deleteSaved() {
+    // Forgotten first, and any waiting settings save dropped, so that save can't write the
+    // logo back while the delete is under way.
+    clearTimeout(settingsTimer);
+    setSaved(null);
     try {
       await CF.Session.del('overlay');
     } catch (error) { /* already gone */ }
-    setSaved(null);
   }
 
   // After a resume (or an undo past a reload), finds the overlay image for the restored state.
