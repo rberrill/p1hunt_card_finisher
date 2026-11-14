@@ -18,7 +18,7 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 | `js/config.js` | `CONFIG`: every tunable, commented in place. Loaded first |
 | `js/engine.js` | `CardEngine`: pure functions, wrapped in `function CardEngineModule(globalScope)` |
 | `js/app/*.js` | The shell: modules sharing the `CF` namespace, loaded in order `core → adapters → state → view → levels → overlay → input → parts → shell → start-screen → debug-panel → perspective → rotate → crop → export → export-controls → corner-shots → pair → main`. `shell.js` builds the top bar and the tab bar, switches steps, mounts each step's control area and options sheet and arranges them for the phone or a wide screen, and binds and syncs every step's controls through the step's own functions |
-| `js/app/parts/*.js` | The parts the interface is built from (top bar, tab bar, control area, tool, slider, sheet and so on), one module each with a build function and an update function, plus the icons. A step composes parts; it doesn't restyle them |
+| `js/app/parts/*.js` | The parts the interface is built from (top bar, tab bar, control area, tool, slider, sheet, progress line, toast, alert card and so on), one module each with a build function and an update function, plus the icons. A step composes parts; it doesn't restyle them |
 | `icons/` | The app icon. `icon.svg` is the source; `favicon.ico` (16, 32, 48 px) and `apple-touch-icon.png` (180 px) are rendered from it |
 | `tests/` | Node and browser tests (see [tests/README.md](../tests/README.md)) |
 | `samples/` | Real phone photos with hand-placed ground truth for the regression test |
@@ -38,6 +38,12 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 - **Self-tests**, run by `tests/selftest.js` and by the app with `?selftest=1`.
 
 **Shell (`js/app/`).** The screen is a top bar, the photo, a control area of one fixed height on every step (with a grabber on its top edge), and, on a phone, a tab bar of the six steps along the bottom. Each step's module owns its control area and its options sheet: it builds both from the parts, binds their events and syncs them from the state, and `shell.js` mounts them and calls those functions. On a phone the sheet rises over the lower half of the photo from the grabber; on a wide screen the steps move into the top bar and every step's options are listed inline in a side panel, so no sheet opens.
+
+Every step is built this way; none keeps hand-written markup of its own. Export, progress, messages and questions work like this:
+
+- **Export's controls** are built by `buildExportControls` (`js/app/export-controls.js`): the control area's four rows (Size and Format; the readout and any note; Share, Download and Copy; Add back, Corner shots and Next card) and the options sheet. **Corner shots** is not part of that sheet. `buildCornerShotsControls` (`js/app/corner-shots.js`) builds a sheet of its own, which the Corner shots button opens, so its Share and Download can't be taken for the main export's.
+- **Progress.** `runWithProgress` (`js/app/export.js`) wraps every export and corner-shot render. It draws on the Progress line part of whichever sheet is open, or else of the open step's control area, and disables the save buttons until the task settles, so only one export runs at a time.
+- **Messages and questions.** `CF.toast` renders through the Toast part: a short message over the photo's bottom edge, or just above an open sheet, whose kind (information, warning or error) sets its color and icon. `CF.showPrompt` renders through the Alert card part: a question with two choices and Cancel on a card over the dimmed photo, above any open sheet (the upscale question, Unpair, and New photo or Replace side).
 
 Each module is `(function (CF) { … })(window.CF)`, takes core names with `const { … } = CF;`, calls other modules as `CF.name`, and ends with `Object.assign(CF, { … })`. Elements are built with `CF.makeEl(tag, attributes, ...children)`; HTML is never built from strings.
 
