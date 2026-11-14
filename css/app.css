@@ -1187,6 +1187,14 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* The keyboard help is for a wide screen only. */
 .sheet-tips-heading, .sheet-keys { display: none; }
 
+/* ---- step: Perspective ---- */
+/* Owned by js/app/perspective.js's phase. Phone-only and wide-only rules go in a
+   media block inside this banner (max-width: 760px or min-width: 761px). */
+
+/* ---- step: Rotate ---- */
+/* Owned by js/app/rotate.js's phase. Phone-only and wide-only rules go in a
+   media block inside this banner (max-width: 760px or min-width: 761px). */
+
 /* ---- shell: the phone ---- */
 @media (max-width: 760px) {
   .workspace { flex-direction: column; }
