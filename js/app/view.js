@@ -12,6 +12,8 @@
   // Zoom limits, as screen px per world px.
   const MIN_ZOOM = 0.01;
   const MAX_ZOOM = 64;
+  // The dash of an invalid corner outline, in CSS px: 7 on, 5 off (frame P12).
+  const INVALID_QUAD_DASH_PX = [7, 5];
 
   /* ---------- views (zoom and pan) ----------
      A view maps world (image) coordinates to the screen in CSS px:
@@ -375,8 +377,10 @@
     drawEdgeExtensions(ctx, view, quad);
     ctx.lineWidth = CONFIG.handle.lineWidth;
     ctx.strokeStyle = isValid ? CONFIG.colors.quad : CONFIG.colors.quadInvalid;
+    ctx.setLineDash(isValid ? [] : INVALID_QUAD_DASH_PX);
     tracePolygon(ctx, quad);
     ctx.stroke();
+    ctx.setLineDash([]);
     drawHandles(ctx, quad);
     const gesture = app.gesture;
     if (gesture && gesture.type === 'handle') {

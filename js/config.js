@@ -29,7 +29,8 @@ const CONFIG = {
   handle: { cornerRadius: 11, edgeSize: 10, hitRadius: 24, lineWidth: 2 },
   colors: {
     quad: '#e5322d',
-    quadInvalid: '#ffb02e',
+    // Corners that cross or fold inward: red and dashed (D13: amber is for warnings only).
+    quadInvalid: '#e5322d',
     handle: '#ffffff',
     handleSelected: '#e5322d',
     extend: 'rgba(255,255,255,0.22)',
