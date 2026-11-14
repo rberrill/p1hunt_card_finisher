@@ -34,7 +34,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - No messages a user can't act on (such as "needs HTTPS").
 - Nothing blocks the photo, except a temporary flyout the user opens or an alert they must answer before they can go on.
 
-**Brand:** matte black, white, and P1Hunt red (`#e5322d`, the UI accent), retro motorsport, no gradients. Inspired by F1, never its trademarks: no F1, FIA, team or driver logos or marks in the app or the docs.
+**Brand:** matte black, white, and P1Hunt red (`#e5322d`, kept for the single main action on a screen), bold upright type, flat shapes, no gradients, no italics. Amber only on a warning; no green. Selected is a solid white fill (Rich, 2026-11-14). Inspired by F1, never its trademarks: no F1, FIA, team or driver logos or marks in the app or the docs.
 
 ## Hard constraints (still binding)
 
@@ -58,28 +58,40 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 - **The card is the only target.** No case or slab detection; the detector prefers the inner of nested quads. Flatten 0% replaced Square up.
 - **Default export:** 1:1 fit to card, 2000 px, JPEG 0.92. No HEIC decoder (Safari decodes natively).
+- **The 1.10 redesign** (Rich, 2026-11-14; the agreed build plan, its 41 answers and the approved wording are in the decision log). It is built on `main` in six phases, each with its own UAT, and released once as 1.10.0. Until a phase lands, the code still has the old layout for that part. No capability is added or removed. The stack stays plain static files, with `ui.js` split into one file per part; no type checks, so npm stays out.
 - **Phone layout:**
-  - Header, photo, a 192 px control area (the same on every step), then the action bar, whose first button is the step menu. More options is a full-width button bar on every step.
-  - Non-essentials go under More options. Status messages appear only when actionable.
-- **Levels:** picks edit a draft until Apply, and levels never carry over between photos (Rich). White at 245 and black at 8 in linear light, and Auto's black from near-neutral darks only, are Claude's calls, accepted in UAT (1.0, 1.8).
-- **Next card →:** shown on Export only while the current edits are exported (Rich). Its place, in the control area (the action bar is full), replacing the export note while shown, is Claude's measured call, accepted in UAT (1.8).
-- **Tap to find card** (Perspective, More options): the button, then a tap on the card, runs detection at once. No Detect or Clear seed button, no marker; the tapped point is used for that run only.
+  - Top bar, photo, a 200 px control area in three rows (label row, control row, tool row), then a six-step tab bar. The area is the same on every step, so the photo never changes size. No bars before a photo is open. The step menu, the "next step →" buttons and the More options bar are gone.
+  - Top bar: Open (always an icon) on the left; Front | Back with Unpair beside it in the center while paired; Undo and Redo on the right; Fit only while the photo is zoomed or panned.
+  - One adjustment at a time: one adjustment line and one row of tools. A tool is a mode (it swaps the line; white fill when selected), an action (it does one thing) or a switch (white ring and On).
+  - Everyday things in place, the rest in the step's options sheet: it covers about the lower half of the photo, opens from the grabber on the control area's top edge (drag up or tap; the grabber straddles the edge) and closes on a tap outside. The photo doesn't resize. Each sheet has a Tips row that opens in place (Levels' sheet is its tips); keyboard help is desktop only.
+  - Status messages take the label row, and appear only when actionable. Export progress is a line on the top edge of the control area or the open sheet. The toast keeps its place over the photo's bottom edge, and rides above an open sheet.
+  - The debug panel sits above the control area.
+- **Desktop layout:** steps in the top bar, a 380 px right-hand panel, options always open inline, Fit always in the bar, keyboard help under "Tips and keys". Same parts as the phone, arranged differently.
+- **Perspective:** Nudge is the resting line; Flatten is a mode (one more tap, Rich's choice); Candidate is an action; Snap and Preview are switches. The confidence readout is always at the right of the label row.
+- **Rotate:** the Straighten ruler is the resting line, with Reset; Flip is a mode (Horizontal / Vertical); 90° left and right are actions; Fill frame is a switch; Grid is in the sheet. A typed angle lifts the label row above the keyboard, with ± and Done.
+- **Crop:** one sideways-scrolling row of presets, cut off at the right edge so it reads as scrollable, resting scrolled to the selected preset; Fit to card and Swap are tools.
+- **Levels:** picks edit a draft until Apply, and levels never carry over between photos (Rich). Discard and Apply sit in the label row with a one-line instruction between them, which stays while a pick is armed (no toast); Auto and Clear are tools; the unapplied mark is a white dot on the Levels tab. White at 245 and black at 8 in linear light, and Auto's black from near-neutral darks only, are Claude's calls, accepted in UAT (1.0, 1.8).
+- **Export:** four rows: Size and Format (one tap each); the readout and any note; Share, Download, Copy; then Add back, Corner shots and Next card. Quality, Interpolation, Fill outside photo, the edits files and the source line are in its sheet.
+- **Next card:** shown on Export only while the current edits are exported (Rich), in Export's bottom row, in white; the note stays visible beside it. **Add back** always shows there while unpaired.
+- **Tap to find card** (Perspective's sheet): the row, then a tap on the card, runs detection at once. The armed status carries a one-tap Cancel. No Detect or Clear seed button, no marker, no Find card button on other statuses; the tapped point is used for that run only.
 - **Crop orientation follows the card** (after Perspective + Rotate); Swap overrides it. Claude's design for a bug Rich found, accepted in UAT (1.3.2).
-- **Share / Copy:** both need a secure page, so they're *hidden* where unavailable, never greyed out. Download is always shown and is a plain download.
+- **Fill outside photo** is in Export's sheet, with the other export settings.
+- **Share / Copy:** both need a secure page, so they're *hidden* where unavailable, never greyed out; Copy is also hidden for a pair set to Separately. Download is always shown and is a plain download.
 - **Session restore:** the last photo and its edits are kept in IndexedDB, and the app asks Resume / Start fresh instead of resuming automatically.
 - **Overlay:**
   - Placement `{id, aspect, cx, cy, w, opacity}` is relative to the final crop and clamped fully inside. The engine owns the maths.
   - It's composited last (Levels never touches it) and shows only on Overlay and Export.
+  - Opacity takes the label row, the move and size pads the control row; Replace logo, Reset and Remove are tools. Delete saved overlay is in the sheet.
   - On that step the photo is locked: gestures move the logo. Nine snap rings sit on the photo (corners, side middles, center); a still tap snaps and a drag moves.
   - Drop and paste add a logo there; elsewhere they open a photo.
   - The saved logo is offered with "Use saved overlay", not auto-applied. Delete clears storage only. (That Start fresh keeps it is Claude's call, accepted in UAT.)
   - Edits files embed the logo.
-- **Corner shots** (Export → More options): a 2×2 sheet (the default; 1:1, no outer margin, since eBay bans added borders) or four photos, Share + Download as for the main export. Each is a square framed like the export (same tilt), at the photo's real resolution, with levels and never the overlay. No quality warning: the readout shows the size and the user decides. When the file (the sheet, or each photo) would be under 2000 px, Download and Share ask **Upscale to 2000 px?** (Yes / No) on a card over the photo; Yes renders the tiles so the file is exactly 2000 px, bicubic, with an unsharp mask (Rich, 2026-11-01). The output choice is a preference, not edit state.
+- **Corner shots** (its own sheet, from the Corner shots button on Export, with the progress line on its top edge): a 2×2 sheet (the default; 1:1, no outer margin, since eBay bans added borders) or four photos, Share + Download as for the main export. Each is a square framed like the export (same tilt), at the photo's real resolution, with levels and never the overlay. No quality warning: the readout shows the size and the user decides. When the file (the sheet, or each photo) would be under 2000 px, Download and Share ask **Upscale to 2000 px?** (Yes / No) on a card over the photo; Yes renders the tiles so the file is exactly 2000 px, bicubic, with an unsharp mask (Rich, 2026-11-01). The output choice is a preference, not edit state.
 - **Upscale question on the main export** (Rich, 2026-11-01): Download, Share and Copy ask **Upscale to <Size> px?** when the saved file's long edge would be under the chosen Size: a single photo's crop (Yes renders at the Size, bicubic, sharpened before the overlay), a pair's Together image (Yes fits its long edge to exactly the Size) or either of Separately's files (Yes gives each the Size). Original never asks; the answer is per export, not edit state. The sharpen settings are shared (`CONFIG.upscale`).
 - **Front + back pairs** (Add back on Export; the last new feature of version 1):
-  - The header gets a Front | Back chip and ⨯ (that Open and Preview go icon-only on the phone is Claude's measured call, for Rich to overrule in UAT); switching keeps the step you're on. Unpair asks Keep front / Keep back; Open, drop and paste ask New photo / Replace side; both on a Resume-style card over the dimmed photo (a tap outside cancels). Next card after the pair's export doesn't ask.
-  - Both sides are locked to 5:7; Swap turns both and isn't an undo step; export settings are shared; the 5:7 lock never becomes the remembered preset.
-  - Together = the two exports joined (portrait side by side, landscape stacked, front first, the corner sheet's divider, no margin, size per card, each side's own logo), or Separately; a dropdown preference. Export previews Together. One full-resolution photo in memory at a time.
+  - Front | Back sits in the center of the top bar on every step, with Unpair beside it; switching keeps the step you're on. Unpair asks Keep front / Keep back; Open, drop and paste ask New photo / Replace side; both on a Resume-style card over the dimmed photo (a tap outside cancels). Next card after the pair's export doesn't ask.
+  - Both sides are locked to 5:7; Swap turns both and isn't an undo step; export settings are shared; the 5:7 lock never becomes the remembered preset. Crop's label row says "Pair: 5:7 only".
+  - Together = the two exports joined (portrait side by side, landscape stacked, front first, the corner sheet's divider, no margin, size per card, each side's own logo), or Separately; a one-tap two-part control beside the readout, and a preference. Export previews Together. One full-resolution photo in memory at a time.
 - **Versioning:** SemVer by user-visible change. Process and tooling changes don't bump the major.
 
 ## Map
