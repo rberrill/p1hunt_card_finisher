@@ -14,11 +14,11 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 | Path | Role |
 |---|---|
 | `index.html` | Markup only, with a Content Security Policy `<meta>` before any asset |
-| `css/app.css` | All styles; phone rules in the `@media (max-width: 760px)` block at the end |
+| `css/app.css` | All styles: each part under its own banner, then the shell's layout for the phone (under 761 px wide) and for a wide screen |
 | `js/config.js` | `CONFIG`: every tunable, commented in place. Loaded first |
 | `js/engine.js` | `CardEngine`: pure functions, wrapped in `function CardEngineModule(globalScope)` |
-| `js/app/*.js` | The shell: modules sharing the `CF` namespace, loaded in order `core → adapters → state → view → levels → overlay → input → parts → shell → start-screen → debug-panel → perspective → rotate → crop → export → export-controls → corner-shots → pair → main`. `shell` binds and syncs the controls; each step's controls are in its own module |
-| `js/app/parts/*.js` | The parts the interface is built from (top bar, tab bar, tool, slider, sheet and so on), one module each with a build function and an update function, plus the icons |
+| `js/app/*.js` | The shell: modules sharing the `CF` namespace, loaded in order `core → adapters → state → view → levels → overlay → input → parts → shell → start-screen → debug-panel → perspective → rotate → crop → export → export-controls → corner-shots → pair → main`. `shell.js` builds the top bar and the tab bar, switches steps, mounts each step's control area and options sheet and arranges them for the phone or a wide screen, and binds and syncs every step's controls through the step's own functions |
+| `js/app/parts/*.js` | The parts the interface is built from (top bar, tab bar, control area, tool, slider, sheet and so on), one module each with a build function and an update function, plus the icons. A step composes parts; it doesn't restyle them |
 | `icons/` | The app icon. `icon.svg` is the source; `favicon.ico` (16, 32, 48 px) and `apple-touch-icon.png` (180 px) are rendered from it |
 | `tests/` | Node and browser tests (see [tests/README.md](../tests/README.md)) |
 | `samples/` | Real phone photos with hand-placed ground truth for the regression test |
@@ -37,7 +37,9 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 - **Untrusted input:** `applyConfigOverrides` (URL settings, kept inside `CONFIG_LIMITS` from `js/config.js`) and `sanitizeState` (edits files, Resume, stored settings).
 - **Self-tests**, run by `tests/selftest.js` and by the app with `?selftest=1`.
 
-**Shell (`js/app/`).** Each module is `(function (CF) { … })(window.CF)`, takes core names with `const { … } = CF;`, calls other modules as `CF.name`, and ends with `Object.assign(CF, { … })`. Elements are built with `CF.makeEl(tag, attributes, ...children)`; HTML is never built from strings.
+**Shell (`js/app/`).** The screen is a top bar, the photo, a control area of one fixed height on every step (with a grabber on its top edge), and, on a phone, a tab bar of the six steps along the bottom. Each step's module owns its control area and its options sheet: it builds both from the parts, binds their events and syncs them from the state, and `shell.js` mounts them and calls those functions. On a phone the sheet rises over the lower half of the photo from the grabber; on a wide screen the steps move into the top bar and every step's options are listed inline in a side panel, so no sheet opens.
+
+Each module is `(function (CF) { … })(window.CF)`, takes core names with `const { … } = CF;`, calls other modules as `CF.name`, and ends with `Object.assign(CF, { … })`. Elements are built with `CF.makeEl(tag, attributes, ...children)`; HTML is never built from strings.
 
 **Code style.** Whole-word names, one statement per line and lines of 100 characters at most; `node tests/selftest.js` checks the parts a tokenizer can see. The full rules are in `.claude/rules/code-style.md`.
 

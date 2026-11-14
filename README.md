@@ -8,30 +8,28 @@ It's a single web page that runs entirely in your browser. **Your photos never l
 
 ## What it does
 
-Six steps, in order:
+Six steps, in order. On a phone they're the tabs along the bottom of the screen; on a wide screen they're in the top bar. Each step's controls sit under the photo. Its less-used options are in an **options sheet**: tap the grabber on the top edge of the controls, or drag it up, and tap outside, drag down, tap ✕ or press Escape to close it. Each sheet ends with **Tips**. On a wide screen every option is listed in the panel on the right instead.
 
 1. **Perspective.** Finds the card's four corners automatically, even inside a case or slab, and corrects the camera angle.
-   - **Flatten** slider: 100% gives a flat 5:7 card, as if scanned; 0% squares it up but keeps some depth.
-   - Drag corners or edges, with a magnifier that stays clear of your finger.
-   - Double-tap a handle to zoom in on it; on phones, arrow buttons nudge it a pixel at a time.
-   - **Candidate n/3** tries the next-best detection when the first pick catches a stand or case edge.
-   - Corners on the wrong card? **Tap to find card** (under More options), then tap the card: detection runs again around that spot.
-2. **Rotate.** 90° turns, flips, and fine rotation in 0.1° steps.
+   - Drag corners or edges, with a magnifier that stays clear of your finger. Double-tap a handle to zoom in on it.
+   - A row of tools: **Nudge** moves the selected handle a pixel at a time; **Flatten** sets how flat the card comes out (100% gives a flat 5:7 card, as if scanned; 0% squares it up but keeps some depth); **Candidate** tries the next-best detection when the first pick catches a stand or case edge; **Snap** pulls a dragged handle onto the nearest detected edge; and **Preview** shows the corrected result. The detection confidence is always shown.
+   - Corners on the wrong card? **Tap to find card** (in the options sheet), then tap the card: detection runs again around that spot. **Cancel** stops it waiting.
+2. **Rotate.** Drag the **Straighten** ruler, or tap the angle to type it (on a phone, **±** and **Done** sit above the keyboard). **90° left** and **90° right** turn the photo, **Flip** mirrors it, and **Fill frame** zooms in so a tilted photo leaves no empty corners.
 3. **Crop.** Free, Original, 1:1, 4:3, 5:4, 3:2, 16:9 and 5:7 card. Presets follow the card's orientation (a portrait card gets 4:5, 2:3, 9:16…), and **Swap** flips them. **Fit to card** frames the card with a little padding.
 4. **Levels.** Set a white point (and optionally a black point) by tapping the image, or start from **Auto**. Press and hold the photo to compare before and after. Changes stay a draft until you **Apply** them.
 5. **Overlay.** Add your logo or watermark (PNG, WebP, JPG or SVG, up to 5 MB) on top of the photo. Drag it, resize it with a corner or a pinch, nudge it, tap a ring on the photo to snap it to a corner, the middle of a side, or the center, and set its opacity. Transparent logos keep their soft edges. Your last logo is remembered in the browser, so next time it's one tap: **Use saved overlay**.
-6. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size.
+6. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size. **Fill outside photo** (in the options sheet) sets the color of any area outside the photo.
    - Where the browser supports it, **Share** opens the share sheet; on iPhone, Save Image puts the result straight into Photos.
    - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
    - Exports are rendered from the full-resolution original. When the crop is smaller than the chosen size, the app asks **Upscale to 2000 px?** (or whichever size you chose) first: Yes enlarges and sharpens it to that size, No keeps the photo's own resolution.
    - Once the photo is exported, **Next card →** opens the next photo, with the same crop and export settings.
-   - **Add back** pairs the card's front with its back. A **Front | Back** switch in the header moves between them, both are cropped to the 5:7 card shape, and the pair saves **Together** (one image, side by side or stacked) or **Separately** (two files).
-   - **Corner shots** (under More options): close-ups of the card's four corners for condition photos, as one 2×2 sheet or four photos, cut from the original at its own resolution with the same levels and no logo, and upscaled to 2000 px if you choose.
-   - The app version is shown at the bottom of More options; include it when you report a problem.
+   - **Add back** pairs the card's front with its back. A **Front | Back** switch in the top bar (with **Unpair** beside it) moves between them, both are cropped to the 5:7 card shape, and the pair saves **Together** (one image, side by side or stacked) or **Separately** (two files).
+   - **Corner shots** (in the options sheet): close-ups of the card's four corners for condition photos, as one 2×2 sheet or four photos, cut from the original at its own resolution with the same levels and no logo, and upscaled to 2000 px if you choose.
+   - **Save edits** and **Load edits** are in the options sheet, and the app version is shown at the bottom of it; include the version when you report a problem.
 
 Also:
-- **Undo / redo** (50 steps).
-- **Resume:** the last photo and its edits are kept on your device, so if the page reloads or the tab closes, you can pick up where you left off.
+- **Undo / redo** (50 steps), in the top bar. **Fit** returns a zoomed photo to the screen.
+- **Resume:** the last photo and its edits are kept on your device, so if the page reloads or the tab closes, the start screen offers a **Resume** card to pick up where you left off.
 - **Save / load edits** as a small JSON file (with the overlay logo embedded). Reopening the same photo and loading its edits gives an identical export.
 - **Phone-first layout,** which also works on desktop.
 
@@ -45,7 +43,7 @@ Also:
   python -m http.server 8765
   ```
 
-Load a photo with **Open**, drag and drop, or paste. JPEG, PNG and WebP work everywhere. HEIC opens in Safari only; in other browsers, save the photo as JPEG first.
+Load a photo with **Open** (in the top bar, or on the start screen), drag and drop, or paste. JPEG, PNG and WebP work everywhere. HEIC opens in Safari only; in other browsers, save the photo as JPEG first.
 
 ### Keyboard shortcuts
 
@@ -55,6 +53,7 @@ Load a photo with **Open**, drag and drop, or paste. JPEG, PNG and WebP work eve
 | Shift+Ctrl/Cmd+Z or Ctrl/Cmd+Y | Redo |
 | 1 – 6 | Go to a step |
 | F | Fit the photo to the screen |
+| Escape | Close the options sheet |
 | Tab / Shift+Tab | Perspective: select the next / previous handle |
 | Arrow keys | Perspective: nudge the selected handle 1 px (Shift: 10 px) |
 | C (hold) | Levels: compare without levels |
@@ -99,7 +98,7 @@ Pinch or scroll to zoom; drag empty space to pan.
 
 ## Reporting a problem
 
-Open an issue on the repository's Issues tab. Say which device and browser you used and the app version (Export → More options, at the bottom), and attach the photo if you can share it, with its edits file (**Save edits** under the same More options), so the result can be reproduced exactly. For a security concern, see [SECURITY.md](SECURITY.md) instead.
+Open an issue on the repository's Issues tab. Say which device and browser you used and the app version (at the bottom of Export's options), and attach the photo if you can share it, with its edits file (**Save edits** in the same options), so the result can be reproduced exactly. For a security concern, see [SECURITY.md](SECURITY.md) instead.
 
 ## Changes
 
