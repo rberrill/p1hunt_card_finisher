@@ -99,23 +99,8 @@
       <section data-panel="rotate"></section>
 
       <!-- ==== step: Crop (js/app/crop.js) ==== -->
-      <section data-panel="crop">
-        <div class="controls">
-          <div class="chips scroller" id="cropChips"></div>
-          <div class="readout" id="cropReadout"></div>
-          <details class="more">
-            <summary>More options</summary>
-            <div class="hint">
-              Drag inside the box to move it, handles to resize. Shift keeps the aspect in Free
-              mode.
-            </div>
-            <button class="btn wide" data-reset="crop">Reset crop</button>
-          </details>
-        </div>
-        <div class="action-bar">
-          <button class="btn primary" id="btnFitToCard">Fit to card</button>
-        </div>
-      </section>
+      <!-- Its control area and options sheet are built by buildCropControls(). -->
+      <section data-panel="crop"></section>
 
       <!-- ==== step: Levels (js/app/levels.js) ==== -->
       <!-- Its control area and tips sheet are built by buildLevelsControls(). -->
