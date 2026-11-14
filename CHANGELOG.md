@@ -20,7 +20,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Crop:** the presets are one row you swipe sideways. It runs off the right edge so you can see there's more, and it rests on the preset you chose; on a wide screen the presets wrap instead. The crop's size is always shown. **Fit to card** and **Swap** are tools under the row, and **Reset crop** is in the options.
 - **Levels:** **Discard** and **Apply** sit either side of a one-line instruction that says what to do next. It stays while a pick waits for your tap ("Tap something white"), in place of the message that used to show for a few seconds. **White** and **Black** are now **Pick white** and **Pick black**, and each shows the color you picked. **Auto** and **Clear** are tools. The step's options are its tips.
 - **Overlay:** with a logo placed, **Opacity**, the move arrows and the **−** and **+** size buttons are all on screen, above four tools: **Replace logo**, **Reset**, **Remove** (was Remove overlay) and **Delete saved** (was Delete saved overlay). While a saved logo is on offer, **Use saved overlay**, **Add logo** and **Delete saved** show. A problem with a logo file shows in the line above the controls. The options hold only the tips.
+- **Export:** four rows, with everything you save with on screen.
+  - **Size** (**1080**, **2000**, **3000** or **Original**) and **Format** (**JPEG**, **PNG** or **WebP**) are one tap each, where they were dropdowns.
+  - The readout, with any note on a second line under it. One note is reworded: "Levels has unapplied changes; export uses the applied levels."
+  - **Share**, **Download** and **Copy**. Share and Copy are still hidden where they can't work, and **Download** is then the red button.
+  - **Add back**, **Corner shots** and, once the current edits are exported, **Next card** in white. **Add back** is always there while no pair is open (a note used to hide it), and a note now stays visible beside **Next card** instead of giving way to it.
+
+  While a pair is open, **Together | Separately** is a two-part control beside the readout, one tap, where it was a dropdown.
+- **Export's options** hold **Quality**, **Interpolation**, **Fill outside photo**, **Save edits** and **Load edits**, **Reset export settings**, the line describing the photo as the app received it, the app version, and **Tips**.
+- **Corner shots** has a sheet of its own, opened by the **Corner shots** button on Export, with its previews, the sheet or four photos choice, and its own **Share corners** and **Download corners**. On a wide screen it's listed in the panel on the right under its own heading.
+- **Export progress** is a thin red line along the top edge of the controls, or of the Corner shots sheet while the corners save, so it's in view where you tapped. The old bar could scroll off screen there.
+- **Questions.** **Upscale to 2000 px?**, Unpair's **Keep front** or **Keep back**, and **New photo** or replace the side you're on are asked on a new card over the dimmed photo. Tap outside the card, or **Cancel**, to back out. Asked from Corner shots, the card sits above the open sheet.
 - **Colors and marks.** The outline shown while you drag a file over the page is white and says what dropping it will do. Amber now means a warning and nothing else: unapplied levels show as a white dot on the Levels tab.
+- **Messages over the photo** now look different by kind: a white pill for information, amber with a triangle for a warning, and red with a circle for an error. The words are the same. While a sheet is open, a message sits just above it.
 
 ### Fixed
 - When the browser can't save the chosen format (WebP on Safari) and saves a PNG instead, the message saying so was replaced at once by the "Exported…" message, so it was never seen. It's now part of that message, shown as a warning, on Download, Share, a pair's export and the corner shots.

@@ -25,19 +25,22 @@ Six steps, in order. On a phone they're the tabs along the bottom of the screen;
    - On the photo: drag the logo, resize it with a corner or a pinch, and tap a ring to snap it to a corner, the middle of a side, or the center.
    - Under the photo: **Opacity**, arrows that nudge the logo, and **−** and **+** to resize it, then four tools: **Replace logo**, **Reset**, **Remove** and **Delete saved**.
    - Your last logo is remembered in the browser, so next time it's one tap: **Use saved overlay**. **Delete saved** forgets it, and leaves the logo on the photo you're on.
-6. **Export.** JPEG, PNG or WebP at 1080, 2000 or 3000 px on the long edge, or original size. **Fill outside photo** (in the options sheet) sets the color of any area outside the photo.
+6. **Export.** Tap a **Size** (1080, 2000 or 3000 px on the long edge, or Original) and a **Format** (JPEG, PNG or WebP). The readout under them gives the size the file will be, with any note on a second line.
    - Where the browser supports it, **Share** opens the share sheet; on iPhone, Save Image puts the result straight into Photos.
-   - **Download** saves the file. **Copy** puts it on the clipboard where supported (it's hidden otherwise).
+   - **Download** saves the file. **Copy** puts it on the clipboard. Share and Copy are hidden where the browser can't do them, and Download is then the main button.
+   - While a file is being made, a thin red line runs along the top edge of the controls.
    - Exports are rendered from the full-resolution original. When the crop is smaller than the chosen size, the app asks **Upscale to 2000 px?** (or whichever size you chose) first: Yes enlarges and sharpens it to that size, No keeps the photo's own resolution.
-   - Once the photo is exported, **Next card →** opens the next photo, with the same crop and export settings.
-   - **Add back** pairs the card's front with its back. A **Front | Back** switch in the top bar (with **Unpair** beside it) moves between them, both are cropped to the 5:7 card shape, and the pair saves **Together** (one image, side by side or stacked) or **Separately** (two files).
-   - **Corner shots** (in the options sheet): close-ups of the card's four corners for condition photos, as one 2×2 sheet or four photos, cut from the original at its own resolution with the same levels and no logo, and upscaled to 2000 px if you choose.
-   - **Save edits** and **Load edits** are in the options sheet, and the app version is shown at the bottom of it; include the version when you report a problem.
+   - Once the photo is exported, **Next card** opens the next photo, with the same crop and export settings.
+   - **Add back** pairs the card's front with its back. A **Front | Back** switch in the top bar (with **Unpair** beside it) moves between them, both are cropped to the 5:7 card shape, and the pair saves **Together** (one image, side by side or stacked) or **Separately** (two files); pick which beside the readout.
+   - **Corner shots** opens a sheet of its own: close-ups of the card's four corners for condition photos, as one 2×2 sheet or four photos, cut from the original at its own resolution with the same levels and no logo, and upscaled to 2000 px if you choose. **Share corners** and **Download corners** save them.
+   - The options sheet has **Quality**, **Interpolation**, **Fill outside photo** (the color of any area outside the photo), **Save edits** and **Load edits**, and **Reset export settings**. The app version is shown near the bottom of it; include the version when you report a problem.
 
 Also:
 - **Undo / redo** (50 steps), in the top bar. **Fit** returns a zoomed photo to the screen.
 - **Resume:** the last photo and its edits are kept on your device, so if the page reloads or the tab closes, the start screen offers a **Resume** card to pick up where you left off.
 - **Save / load edits** as a small JSON file (with the overlay logo embedded). Reopening the same photo and loading its edits gives an identical export.
+- **Questions** (the upscale question, which side to keep when you unpair, and whether a new photo ends a pair or replaces the side you're on) are asked on a card over the dimmed photo. Tap outside the card to cancel.
+- **Messages** show over the bottom edge of the photo, or just above an open sheet: a white pill for information, amber with a triangle for a warning, red with a circle for an error.
 - **Phone-first layout,** which also works on desktop.
 
 ## Using it
@@ -105,7 +108,7 @@ Pinch or scroll to zoom; drag empty space to pan.
 
 ## Reporting a problem
 
-Open an issue on the repository's Issues tab. Say which device and browser you used and the app version (at the bottom of Export's options), and attach the photo if you can share it, with its edits file (**Save edits** in the same options), so the result can be reproduced exactly. For a security concern, see [SECURITY.md](SECURITY.md) instead.
+Open an issue on the repository's Issues tab. Say which device and browser you used and the app version (near the bottom of Export's options), and attach the photo if you can share it, with its edits file (**Save edits** in the same options), so the result can be reproduced exactly. For a security concern, see [SECURITY.md](SECURITY.md) instead.
 
 ## Changes
 
