@@ -408,11 +408,13 @@
     byId('toolClearLevels').addEventListener('click', clearLevelsDraft);
   }
 
-  // The label row's instruction: what to tap while a pick is armed; else how to compare, once
-  // there is a draft or applied levels; else the two ways in.
+  // The label row's instruction: what to tap while a pick is armed; else how to compare, while
+  // the photo shows levels (a draft's or the applied ones); else the two ways in. After Clear
+  // the photo shows none, so there is nothing to compare.
   function levelsHint() {
     if (app.dropper) return LEVELS_HINTS[app.dropper];
-    if (app.levelsPending || app.state.levels) return LEVELS_HINTS.compare;
+    const shown = draftLevels() || {};
+    if (shown.white || shown.black) return LEVELS_HINTS.compare;
     return LEVELS_HINTS.start;
   }
 
