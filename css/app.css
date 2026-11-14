@@ -1072,7 +1072,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* The old controls of a step its phase hasn't converted: they may be taller than the area for
    now, so the area scrolls on those steps only. */
 .control-area.is-interim { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.control-area .mini { margin-bottom: 8px; }
 
 /* The grabber's target straddles the area's top edge; where it overlaps a control in the
    label row (Rotate's angle, for one), the control takes the tap. */
@@ -1424,8 +1423,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   }
   .chips.scroller::-webkit-scrollbar { display: none; }
   .chips.scroller .chip { flex: none; }
-  .result-group { display: none; }
-  .mini { max-width: 180px; }
 
   /* ---- the 1.10 parts on the phone ---- */
   /* Crop presets: one row that scrolls sideways and runs off the right edge, so it reads as

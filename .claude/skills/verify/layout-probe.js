@@ -324,7 +324,10 @@
     };
     tips.querySelector('button').click();
     const areTipsOpen = !tips.querySelector('.sheet-tips').hidden;
-    sheet.querySelector('.sheet-scrim').click();
+    // A tap: the backdrop only closes the sheet when the press began on it.
+    const scrim = sheet.querySelector('.sheet-scrim');
+    scrim.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    scrim.click();
     await wait(SHEET_SETTLE_MS);
     let answer = 'none';
     const choices = [
