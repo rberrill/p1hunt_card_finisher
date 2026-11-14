@@ -1194,6 +1194,63 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* ---- step: Rotate ---- */
 /* Owned by js/app/rotate.js's phase. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
+/* The angle is a button (it opens the typed angle): a 44 px target, its text underlined with
+   dots and followed by a pencil (frame R1). */
+.rotate-angle {
+  height: 44px;
+  margin: 0;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.rotate-angle:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.rotate-angle:disabled { opacity: .38; cursor: default; }
+.rotate-angle-face {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 1px;
+  border-bottom: 2px dotted var(--quiet);
+}
+.rotate-angle-face .icon { stroke-width: 2; color: var(--quiet); }
+/* The typed angle's field, where the angle was. 17 px text: under 16 px, iOS zooms the page. */
+.rotate-angle-field {
+  width: 88px;
+  height: 36px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--control);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.rotate-angle-field:focus { outline: 2px solid var(--ink); outline-offset: 0; }
+/* ± is one character: a small button that narrow would be under 44 px wide. */
+#btnAngleSign { min-width: 44px; }
+/* Holds the label row's place while it is lifted, so the ruler doesn't move. */
+.rotate-lift-gap { height: 44px; flex: none; }
+@media (max-width: 760px) {
+  /* While the angle is typed, the label row rides on the keyboard's top edge: rotate.js sets
+     its top from the visual viewport (frame R3). */
+  .label-row.is-lifted {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    height: 56px;
+    padding: 6px 16px;
+    background: var(--raised);
+    border-top: 1px solid var(--edge);
+  }
+}
 
 /* ---- shell: the phone ---- */
 @media (max-width: 760px) {
