@@ -1,6 +1,8 @@
 /* =====================================================================
-   js/app/levels.js: Levels. The draft and Apply / Discard, Auto, the dropper, compare, and
-   the Levels overlays.
+   js/app/levels.js: Levels. The draft and Apply / Discard, Auto, the dropper, compare, the
+   Levels overlays, and the step's controls: its control area (Discard, the one-line
+   instruction and Apply in the label row; Pick white and Pick black in the control row; Auto
+   and Clear in the tool row) and its sheet, which is the tips themselves.
    Shell modules share one namespace, CF (created in core.js). Names from core are
    destructured below; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
@@ -12,6 +14,7 @@
     Mat3,
     Vec2,
     byId,
+    makeEl,
     elements,
     clone,
     makeCanvas,
@@ -23,6 +26,24 @@
 
   // A white pick must be at least this much brighter than the black point, and vice versa.
   const MIN_LUMA_GAP = 20;
+  // The label row's instruction, one line for each state (the plan's approved wording,
+  // 14 November): a pick armed for white or black, levels to compare against, or neither.
+  const LEVELS_HINTS = {
+    white: 'Tap something white',
+    black: 'Tap something black',
+    compare: 'Hold the photo to compare',
+    start: 'Pick white, or try Auto',
+  };
+  // The step's tips (the plan's approved wording) and its keyboard help on a wide screen
+  // (frame DT5).
+  const LEVELS_TIPS = [
+    'White: tap a grading label or the card’s white border; avoid foil and reflections. '
+      + 'Black is optional.',
+    'Auto estimates both from the framed image; colored backdrops can fool it, so check the '
+      + 'result.',
+    'Hold the photo to compare with no levels. Clear, then Apply, removes levels.',
+  ];
+  const LEVELS_KEYS = ['Hold C, or press and hold the photo, to compare.'];
 
   /* ---------- the draft and Apply ----------
      Picks and Auto edit a draft that only the Levels step shows. Apply commits it to the edit
@@ -114,7 +135,9 @@
     return '';
   }
 
-  // The dropper: averages a patch of the full-resolution photo under the pick point.
+  // The dropper: averages a patch of the full-resolution photo under the pick point. A pick
+  // that sets the point disarms the dropper; one that can't work warns and stays armed, so the
+  // next tap can try again (frame L10).
   function pickAt(screenPoint) {
     const which = app.dropper;
     const view = CF.currentView();
@@ -134,6 +157,7 @@
       && point[0] < app.img.width
       && point[1] < app.img.height;
     if (!isOnPhoto) {
+      app.dropper = which;
       toast('That spot is outside the photo.', 'warn');
       CF.syncUI();
       return;
@@ -153,6 +177,7 @@
     }
     const problem = pickProblem(which, color, draftLevels() || {});
     if (problem) {
+      app.dropper = which;
       toast(problem, 'warn');
       CF.syncUI();
       return;
@@ -273,62 +298,146 @@
   }
 
   /* ---------- the controls ---------- */
+  // Builds Levels' control area and its sheet into its section of index.html (the shell's
+  // contract). Levels has no options, so its sheet is the tips themselves (frame L12).
+  function buildLevelsControls() {
+    const section = document.querySelector('section[data-panel="levels"]');
+    const area = CF.buildControlArea('levelsArea',
+      buildLevelsLine(),
+      buildPickRow(),
+      buildLevelsTools());
+    section.replaceChildren(area, buildLevelsSheet());
+  }
+
+  // The label row: Discard at the left, Apply (the screen's one red action) at the right, and
+  // the one-line instruction between them. The instruction is announced to screen readers, as
+  // the toast it replaces was.
+  function buildLevelsLine() {
+    const discard = CF.buildActionButton({
+      id: 'btnDiscardLevels',
+      label: 'Discard',
+      title: 'Drop the unapplied changes',
+    });
+    const apply = CF.buildActionButton({
+      id: 'btnApplyLevels',
+      label: 'Apply',
+      icon: 'check',
+      look: 'main',
+      title: 'Apply these levels to the photo',
+    });
+    const hint = makeEl('span', { class: 'levels-hint', id: 'levelsHint', role: 'status' });
+    return CF.buildLabelRow('levelsLine', discard, hint, apply);
+  }
+
+  // The control row: Pick white and Pick black, each led by its swatch. The armed pick is the
+  // selected part.
+  function buildPickRow() {
+    const picks = CF.buildSegmented({
+      id: 'levelsPicks',
+      label: 'Pick a point on the photo',
+      options: [
+        { value: 'white', label: 'Pick white', lead: CF.buildSwatch('swatchWhite') },
+        { value: 'black', label: 'Pick black', lead: CF.buildSwatch('swatchBlack') },
+      ],
+    });
+    const [white, black] = picks.querySelectorAll('.segment');
+    white.title = 'Pick white: tap something that should be white';
+    black.title = 'Pick black (optional): tap something that should be black';
+    return CF.buildControlRow('levelsPickRow', picks);
+  }
+
+  // The tool row: two actions.
+  function buildLevelsTools() {
+    return CF.buildToolRow('levelsTools',
+      CF.buildTool({
+        id: 'toolAutoLevels',
+        kind: 'action',
+        label: 'Auto',
+        icon: 'auto',
+        title: 'Estimate white and black points from the framed image',
+      }),
+      CF.buildTool({
+        id: 'toolClearLevels',
+        kind: 'action',
+        label: 'Clear',
+        icon: 'close',
+        title: 'Clear both points (Apply to remove applied levels)',
+      }));
+  }
+
+  // The sheet: the tips as paragraphs, then the keyboard help under "Tips and keys", which the
+  // sheet part shows on a wide screen only (frame DT5).
+  function buildLevelsSheet() {
+    const heading = CF.buildSheetHeading('Tips and keys');
+    heading.classList.add('sheet-tips-heading');
+    const keys = LEVELS_KEYS.map(key => {
+      const hint = CF.buildSheetHint(key);
+      hint.classList.add('sheet-keys');
+      return hint;
+    });
+    return CF.buildSheet({ id: 'levelsSheet', title: 'Levels tips' },
+      ...LEVELS_TIPS.map(tip => CF.buildSheetHint(tip)),
+      heading,
+      ...keys);
+  }
+
+  // Arms the dropper for `which` ('white' or 'black'); a tap on the armed part disarms it.
+  // The label row says what to tap for as long as the pick is armed (no toast).
+  function armDropper(which) {
+    app.dropper = app.dropper === which ? null : which;
+    CF.syncUI();
+  }
+
+  // Clear: a draft with neither point. With levels applied, Apply then removes them.
+  function clearLevelsDraft() {
+    app.dropper = null;
+    setDraft(draft => {
+      draft.white = null;
+      draft.whiteAt = null;
+      draft.black = null;
+      draft.blackAt = null;
+    });
+  }
+
+  // Binds the step's controls once, at start-up.
   function bindLevels() {
-    byId('btnAutoLevels').onclick = CF.autoLevelsDraft;
-    const armDropper = which => {
-      app.dropper = app.dropper === which ? null : which;
-      CF.syncUI();
-      if (app.dropper) toast(`Tap the image where it should be ${which}.`);
-    };
-    byId('btnPickWhite').onclick = () => armDropper('white');
-    byId('btnPickBlack').onclick = () => armDropper('black');
-    byId('btnClearLevels').onclick = () => {
-      app.dropper = null;
-      CF.setDraft(draft => {
-        draft.white = null;
-        draft.whiteAt = null;
-        draft.black = null;
-        draft.blackAt = null;
-      });
-    };
-    byId('btnApplyLevels').onclick = CF.applyLevels;
-    byId('btnDiscardLevels').onclick = CF.discardLevels;
+    byId('btnDiscardLevels').addEventListener('click', discardLevels);
+    byId('btnApplyLevels').addEventListener('click', applyLevels);
+    CF.bindSegmented(byId('levelsPicks'), armDropper);
+    byId('toolAutoLevels').addEventListener('click', autoLevelsDraft);
+    byId('toolClearLevels').addEventListener('click', clearLevelsDraft);
   }
 
-  // A Levels swatch: the picked color, or empty.
-  function setSwatch(id, color) {
-    const swatch = byId(id);
-    const rgb = color && color.map(Math.round).join(', ');
-    swatch.style.background = color ? `rgb(${rgb})` : '';
-    swatch.classList.toggle('unset', !color);
-    swatch.title = color ? `RGB ${rgb}` : 'Not set';
+  // The label row's instruction: what to tap while a pick is armed; else how to compare, once
+  // there is a draft or applied levels; else the two ways in.
+  function levelsHint() {
+    if (app.dropper) return LEVELS_HINTS[app.dropper];
+    if (app.levelsPending || app.state.levels) return LEVELS_HINTS.compare;
+    return LEVELS_HINTS.start;
   }
 
+  // Writes the draft into the controls: the swatches, the armed pick, the instruction, and
+  // which of Discard, Apply and Clear can be used.
   function syncLevels() {
-    const state = app.state;
     // A draft that matches the applied levels isn't pending.
-    const applied = JSON.stringify(state.levels || null);
+    const applied = JSON.stringify(app.state.levels || null);
     const isSameAsApplied = JSON.stringify(app.levelsDraft) === applied;
     if (app.levelsPending && isSameAsApplied) {
       app.levelsPending = false;
       app.levelsDraft = null;
     }
-    const levels = CF.draftLevels() || {};
-    setSwatch('swatchWhite', levels.white);
-    setSwatch('swatchBlack', levels.black);
-    byId('btnPickWhite').setAttribute('aria-pressed', String(app.dropper === 'white'));
-    byId('btnPickBlack').setAttribute('aria-pressed', String(app.dropper === 'black'));
-    byId('btnClearLevels').disabled = !levels.white && !levels.black;
-    byId('btnApplyLevels').disabled = !app.levelsPending;
-    byId('btnDiscardLevels').disabled = !app.levelsPending;
-    // No "unapplied" message: the step's dot and the enabled Apply button say it.
-    elements.root.classList.toggle('levels-pending', app.levelsPending);
-  }
-
-  // Builds Levels' controls from js/app/parts/ into its section of index.html: a control area
-  // (CF.buildControlArea, id levelsArea) and a sheet (CF.buildSheet, id levelsSheet). Until
-  // then the shell hosts the step's old markup.
-  function buildLevelsControls() {
+    const levels = draftLevels() || {};
+    CF.updateSwatch(byId('swatchWhite'), levels.white || null);
+    CF.updateSwatch(byId('swatchBlack'), levels.black || null);
+    CF.updateSegmented(byId('levelsPicks'), app.dropper);
+    const hint = byId('levelsHint');
+    const text = levelsHint();
+    // Written only when it changes, so a screen reader hears each instruction once.
+    if (hint.textContent !== text) hint.textContent = text;
+    CF.updateTool(byId('toolClearLevels'), { isDisabled: !levels.white && !levels.black });
+    // No "unapplied" message: the tab's mark and the enabled Apply button say it.
+    CF.updateActionButton(byId('btnApplyLevels'), { isDisabled: !app.levelsPending });
+    CF.updateActionButton(byId('btnDiscardLevels'), { isDisabled: !app.levelsPending });
   }
 
   Object.assign(CF, {
