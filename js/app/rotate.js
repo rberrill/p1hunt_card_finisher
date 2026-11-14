@@ -358,7 +358,16 @@
     }));
     byId('btnFlipHorizontal').addEventListener('click', () => flip('h'));
     byId('btnFlipVertical').addEventListener('click', () => flip('v'));
-    byId('fine').addEventListener('input', event => setFine(Number(event.target.value), 'fine'));
+    // Each drag is one undo step: its key changes when the ruler is let go (its change event),
+    // so a second drag soon after doesn't merge into the first.
+    let dragNumber = 0;
+    const fine = byId('fine');
+    fine.addEventListener('input', event => {
+      setFine(Number(event.target.value), `fine${dragNumber}`);
+    });
+    fine.addEventListener('change', () => {
+      dragNumber++;
+    });
     byId('btnRotateReset').addEventListener('click', () => setFine(0));
     byId('rotateGrid').addEventListener('change', event => {
       app.showGrid = event.target.checked;

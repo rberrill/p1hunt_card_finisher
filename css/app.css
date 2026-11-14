@@ -717,7 +717,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   letter-spacing: -.2px;
   white-space: nowrap;
 }
-.tool:active:not(:disabled) { background: var(--pressed); }
+.tool:active:not(:disabled), .tool.is-flashing { background: var(--pressed); }
 .tool-glyph { display: grid; height: 22px; }
 .tool-value {
   height: 22px;

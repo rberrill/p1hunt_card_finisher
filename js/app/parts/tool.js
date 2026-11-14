@@ -14,7 +14,7 @@
   // switch carries aria-pressed; a switch also shows On or Off in its corner.
   function buildTool({ id, kind, label, icon, title }) {
     const isAction = kind === 'action';
-    return makeEl('button', {
+    const tool = makeEl('button', {
       class: `tool tool-${kind}`,
       id,
       type: 'button',
@@ -25,6 +25,8 @@
     makeEl('span', { class: 'tool-glyph' }, CF.makeIcon(icon)),
     makeEl('span', { class: 'tool-value', hidden: true }),
     makeEl('span', { class: 'tool-label' }, label));
+    if (isAction) tool.addEventListener('click', () => flashTool(tool));
+    return tool;
   }
 
   // Updates a tool; a value left out stays as it is.
@@ -44,6 +46,16 @@
       value.hidden = !valueText;
       tool.querySelector('.tool-glyph').hidden = !!valueText;
     }
+  }
+
+  // How long an action tool shows its pressed shade after a tap (K6: an action flashes).
+  const FLASH_MS = 150;
+
+  // Flashes an action tool when it is tapped: the pressed shade, briefly, so a quick tap shows.
+  function flashTool(tool) {
+    tool.classList.add('is-flashing');
+    clearTimeout(tool.flashTimer);
+    tool.flashTimer = setTimeout(() => tool.classList.remove('is-flashing'), FLASH_MS);
   }
 
   Object.assign(CF, { buildTool, updateTool });
