@@ -107,53 +107,8 @@
       <section data-panel="levels"></section>
 
       <!-- ==== step: Overlay (js/app/overlay.js) ==== -->
-      <section data-panel="overlay">
-        <div class="controls">
-          <div id="overlayEmpty">
-            <div class="row" id="overlaySavedRow" hidden>
-              <img class="overlay-thumb" id="overlayThumb" alt="Saved overlay">
-              <button class="btn" id="btnUseSaved">Use saved overlay</button>
-            </div>
-            <div class="readout" id="overlayHint">
-              Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.
-            </div>
-          </div>
-          <div id="overlayEdit" hidden>
-            <div class="nudge" role="group" aria-label="Move or resize the overlay">
-              <button data-overlay-nudge="0,-1" aria-label="Move up">▲</button>
-              <button data-overlay-nudge="0,1" aria-label="Move down">▼</button>
-              <button data-overlay-nudge="-1,0" aria-label="Move left">◀</button>
-              <button data-overlay-nudge="1,0" aria-label="Move right">▶</button>
-              <button data-overlay-nudge="shrink" aria-label="Smaller">−</button>
-              <button data-overlay-nudge="grow" aria-label="Larger">+</button>
-            </div>
-            <div class="inline">
-              <label for="overlayOpacity">Opacity</label>
-              <input type="range" id="overlayOpacity" min="0" max="100" step="1">
-              <span class="value" id="overlayOpacityValue"></span>
-            </div>
-          </div>
-          <div class="status" id="overlayStatus"></div>
-          <details class="more">
-            <summary>More options</summary>
-            <div class="row">
-              <button class="btn" id="btnOverlayReset">Reset</button>
-              <button class="btn" id="btnOverlayRemove">Remove overlay</button>
-            </div>
-            <button class="btn wide" id="btnOverlayDeleteSaved">Delete saved overlay</button>
-            <div class="hint">
-              Tap a ring on the photo to snap the overlay to that corner, the middle of that side,
-              or the center. Drag to move it; drag a corner, pinch, or use − + to resize. On a
-              keyboard, arrows move it (Shift for bigger steps) and + − resize it. On this step the
-              photo stays
-              framed as set in Crop. Your last overlay is kept in this browser for the next photo.
-            </div>
-          </details>
-        </div>
-        <div class="action-bar">
-          <button class="btn primary" id="btnOverlayAdd">Add logo</button>
-        </div>
-      </section>
+      <!-- Its control area and options sheet are built by buildOverlayControls(). -->
+      <section data-panel="overlay"></section>
 
       <!-- ==== step: Export (js/app/export-controls.js) ==== -->
       <section data-panel="export">
