@@ -267,6 +267,6 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`, 
 | 12. Session restore | | | |
 | Smoke test (pre-release) | | | |
 
-**Decision (phase 2, 1.10.0-dev.N, date):** ☐ Phase 2 passed, start phase 3 ☐ Fix first
+**Decision (phase 2, 1.10.0-dev.7, 2026-11-14):** ☑ Phase 2 passed, start phase 3 ☐ Fix first (Rich)
 
 **Previous: phase 1 (1.10.0-dev.2):** the smoke test on desktop and iPhone.

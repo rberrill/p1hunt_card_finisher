@@ -10,7 +10,7 @@
   const { byId, makeEl, app } = CF;
 
   // One chip per preset in CONFIG, then Swap.
-  function buildCropChips() {
+  function buildCropControls() {
     const chips = CONFIG.crop.presets.map(
       preset => makeEl('button', { class: 'chip', 'data-crop': preset.id }, preset.label),
     );
@@ -103,7 +103,7 @@
   }
 
   Object.assign(CF, {
-    buildCropChips,
+    buildCropControls,
     bindCrop,
     syncCrop,
     syncCropReadout,

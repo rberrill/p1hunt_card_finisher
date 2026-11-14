@@ -325,7 +325,14 @@
     elements.root.classList.toggle('levels-pending', app.levelsPending);
   }
 
+  // Builds Levels' controls from js/app/parts/ into its section of index.html: a control area
+  // (CF.buildControlArea, id levelsArea) and a sheet (CF.buildSheet, id levelsSheet). Until
+  // then the shell hosts the step's old markup.
+  function buildLevelsControls() {
+  }
+
   Object.assign(CF, {
+    buildLevelsControls,
     bindLevels,
     syncLevels,
     draftLevels,

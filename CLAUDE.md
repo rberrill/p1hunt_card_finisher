@@ -81,7 +81,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - **Overlay:**
   - Placement `{id, aspect, cx, cy, w, opacity}` is relative to the final crop and clamped fully inside. The engine owns the maths.
   - It's composited last (Levels never touches it) and shows only on Overlay and Export.
-  - Opacity takes the label row, the move and size pads the control row; Replace logo, Reset and Remove are tools. Delete saved overlay is in the sheet.
+  - Opacity takes the label row, the move and size pads the control row; Replace logo, Reset, Remove and Delete saved are tools (Rich, 2026-11-14: all four on screen; the sheet holds only Tips).
   - On that step the photo is locked: gestures move the logo. Nine snap rings sit on the photo (corners, side middles, center); a still tap snaps and a drag moves.
   - Drop and paste add a logo there; elsewhere they open a photo.
   - The saved logo is offered with "Use saved overlay", not auto-applied. Delete clears storage only. (That Start fresh keeps it is Claude's call, accepted in UAT.)

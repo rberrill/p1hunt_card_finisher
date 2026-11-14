@@ -862,7 +862,14 @@
     status.textContent = app.overlayMessage || '';
   }
 
+  // Builds Overlay's controls from js/app/parts/ into its section of index.html: a control area
+  // (CF.buildControlArea, id overlayArea) and a sheet (CF.buildSheet, id overlaySheet). Until
+  // then the shell hosts the step's old markup.
+  function buildOverlayControls() {
+  }
+
   Object.assign(CF, {
+    buildOverlayControls,
     addOverlayFile,
     loadSavedOverlay,
     overlayStateChanged,

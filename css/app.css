@@ -1302,6 +1302,18 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   }
 }
 
+/* ---- step: Crop ---- */
+/* Owned by js/app/crop.js's phase. Phone-only and wide-only rules go in a
+   media block inside this banner (max-width: 760px or min-width: 761px). */
+
+/* ---- step: Levels ---- */
+/* Owned by js/app/levels.js's phase. Phone-only and wide-only rules go in a
+   media block inside this banner (max-width: 760px or min-width: 761px). */
+
+/* ---- step: Overlay ---- */
+/* Owned by js/app/overlay.js's phase. Phone-only and wide-only rules go in a
+   media block inside this banner (max-width: 760px or min-width: 761px). */
+
 /* ---- shell: the phone ---- */
 @media (max-width: 760px) {
   .workspace { flex-direction: column; }

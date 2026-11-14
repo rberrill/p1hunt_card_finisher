@@ -157,7 +157,9 @@
     buildBars();
     CF.buildPerspectiveControls();
     CF.buildRotateControls();
-    CF.buildCropChips();
+    CF.buildCropControls();
+    CF.buildLevelsControls();
+    CF.buildOverlayControls();
     CF.buildSizeOptions();
     document.querySelectorAll('section[data-panel]').forEach(mountInterimStep);
   }
