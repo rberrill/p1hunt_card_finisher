@@ -105,9 +105,10 @@
     if (!elements.topBar) return;
     const view = app.img ? CF.currentView() : null;
     const isMoved = !!view && view.auto === false;
-    CF.updateTopBar(elements.topBar, {
-      isFitShown: !!app.img && (!CF.phoneLayout.matches || isMoved),
-    });
+    const isWide = !CF.phoneLayout.matches;
+    // A wide screen always shows Fit, dimmed until a photo is open (DT1).
+    CF.updateTopBar(elements.topBar, { isFitShown: isWide || (!!app.img && isMoved) });
+    byId('btnFit').disabled = !app.img;
   }
 
   /* ---------- each step's control area and sheet ---------- */

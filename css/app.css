@@ -542,6 +542,9 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   height: 44px;
   margin-left: -44px;
 }
+/* A drag on the grabber, or on a sheet's top edge, moves the sheet: the browser must not
+   take it as a page pan (it would cancel the drag). */
+.grabber, .sheet-grabber, .sheet-header { touch-action: none; }
 .grabber::before {
   content: '';
   position: absolute;

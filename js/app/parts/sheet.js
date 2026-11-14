@@ -111,6 +111,17 @@
     layer.querySelector('.sheet-scrim').style.opacity = '';
   }
 
+  // Ends a drag with the sheet open or closed, sliding from where the finger left it.
+  // closeSheet only acts on an open sheet, so a drag that leaves it closed marks it open first.
+  function settleSheet(layer, shouldOpen) {
+    if (shouldOpen) {
+      openSheet(layer);
+      return;
+    }
+    layer.classList.add('is-open');
+    closeSheet(layer);
+  }
+
   // Lets `handle` open or close a sheet. getLayer() names the sheet when the press starts (null
   // for none). A tap toggles it; a drag follows the finger (up opens, down closes) and, when
   // the finger lifts, settles open past a third of the way and closed short of it.
@@ -138,7 +149,12 @@
       if (!press) return;
       const { layer, startY, wasOpen, heightPx } = press;
       press = null;
-      if (event.type === 'pointercancel' && !heightPx) return;
+      // A cancelled press (the browser took the gesture) puts the sheet back as it was.
+      if (event.type === 'pointercancel') {
+        if (!heightPx) return;
+        settleSheet(layer, wasOpen);
+        return;
+      }
       if (!heightPx) {
         if (wasOpen) closeSheet(layer);
         else openSheet(layer);
@@ -146,9 +162,7 @@
       }
       const moved = (startY - event.clientY) / heightPx;
       const shouldOpen = wasOpen ? moved > -SHEET_SETTLE_FRACTION : moved > SHEET_SETTLE_FRACTION;
-      layer.classList.toggle('is-open', !shouldOpen);
-      if (shouldOpen) openSheet(layer);
-      else closeSheet(layer);
+      settleSheet(layer, shouldOpen);
     };
     handle.addEventListener('pointerup', end);
     handle.addEventListener('pointercancel', end);

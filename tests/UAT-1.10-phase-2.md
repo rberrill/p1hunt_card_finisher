@@ -2,7 +2,7 @@
 
 Phase 2 of the 1.10 redesign: the new shell (top bar, control area with its grabber and options sheet, tab bar, start screen, the desktop frame) and the rebuilt Perspective and Rotate. Run on the dev build, desktop and iPhone: the cases below, then the smoke test. The redesign is released once, after phase 6, so this script has no Live column and no After deploy section.
 
-- **Version under test:** `1.10.0-dev.4` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the last line of Export's options sheet.
+- **Version under test:** `1.10.0-dev.5` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the last line of Export's options sheet.
 - **Automated tests first:** `node tests/selftest.js` and `tests/sample-regression.js` must both pass (see `tests/README.md`). Claude runs these, plus the `verify` skill's layout, subfolder and `file://` checks, before handing over a build.
 - **IDs** are the permanent IDs from `tests/uat/catalog.md` (`D` Desktop, `P` Phone, `E` Environments, then section.row). 🆕 marks a case for behavior new in this phase; ✏️ a case whose behavior changed in this phase. Unmarked rows are connected cases, copied from the catalog unchanged.
 - **One row per behavior, on one device.** A behavior is tested once, on the device that can judge it best; the rest is shared out so both devices exercise every feature. Each row is one flow with one verdict.
