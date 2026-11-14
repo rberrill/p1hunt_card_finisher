@@ -13,13 +13,13 @@
 <title>P1Hunt Card Finisher</title>
 <!-- App icon: favicon.ico for Safari on Mac and older browsers, the SVG for the rest, and
      the 180 px PNG for the iPhone home screen. All three are drawn from icons/icon.svg. -->
-<link rel="icon" href="icons/favicon.ico?v=1.10.0-dev.5" sizes="32x32">
-<link rel="icon" href="icons/icon.svg?v=1.10.0-dev.5" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.10.0-dev.5">
+<link rel="icon" href="icons/favicon.ico?v=1.10.0-dev.6" sizes="32x32">
+<link rel="icon" href="icons/icon.svg?v=1.10.0-dev.6" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.10.0-dev.6">
 <!-- PWA (phase two): this becomes a real file; a service worker can't be inlined.
 <link rel="manifest" href="manifest.webmanifest">
 -->
-<link rel="stylesheet" href="css/app.css?v=1.10.0-dev.5">
+<link rel="stylesheet" href="css/app.css?v=1.10.0-dev.6">
 </head>
 <body>
 <div id="app">
@@ -31,7 +31,7 @@
       <canvas id="view" tabindex="0" aria-label="Photo editing canvas"></canvas>
       <!-- The start screen: no bars on the phone until a photo is open. -->
       <div class="start-screen" id="empty">
-        <img class="start-icon" src="icons/icon.svg?v=1.10.0-dev.5" alt="" width="76" height="76">
+        <img class="start-icon" src="icons/icon.svg?v=1.10.0-dev.6" alt="" width="76" height="76">
         <span class="start-eyebrow">P1Hunt Card Finisher</span>
         <h1 class="start-title">Finish a card photo</h1>
         <p class="start-text">Open, drop, or paste a photo.<br>
@@ -337,43 +337,43 @@
      engine → app modules (core first: it creates the CF namespace; main last: it calls init()).
      ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay
      relative. -->
-<script src="js/config.js?v=1.10.0-dev.5"></script>
-<script src="js/engine.js?v=1.10.0-dev.5"></script>
-<script src="js/app/core.js?v=1.10.0-dev.5"></script>
-<script src="js/app/adapters.js?v=1.10.0-dev.5"></script>
-<script src="js/app/state.js?v=1.10.0-dev.5"></script>
-<script src="js/app/view.js?v=1.10.0-dev.5"></script>
-<script src="js/app/levels.js?v=1.10.0-dev.5"></script>
-<script src="js/app/overlay.js?v=1.10.0-dev.5"></script>
-<script src="js/app/input.js?v=1.10.0-dev.5"></script>
+<script src="js/config.js?v=1.10.0-dev.6"></script>
+<script src="js/engine.js?v=1.10.0-dev.6"></script>
+<script src="js/app/core.js?v=1.10.0-dev.6"></script>
+<script src="js/app/adapters.js?v=1.10.0-dev.6"></script>
+<script src="js/app/state.js?v=1.10.0-dev.6"></script>
+<script src="js/app/view.js?v=1.10.0-dev.6"></script>
+<script src="js/app/levels.js?v=1.10.0-dev.6"></script>
+<script src="js/app/overlay.js?v=1.10.0-dev.6"></script>
+<script src="js/app/input.js?v=1.10.0-dev.6"></script>
 <!-- The fifteen parts of the 1.10 layout (and their icons): each builds and updates one kind
      of control. -->
-<script src="js/app/parts/icon.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/top-bar.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/tab-bar.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/adjustment-line.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/status.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/ruler.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/slider.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/tool.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/action-button.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/chip.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/segmented-control.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/nudge-pad.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/sheet.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/alert-card.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/toast.js?v=1.10.0-dev.5"></script>
-<script src="js/app/parts/progress-line.js?v=1.10.0-dev.5"></script>
-<script src="js/app/shell.js?v=1.10.0-dev.5"></script>
-<script src="js/app/start-screen.js?v=1.10.0-dev.5"></script>
-<script src="js/app/debug-panel.js?v=1.10.0-dev.5"></script>
-<script src="js/app/perspective.js?v=1.10.0-dev.5"></script>
-<script src="js/app/rotate.js?v=1.10.0-dev.5"></script>
-<script src="js/app/crop.js?v=1.10.0-dev.5"></script>
-<script src="js/app/export.js?v=1.10.0-dev.5"></script>
-<script src="js/app/export-controls.js?v=1.10.0-dev.5"></script>
-<script src="js/app/corner-shots.js?v=1.10.0-dev.5"></script>
-<script src="js/app/pair.js?v=1.10.0-dev.5"></script>
-<script src="js/app/main.js?v=1.10.0-dev.5"></script>
+<script src="js/app/parts/icon.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/top-bar.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/tab-bar.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/adjustment-line.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/status.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/ruler.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/slider.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/tool.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/action-button.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/chip.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/segmented-control.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/nudge-pad.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/sheet.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/alert-card.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/toast.js?v=1.10.0-dev.6"></script>
+<script src="js/app/parts/progress-line.js?v=1.10.0-dev.6"></script>
+<script src="js/app/shell.js?v=1.10.0-dev.6"></script>
+<script src="js/app/start-screen.js?v=1.10.0-dev.6"></script>
+<script src="js/app/debug-panel.js?v=1.10.0-dev.6"></script>
+<script src="js/app/perspective.js?v=1.10.0-dev.6"></script>
+<script src="js/app/rotate.js?v=1.10.0-dev.6"></script>
+<script src="js/app/crop.js?v=1.10.0-dev.6"></script>
+<script src="js/app/export.js?v=1.10.0-dev.6"></script>
+<script src="js/app/export-controls.js?v=1.10.0-dev.6"></script>
+<script src="js/app/corner-shots.js?v=1.10.0-dev.6"></script>
+<script src="js/app/pair.js?v=1.10.0-dev.6"></script>
+<script src="js/app/main.js?v=1.10.0-dev.6"></script>
 </body>
 </html>

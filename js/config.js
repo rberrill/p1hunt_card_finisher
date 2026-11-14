@@ -6,7 +6,7 @@
    ===================================================================== */
 const CONFIG = {
   // See CHANGELOG.md.
-  appVersion: '1.10.0-dev.5',
+  appVersion: '1.10.0-dev.6',
   debug: false,
   // Long side of the in-memory preview copy (and of the warped preview).
   previewMaxPx: 2048,
@@ -28,7 +28,9 @@ const CONFIG = {
 
   handle: { cornerRadius: 11, edgeSize: 10, hitRadius: 24, lineWidth: 2 },
   colors: {
-    quad: '#e5322d',
+    // The corner outline: white over a dark halo, so it shows on any photo (Rich, 2026-11-14).
+    quad: '#ffffff',
+    quadHalo: 'rgba(0,0,0,0.55)',
     // Corners that cross or fold inward: red and dashed (D13: amber is for warnings only).
     quadInvalid: '#e5322d',
     handle: '#ffffff',

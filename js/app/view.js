@@ -375,6 +375,13 @@
     const isValid = app.geometry && app.geometry.ok;
     const quad = app.state.corners.map(corner => toScreen(view, corner));
     drawEdgeExtensions(ctx, view, quad);
+    if (isValid) {
+      // The halo: twice the line's width, under it.
+      ctx.lineWidth = CONFIG.handle.lineWidth * 2;
+      ctx.strokeStyle = CONFIG.colors.quadHalo;
+      tracePolygon(ctx, quad);
+      ctx.stroke();
+    }
     ctx.lineWidth = CONFIG.handle.lineWidth;
     ctx.strokeStyle = isValid ? CONFIG.colors.quad : CONFIG.colors.quadInvalid;
     ctx.setLineDash(isValid ? [] : INVALID_QUAD_DASH_PX);
