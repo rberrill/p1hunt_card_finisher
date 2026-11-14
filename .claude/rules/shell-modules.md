@@ -28,10 +28,16 @@ paths:
 - **`overlay.js`**: image decode and validation (SVG via `viewBox`) into an `images` map keyed by byte hash, kept out of the edit state so undo stays small; the saved logo (`Session` keys `'overlay'`, `'photoOverlay'`); embed / restore for edits files; `compositeOverlay` for export; on-screen drawing, handles and gestures (`overlayMove` / `overlayResize` / `overlayPinch`); `syncOverlay`.
 - **`input.js`**: pointer, wheel and keyboard; handle and crop dragging and snapping. On the Overlay step everything routes to `overlay.js`.
 - **`parts/`**: the fifteen parts of the 1.10 layout, one module each (see "The parts" below), and `parts/icon.js` (`ICONS`, `makeIcon`, `makeSvgEl`).
-- **`shell.js`**: `STEPS`, `setTab` and the step menu; `buildControls` / `bindControls` / `syncUI` / `syncReadouts`, which call each step's own build, bind and sync functions; `pickPhoto`; the step resets. (The old layout's `bindSegment` / `setSegment` and `collapseMore` live here until the last step is converted.)
+- **`shell.js`**: `STEPS`, `setTab`; the top bar and the tab bar (`elements.topBar`, `elements.tabBar`); `placeLayout` (the phone and wide arrangements); each step's control area and options sheet: the grabber, `closeSheets`, and hosting a step its phase hasn't converted (`mountInterimStep`); `syncFitButton`; `buildControls` / `bindControls` / `syncUI` / `syncReadouts`, which call each step's own build, bind and sync functions; `pickPhoto`; the step resets. (The old layout's `bindSegment` / `setSegment` stay until the last step is converted.)
 - **`start-screen.js`**: the Resume prompt (`offerResume`, `resumeSession`).
 - **`debug-panel.js`**: the detection tuning panel.
 - **`perspective.js`**, **`rotate.js`**, **`crop.js`**: each step's controls: its build, bind and sync functions and its readouts. (Levels' and Overlay's are in `levels.js` and `overlay.js`.)
+
+## A step's contract with the shell (Claude's build call, 1.10 phase 2)
+
+- **Its section** of `index.html` (`<section data-panel="step">`, under its `==== step: … ====` comment) holds, once the step is converted, exactly one control area built with `CF.buildControlArea('<step>Area', …rows)` and one options sheet built with `CF.buildSheet({ id: '<step>Sheet', title }, …)`, both appended by the step's `build<Step>Controls()` (called by `CF.buildControls` before any binding). The shell binds the grabber, opens and closes the sheet, closes it on a step change and on Escape, and lists it inline on a wide screen. A step never opens its own sheet except as an answer to a tap (Corner shots).
+- **Until converted,** the section keeps its old markup (`.controls`, `details.more`, `.action-bar`) and `mountInterimStep` moves it into a control area (marked `is-interim`, which may scroll) and a sheet with the same ids.
+- **Its rules** in `css/app.css` go under a `/* ---- step: <Step> ---- */` banner inside THE 1.10 SHELL section; phone-only rules inside that section's phone block, wide-only inside its wide block.
 - **`export.js`**: `Exporter`, `renderFull` and the banded `renderWarped` it shares with corner shots, `encodeCanvas`, `runWithProgress`, `doExport`, `shareFiles` / `shareFile`, edits save and load.
 - **`export-controls.js`**: the Export step's controls: format, size, quality, Share / Download / Copy, Next card, the readout, the notes and the source line.
 - **`corner-shots.js`**: the Corner shots group (Export → More options): the sheet / photos preference, rendering through `renderWarped`, Share and Download, the live thumbnails.

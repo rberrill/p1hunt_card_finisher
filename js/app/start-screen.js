@@ -32,10 +32,11 @@
     // The records come from storage.
     const pair = await CF.peekPair();
     byId('resumeName').textContent = resumeName(record, pair);
-    const when = Number.isFinite(record.savedAt) ? '(' + timeAgo(record.savedAt) + ')' : '';
+    const when = Number.isFinite(record.savedAt) ? 'Last photo · ' + timeAgo(record.savedAt) : '';
     byId('resumeWhen').textContent = when;
     byId('resume').hidden = false;
-    byId('btnOpenEmpty').classList.remove('primary');
+    byId('resumeThumb').classList.toggle('is-pair', !!(pair && pair.other));
+    byId('btnOpenEmpty').classList.remove('is-main');
   }
 
   // The Resume prompt's name: the photo, or a pair's front + back.
@@ -49,7 +50,7 @@
 
   function hideResume() {
     byId('resume').hidden = true;
-    byId('btnOpenEmpty').classList.add('primary');
+    byId('btnOpenEmpty').classList.add('is-main');
   }
 
   async function resumeSession() {

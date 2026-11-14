@@ -602,6 +602,7 @@
       if (event.key === 'Escape') CF.hidePrompt();
       return;
     }
+    if (event.key === 'Escape' && CF.closeSheets()) return;
     const target = event.target;
     const isField = tag => tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
     const isTyping = target && isField(target.tagName);

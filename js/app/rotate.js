@@ -9,8 +9,10 @@
   'use strict';
   const { byId, app } = CF;
 
-  // The fine-angle slider and number box take their range from CONFIG.
-  function buildFineRange() {
+  // Builds Rotate's controls. Until its parts are built (CF.buildControlArea, id rotateArea,
+  // and CF.buildSheet, id rotateSheet), the shell hosts the step's old markup, whose fine-angle
+  // slider and number box take their range from CONFIG here.
+  function buildRotateControls() {
     const range = CONFIG.rotate.fineRangeDeg;
     for (const input of [byId('fine'), byId('fineNumber')]) {
       input.min = -range;
@@ -80,7 +82,7 @@
   }
 
   Object.assign(CF, {
-    buildFineRange,
+    buildRotateControls,
     bindRotate,
     syncRotate,
   });

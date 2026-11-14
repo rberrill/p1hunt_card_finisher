@@ -13,82 +13,52 @@
 <title>P1Hunt Card Finisher</title>
 <!-- App icon: favicon.ico for Safari on Mac and older browsers, the SVG for the rest, and
      the 180 px PNG for the iPhone home screen. All three are drawn from icons/icon.svg. -->
-<link rel="icon" href="icons/favicon.ico?v=1.10.0-dev.2" sizes="32x32">
-<link rel="icon" href="icons/icon.svg?v=1.10.0-dev.2" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.10.0-dev.2">
+<link rel="icon" href="icons/favicon.ico?v=1.10.0-dev.3" sizes="32x32">
+<link rel="icon" href="icons/icon.svg?v=1.10.0-dev.3" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.10.0-dev.3">
 <!-- PWA (phase two): this becomes a real file; a service worker can't be inlined.
 <link rel="manifest" href="manifest.webmanifest">
 -->
-<link rel="stylesheet" href="css/app.css?v=1.10.0-dev.2">
+<link rel="stylesheet" href="css/app.css?v=1.10.0-dev.3">
 </head>
 <body>
 <div id="app">
-  <header class="old-header">
-    <div class="brand"><b>P1</b>Hunt Card Finisher</div>
-    <div class="actions">
-      <button class="btn" id="btnOpen" title="Open photo">
-        <svg viewBox="0 0 24 24">
-            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        </svg>
-        <span>Open</span>
-      </button>
-      <button class="btn" id="btnUndo" title="Undo (Ctrl/Cmd+Z)" aria-label="Undo">
-        <svg viewBox="0 0 24 24">
-            <path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>
-        </svg>
-      </button>
-      <button class="btn" id="btnRedo" title="Redo (Shift+Ctrl/Cmd+Z)" aria-label="Redo">
-        <svg viewBox="0 0 24 24">
-            <path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>
-        </svg>
-      </button>
-      <!-- A front + back pair: switch sides, or unpair (it asks which side to keep). -->
-      <div class="side-switch" id="sideSwitch" role="group" aria-label="Card side" hidden>
-        <button class="btn" data-side="front" aria-pressed="true">Front</button>
-        <button class="btn" data-side="back" aria-pressed="false">Back</button>
-      </div>
-      <button class="btn" id="btnUnpair" title="Unpair (keep one side)" aria-label="Unpair"
-          hidden>
-        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
-      <button class="btn" id="btnPreview" aria-pressed="false"
-          title="Show the corrected card full size">
-        <svg viewBox="0 0 24 24">
-          <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-        <span>Preview</span>
-      </button>
-      <button class="btn" id="btnFit" title="Fit to screen (F)" aria-label="Fit to screen">
-        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-      </button>
-    </div>
-    <nav class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="perspective" aria-selected="true">
-          Perspective
-      </button>
-      <button class="tab" role="tab" data-tab="rotate" aria-selected="false">Rotate</button>
-      <button class="tab" role="tab" data-tab="crop" aria-selected="false">Crop</button>
-      <button class="tab" role="tab" data-tab="levels" aria-selected="false">Levels</button>
-      <button class="tab" role="tab" data-tab="overlay" aria-selected="false">Overlay</button>
-      <button class="tab" role="tab" data-tab="export" aria-selected="false">Export</button>
-    </nav>
-  </header>
+  <!-- The top bar (js/app/parts/top-bar.js), built here by js/app/shell.js. -->
+  <div class="top-bar-host" id="topBarHost"></div>
 
-  <main>
+  <main class="workspace">
     <div class="stage" id="stage">
       <canvas id="view" tabindex="0" aria-label="Photo editing canvas"></canvas>
-      <div class="empty" id="empty">
-        <h2>Finish a card photo</h2>
-        <div>Open, drop, or paste a photo. Everything stays on this device.</div>
-        <div class="resume" id="resume" hidden>
-          <div>Resume <b id="resumeName"></b>? <span class="when" id="resumeWhen"></span></div>
-          <div class="row">
-            <button class="btn primary" id="btnResume">Resume</button>
-            <button class="btn" id="btnFresh">Start fresh</button>
+      <!-- The start screen: no bars on the phone until a photo is open. -->
+      <div class="start-screen" id="empty">
+        <img class="start-icon" src="icons/icon.svg?v=1.10.0-dev.3" alt="" width="76" height="76">
+        <span class="start-eyebrow">P1Hunt Card Finisher</span>
+        <h1 class="start-title">Finish a card photo</h1>
+        <p class="start-text">Open, drop, or paste a photo.<br>
+          Everything stays on this device.</p>
+        <div class="resume-card" id="resume" hidden>
+          <div class="resume-who">
+            <span class="resume-thumb" id="resumeThumb"><i></i><i></i></span>
+            <div>
+              <span class="resume-when" id="resumeWhen"></span>
+              <div class="resume-name">Resume <b id="resumeName"></b>?</div>
+            </div>
+          </div>
+          <div class="resume-choices">
+            <button class="action-button is-main is-tall is-wide" id="btnResume" type="button">
+              <span class="action-label">Resume</span>
+            </button>
+            <button class="action-button is-tall is-wide" id="btnFresh" type="button">
+              <span class="action-label">Start fresh</span>
+            </button>
           </div>
         </div>
-        <button class="btn primary" id="btnOpenEmpty">Open photo</button>
+        <button class="action-button is-main is-tall start-open" id="btnOpenEmpty" type="button">
+          <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          </svg>
+          <span class="action-label">Open photo</span>
+        </button>
       </div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
       <!-- A pair's questions (Unpair, a new photo): a card over the dimmed photo, like Resume.
@@ -108,9 +78,12 @@
     </div>
 
     <aside class="panel" id="panel">
-      <!-- Each step: one compact control area (fixed height on phones), "More options", then the
-           action bar. The action bar's first button (phones) is the step menu; the last moves to
-           the next step. -->
+      <!-- One section per step. The shell (js/app/shell.js) gives each step a control area
+           (the 200 px block under the photo, with its grabber) and an options sheet. During
+           the 1.10 redesign a step whose phase hasn't come keeps its old markup below, which
+           the shell moves into them; a converted step builds both from js/app/parts/. Each
+           section belongs to its step: edit only your own step's section. -->
+      <!-- ==== step: Perspective (js/app/perspective.js) ==== -->
       <section data-panel="perspective" class="active">
         <div class="controls">
           <div class="nudge" role="group" aria-label="Nudge the selected handle">
@@ -173,29 +146,25 @@
                 handle and arrows nudge 1 px (Shift = 10).
               </div>
             </div>
-            <div class="group">
-              <h3>Fill outside photo</h3>
-              <div class="row">
-                <select id="fill" class="grow">
-                  <option value="transparent">Transparent</option>
-                  <option value="#ffffff">White</option>
-                  <option value="#000000">Black</option>
-                  <option value="custom">Custom…</option>
-                </select>
-                <input type="color" id="fillColor" value="#ffffff" aria-label="Custom fill color">
-              </div>
-            </div>
             <button class="btn wide" data-reset="perspective">Reset perspective</button>
           </details>
         </div>
         <div class="action-bar">
+          <button class="btn" id="btnPreview" aria-pressed="false"
+              title="Show the corrected card full size">
+            <svg viewBox="0 0 24 24">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>Preview</span>
+          </button>
           <button class="btn" id="btnNext" title="Try the next detected candidate">
               Candidate
           </button>
-          <button class="btn" data-next="rotate">Rotate →</button>
         </div>
       </section>
 
+      <!-- ==== step: Rotate (js/app/rotate.js) ==== -->
       <section data-panel="rotate">
         <div class="controls">
           <div class="inline">
@@ -239,10 +208,10 @@
                 <path d="M21 4v6h-6"/><path d="M20.5 15a8.5 8.5 0 1 1-2-8.5L21 10"/>
             </svg>90°
           </button>
-          <button class="btn" data-next="crop">Crop →</button>
         </div>
       </section>
 
+      <!-- ==== step: Crop (js/app/crop.js) ==== -->
       <section data-panel="crop">
         <div class="controls">
           <div class="chips scroller" id="cropChips"></div>
@@ -258,10 +227,10 @@
         </div>
         <div class="action-bar">
           <button class="btn primary" id="btnFitToCard">Fit to card</button>
-          <button class="btn" data-next="levels">Levels →</button>
         </div>
       </section>
 
+      <!-- ==== step: Levels (js/app/levels.js) ==== -->
       <section data-panel="levels">
         <div class="controls">
           <div class="row levels-row">
@@ -296,10 +265,10 @@
         <div class="action-bar">
           <button class="btn primary" id="btnApplyLevels">Apply</button>
           <button class="btn" id="btnDiscardLevels">Discard</button>
-          <button class="btn" data-next="overlay">Overlay →</button>
         </div>
       </section>
 
+      <!-- ==== step: Overlay (js/app/overlay.js) ==== -->
       <section data-panel="overlay">
         <div class="controls">
           <div id="overlayEmpty">
@@ -345,10 +314,10 @@
         </div>
         <div class="action-bar">
           <button class="btn primary" id="btnOverlayAdd">Add logo</button>
-          <button class="btn" data-next="export">Export →</button>
         </div>
       </section>
 
+      <!-- ==== step: Export (js/app/export-controls.js) ==== -->
       <section data-panel="export">
         <div class="controls">
           <div class="row">
@@ -392,6 +361,18 @@
                 <option value="bilinear">Bilinear</option>
                 <option value="bicubic">Bicubic (sharper, slower)</option>
               </select>
+            </div>
+            <div class="group">
+              <h3>Fill outside photo</h3>
+              <div class="row">
+                <select id="fill" class="grow">
+                  <option value="transparent">Transparent</option>
+                  <option value="#ffffff">White</option>
+                  <option value="#000000">Black</option>
+                  <option value="custom">Custom…</option>
+                </select>
+                <input type="color" id="fillColor" value="#ffffff" aria-label="Custom fill color">
+              </div>
             </div>
             <div class="group section-box" id="cornerShots">
               <h3>Corner shots</h3>
@@ -452,9 +433,11 @@
           <button class="btn" id="btnCopy">Copy</button>
         </div>
       </section>
-      <div class="step-menu" id="stepMenu" role="menu" hidden></div>
     </aside>
   </main>
+  <!-- The step tabs (js/app/parts/tab-bar.js): along the bottom on the phone; shell.js moves
+       them into the top bar on a wide screen. -->
+  <div class="tab-bar-host" id="tabBarHost"></div>
 
   <input type="file" id="fileInput" accept="image/*,.heic,.heif" hidden>
   <input type="file" id="editsInput" accept="application/json,.json" hidden>
@@ -467,43 +450,43 @@
      engine → app modules (core first: it creates the CF namespace; main last: it calls init()).
      ?v= must equal CONFIG.appVersion (cache-busting; tests/selftest.js checks). Paths stay
      relative. -->
-<script src="js/config.js?v=1.10.0-dev.2"></script>
-<script src="js/engine.js?v=1.10.0-dev.2"></script>
-<script src="js/app/core.js?v=1.10.0-dev.2"></script>
-<script src="js/app/adapters.js?v=1.10.0-dev.2"></script>
-<script src="js/app/state.js?v=1.10.0-dev.2"></script>
-<script src="js/app/view.js?v=1.10.0-dev.2"></script>
-<script src="js/app/levels.js?v=1.10.0-dev.2"></script>
-<script src="js/app/overlay.js?v=1.10.0-dev.2"></script>
-<script src="js/app/input.js?v=1.10.0-dev.2"></script>
+<script src="js/config.js?v=1.10.0-dev.3"></script>
+<script src="js/engine.js?v=1.10.0-dev.3"></script>
+<script src="js/app/core.js?v=1.10.0-dev.3"></script>
+<script src="js/app/adapters.js?v=1.10.0-dev.3"></script>
+<script src="js/app/state.js?v=1.10.0-dev.3"></script>
+<script src="js/app/view.js?v=1.10.0-dev.3"></script>
+<script src="js/app/levels.js?v=1.10.0-dev.3"></script>
+<script src="js/app/overlay.js?v=1.10.0-dev.3"></script>
+<script src="js/app/input.js?v=1.10.0-dev.3"></script>
 <!-- The fifteen parts of the 1.10 layout (and their icons): each builds and updates one kind
      of control. -->
-<script src="js/app/parts/icon.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/top-bar.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/tab-bar.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/adjustment-line.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/status.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/ruler.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/slider.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/tool.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/action-button.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/chip.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/segmented-control.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/nudge-pad.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/sheet.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/alert-card.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/toast.js?v=1.10.0-dev.2"></script>
-<script src="js/app/parts/progress-line.js?v=1.10.0-dev.2"></script>
-<script src="js/app/shell.js?v=1.10.0-dev.2"></script>
-<script src="js/app/start-screen.js?v=1.10.0-dev.2"></script>
-<script src="js/app/debug-panel.js?v=1.10.0-dev.2"></script>
-<script src="js/app/perspective.js?v=1.10.0-dev.2"></script>
-<script src="js/app/rotate.js?v=1.10.0-dev.2"></script>
-<script src="js/app/crop.js?v=1.10.0-dev.2"></script>
-<script src="js/app/export.js?v=1.10.0-dev.2"></script>
-<script src="js/app/export-controls.js?v=1.10.0-dev.2"></script>
-<script src="js/app/corner-shots.js?v=1.10.0-dev.2"></script>
-<script src="js/app/pair.js?v=1.10.0-dev.2"></script>
-<script src="js/app/main.js?v=1.10.0-dev.2"></script>
+<script src="js/app/parts/icon.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/top-bar.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/tab-bar.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/adjustment-line.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/status.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/ruler.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/slider.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/tool.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/action-button.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/chip.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/segmented-control.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/nudge-pad.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/sheet.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/alert-card.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/toast.js?v=1.10.0-dev.3"></script>
+<script src="js/app/parts/progress-line.js?v=1.10.0-dev.3"></script>
+<script src="js/app/shell.js?v=1.10.0-dev.3"></script>
+<script src="js/app/start-screen.js?v=1.10.0-dev.3"></script>
+<script src="js/app/debug-panel.js?v=1.10.0-dev.3"></script>
+<script src="js/app/perspective.js?v=1.10.0-dev.3"></script>
+<script src="js/app/rotate.js?v=1.10.0-dev.3"></script>
+<script src="js/app/crop.js?v=1.10.0-dev.3"></script>
+<script src="js/app/export.js?v=1.10.0-dev.3"></script>
+<script src="js/app/export-controls.js?v=1.10.0-dev.3"></script>
+<script src="js/app/corner-shots.js?v=1.10.0-dev.3"></script>
+<script src="js/app/pair.js?v=1.10.0-dev.3"></script>
+<script src="js/app/main.js?v=1.10.0-dev.3"></script>
 </body>
 </html>

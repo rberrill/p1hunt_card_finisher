@@ -10,8 +10,8 @@ The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure he
 | Both | `?selftest=1` | toast reads `main n/n, worker n/n`, all passing |
 | Desktop | Wide layout | tabs visible, step menu button hidden, every More section open |
 | Phone | No sideways scroll | `document.documentElement.scrollWidth <= innerWidth` on every step |
-| Phone | Photo area the same on every step (scripted) | `#stage` height identical across all six steps: 524 px at 390×844 in the 1.10 layout (the old layout, until phase 2 replaces the shell, is 21 px taller) |
-| Phone | Control area (scripted) | `.control-area` is 200 px on every step with nothing overflowing, including with a status showing (the old layout's `.controls`: 192 px, `scrollHeight <= clientHeight` with More closed) |
+| Phone | Photo area the same on every step (scripted) | `#stage` height identical across all six steps: 544 px at 390×844 in a browser (no safe area; the frames draw 524 with 20 px for it) |
+| Phone | Control area (scripted) | `.control-area` is 200 px on every step with nothing overflowing, including with a status showing (a step its phase hasn't converted is `is-interim` and may scroll until then) |
 | Phone | Tap targets (scripted for the parts) | every control is a 44 px target at 375 px wide, counting a small control's larger hit area (`touchSize` in `layout-probe.js`) |
 | Both | The fifteen parts (scripted) | each part builds, has the plan's sizes (section 5) and behaves: the ruler's drag, the sheet's close, the alert card's choices |
 | Both | Reduced motion (scripted) | with `prefers-reduced-motion`, only opacity transitions |

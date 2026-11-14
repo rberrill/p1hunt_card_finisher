@@ -1,7 +1,9 @@
 /* =====================================================================
    js/app/parts/top-bar.js: the Top bar part. Open on the left; Front | Back with Unpair beside
-   it in the center while a pair is open; Fit (only while the photo is zoomed or panned), Undo
-   and Redo on the right. Every button is an icon in a 44 px target.
+   it in the center while a pair is open; Fit (on the phone only while the photo is zoomed or
+   panned), Undo and Redo on the right. Every button is an icon in a 44 px target. On a wide
+   screen it also shows the app's name, Open's label and the steps (the tab bar, moved into
+   its steps slot by shell.js), and Fit always shows.
    Shell modules share one namespace, CF (created in core.js). Names from core are destructured
    below; anything from another module is called as CF.name. tests/selftest.js checks these
    boundaries.
@@ -10,8 +12,12 @@
   'use strict';
   const { makeEl } = CF;
 
-  // An icon-only button: label is its name for screen readers, title its tooltip.
-  function buildIconButton({ id, icon, label, title, isHidden }) {
+  // The app icon beside the name on a wide screen, in CSS px (the desktop frames draw it at 26).
+  const BRAND_ICON_PX = 26;
+
+  // An icon-only button: label is its name for screen readers, title its tooltip. shownLabel:
+  // text shown beside the icon on a wide screen only (Open).
+  function buildIconButton({ id, icon, label, title, isHidden, shownLabel }) {
     return makeEl('button', {
       class: 'icon-button',
       id,
@@ -19,11 +25,26 @@
       title: title || label,
       'aria-label': label,
       hidden: isHidden,
-    }, CF.makeIcon(icon));
+    },
+    CF.makeIcon(icon),
+    shownLabel && makeEl('span', { class: 'icon-button-label' }, shownLabel));
+  }
+
+  // The app's icon and name, shown on a wide screen only.
+  function buildBrand() {
+    return makeEl('span', { class: 'top-bar-brand' },
+      makeEl('img', {
+        src: `icons/icon.svg?v=${CONFIG.appVersion}`,
+        alt: '',
+        width: BRAND_ICON_PX,
+        height: BRAND_ICON_PX,
+      }),
+      'Card Finisher');
   }
 
   // Builds the bar. Its controls keep the ids the old header used (btnOpen, btnUndo, btnRedo,
-  // btnFit, sideSwitch, btnUnpair), so their handlers bind as before.
+  // btnFit, sideSwitch, btnUnpair), so their handlers bind as before. The steps slot
+  // (topBarSteps) is empty until shell.js moves the tab bar into it on a wide screen.
   function buildTopBar() {
     const sideSwitch = CF.buildSegmented({
       id: 'sideSwitch',
@@ -36,7 +57,9 @@
     });
     sideSwitch.hidden = true;
     return makeEl('header', { class: 'top-bar' },
-      buildIconButton({ id: 'btnOpen', icon: 'open', label: 'Open photo' }),
+      buildBrand(),
+      buildIconButton({ id: 'btnOpen', icon: 'open', label: 'Open photo', shownLabel: 'Open' }),
+      makeEl('div', { class: 'top-bar-steps', id: 'topBarSteps' }),
       makeEl('div', { class: 'top-bar-center' },
         sideSwitch,
         buildIconButton({

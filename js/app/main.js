@@ -42,18 +42,6 @@
   /* ---------- init ---------- */
   const phoneLayout = matchMedia('(max-width: 760px)');
 
-  // Wide screens show every "More options" section open; phones start them closed.
-  function placeLayout() {
-    if (phoneLayout.matches) {
-      CF.collapseMore();
-    } else {
-      document.querySelectorAll('details.more').forEach(details => {
-        details.open = true;
-      });
-    }
-    CF.closeStepMenu();
-  }
-
   function bindPhotoInput() {
     // The picker's photo is for what opened it (Open, Next card or Add back).
     const onFile = (file, name) => {
@@ -116,14 +104,14 @@
 
   function init() {
     elements.root.dataset.tab = app.tab;
-    document.querySelector('.brand').title = 'Version ' + CONFIG.appVersion;
-    // Also under Export → More options, where a phone can read it.
-    byId('versionInfo').textContent = 'Card Finisher ' + CONFIG.appVersion;
     console.info(`[card-finisher] v${CONFIG.appVersion}`);
     CF.buildControls();
     CF.bindControls();
-    placeLayout();
-    phoneLayout.addEventListener('change', placeLayout);
+    document.querySelector('.top-bar-brand').title = 'Version ' + CONFIG.appVersion;
+    // Also in Export's options, where a phone can read it.
+    byId('versionInfo').textContent = 'Card Finisher ' + CONFIG.appVersion;
+    CF.placeLayout();
+    phoneLayout.addEventListener('change', CF.placeLayout);
     CF.EngineWorker.init();
     bindPhotoInput();
     bindCanvasInput();

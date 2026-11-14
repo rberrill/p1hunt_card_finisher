@@ -319,7 +319,7 @@
     });
     byId('pairPrompt').hidden = false;
     elements.root.classList.add('prompting');
-    CF.closeStepMenu();
+    CF.closeSheets();
     byId('btnPromptFirst').focus({ preventScroll: true });
   }
 
@@ -872,10 +872,8 @@
 
   function bindPair() {
     app.pairOutput = storedPairOutput();
-    document.querySelectorAll('#sideSwitch [data-side]').forEach(button => {
-      button.addEventListener('click', () => {
-        if (app.pair && button.dataset.side !== app.pair.current) switchSide();
-      });
+    CF.bindSegmented(byId('sideSwitch'), side => {
+      if (app.pair && side !== app.pair.current) switchSide();
     });
     byId('btnUnpair').onclick = askUnpair;
     byId('btnPromptCancel').onclick = hidePrompt;
@@ -889,12 +887,15 @@
     byId('pairOutput').onchange = event => setPairOutput(event.target.value);
   }
 
-  // The header chip, Unpair, the output dropdown and the Save edits hint follow the pair.
+  // Front | Back and Unpair in the top bar, the output dropdown and the Save edits hint follow
+  // the pair.
   function syncPair() {
     const pair = app.pair;
     elements.root.classList.toggle('paired', !!pair);
-    byId('sideSwitch').hidden = !pair;
-    byId('btnUnpair').hidden = !pair;
+    CF.updateTopBar(elements.topBar, {
+      pairSide: pair ? pair.current : null,
+      isSwitchDisabled: !!app.exporting || !!app.isSwitching,
+    });
     byId('pairOutput').hidden = !pair;
     byId('editsPairHint').hidden = !pair;
     if (!pair) {
@@ -902,10 +903,6 @@
       if (isPromptForPair) hidePrompt();
       return;
     }
-    document.querySelectorAll('#sideSwitch [data-side]').forEach(button => {
-      button.setAttribute('aria-pressed', String(button.dataset.side === pair.current));
-      button.disabled = !!app.exporting || !!app.isSwitching;
-    });
     byId('pairOutput').value = app.pairOutput;
   }
 

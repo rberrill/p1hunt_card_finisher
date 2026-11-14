@@ -228,9 +228,10 @@
     requestThumbs();
   }
 
-  // True while the thumbnails can be seen: on Export with More options open.
+  // True while the thumbnails can be seen: on Export with its options open (always open on a
+  // wide screen).
   function areThumbsShown() {
-    return app.tab === 'export' && !!byId('cornerShots').closest('details').open;
+    return app.tab === 'export' && CF.isSheetOpen(byId('cornerShots').closest('.sheet-layer'));
   }
 
   let isThumbsQueued = false;
@@ -300,7 +301,7 @@
       else saveCornerShots('share');
     };
     byId('btnCornerShare').hidden = !CF.Exporter.canShare();
-    byId('cornerShots').closest('details').addEventListener('toggle', requestThumbs);
+    byId('cornerShots').closest('.sheet-layer').addEventListener('sheetopen', requestThumbs);
   }
 
   Object.assign(CF, {

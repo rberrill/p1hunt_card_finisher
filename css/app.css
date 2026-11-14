@@ -30,6 +30,11 @@
   --top-bar-height: 48px;
   --control-area-height: 200px;
   --tab-bar-height: 52px;
+  /* The Resume card's drawn thumbnail: a card on a desk, never the real photo. */
+  --thumb-desk: #c9c4bc;
+  --thumb-card-front: #1b1d22;
+  --thumb-card-back: #dedad2;
+  --thumb-card-edge: #f4f2ee;
 }
 * { box-sizing: border-box; }
 /* The hidden attribute always wins: a class that sets display (.row is flex) would otherwise
@@ -59,39 +64,6 @@ button, select, input { font: inherit; color: inherit; }
 }
 input, select, textarea { -webkit-user-select: auto; user-select: auto; }
 
-/* ---- the old header (replaced by the top bar part in phase 2) ---- */
-.old-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
-  flex-wrap: wrap;
-}
-.brand { font-weight: 700; letter-spacing: .02em; padding: 0 6px; white-space: nowrap; }
-.brand b { color: var(--accent); }
-.tabs {
-  display: flex;
-  gap: 2px;
-  background: var(--panel2);
-  border-radius: 12px;
-  padding: 3px;
-  margin: 0 auto;
-}
-.tab {
-  min-height: 40px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 600;
-  cursor: pointer;
-}
-.tab[aria-selected="true"] { background: var(--bg); color: var(--text); }
-.tab:disabled { opacity: .4; cursor: default; }
-.actions { display: flex; gap: 4px; }
 .btn {
   min-height: 44px;
   min-width: 44px;
@@ -129,16 +101,6 @@ input, select, textarea { -webkit-user-select: auto; user-select: auto; }
 }
 .btn.wide { width: 100%; }
 .next-row { margin: 2px 0 6px; }
-/* Front | Back in the header while a pair is open: the side you're on is lit. */
-.side-switch { display: flex; }
-.side-switch .btn { padding: 0 8px; min-width: 52px; font-weight: 600; }
-.side-switch .btn:first-child { border-radius: 10px 0 0 10px; }
-.side-switch .btn:last-child { border-radius: 0 10px 10px 0; border-left: 0; }
-.side-switch .btn[aria-pressed="true"] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
 /* A pair's question: a Resume-style card over the dimmed photo. The backdrop takes every
    touch, so the photo can't be dragged while it's up. */
 .pair-prompt {
@@ -166,7 +128,6 @@ main { flex: 1; display: flex; min-height: 0; }
   overflow: hidden;
   touch-action: none;
 }
-.stage.drag-over { outline: 2px dashed var(--accent); outline-offset: -10px; }
 #view {
   position: absolute;
   inset: 0;
@@ -176,19 +137,6 @@ main { flex: 1; display: flex; min-height: 0; }
   touch-action: none;
   outline: none;
 }
-.empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  text-align: center;
-  color: var(--muted);
-  padding: 24px;
-}
-.empty h2 { margin: 0; color: var(--text); font-size: 20px; }
 .resume {
   display: flex;
   flex-direction: column;
@@ -223,7 +171,7 @@ main { flex: 1; display: flex; min-height: 0; }
 .toast.warn { border-left: 3px solid var(--warn); }
 .toast.error { border-left: 3px solid var(--accent); }
 .panel {
-  width: 330px;
+  width: 380px;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -315,19 +263,6 @@ main { flex: 1; display: flex; min-height: 0; }
 .swatch.unset {
   background: repeating-linear-gradient(45deg, var(--panel2) 0 6px, var(--panel) 6px 12px);
 }
-/* The dot that marks an unapplied Levels draft. */
-.tab.pending::after,
-#app.levels-pending .step-button::after,
-.step-menu .pending::after {
-  content: '';
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-left: 6px;
-  border-radius: 50%;
-  background: var(--warn);
-  vertical-align: middle;
-}
 label.field { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; }
 label.field .value { float: right; color: var(--text); font-variant-numeric: tabular-nums; }
 input[type="range"] {
@@ -417,15 +352,8 @@ input[type="color"] {
 section[data-panel] { display: none; }
 section[data-panel].active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
-/* ---- action bar, step menu, "More" sections ---- */
-.action-bar {
-  flex: none;
-  display: flex;
-  gap: 6px;
-  padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
-  background: var(--panel);
-  border-top: 1px solid var(--line);
-}
+/* ---- the old action bar (inside the control area of a step its phase hasn't converted) ---- */
+.action-bar { flex: none; display: flex; gap: 6px; padding: 6px 0 8px; }
 .action-bar > .btn {
   flex: 1 1 auto;
   min-width: 0;
@@ -434,79 +362,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.step-button { display: none !important; }
-.step-menu {
-  position: absolute;
-  left: 8px;
-  bottom: calc(66px + env(safe-area-inset-bottom));
-  z-index: 10;
-  min-width: 210px;
-  padding: 4px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, .55);
-}
-.step-menu button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 46px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.step-menu button .step-number {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  width: 1em;
-}
-.step-menu button[aria-current="step"] { background: var(--panel2); font-weight: 600; }
-/* More options is a full-width button, the same shape as the rows above it, so it reads as a
-   control (a small muted line didn't, on the phone). Open, it takes the pressed look and its
-   chevron turns, so what expanded the panel stays visible. */
-details.more { margin: 12px 0 0; }
-details.more > summary {
-  min-height: 44px;
-  box-sizing: border-box;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel2);
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-}
-details.more > summary::-webkit-details-marker { display: none; }
-details.more > summary:hover { border-color: #55555c; }
-/* The chevron: two edges of a small square, turned to point down, and up while open. */
-details.more > summary::after {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: translateY(-2px) rotate(45deg);
-}
-details.more[open] > summary {
-  margin-bottom: 12px;
-  border-color: var(--accent);
-  background: rgba(229, 50, 45, .18);
-}
-details.more[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
-/* Nothing floats over the photo, so no handle is ever hidden under a control. */
-#app:not(.has-img) #btnPreview,
-#app:not([data-tab="perspective"]) #btnPreview { display: none; }
 .nudge { display: none; gap: 6px; margin-bottom: 8px; }
 .nudge button {
   flex: 0 0 48px;
@@ -1203,35 +1058,264 @@ details.more[open] > summary::after { transform: translateY(2px) rotate(-135deg)
   .slider input:active::-moz-range-thumb { transform: none; }
 }
 
-/* ---- narrow screens: the panel becomes a bottom sheet ---- */
+/* =====================================================================
+   THE 1.10 SHELL. The top bar, the photo, each step's control area and options sheet, and the
+   tab bar, arranged for the phone (under 761 px wide) and for a wide screen (the steps in the
+   top bar, a 380 px side panel with every option listed inline). The parts above keep their
+   own look; these rules only place them.
+   ===================================================================== */
+.top-bar-host { flex: none; }
+.tab-bar-host { flex: none; }
+.workspace { flex: 1; display: flex; min-height: 0; }
+.panel { background: var(--surface); }
+.top-bar-brand, .top-bar-steps, .icon-button-label { display: none; }
+/* The old controls of a step its phase hasn't converted: they may be taller than the area for
+   now, so the area scrolls on those steps only. */
+.control-area.is-interim { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.control-area .mini { margin-bottom: 8px; }
+
+/* ---- shell: the start screen ---- */
+.start-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 32px 24px;
+  background: var(--page);
+  color: var(--ink);
+  text-align: center;
+}
+.start-icon { display: block; width: 76px; height: 76px; }
+.start-eyebrow {
+  margin-top: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+.start-title {
+  margin: 20px 0 0;
+  font-size: 30px;
+  line-height: 34px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.start-text { margin: 10px 0 0; font-size: 15px; line-height: 21px; color: var(--quiet); }
+.start-open { width: 326px; max-width: 100%; margin-top: 30px; }
+.resume-card:not([hidden]) ~ .start-open { margin-top: 12px; }
+.resume-card {
+  width: 326px;
+  max-width: 100%;
+  margin-top: 26px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface);
+  text-align: left;
+}
+.resume-who { display: flex; align-items: center; gap: 12px; }
+/* A drawn card on a desk (two side by side for a pair): never the real photo. */
+.resume-thumb {
+  width: 44px;
+  height: 56px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 6px;
+  background: var(--thumb-desk);
+}
+.resume-thumb.is-pair { width: 60px; }
+.resume-thumb i {
+  width: 24px;
+  height: 34px;
+  border: 2px solid var(--thumb-card-edge);
+  border-radius: 2px;
+  background: var(--thumb-card-front);
+}
+.resume-thumb i + i { display: none; background: var(--thumb-card-back); }
+.resume-thumb.is-pair i + i { display: block; }
+.resume-when {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+.resume-name { margin-top: 2px; font-size: 15px; font-weight: 700; color: var(--ink); }
+.resume-name b { word-break: break-all; }
+.resume-choices { display: flex; gap: 8px; margin-top: 14px; }
+
+/* ---- shell: the drop outline ---- */
+/* A file dragged over the photo area: a white dashed outline that says what a drop does. */
+.stage.drag-over::after {
+  content: 'Drop to open';
+  position: absolute;
+  inset: 10px;
+  z-index: 3;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 22px;
+  border: 2px dashed var(--ink);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  pointer-events: none;
+}
+#app.has-img[data-tab="overlay"] .stage.drag-over::after { content: 'Drop to add as the logo'; }
+
+/* ---- shell: sheets open and close (motion M1) ---- */
+/* Open 280 ms, fast then settling; close 200 ms, accelerating away. A finger drag has no
+   easing (.is-dragging). */
+.sheet-layer .sheet {
+  transform: translateY(100%);
+  transition: transform 200ms cubic-bezier(.4, 0, 1, 1);
+}
+.sheet-layer .sheet-scrim { opacity: 0; transition: opacity 200ms linear; }
+.sheet-layer.is-open .sheet {
+  transform: none;
+  transition: transform 280ms cubic-bezier(.2, .8, .2, 1);
+}
+.sheet-layer.is-open .sheet-scrim { opacity: 1; transition-duration: 280ms; }
+.sheet-layer.is-dragging .sheet,
+.sheet-layer.is-dragging .sheet-scrim { transition: none; }
+/* The keyboard help is for a wide screen only. */
+.sheet-tips-heading, .sheet-keys { display: none; }
+
+/* ---- shell: the phone ---- */
 @media (max-width: 760px) {
-  /* Header, photo, a control area of the same height on every step, then the action bar. The
-     step tabs are replaced by the step menu (the first action-bar button); opening
-     "More options" expands the area. */
-  .old-header { padding: 4px 6px; flex-wrap: nowrap; }
-  .brand, .tabs { display: none; }
-  .actions { width: 100%; justify-content: space-between; }
-  /* A pair needs the room for Front | Back and Unpair: Open shows its icon only, and the row
-     packs tighter so all seven targets (Preview shows on Perspective) fit 375 px at 44 px. */
-  #app.paired #btnOpen span,
-  #app.paired #btnPreview span { display: none; }
-  #app.paired #btnOpen,
-  #app.paired #btnPreview { padding: 0; }
-  #app.paired .old-header { padding: 4px; }
-  #app.paired .actions { gap: 2px; }
-  .side-switch .btn { min-width: 44px; padding: 0 5px; font-size: 13px; }
+  .workspace { flex-direction: column; }
+  .panel { width: auto; flex: none; border: 0; }
+  /* No bars before a photo: nothing in them would work. */
+  #app:not(.has-img) .top-bar-host,
+  #app:not(.has-img) .panel,
+  #app:not(.has-img) .tab-bar-host { display: none; }
+  /* The tuning panel sits above the control area. */
+  #debugPanel {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    top: auto;
+    bottom: calc(
+      var(--control-area-height) + var(--tab-bar-height) + env(safe-area-inset-bottom) + 8px
+    );
+    max-height: 40vh;
+  }
+}
+
+/* ---- shell: a wide screen ---- */
+@media (min-width: 761px) {
+  .top-bar {
+    height: 56px;
+    gap: 8px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--edge);
+  }
+  .top-bar-brand {
+    order: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 8px;
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  #btnOpen {
+    order: 2;
+    width: auto;
+    height: 36px;
+    gap: 6px;
+    display: inline-flex;
+    padding: 0 13px;
+    border-radius: 18px;
+    background: var(--control);
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+  #btnOpen .icon { width: 18px; height: 18px; stroke-width: 2; }
+  .icon-button-label { display: inline; }
+  .top-bar-steps { order: 3; flex: 1; display: flex; justify-content: center; min-width: 0; }
+  .top-bar-center { order: 4; flex: none; gap: 4px; }
+  #btnUndo { order: 5; }
+  #btnRedo { order: 6; }
+  #btnFit { order: 7; }
+  /* The steps: text tabs in a pill, the open one white. */
+  .top-bar-steps .tab-bar {
+    height: 40px;
+    padding: 2px;
+    border-radius: 20px;
+    background: var(--control);
+    box-shadow: none;
+  }
+  .top-bar-steps .step-tab {
+    height: 36px;
+    flex-direction: row;
+    gap: 0;
+    padding: 0 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--soft);
+  }
+  .top-bar-steps .step-tab .icon { display: none; }
+  .top-bar-steps .step-tab[aria-selected="true"] {
+    background: var(--ink);
+    color: var(--page);
+    font-weight: 800;
+  }
+  .top-bar-steps .step-tab-mark {
+    position: static;
+    margin-left: 7px;
+    box-shadow: none;
+  }
+  .top-bar-steps .step-tab[aria-selected="true"] .step-tab-mark { background: var(--page); }
+  /* The side panel: the step's control area, then its options, always open. */
+  .panel {
+    width: 380px;
+    overflow-y: auto;
+    border-left: 1px solid var(--edge);
+  }
+  #app:not(.has-img) section[data-panel] { display: none; }
+  .control-area {
+    height: auto;
+    padding-bottom: 14px;
+    border-top: 0;
+  }
+  .control-area.is-interim { overflow: visible; }
+  .grabber { display: none; }
+  .sheet-layer { position: static; }
+  .sheet-scrim, .sheet-grabber, .sheet-close, .sheet-tips-group > .sheet-list { display: none; }
+  .sheet {
+    position: static;
+    max-height: none;
+    padding: 12px 16px 16px;
+    border-top: 1px solid var(--edge);
+    border-radius: 0;
+    background: transparent;
+  }
+  .sheet-layer .sheet { transform: none; transition: none; }
+  .sheet-header { height: auto; margin-bottom: 0; }
+  .sheet-title { color: var(--quiet); }
+  .sheet-body { overflow: visible; }
+  .sheet-tips.sheet-tips[hidden] { display: flex !important; }
+  .sheet-tips { margin-top: 0; }
+  .sheet-tips-heading, .sheet-keys { display: block; }
+  #debugPanel { right: 388px; top: 64px; }
+}
+
+/* ---- narrow screens: the old layout's rules on the phone ---- */
+@media (max-width: 760px) {
   #pairOutput { flex-basis: 0%; }
   main { flex-direction: column; }
-  .panel { width: auto; border-left: 0; border-top: 1px solid var(--line); }
-  /* Fits the tallest step (Perspective, with a one-line status and the More options bar with
-     its gap). The same on every step, so the photo never changes height. */
-  .controls { flex: none; height: 192px; padding: 8px 12px 0; }
   .nudge { margin-bottom: 6px; }
   .status { padding: 4px 10px; margin-bottom: 2px; }
-  .panel.expanded .controls { height: calc(64dvh - 62px); }
-  .action-bar { padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
   .action-bar > .btn { padding: 0 6px; }
-  .step-button { display: inline-flex !important; flex: none !important; }
   /* Crop presets: one row that scrolls sideways (swipe). Wide screens wrap instead, since a
      mouse can't swipe. */
   .chips.scroller {
@@ -1245,7 +1329,6 @@ details.more[open] > summary::after { transform: translateY(2px) rotate(-135deg)
   .chips.scroller .chip { flex: none; }
   .result-group { display: none; }
   .mini { max-width: 180px; }
-  #debugPanel { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; max-height: 45vh; }
 
   /* ---- the 1.10 parts on the phone ---- */
   /* Crop presets: one row that scrolls sideways and runs off the right edge, so it reads as

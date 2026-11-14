@@ -322,7 +322,6 @@
     byId('btnApplyLevels').disabled = !app.levelsPending;
     byId('btnDiscardLevels').disabled = !app.levelsPending;
     // No "unapplied" message: the step's dot and the enabled Apply button say it.
-    document.querySelector('[data-tab="levels"]').classList.toggle('pending', app.levelsPending);
     elements.root.classList.toggle('levels-pending', app.levelsPending);
   }
 

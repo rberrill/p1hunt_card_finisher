@@ -13,9 +13,10 @@ const probe = fs.readFileSync(path.join(__dirname, 'layout-probe.js'), 'utf8');
 const SIZES = [[390, 844], [375, 667], [1280, 800]];
 // A touch target's least size, in CSS px.
 const MIN_TARGET_PX = 44;
-// The old layout's phone control area (until phase 2 replaces the shell) and the new one's.
-const OLD_AREA_PX = 192;
+// The phone's control area.
 const NEW_AREA_PX = 200;
+// The top bar's height: 48 px on the phone, 56 on a wide screen (the desktop frames).
+const TOP_BAR_PX = { phone: 48, wide: 56 };
 
 const isTarget = touch => touch.width >= MIN_TARGET_PX && touch.height >= MIN_TARGET_PX;
 const allEqual = values => values.every(value => value === values[0]);
@@ -26,7 +27,9 @@ const list = values => values.join(', ');
 function stepChecks(label, steps, isPhone) {
   const heights = steps.map(step => step.photoHeight);
   const areas = steps.map(step => step.areaHeight);
-  const overflowing = steps.filter(step => step.areaOverflowPx > 0);
+  // A step its phase hasn't converted keeps its old controls, which may scroll for now.
+  const overflowing = steps.filter(step => !step.isInterim && step.areaOverflowPx > 0);
+  const interim = steps.filter(step => step.isInterim).map(step => step.step);
   const over = steps.filter(step => step.overPhoto.length);
   const checks = [
     [`${label}: no sideways scroll on any step`,
@@ -38,10 +41,11 @@ function stepChecks(label, steps, isPhone) {
   return checks.concat([
     [`${label}: photo the same height on every step`, allEqual(heights), `${list(heights)} px`],
     [`${label}: control area the same height on every step`,
-      allEqual(areas) && [OLD_AREA_PX, NEW_AREA_PX].includes(areas[0]), `${list(areas)} px`],
-    [`${label}: control area doesn't overflow`,
+      allEqual(areas) && areas[0] === NEW_AREA_PX, `${list(areas)} px`],
+    [`${label}: control area doesn't overflow (converted steps)`,
       !overflowing.length,
-      overflowing.map(step => `${step.step} +${step.areaOverflowPx} px`).join('; ')],
+      overflowing.map(step => `${step.step} +${step.areaOverflowPx} px`).join('; ')
+        || (interim.length ? `not yet converted: ${list(interim)}` : '')],
     [`${label}: no clipped action-bar label`,
       steps.every(step => !step.clippedButtons), ''],
   ]);
@@ -50,10 +54,14 @@ function stepChecks(label, steps, isPhone) {
 // Checks of the shell parts against the plan's component inventory (section 5).
 function shellChecks(label, shell, isPhone) {
   const toolWidths = shell.tools.map(tool => tool.width);
+  const barHeight = isPhone ? TOP_BAR_PX.phone : TOP_BAR_PX.wide;
   const checks = [
-    [`${label}: top bar is 48 px tall`, shell.topBar.height === 48, `${shell.topBar.height}`],
+    [`${label}: top bar is ${barHeight} px tall`, shell.topBar.height === barHeight,
+      `${shell.topBar.height}`],
+    // On a wide screen Open is the desktop frames' 36 px labelled pill (a mouse target).
     [`${label}: top bar's icon buttons are 44 × 44 targets`,
-      shell.iconButtons.every(isTarget), JSON.stringify(shell.iconButtons[0])],
+      shell.iconButtons.slice(isPhone ? 0 : 1).every(isTarget),
+      JSON.stringify(shell.iconButtons[0])],
     [`${label}: Front | Back is 112 × 36 with 44 px tall halves`,
       shell.sideSwitch.width === 112 && shell.sideSwitch.height === 36
         && shell.sideHalves.every(half => half.height >= MIN_TARGET_PX && half.width >= 54),
@@ -61,8 +69,9 @@ function shellChecks(label, shell, isPhone) {
     [`${label}: the fullest top bar (paired and zoomed) fits`,
       shell.topBarUsedPx <= shell.topBar.width,
       `${shell.topBarUsedPx} of ${shell.topBar.width} px`],
-    [`${label}: control area is 200 px with nothing overflowing`,
-      shell.area.height === 200 && shell.areaSparePx >= 0,
+    // A wide screen's panel lets the area take its content's height.
+    [`${label}: control area is ${isPhone ? '200 px' : 'as tall as its rows'}, none overflowing`,
+      (!isPhone || shell.area.height === NEW_AREA_PX) && shell.areaSparePx >= 0,
       `${shell.area.height} px, ${shell.areaSparePx} px spare under the tool row`],
     [`${label}: rows are 44 and 70 px`,
       shell.labelRow.height === 44 && shell.toolRow.height === 70, ''],
@@ -70,9 +79,12 @@ function shellChecks(label, shell, isPhone) {
       shell.tools.every(tool => tool.height === 70 && tool.width >= MIN_TARGET_PX)
         && !shell.toolLabelsClipped,
       `${toolWidths[0]} px wide each`],
-    [`${label}: grabber is a 36 px pill in a 44 px tall target`,
-      shell.grabberPill === '36px' && shell.grabber.height >= MIN_TARGET_PX
-        && shell.grabber.width >= MIN_TARGET_PX,
+    // A wide screen has no grabber: its options are always open.
+    [`${label}: grabber is ${isPhone ? 'a 36 px pill in a 44 px tall target' : 'hidden'}`,
+      isPhone
+        ? shell.grabberPill === '36px' && shell.grabber.height >= MIN_TARGET_PX
+          && shell.grabber.width >= MIN_TARGET_PX
+        : shell.grabber.height === 0,
       JSON.stringify(shell.grabber)],
     [`${label}: nudge keys are 52 × 44`,
       shell.padKeys.every(key => key.width === 52 && key.height === 44), ''],
@@ -116,12 +128,14 @@ function partChecks(label, { controls, layers }, isPhone, height) {
       controls.segmented.height === 44
         && controls.segmentTouches.every(isTarget)
         && controls.selectedSegment === 'white', ''],
-    [`${label}: sheet is at most 470 px, at the bottom, rows at least 46 px`,
-      layers.sheet.height <= 470 && layers.sheetBottomGapPx === 0
-        && layers.rows.every(row => row.height >= 46),
+    [`${label}: sheet rows are at least 46 px`
+      + (isPhone ? '; the sheet is at most 470 px, at the bottom' : ', listed inline'),
+      layers.rows.every(row => row.height >= 46)
+        && (!isPhone || (layers.sheet.height <= 470 && layers.sheetBottomGapPx === 0)),
       `${layers.sheet.height} px tall`],
-    [`${label}: sheet's close button is a 44 px target; its progress line is 3 px`,
-      isTarget(layers.closeTouch) && layers.progressLine.height === 3, ''],
+    [`${label}: sheet's progress line is 3 px`
+      + (isPhone ? '; its close button a 44 px target' : ''),
+      (!isPhone || isTarget(layers.closeTouch)) && layers.progressLine.height === 3, ''],
     [`${label}: Tips opens in place; a tap outside closes the sheet`,
       layers.areTipsOpen && layers.sheetClosedByScrim, ''],
     [`${label}: alert card is 300 px wide, choices 48 px, Cancel 46 px`,

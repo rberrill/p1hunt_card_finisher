@@ -1,13 +1,15 @@
 /* =====================================================================
-   js/app/shell.js: the steps and the step menu, binding and syncing the controls
-   of every step (each step's own handlers live in its module), and the step resets.
+   js/app/shell.js: the shell of the 1.10 layout. The top bar and the tab bar, switching steps,
+   each step's control area and options sheet (the grabber, closing sheets, the phone and wide
+   arrangements), binding and syncing the controls of every step (each step's own handlers live
+   in its module), and the step resets.
    Shell modules share one namespace, CF (created in core.js). Names from core are
    destructured below; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { byId, makeEl, elements, app } = CF;
+  const { byId, elements, app } = CF;
 
   const STEPS = {
     perspective: 'Perspective',
@@ -20,14 +22,20 @@
   // True for a real step name. A stored step (session records are untrusted) is checked with
   // this, not `STEPS[tab]`, which is truthy for inherited keys such as 'constructor'.
   const isStep = tab => Object.prototype.hasOwnProperty.call(STEPS, tab);
+  // Each step's options sheet title (the plan's approved wording).
+  const SHEET_TITLES = {
+    perspective: 'Perspective options',
+    rotate: 'Rotate options',
+    crop: 'Crop options',
+    levels: 'Levels tips',
+    overlay: 'Overlay options',
+    export: 'Export options',
+  };
 
   /* ---------- steps ---------- */
   function setTab(tab) {
     app.tab = tab;
     elements.root.dataset.tab = tab;
-    document.querySelectorAll('.tab').forEach(button => {
-      button.setAttribute('aria-selected', String(button.dataset.tab === tab));
-    });
     document.querySelectorAll('section[data-panel]').forEach(section => {
       section.classList.toggle('active', section.dataset.panel === tab);
     });
@@ -40,77 +48,115 @@
     if (tab !== 'overlay') app.overlayMessage = '';
     app.nudgeLoupeUntil = 0;
     app.findMode = false;
-    closeStepMenu();
+    closeSheets();
     CF.Session.saveSoon();
-    if (CF.phoneLayout.matches) collapseMore();
     syncUI();
     CF.requestRender();
     CF.requestMini();
   }
 
-  // A segmented control (data-segment="name"): onPick(value) when one of its buttons is tapped.
+  // A segmented control of the old layout (data-segment="name"): onPick(value) when one of its
+  // buttons is tapped. The parts' segmented control has its own (CF.bindSegmented).
   function bindSegment(name, onPick) {
     document.querySelectorAll(`[data-segment="${name}"] button`).forEach(button => {
       button.addEventListener('click', () => onPick(button.dataset.value));
     });
   }
 
+  // Lights the old layout's segment with this value.
   function setSegment(name, value) {
     document.querySelectorAll(`[data-segment="${name}"] button`).forEach(button => {
       button.setAttribute('aria-pressed', String(button.dataset.value === value));
     });
   }
 
-  // The step menu (phones): lists the steps above the action bar.
-  function openStepMenu(button) {
-    const menu = byId('stepMenu');
-    const items = Object.keys(STEPS).map((tab, i) => makeEl('button', {
-      role: 'menuitem',
-      'data-goto': tab,
-      'aria-current': tab === app.tab && 'step',
-      class: tab === 'levels' && app.levelsPending && 'pending',
-    }, makeEl('span', { class: 'step-number' }, String(i + 1)), STEPS[tab]));
-    menu.replaceChildren(...items);
-    menu.hidden = false;
-    button.setAttribute('aria-expanded', 'true');
+  /* ---------- the bars ---------- */
+  // Builds the top bar and the tab bar into their hosts. The tab bar's place depends on the
+  // window's width (placeLayout).
+  function buildBars() {
+    elements.topBar = CF.buildTopBar();
+    elements.tabBar = CF.buildTabBar();
+    byId('topBarHost').replaceChildren(elements.topBar);
+    byId('tabBarHost').replaceChildren(elements.tabBar);
   }
 
-  function closeStepMenu() {
-    byId('stepMenu').hidden = true;
-    document.querySelectorAll('[data-step-menu]').forEach(button => {
-      button.setAttribute('aria-expanded', 'false');
+  // The phone and wide arrangements. Phone: the tab bar along the bottom and every sheet
+  // closed. Wide: the tab bar inside the top bar and every step's options open, listed inline
+  // in the side panel (css/app.css).
+  function placeLayout() {
+    const isPhone = CF.phoneLayout.matches;
+    const host = isPhone ? byId('tabBarHost') : byId('topBarSteps');
+    if (elements.tabBar.parentElement !== host) host.append(elements.tabBar);
+    document.querySelectorAll('section[data-panel] .sheet-layer').forEach(layer => {
+      if (isPhone) {
+        layer.classList.remove('is-open');
+        layer.hidden = true;
+      } else {
+        layer.hidden = false;
+        layer.classList.add('is-open');
+      }
+    });
+    syncFitButton();
+  }
+
+  // Fit shows on a wide screen always, and on the phone only while the photo is zoomed or
+  // panned away from its fitted view. view.js calls this after every draw.
+  function syncFitButton() {
+    if (!elements.topBar) return;
+    const view = app.img ? CF.currentView() : null;
+    const isMoved = !!view && view.auto === false;
+    CF.updateTopBar(elements.topBar, {
+      isFitShown: !!app.img && (!CF.phoneLayout.matches || isMoved),
     });
   }
 
-  // "More options" expands the control area on phones.
-  function collapseMore() {
-    document.querySelectorAll('details.more').forEach(details => {
-      details.open = false;
-    });
-    elements.panel.classList.remove('expanded');
+  /* ---------- each step's control area and sheet ---------- */
+  // A step whose phase hasn't come yet keeps its old markup (.controls, details.more and
+  // .action-bar). This moves it into a control area (which scrolls for now) and a sheet with
+  // the step's id names, so the shell treats every step alike. The ids inside are unchanged,
+  // so the step's handlers bind as before. Returns without a change for a converted step.
+  function mountInterimStep(section) {
+    const step = section.dataset.panel;
+    const controls = section.querySelector(':scope > .controls');
+    if (!controls) return;
+    const more = controls.querySelector(':scope > details.more');
+    const actionBar = section.querySelector(':scope > .action-bar');
+    const kept = [...controls.children].filter(child => child !== more);
+    const area = CF.buildControlArea(`${step}Area`, ...kept, actionBar);
+    area.classList.add('is-interim');
+    const moreContent = more ? [...more.children].filter(child => child.tagName !== 'SUMMARY') : [];
+    const sheet = CF.buildSheet({ id: `${step}Sheet`, title: SHEET_TITLES[step] }, ...moreContent);
+    controls.replaceWith(area);
+    section.append(sheet);
   }
 
-  /* ---------- building the controls ---------- */
-  // Phones: each action bar starts with the step menu button.
-  function buildStepButtons() {
-    document.querySelectorAll('section[data-panel] .action-bar').forEach(bar => {
-      const tab = bar.closest('section').dataset.panel;
-      bar.prepend(makeEl('button', {
-        class: 'btn step-button',
-        'data-step-menu': true,
-        'aria-haspopup': 'menu',
-        'aria-expanded': 'false',
-        title: 'Go to a step',
-      }, `${STEPS[tab]} ▾`));
-    });
+  // The open step's options sheet; null on a wide screen, where options are always inline.
+  function currentSheet() {
+    if (!CF.phoneLayout.matches || !app.img) return null;
+    return byId(`${app.tab}Sheet`);
   }
 
-  // Fills in the controls that come from CONFIG. Each step builds its own.
+  // Closes every open sheet on the phone. Returns true when one was open (Escape uses it).
+  function closeSheets() {
+    if (!CF.phoneLayout || !CF.phoneLayout.matches) return false;
+    let wasOpen = false;
+    document.querySelectorAll('.sheet-layer').forEach(layer => {
+      if (!CF.isSheetOpen(layer)) return;
+      wasOpen = true;
+      CF.closeSheet(layer);
+    });
+    return wasOpen;
+  }
+
+  // Fills in the controls that come from CONFIG, builds the bars, and gives every step its
+  // control area and sheet. Each step builds its own controls first.
   function buildControls() {
+    buildBars();
+    CF.buildPerspectiveControls();
+    CF.buildRotateControls();
     CF.buildCropChips();
     CF.buildSizeOptions();
-    buildStepButtons();
-    CF.buildFineRange();
+    document.querySelectorAll('section[data-panel]').forEach(mountInterimStep);
   }
 
   /* ---------- binding the controls ---------- */
@@ -137,10 +183,11 @@
     elements.fileInput.click();
   }
 
-  // The header, tabs, step menu, More options and Preview.
+  // The top bar, the tab bar and the grabbers.
   function bindNavigation() {
-    document.querySelectorAll('.tab').forEach(button => {
-      button.addEventListener('click', () => app.img && setTab(button.dataset.tab));
+    elements.tabBar.addEventListener('click', event => {
+      const tab = event.target.closest('.step-tab');
+      if (tab && app.img) setTab(tab.dataset.step);
     });
     byId('btnOpen').onclick = () => pickPhoto('open');
     byId('btnOpenEmpty').onclick = () => pickPhoto('open');
@@ -148,43 +195,16 @@
     byId('btnUndo').onclick = CF.undo;
     byId('btnRedo').onclick = CF.redo;
     byId('btnFit').onclick = CF.fitCurrent;
-    document.querySelectorAll('[data-next]').forEach(button => {
-      button.addEventListener('click', () => setTab(button.dataset.next));
-    });
-    document.querySelectorAll('[data-step-menu]').forEach(button => {
-      button.addEventListener('click', () => {
-        if (byId('stepMenu').hidden) openStepMenu(button);
-        else closeStepMenu();
-      });
-    });
-    byId('stepMenu').addEventListener('click', event => {
-      const item = event.target.closest('[data-goto]');
-      if (!item) return;
-      closeStepMenu();
-      setTab(item.dataset.goto);
+    document.querySelectorAll('.control-area > .grabber').forEach(grabber => {
+      CF.bindSheetHandle(grabber, currentSheet);
     });
     document.addEventListener('pointerdown', event => {
-      if (!event.target.closest('#stepMenu, [data-step-menu]')) closeStepMenu();
       // The nudge loupe stays up between nudges; touching anything else hides it.
-      if (app.nudgeLoupeUntil && !event.target.closest('[data-nudge]')) {
+      if (app.nudgeLoupeUntil && !event.target.closest('[data-nudge], .nudge-pad')) {
         app.nudgeLoupeUntil = 0;
         CF.requestRender();
       }
     }, true);
-    const onMoreToggled = () => {
-      if (!CF.phoneLayout.matches) return;
-      const isAnyOpen = !!document.querySelector('section.active details.more[open]');
-      elements.panel.classList.toggle('expanded', isAnyOpen);
-    };
-    document.querySelectorAll('details.more').forEach(details => {
-      details.addEventListener('toggle', onMoreToggled);
-    });
-    byId('btnPreview').onclick = () => {
-      app.previewMode = !app.previewMode;
-      app.views.result = null;
-      syncUI();
-      CF.requestRender();
-    };
   }
 
   // A step's Reset button: that step's settings back to their defaults.
@@ -221,15 +241,12 @@
     const hasPhoto = !!app.img;
     const state = app.state;
     elements.root.classList.toggle('has-img', hasPhoto);
-    elements.root.classList.toggle('previewing', !!app.previewMode && app.tab === 'perspective');
-    byId('btnPreview').setAttribute('aria-pressed', String(!!app.previewMode));
-    byId('btnPreview').querySelector('span').textContent = app.previewMode ? 'Corners' : 'Preview';
-    byId('btnUndo').disabled = !CF.History.undo.length;
-    byId('btnRedo').disabled = !CF.History.redo.length;
-    byId('btnFit').disabled = !hasPhoto;
-    document.querySelectorAll('.tab').forEach(button => {
-      button.disabled = !hasPhoto;
+    CF.updateTopBar(elements.topBar, {
+      canUndo: CF.History.undo.length > 0,
+      canRedo: CF.History.redo.length > 0,
     });
+    CF.updateTabBar(elements.tabBar, { current: app.tab, isDisabled: !hasPhoto });
+    syncFitButton();
     document.querySelectorAll('.panel button, .panel select, .panel input').forEach(control => {
       control.disabled = !hasPhoto;
     });
@@ -239,6 +256,7 @@
     CF.syncCrop(state);
     CF.syncExportControls(state);
     CF.syncLevels();
+    CF.updateTabBar(elements.tabBar, { hasLevelsMark: app.levelsPending });
     CF.syncOverlay();
     syncReadouts();
   }
@@ -262,8 +280,9 @@
     isStep,
     bindSegment,
     setSegment,
-    closeStepMenu,
-    collapseMore,
+    placeLayout,
+    syncFitButton,
+    closeSheets,
     buildControls,
     bindControls,
     pickPhoto,

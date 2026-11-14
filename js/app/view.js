@@ -193,6 +193,7 @@
   }
 
   function draw() {
+    CF.syncFitButton();
     const canvas = elements.canvas;
     const ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);

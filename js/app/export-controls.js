@@ -23,22 +23,33 @@
   // The Corner shots button on Export: opens More options and scrolls its Corner shots group to
   // the top of the control area. On the phone, opening More options expands the panel in its
   // toggle handler, so the scroll waits for that event and measures the new layout.
-  async function showCornerShots() {
+  function showCornerShots() {
     const group = byId('cornerShots');
-    const more = group.closest('details');
-    if (!more.open) {
-      const toggled = new Promise(resolve => {
-        more.addEventListener('toggle', resolve, { once: true });
+    const layer = group.closest('.sheet-layer');
+    if (CF.phoneLayout.matches) CF.openSheet(layer);
+    const scroller = CF.phoneLayout.matches ? group.closest('.sheet-body') : elements.panel;
+    const offsetPx = group.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+    scroller.scrollTop += offsetPx - CORNER_SCROLL_MARGIN_PX;
+  }
+
+  // Fill outside photo (D12: it is export state, so it lives with Export's options).
+  function bindFill() {
+    byId('fill').onchange = event => {
+      const fill = event.target.value === 'custom' ? byId('fillColor').value : event.target.value;
+      CF.commit(state => {
+        state.export.fill = fill;
       });
-      more.open = true;
-      await toggled;
-    }
-    const controls = group.closest('.controls');
-    const offsetPx = group.getBoundingClientRect().top - controls.getBoundingClientRect().top;
-    controls.scrollTop += offsetPx - CORNER_SCROLL_MARGIN_PX;
+    };
+    byId('fillColor').oninput = event => {
+      byId('fill').value = 'custom';
+      CF.commit(state => {
+        state.export.fill = event.target.value;
+      }, 'fill');
+    };
   }
 
   function bindExport() {
+    bindFill();
     byId('format').onchange = event => CF.commit(state => {
       state.export.format = event.target.value;
     });
@@ -85,6 +96,10 @@
     byId('qualityRow').hidden = state.export.format === 'png';
     byId('size').value = String(state.export.longEdge || 0);
     byId('interp').value = state.export.interp;
+    const fill = state.export.fill;
+    const isPreset = ['transparent', '#ffffff', '#000000'].includes(fill);
+    byId('fill').value = isPreset ? fill : 'custom';
+    if (!isPreset) byId('fillColor').value = fill;
   }
 
   // The export notes: why the output isn't what you might expect. pairLayout: the Together

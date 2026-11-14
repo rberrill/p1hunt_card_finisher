@@ -9,6 +9,8 @@
   const round = value => Math.round(value * 10) / 10;
   // The top bar's side padding, both sides together (css/app.css, .top-bar).
   const TOP_BAR_PADDING_PX = 8;
+  // A sheet's open and close slides take at most 280 ms (css/app.css); the probe waits longer.
+  const SHEET_SETTLE_MS = 400;
   const isShown = el => {
     const rect = rectOf(el);
     return rect.width > 0 && rect.height > 0 && getComputedStyle(el).visibility !== 'hidden';
@@ -73,14 +75,14 @@
     for (const step of Object.keys(CF.STEPS)) {
       window.__straightener.setTab(step);
       await wait(120);
-      const area = document.querySelector('.control-area')
-        || document.querySelector('section.active .controls');
+      const area = document.querySelector('section.active .control-area');
       const bar = document.querySelector('section.active .action-bar');
       const clipped = bar
         ? [...bar.querySelectorAll('.btn')].filter(el => el.scrollWidth > el.clientWidth).length
         : 0;
       steps.push({
         step,
+        isInterim: area.classList.contains('is-interim'),
         photoHeight: round(rectOf(document.getElementById('stage')).height),
         areaHeight: round(rectOf(area).height),
         areaOverflowPx: area.scrollHeight - area.clientHeight,
@@ -269,7 +271,7 @@
   }
 
   // The layers: a sheet with rows, an alert card, a toast and a progress line.
-  function measureLayers(host) {
+  async function measureLayers(host) {
     const tips = CF.buildTipsRow('probeTips', ['One tip.', 'Another tip.']);
     const sheet = CF.buildSheet({ id: 'probeSheet', title: 'Rotate options' },
       CF.buildSheetList(
@@ -287,8 +289,11 @@
     sheet.addEventListener('sheetclose', () => closedCount++);
     CF.openSheet(sheet);
     CF.updateSheet(sheet, { progress: 0.5 });
+    // Let the sheet finish rising (280 ms) before measuring it.
+    await wait(SHEET_SETTLE_MS);
     const panel = sheet.querySelector('.sheet');
-    const rows = [...sheet.querySelectorAll('.sheet-row')];
+    // The Tips row is hidden on a wide screen, where the tips are always open.
+    const rows = [...sheet.querySelectorAll('.sheet-row')].filter(isShown);
     const sheetSizes = {
       sheet: size(panel),
       sheetBottomGapPx: round(window.innerHeight - rectOf(panel).bottom),
@@ -300,6 +305,7 @@
     tips.querySelector('button').click();
     const areTipsOpen = !tips.querySelector('.sheet-tips').hidden;
     sheet.querySelector('.sheet-scrim').click();
+    await wait(SHEET_SETTLE_MS);
     let answer = 'none';
     const choices = [
       { label: 'Yes', isMain: true, action: () => { answer = 'yes'; } },
@@ -323,7 +329,8 @@
     return {
       ...sheetSizes,
       areTipsOpen,
-      sheetClosedByScrim: sheet.hidden && closedCount === 1,
+      // A wide screen lists options inline: there is no backdrop to tap.
+      sheetClosedByScrim: !CF.phoneLayout.matches || (sheet.hidden && closedCount === 1),
       ...cardSizes,
       answerAfterYes,
       answerAfterOutsideTap: answer,
@@ -342,7 +349,7 @@
       host.replaceChildren();
       const controls = measureControls(host);
       host.replaceChildren();
-      const layers = measureLayers(host);
+      const layers = await measureLayers(host);
       const pointer = CF.buildRuler({ id: 'probeMotion', min: -5, max: 5, step: 1, label: 'x' });
       host.append(pointer);
       const motion = getComputedStyle(pointer.querySelector('.ruler-pointer')).transitionProperty;

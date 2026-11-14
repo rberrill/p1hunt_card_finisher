@@ -7,7 +7,7 @@
    ===================================================================== */
 (function (CF) {
   'use strict';
-  const { byId, clone, app } = CF;
+  const { byId, elements, clone, app } = CF;
 
   // The on-screen nudge pad (phones): one screen pixel per step, never less than one source
   // pixel; hold to repeat.
@@ -54,6 +54,12 @@
     });
   }
 
+  // Builds Perspective's controls from js/app/parts/ into its section of index.html: a control
+  // area (CF.buildControlArea, id perspectiveArea) and an options sheet (CF.buildSheet, id
+  // perspectiveSheet). Until then the shell hosts the step's old markup.
+  function buildPerspectiveControls() {
+  }
+
   function bindPerspective() {
     byId('btnNext').onclick = () => {
       const count = app.detection.candidates.length;
@@ -64,7 +70,7 @@
     // until the tap.
     byId('btnFindCard').onclick = () => {
       app.findMode = !app.findMode;
-      if (app.findMode && CF.phoneLayout.matches) CF.collapseMore();
+      if (app.findMode) CF.closeSheets();
       CF.syncUI();
     };
     // Strength updates live while sliding (geometry only); one undo step per slide.
@@ -92,17 +98,11 @@
       if (app.debugOverlay && !hasDebugData) CF.runDetect();
       CF.requestRender();
     };
-    byId('fill').onchange = event => {
-      const fill = event.target.value === 'custom' ? byId('fillColor').value : event.target.value;
-      CF.commit(state => {
-        state.export.fill = fill;
-      });
-    };
-    byId('fillColor').oninput = event => {
-      byId('fill').value = 'custom';
-      CF.commit(state => {
-        state.export.fill = event.target.value;
-      }, 'fill');
+    byId('btnPreview').onclick = () => {
+      app.previewMode = !app.previewMode;
+      app.views.result = null;
+      CF.syncUI();
+      CF.requestRender();
     };
   }
 
@@ -113,10 +113,9 @@
     byId('strengthValue').textContent = strengthPercent + '%';
     byId('snap').checked = app.snap;
     byId('debugOverlay').checked = app.debugOverlay;
-    const fill = state.export.fill;
-    const isPreset = ['transparent', '#ffffff', '#000000'].includes(fill);
-    byId('fill').value = isPreset ? fill : 'custom';
-    if (!isPreset) byId('fillColor').value = fill;
+    elements.root.classList.toggle('previewing', !!app.previewMode && app.tab === 'perspective');
+    byId('btnPreview').setAttribute('aria-pressed', String(!!app.previewMode));
+    byId('btnPreview').querySelector('span').textContent = app.previewMode ? 'Corners' : 'Preview';
     byId('btnFindCard').setAttribute('aria-pressed', String(app.findMode));
     const count = app.detection.candidates.length;
     byId('btnNext').disabled = count < 2;
@@ -158,6 +157,7 @@
   }
 
   Object.assign(CF, {
+    buildPerspectiveControls,
     bindHandleNudge,
     bindPerspective,
     syncPerspective,
