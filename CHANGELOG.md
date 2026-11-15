@@ -33,6 +33,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Export progress** is a thin red line along the top edge of the controls, or of the Corner shots sheet while the corners save, so it's in view where you tapped. The old bar could scroll off screen there.
 - **Questions.** **Upscale to 2000 px?**, Unpair's **Keep front** or **Keep back**, and **New photo** or replace the side you're on are asked on a new card over the dimmed photo. Tap outside the card, or **Cancel**, to back out. Asked from Corner shots, the card sits above the open sheet.
 - **Colors and marks.** The outline shown while you drag a file over the page is white and says what dropping it will do. Amber now means a warning and nothing else: unapplied levels show as a white dot on the Levels tab.
+- **Motion.** Controls now move the way they work: a sheet settles as it closes; the options tab's arrow flattens as the sheet rises; a question's card fades in; switching step, or between **Nudge** and **Flatten**, fades the new controls in; **Front | Back** has a white pill that slides to the side you tap; on Overlay the snap rings fade in and the logo glides to the ring you tap; the red progress line fades out when an export ends. With your device set to reduce motion, things swap or fade in place instead of moving.
+- **On a wide screen:**
+  - the top bar now fits narrow windows, down to the width where the phone layout takes over (it used to overlap itself below about 1100 px with a pair open);
+  - a file dropped on the panel or the top bar no longer makes the browser leave the app;
+  - controls show a hover state, and the cursor shows when you're dragging the photo;
+  - Perspective's **Result** preview fills the panel's width, **Card orientation** is full height, each step's tips sit in their own block at the end of its options, and the panel's scrollbar is thin and dark;
+  - **Corner shots** no longer scrolls Export's own controls out of view when its block is already visible.
 - **Messages over the photo** now look different by kind: a white pill for information, amber with a triangle for a warning, and red with a circle for an error. The words are the same. While a sheet is open, a message sits just above it.
 
 ### Fixed

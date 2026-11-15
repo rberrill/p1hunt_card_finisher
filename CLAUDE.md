@@ -58,7 +58,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 - **The card is the only target.** No case or slab detection; the detector prefers the inner of nested quads. Flatten 0% replaced Square up.
 - **Default export:** 1:1 fit to card, 2000 px, JPEG 0.92. No HEIC decoder (Safari decodes natively).
-- **The 1.10 redesign** (Rich, 2026-11-14; the agreed build plan, its 41 answers and the approved wording are in the decision log). It is built on `main` in six phases, each with its own UAT, and released once as 1.10.0. Until a phase lands, the code still has the old layout for that part. No capability is added or removed. The stack stays plain static files, with `ui.js` split into one file per part; no type checks, so npm stays out.
+- **The 1.10 redesign** (Rich, 2026-11-14; the agreed build plan, its 41 answers and the approved wording are in the decision log). Built on `main` in six phases and released once as 1.10.0. No capability was added or removed. The stack stays plain static files, with the shell split into one file per part; no type checks, so npm stays out.
 - **Phone layout:**
   - Top bar, photo, a 200 px control area in three rows (label row, control row, tool row), then a six-step tab bar. The area is the same on every step, so the photo never changes size. No bars before a photo is open. The step menu, the "next step →" buttons and the More options bar are gone.
   - Top bar: Open (always an icon) on the left; Front | Back with Unpair beside it in the center while paired; Undo and Redo on the right; Fit only while the photo is zoomed or panned.

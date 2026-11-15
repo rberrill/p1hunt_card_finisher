@@ -381,7 +381,9 @@
   }
 
   // The Corner shots button on Export: opens the Corner shots sheet. A wide screen lists it in
-  // the panel, so there it scrolls the panel to it.
+  // the panel: there the panel scrolls only if the block is not wholly in view, and then by the
+  // least amount (its top wins when it is taller than the panel). Focus moves to the block's
+  // selected output choice either way, so the click always has a visible answer.
   function openCornerShots() {
     const layer = byId('cornerShotsSheet');
     if (CF.phoneLayout.matches) {
@@ -390,8 +392,14 @@
       return;
     }
     const panel = elements.panel;
-    const offsetPx = layer.getBoundingClientRect().top - panel.getBoundingClientRect().top;
-    panel.scrollTop += offsetPx - CORNER_SCROLL_MARGIN_PX;
+    const panelRect = panel.getBoundingClientRect();
+    const blockRect = layer.getBoundingClientRect();
+    const aboveTopPx = panelRect.top + CORNER_SCROLL_MARGIN_PX - blockRect.top;
+    const belowBottomPx = blockRect.bottom - (panelRect.bottom - CORNER_SCROLL_MARGIN_PX);
+    if (aboveTopPx > 0) panel.scrollTop -= aboveTopPx;
+    else if (belowBottomPx > 0) panel.scrollTop += Math.min(belowBottomPx, -aboveTopPx);
+    const selected = layer.querySelector('#cornerOutput [aria-pressed="true"]');
+    if (selected) selected.focus({ preventScroll: true });
   }
 
   // Wires the sheet's controls. Share shows only where the browser can share files, as for

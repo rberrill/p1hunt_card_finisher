@@ -58,6 +58,21 @@
     CF.ImageSource.bindPicker(elements.fileInput, onFile);
     CF.ImageSource.bindDrop(elements.stage, onDropOrPaste);
     CF.ImageSource.bindPaste(onDropOrPaste);
+    bindStrayDrop();
+  }
+
+  // A file dropped anywhere but the photo area (the panel, the top bar) would make the browser
+  // open it in place of the app, losing the edits. The photo area's own handlers run first and
+  // cancel the event; anything they leave is cancelled here, with the no-drop cursor.
+  function bindStrayDrop() {
+    window.addEventListener('dragover', event => {
+      if (event.defaultPrevented) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'none';
+    });
+    window.addEventListener('drop', event => {
+      if (!event.defaultPrevented) event.preventDefault();
+    });
   }
 
   function bindCanvasInput() {

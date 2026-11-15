@@ -11,6 +11,8 @@
   // The debug panel re-runs detection this long after the last change to a setting.
   const REDETECT_DELAY_MS = 350;
 
+  // Shows or hides the panel (force: true or false, or left out to flip it). Showing it builds
+  // it afresh and turns the debug overlay on, re-running detection so its scores fill in.
   function toggleDebugPanel(force) {
     const panel = elements.debugPanel;
     const show = force !== undefined ? force : panel.hidden;
@@ -26,6 +28,7 @@
 
   let redetectTimer = 0;
   // One field per number or on/off setting in CONFIG.detect; editing one re-runs detection.
+  // The heading row (title and close), the two actions, the fields, then the last run's scores.
   function buildDebugPanel() {
     const panel = elements.debugPanel;
     const settings = CONFIG.detect;
@@ -34,12 +37,13 @@
     const rows = keys.map(key => makeEl('label', null, key, typeof settings[key] === 'boolean'
       ? makeEl('input', { type: 'checkbox', 'data-key': key, checked: settings[key] })
       : makeEl('input', { type: 'number', 'data-key': key, value: settings[key], step: 'any' })));
-    const button = (id, label) => makeEl('button', { class: 'btn debug-button', id }, label);
+    // Built from the parts: Action buttons at their small size, and an icon button to close.
+    const button = (id, label) => CF.buildActionButton({ id, label, size: 'small', isWide: true });
     panel.replaceChildren(
-      makeEl('div', { class: 'row debug-head' },
-        makeEl('b', null, 'Detection tuning'),
-        button('debugClose', '×')),
-      makeEl('div', { class: 'row' },
+      makeEl('div', { class: 'debug-head' },
+        makeEl('h2', { class: 'debug-title' }, 'Detection tuning'),
+        CF.buildIconButton({ id: 'debugClose', icon: 'close', label: 'Close tuning' })),
+      makeEl('div', { class: 'debug-actions' },
         button('debugCopy', 'Copy CONFIG'),
         button('debugRun', 'Re-detect')),
       ...rows,

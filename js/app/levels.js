@@ -380,8 +380,9 @@
       }));
   }
 
-  // The sheet: the tips as paragraphs, then the keyboard help under "Tips and keys", which the
-  // sheet part shows on a wide screen only (frame DT5).
+  // The sheet: the tips as paragraphs, then the keyboard help under "Tips and keys" in its own
+  // block, as every step's tips group is on a wide screen (frame DT5). The block carries the
+  // keys' class, so a phone hides it whole and its sheet is the tips alone.
   function buildLevelsSheet() {
     const heading = CF.buildSheetHeading('Tips and keys');
     heading.classList.add('sheet-tips-heading');
@@ -390,10 +391,10 @@
       hint.classList.add('sheet-keys');
       return hint;
     });
+    const keysGroup = makeEl('div', { class: 'sheet-tips-group sheet-keys' }, heading, ...keys);
     return CF.buildSheet({ id: 'levelsSheet', title: 'Levels tips' },
       ...LEVELS_TIPS.map(tip => CF.buildSheetHint(tip)),
-      heading,
-      ...keys);
+      keysGroup);
   }
 
   // Arms the dropper for `which` ('white' or 'black'); a tap on the armed part disarms it.

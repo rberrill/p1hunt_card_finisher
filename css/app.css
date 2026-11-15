@@ -4,12 +4,9 @@
 :root {
   --bg: #161618;
   --panel: #1f1f22;
-  --panel2: #2a2a2e;
   --line: #3a3a40;
   --text: #e8e8ea;
-  --muted: #9c9ca4;
   --accent: #e5322d;
-  --ok: #3fb950;
   --warn: #e3b341;
   --stage: #2b2b2b;
   /* The 1.10 parts' colors (they mirror CONFIG.theme): matte black, white and the one red
@@ -37,7 +34,7 @@
   --thumb-card-edge: #f4f2ee;
 }
 * { box-sizing: border-box; }
-/* The hidden attribute always wins: a class that sets display (.row is flex) would otherwise
+/* The hidden attribute always wins: a class that sets display (a flex row) would otherwise
    show a hidden element. */
 [hidden] { display: none !important; }
 html, body {
@@ -63,25 +60,6 @@ button, select, input { font: inherit; color: inherit; }
   -webkit-touch-callout: none;
 }
 input, select, textarea { -webkit-user-select: auto; user-select: auto; }
-
-.btn {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  background: var(--panel2);
-  border-radius: 10px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-}
-.btn:hover:not(:disabled) { border-color: #55555c; }
-.btn:disabled { opacity: .4; cursor: default; }
 
 /* ---- stage and panel ---- */
 main { flex: 1; display: flex; min-height: 0; }
@@ -112,8 +90,6 @@ main { flex: 1; display: flex; min-height: 0; }
   background: var(--panel);
   border-left: 1px solid var(--line);
 }
-.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
-.row > .btn { flex: 1; }
 input[type="range"] {
   width: 100%;
   height: 44px;
@@ -121,15 +97,6 @@ input[type="range"] {
   accent-color: var(--accent);
   touch-action: pan-y;
 }
-input[type="number"] {
-  min-height: 44px;
-  width: 100%;
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0 10px;
-}
-input[type="number"] { width: 96px; }
 .mini {
   width: 100%;
   max-width: 280px;
@@ -143,6 +110,8 @@ section[data-panel] { display: none; }
 section[data-panel].active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 /* ---- debug tuning panel ---- */
+/* The developer's detection tuning, built from the parts: a raised card with a small heading,
+   two small Action buttons, an icon button to close, and fields on the control color. */
 #debugPanel {
   position: fixed;
   right: 8px;
@@ -151,12 +120,26 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   max-height: 75vh;
   overflow: auto;
   z-index: 20;
+  padding: 6px 12px 12px;
+  border-radius: 14px;
+  background: var(--raised);
+  color: var(--ink);
   font-size: 12px;
-  background: rgba(18, 18, 20, .97);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px;
+  accent-color: var(--ink);
+  scrollbar-width: thin;
+  scrollbar-color: var(--track) transparent;
 }
+.debug-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.debug-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+#debugClose { width: 36px; height: 36px; border-radius: 18px; }
+.debug-actions { display: flex; gap: 6px; margin: 4px 0 8px; }
 #debugPanel label {
   display: flex;
   justify-content: space-between;
@@ -164,13 +147,15 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   gap: 8px;
   margin: 2px 0;
 }
-#debugPanel input[type="number"] { min-height: 30px; width: 90px; border-radius: 6px; }
-#debugPanel pre { white-space: pre-wrap; font-size: 11px; color: var(--muted); }
-
-/* Classes for what used to be inline style attributes (the Content Security Policy blocks
-  those). */
-.debug-head { justify-content: space-between; }
-.debug-button { min-height: 36px; }
+#debugPanel input[type="number"] {
+  width: 90px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--control);
+}
+#debugPanel pre { white-space: pre-wrap; font-size: 11px; color: var(--quiet); }
 
 /* =====================================================================
    THE 1.10 PARTS. Fifteen parts build the new layout; each has its rules under its own banner
@@ -773,6 +758,9 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+/* A segmented control grows to fill a row (flex: 1). In a sheet's column that basis of 0
+   squeezed it to its text (Card orientation was 23.6 px tall): here it keeps its 44 px. */
+.sheet-body > .segmented-control { flex: none; }
 .sheet-list { flex: none; border-radius: 12px; background: var(--raised); }
 .sheet-row {
   width: 100%;
@@ -1222,7 +1210,15 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
     border-top: 1px solid var(--edge);
   }
   .perspective-result .sheet-heading { margin: 0; }
-  .perspective-result .mini { max-width: 180px; margin: 0; }
+  /* The panel's width at 150 px tall, the card centered (frame DT3). drawMini sizes the bitmap
+     to this box, so it is never stretched. */
+  .perspective-result .mini {
+    width: 100%;
+    max-width: none;
+    height: 150px;
+    aspect-ratio: auto;
+    margin: 0;
+  }
 }
 
 /* ---- step: Rotate ---- */
@@ -1471,9 +1467,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 @media (min-width: 761px) {
   /* Corner shots is listed before Export's options in the side panel (frame DT6). */
   #exportSheet { order: 1; }
-  /* The panel's scrollbar takes about 15 px from the 380, which Size and Format need: their
-     row reaches 6 px into the panel's padding on each side. */
-  #exportChoices { margin: 0 -6px; }
   /* The panel has the room, so the readout row grows to hold a long readout and every note
      (beside a pair's Together | Separately its column is narrow) instead of cutting at 44 px. */
   #exportReadoutRow { height: auto; min-height: 44px; }
@@ -1496,8 +1489,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   border-radius: 4px;
   background: var(--stage);
 }
-/* The output control keeps its 44 px in the sheet's column. */
-#cornerOutput { flex: none; }
 /* One line; it keeps its height while empty (invalid corners), so nothing under it moves. */
 .corner-readout {
   min-height: 17px;
@@ -1626,10 +1617,15 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   }
   .top-bar-steps .step-tab[aria-selected="true"] .step-tab-mark { background: var(--page); }
   /* The side panel: the step's control area, then its options, always open. */
+  /* Its scrollbar is thin and dark, and its gutter is always kept, so the content is the same
+     width on every step whether or not the panel scrolls. */
   .panel {
     width: 380px;
     overflow-y: auto;
     border-left: 1px solid var(--edge);
+    scrollbar-width: thin;
+    scrollbar-color: var(--track) transparent;
+    scrollbar-gutter: stable;
   }
   #app:not(.has-img) section[data-panel] { display: none; }
   .control-area {
@@ -1655,7 +1651,72 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   .sheet-tips.sheet-tips[hidden] { display: flex !important; }
   .sheet-tips { margin-top: 0; }
   .sheet-tips-heading, .sheet-keys { display: block; }
+  /* "Tips and keys" is its own block at the end of the options: a line across the panel, as
+     between the panel's other blocks, and 12 px above its heading (frames DT3 and DT5). */
+  .sheet-body > .sheet-tips-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 -16px;
+    padding: 12px 16px 0;
+    border-top: 1px solid var(--edge);
+  }
+  /* Where the options hold only the tips (Overlay), the sheet's own line and heading would
+     stand over nothing: the tips block takes the sheet's place under its line. */
+  .sheet:has(> .sheet-body > .sheet-tips-group:only-child) > .sheet-header { display: none; }
+  .sheet-body > .sheet-tips-group:only-child { margin: 0; padding: 0; border-top: 0; }
   #debugPanel { right: 388px; top: 64px; }
+}
+/* The top bar on a narrower wide screen. In full it needs 1094 px with a pair open, 1109 with
+   Levels' mark too. Up to 1119 px the name and Open's label go (the icons stay) and the step
+   tabs close in: about 860 px with a pair. Measured with the steps' longest labels, Fit shown. */
+@media (min-width: 761px) and (max-width: 1119px) {
+  .top-bar-brand { gap: 0; margin-right: 0; font-size: 0; }
+  #btnOpen { width: 44px; padding: 0; justify-content: center; }
+  .icon-button-label { display: none; }
+  .top-bar-steps .step-tab { padding: 0 10px; }
+}
+/* Under 900 px the app's icon goes too, the gaps halve and the labels drop a size: about 740 px
+   with a pair, so the bar fits from 761 px. Every control stays at least 36 px. */
+@media (min-width: 761px) and (max-width: 899px) {
+  .top-bar { gap: 4px; padding: 0 8px; }
+  .top-bar-brand { display: none; }
+  .top-bar-steps .step-tab { padding: 0 7px; font-size: 13px; }
+  .top-bar-steps .step-tab-mark { margin-left: 5px; }
+}
+
+/* ---- shell: hover ---- */
+/* A mouse only: a phone reports no hover, so a tap never leaves a fill behind. Filled controls
+   lighten to the pressed color; transparent ones take a quiet fill, one step lighter than what
+   they sit on. The red main action and the white selected states keep their color, and a
+   disabled control never answers. */
+@media (hover: hover) {
+  .tool:hover:not(:disabled, .tool-mode[aria-pressed="true"]),
+  .action-button:hover:not(:disabled, .is-main, .is-next, .is-quiet),
+  .preset-chip:hover:not(:disabled, [aria-pressed="true"]) {
+    background: var(--pressed);
+  }
+  /* On the control color already (a segmented control, the nudge pad, the steps' pill). */
+  .segment:hover:not(:disabled, [aria-pressed="true"]),
+  .nudge-key:hover:not(:disabled),
+  .top-bar-steps .step-tab:hover:not(:disabled, [aria-selected="true"]) {
+    background: var(--pressed);
+  }
+  /* On the page, the panel or a list. */
+  .icon-button:hover:not(:disabled),
+  .step-tab:hover:not(:disabled, [aria-selected="true"]),
+  .text-button:hover:not(:disabled) {
+    background: var(--control);
+  }
+  .text-button:hover:not(:disabled) { border-radius: 10px; }
+  .sheet-row:hover { background: var(--pressed); }
+  .sheet-list > .sheet-row:first-child:hover { border-radius: 12px 12px 0 0; }
+  .sheet-list > .sheet-row:last-child:hover { border-radius: 0 0 12px 12px; }
+  .sheet-list > .sheet-row:only-child:hover { border-radius: 12px; }
+}
+/* Open is a filled pill on a wide screen. */
+@media (hover: hover) and (min-width: 761px) {
+  #btnOpen:hover:not(:disabled) { background: var(--pressed); }
 }
 
 /* ---- narrow screens: the old layout's rules on the phone ---- */

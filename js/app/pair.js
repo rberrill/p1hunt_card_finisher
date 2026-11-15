@@ -324,6 +324,8 @@
 
   // Whether the card that's up asks one of the pair's questions (Unpair, New photo).
   let isPromptForPair = false;
+  // The control that had the keyboard focus when the question was asked.
+  let promptOpener = null;
 
   // A question must be answered before going on, so while its card is up the bars and the
   // panel take no click and no keyboard focus. A wide screen leaves them undimmed, to be read
@@ -350,6 +352,9 @@
       isPromptForPair = false;
       elements.root.classList.remove('prompting');
       setBarsInert(false);
+      // Keyboard focus goes back to the control that asked, if it is still there to take it.
+      if (promptOpener && promptOpener.isConnected && !promptOpener.disabled) promptOpener.focus();
+      promptOpener = null;
     });
     elements.stage.append(layer);
     return layer;
@@ -362,6 +367,8 @@
   // takes down when the pair ends while one is up. An open sheet stays open under the card.
   function showPrompt({ title, text, choices, isForPair = false }) {
     isPromptForPair = isForPair;
+    // Remembered before the bars go inert, which takes the focus away from them.
+    promptOpener = document.activeElement;
     elements.root.classList.add('prompting');
     setBarsInert(true);
     CF.showAlert(promptCard(), { title, text, choices });

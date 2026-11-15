@@ -50,7 +50,7 @@ Fifteen parts build every screen of the 1.10 layout (the plan's component invent
 - **One module per part**, with its rules under its own banner in `css/app.css`. A part exports a `build…` function, which returns an element and attaches only the part's own behavior (hold to repeat, the ruler's drag, a sheet's close), and an `update…` function, which writes values into it. A value left out of an update stays as it is.
 - **A step composes parts; it doesn't restyle them.** The step's module builds its control area and its sheet from parts, binds their events and syncs them from the state. If a part can't do what a step needs, the part changes (through the lead), not the step.
 - **State is in attributes**, so CSS and screen readers agree: `aria-pressed` (a mode or switch tool, a chip, a segment), `aria-selected` (a tab), `disabled`, `hidden`. Looks are `is-…` classes (`is-main`, `is-tall`, `is-warn`).
-- **Not in the parts yet:** the alert card's and progress line's fades (phase 6).
+- **Motion belongs to the parts** (Claude's build, 1.10 phase 6, from the plan's sequences M1 to M13): a part animates itself through classes it sets (`is-open`, `is-dragging`, `is-held`, `is-leaving`, `is-entering`, `is-arriving`, `is-done`, `is-ghost`), only with `transform` and `opacity`. Things drawn on the canvas (Overlay's rings and snap, the compare badge) are timed redraws: the state is committed at once and only the drawing is animated. Ask `CF.isMotionReduced()` before any timed sequence in JS.
 - **Fixed heights are tokens** in `:root` (`--top-bar-height`, `--control-area-height`, `--tab-bar-height`); use them, not the numbers.
 - **Class names are whole words** (the wireframes' `tb`, `ca`, `lr` are `top-bar`, `control-area`, `label-row`).
 
@@ -58,18 +58,18 @@ Fifteen parts build every screen of the 1.10 layout (the plan's component invent
 |---|---|---|---|
 | Top bar | `top-bar.js` | `buildTopBar`, `updateTopBar`, `buildIconButton` | `.top-bar`, `.top-bar-center`, `.icon-button` |
 | Tab bar | `tab-bar.js` | `buildTabBar`, `updateTabBar` | `.tab-bar`, `.step-tab` (`data-step`), `.step-tab-mark` |
-| Adjustment line | `adjustment-line.js` | `buildControlArea` (with its grabber and progress line), `buildAdjustmentLine`, `updateAdjustmentLine`, `buildLabelRow`, `buildControlRow`, `buildToolRow`, `buildTextButton` | `.control-area`, `.grabber`, `.label-row`, `.control-row`, `.tool-row`, `.line-label`, `.line-value`, `.line-readout`, `.text-button` |
+| Adjustment line | `adjustment-line.js` | `buildControlArea` (with its grabber and progress line), `buildAdjustmentLine`, `updateAdjustmentLine`, `buildLabelRow`, `buildControlRow`, `buildToolRow`, `buildTextButton`, `swapLine` (a mode tap's line swap), `fadeInControlArea` (a step change), `isMotionReduced` | `.control-area`, `.grabber`, `.label-row`, `.control-row`, `.tool-row`, `.line-label`, `.line-value`, `.line-readout`, `.text-button` |
 | Status | `status.js` | `buildStatus`, `updateStatus` | `.status-line` |
 | Ruler | `ruler.js` | `buildRuler`, `updateRuler` | `.ruler` (wraps the range input; Rotate's keeps the id `fine`) |
-| Slider | `slider.js` | `buildSlider`, `updateSlider` | `.slider` (wraps a range input) |
+| Slider | `slider.js` | `buildSlider`, `updateSlider` | `.slider` (wraps a range input; `is-held` while pressed) |
 | Tool | `tool.js` | `buildTool`, `updateTool` | `.tool`, `.tool-mode`, `.tool-action`, `.tool-switch` |
 | Action button | `action-button.js` | `buildActionButton`, `updateActionButton` | `.action-button` (`is-main`, `is-next`, `is-quiet`, `is-small`, `is-tall`, `is-wide`) |
 | Chip | `chip.js` | `buildChip`, `updateChip`, `buildChipRow`, `revealSelectedChip` | `.chip-row`, `.preset-chip` (`data-value`) |
-| Segmented control | `segmented-control.js` | `buildSegmented`, `updateSegmented`, `bindSegmented`, `buildSwatch`, `updateSwatch` | `.segmented-control` (`is-fitted`, `is-dense`, `is-compact`), `.segment` (`data-value`), `.segment-swatch` |
+| Segmented control | `segmented-control.js` | `buildSegmented` (`isSliding`: a white pill slides between two equal halves, the side switch), `updateSegmented`, `bindSegmented`, `buildSwatch`, `updateSwatch` | `.segmented-control` (`is-fitted`, `is-dense`, `is-compact`), `.segment` (`data-value`), `.segment-swatch` |
 | Nudge pad | `nudge-pad.js` | `buildNudgePad`, `updateNudgePad`, `bindNudgePad` | `.nudge-pad`, `.nudge-key` (`data-key`) |
 | Sheet | `sheet.js` | `buildSheet`, `openSheet` (fires `sheetopen`), `closeSheet` (fires `sheetclose`), `isSheetOpen`, `bindSheetHandle` (tap or drag a handle), `buildHandleTab` (the grabber's tab with its chevron; the control area's grabber and every sheet hold one), `updateSheet`, `buildSheetList`, `buildSheetRow`, `buildSwitchRow`, `buildTipsRow`, `buildSheetHeading`, `buildSheetHint` | `.sheet-layer`, `.sheet`, `.handle-tab`, `.sheet-list`, `.sheet-row`, `.switch`, `.sheet-hint` |
-| Alert card | `alert-card.js` | `buildAlertCard` (optional ids for its three buttons), `updateAlertCard`, `showAlert`, `hideAlert` (fires `alertclose`) | `.alert-layer`, `.alert-card` |
+| Alert card | `alert-card.js` | `buildAlertCard` (optional ids for its three buttons), `updateAlertCard`, `showAlert`, `hideAlert` (fires `alertclose`), `isAlertOpen` (read this, not the layer's `hidden`, which stays false through the fade-out) | `.alert-layer`, `.alert-card` |
 | Toast | `toast.js` | `buildToast`, `updateToast` | `.toast-message` (`is-warn`, `is-error`, `is-shown`) |
 | Progress line | `progress-line.js` | `buildProgressLine`, `updateProgressLine` | `.progress-line` |
 
-Every step is built from the parts. Only the debug panel still uses old classes (`.btn`, `.row`); don't add to them.
+Every step, and the debug panel, is built from the parts.

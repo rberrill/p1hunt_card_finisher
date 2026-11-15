@@ -691,27 +691,33 @@
     });
   }
 
-  // The corrected card with 15% padding, warped from the thumbnail: mini px → perspective px →
-  // source px → thumbnail px.
+  // The corrected card with 15% padding, centered in the preview's box (a wide strip in the
+  // side panel, frame DT3), warped from the thumbnail: mini px → perspective px → source px →
+  // thumbnail px. The bitmap matches the box in device pixels, so it is drawn 1:1 and sharp.
   function drawMini() {
     const canvas = elements.mini;
     const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !app.img) return;
+    if (!rect.width || !rect.height || !app.img) return;
     const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
-    const size = Math.round(rect.width * pixelRatio);
-    if (canvas.width !== size) {
-      canvas.width = size;
-      canvas.height = size;
+    const bitmapWidth = Math.round(rect.width * pixelRatio);
+    const bitmapHeight = Math.round(rect.height * pixelRatio);
+    if (canvas.width !== bitmapWidth || canvas.height !== bitmapHeight) {
+      canvas.width = bitmapWidth;
+      canvas.height = bitmapHeight;
     }
     const ctx = context2d(canvas);
     ctx.fillStyle = CONFIG.theme.stage;
-    ctx.fillRect(0, 0, size, size);
+    ctx.fillRect(0, 0, bitmapWidth, bitmapHeight);
     const geometry = app.geometry;
     if (!geometry || !geometry.ok) return;
     const box = Quad.boundingBox(geometry.cardPerspective);
     const padding = 0.15 * Math.max(box.width, box.height);
+    // The padded card is a square on the box's shorter side, centered; the rest stays the stage
+    // color, as the frame draws it (the photo past the square may run out, and would show the
+    // export's fill there).
+    const squarePx = Math.min(bitmapWidth, bitmapHeight);
     const side = Math.max(box.width, box.height) + 2 * padding;
-    const miniScale = size / side;
+    const miniScale = squarePx / side;
     const originX = (box.left + box.right) / 2 - side / 2;
     const originY = (box.top + box.bottom) / 2 - side / 2;
     const perspectiveToSource = Mat3.invert(geometry.sourceToPerspective);
@@ -722,10 +728,13 @@
       Mat3.translate(originX, originY),
       Mat3.scale(1 / miniScale),
     );
-    const pixels = new ImageData(size, size);
-    const fill = app.state.export.fill === 'transparent' ? '#2b2b2b' : app.state.export.fill;
+    const pixels = new ImageData(squarePx, squarePx);
+    const isTransparent = app.state.export.fill === 'transparent';
+    const fill = isTransparent ? CONFIG.theme.stage : app.state.export.fill;
     CardEngine.warp(pixels, app.thumb.data, miniToThumb, { fill: fillRgba(fill) });
-    ctx.putImageData(pixels, 0, 0);
+    const squareLeft = Math.round((bitmapWidth - squarePx) / 2);
+    const squareTop = Math.round((bitmapHeight - squarePx) / 2);
+    ctx.putImageData(pixels, squareLeft, squareTop);
   }
 
   Object.assign(CF, {

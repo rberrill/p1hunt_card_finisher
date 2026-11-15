@@ -282,6 +282,8 @@
     }
     if (gesture.type === 'pan') {
       if (gesture.comparing) return;
+      // The mouse's hand closes while it holds the photo; onPointerUp opens it again.
+      if (event.pointerType === 'mouse') elements.canvas.style.cursor = 'grabbing';
       view.panX = gesture.startView.panX + point[0] - gesture.start[0];
       view.panY = gesture.startView.panY + point[1] - gesture.start[1];
       view.auto = false;
@@ -362,6 +364,8 @@
     if (isTap && gesture.type === 'pan') checkDoubleTap(gesture);
     if (isTap && gesture.type === 'handle') checkHandleDoubleTap(gesture);
     endGesture();
+    // A pan left the closed hand; show what a press here would do now.
+    hoverCursor(event);
   }
 
   // Zooms to handleZoom × the fit scale centered on a handle, or back to fit if already zoomed.
