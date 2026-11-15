@@ -112,11 +112,21 @@
       if (event.target === card && event.propertyName === 'opacity') hide();
     };
     card.addEventListener('transitionend', layer.onFadeEnd);
-    layer.hideTimer = setTimeout(hide, ALERT_HIDE_FALLBACK_MS);
+    // The fallback counts from the first frame painted after the close, not from the tap: an
+    // answer starts its export inside the tap (Copy needs that), which can hold that frame
+    // back longer than the whole fade, and the card would vanish without fading.
+    layer.hideFrame = requestAnimationFrame(() => {
+      layer.hideFrame = requestAnimationFrame(() => {
+        layer.hideFrame = 0;
+        layer.hideTimer = setTimeout(hide, ALERT_HIDE_FALLBACK_MS);
+      });
+    });
   }
 
   // Stops a pending hide: a new question is going up on the same card.
   function cancelAlertHide(layer) {
+    cancelAnimationFrame(layer.hideFrame);
+    layer.hideFrame = 0;
     clearTimeout(layer.hideTimer);
     if (!layer.onFadeEnd) return;
     layer.querySelector('.alert-card').removeEventListener('transitionend', layer.onFadeEnd);

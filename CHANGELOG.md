@@ -39,10 +39,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - a file dropped on the panel or the top bar no longer makes the browser leave the app;
   - controls show a hover state, and the cursor shows when you're dragging the photo;
   - Perspective's **Result** preview fills the panel's width, **Card orientation** is full height, each step's tips sit in their own block at the end of its options, and the panel's scrollbar is thin and dark;
-  - **Corner shots** no longer scrolls Export's own controls out of view when its block is already visible.
+  - **Corner shots** no longer scrolls Export's own controls out of view when its block is already visible;
+  - on Perspective, **Tab** steps through the corner handles only while the photo has the keyboard focus (click the photo or a handle, or Tab into it), and moves on to the next control after the last handle. It used to take over Tab completely, so the step's buttons couldn't be reached by keyboard;
+  - tips that only apply to touch, or to features a wide screen doesn't have, are no longer listed there.
 - **Messages over the photo** now look different by kind: a white pill for information, amber with a triangle for a warning, and red with a circle for an error. The words are the same. While a sheet is open, a message sits just above it.
 
 ### Fixed
+- After **Unpair** → **Keep front** (or **Keep back**) chosen from the other side, closing and resuming brought back the other side's photo under the kept side's edits. The kept side's photo is now the one stored.
 - When the browser can't save the chosen format (WebP on Safari) and saves a PNG instead, the message saying so was replaced at once by the "Exported…" message, so it was never seen. It's now part of that message, shown as a warning, on Download, Share, a pair's export and the corner shots.
 
 ## [1.9.0] - 2026-11-10

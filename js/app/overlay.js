@@ -943,9 +943,13 @@
   // The step's tips: the plan's approved wording (14 November), and the line that sat under
   // Delete saved overlay in the sheet, reworded for the tool (Rich, 14 November). Then the
   // keyboard help shown under them on a wide screen (frame DT9).
+  // The first is for touch, so a wide screen leaves it out (Rich, 2026-11-15).
   const OVERLAY_TIPS = [
-    'Tap a ring to snap the logo to that corner, side or the center. Drag to move it; '
-      + 'drag a corner or pinch to resize.',
+    {
+      text: 'Tap a ring to snap the logo to that corner, side or the center. Drag to move it; '
+        + 'drag a corner or pinch to resize.',
+      isPhoneOnly: true,
+    },
     'On this step the photo stays framed as set in Crop.',
     'Your last logo is kept in this browser for the next photo.',
     'Delete saved leaves the logo on this photo.',

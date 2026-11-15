@@ -93,6 +93,11 @@
   // M7: fades a step's control rows in over 120 ms after a step change (the `area-in`
   // keyframes). The grabber and the progress line don't fade; the tab bar changed at once.
   function fadeInControlArea(area) {
+    // An area hidden before its fade's first frame gets no animationend, so its class would
+    // stay: every other area's goes now.
+    document.querySelectorAll('.control-area.is-arriving').forEach(other => {
+      if (other !== area) other.classList.remove('is-arriving');
+    });
     if (!area || isMotionReduced()) return;
     restartClass(area, 'is-arriving');
   }

@@ -16,17 +16,21 @@
 
   // The approved tips (the plan's Wording section, 14 November) and the keyboard help shown
   // under them on a wide screen (frame DT3).
+  // The first is for touch, so a wide screen leaves it out (Rich, 2026-11-15).
   const PERSPECTIVE_TIPS = [
-    'Drag a corner or the middle of an edge. Double tap a handle to zoom in on it; '
-      + 'double tap again to zoom out.',
+    {
+      text: 'Drag a corner or the middle of an edge. Double tap a handle to zoom in on it; '
+        + 'double tap again to zoom out.',
+      isPhoneOnly: true,
+    },
     'The arrows nudge the selected handle. Hold one to repeat.',
     'Flatten: 0% squares the card up but keeps the camera’s depth. '
       + '100% is a flat 5:7 rectangle, like a scan.',
     'Corners on the wrong card? Tap to find card, then tap the card.',
   ];
   const PERSPECTIVE_KEYS = [
-    'Double-click a handle to zoom in on it. Tab selects the next handle; arrows nudge 1 px '
-      + '(Shift 10). F fits; 1 to 6 change step.',
+    'Drag corners or edge midpoints. Double-click a handle to zoom in on it. Tab selects the '
+      + 'next handle; arrows nudge 1 px (Shift 10). F fits; 1 to 6 change step.',
   ];
   // The nudge pad's keys, left to right, and the direction each moves the handle (screen px).
   const NUDGE_KEYS = [

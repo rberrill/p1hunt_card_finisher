@@ -327,10 +327,13 @@
   }
 
   // The Tips row: a tap opens the tips in place, under the row; another tap closes them.
-  // tips: one string per paragraph. keys: the step's keyboard help, one string per paragraph,
-  // shown on a wide screen only, where the tips are always open under the heading "Tips and
-  // keys" ("Tips" for a step with no keys; css/app.css hides the row there). Returns the row
-  // and its tips in one element.
+  // tips: one per paragraph, each a string or { text, isPhoneOnly }; a phone-only tip (a touch
+  // gesture, say) gets `is-phone-only`, which css/app.css hides on a wide screen. keys: the
+  // step's keyboard help, one string per paragraph, shown on a wide screen only, where the tips
+  // are always open under the heading "Tips and keys" ("Tips" for a step with no keys;
+  // css/app.css hides the row there). When every tip is phone-only and there are no keys, the
+  // whole group is phone-only, so no heading stands alone. Returns the row and its tips in one
+  // element.
   function buildTipsRow(id, tips, keys = []) {
     const chevron = makeEl('span', { class: 'sheet-row-detail' });
     const row = makeEl('button', {
@@ -349,7 +352,7 @@
     const heading = keys.length ? 'Tips and keys' : 'Tips';
     const body = makeEl('div', { class: 'sheet-tips', hidden: true },
       makeEl('h3', { class: 'sheet-heading sheet-tips-heading' }, heading),
-      ...tips.map(tip => buildSheetHint(tip)),
+      ...tips.map(buildTipHint),
       ...keyHints);
     const setOpen = isOpen => {
       row.setAttribute('aria-expanded', String(isOpen));
@@ -358,7 +361,21 @@
     };
     row.addEventListener('click', () => setOpen(body.hidden));
     setOpen(false);
-    return makeEl('div', { class: 'sheet-tips-group' }, buildSheetList(row), body);
+    const isAllPhoneOnly = !keys.length && tips.every(tip => tip.isPhoneOnly === true);
+    return makeEl('div', {
+      class: isAllPhoneOnly ? 'sheet-tips-group is-phone-only' : 'sheet-tips-group',
+    },
+    buildSheetList(row),
+    body);
+  }
+
+  // One tip's paragraph: `tip` is a string, or { text, isPhoneOnly } for a tip the wide layout
+  // hides (class `is-phone-only`).
+  function buildTipHint(tip) {
+    if (typeof tip === 'string') return buildSheetHint(tip);
+    const hint = buildSheetHint(tip.text);
+    if (tip.isPhoneOnly === true) hint.classList.add('is-phone-only');
+    return hint;
   }
 
   Object.assign(CF, {

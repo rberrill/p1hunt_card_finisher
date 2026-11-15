@@ -270,6 +270,10 @@
     if (!app.pair || app.pair.current !== side) return;
     app.pair = null;
     clearPairSession();
+    // The stored photo is the side that was open when the pair was last saved, which is the
+    // other one when Keep switched sides: store the kept side's photo, or Resume would bring
+    // back the wrong picture under these edits.
+    CF.Session.savePhoto(app.file, app.loadId);
     CF.stateChanged();
     toast(`Unpaired. The ${side} is a single photo now.`);
   }

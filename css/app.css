@@ -81,6 +81,13 @@ main { flex: 1; display: flex; min-height: 0; }
   touch-action: none;
   outline: none;
 }
+/* The photo is a Tab stop (its handles step with Tab on Perspective): a ring inside its edge
+   when the keyboard brought focus there or Tab stepped a handle (`is-keyboard-focus`, set by
+   js/app/input.js), none after a click or touch. */
+#view:focus-visible, #view.is-keyboard-focus:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
 .panel {
   width: 380px;
   flex: none;
@@ -159,8 +166,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 
 /* =====================================================================
    THE 1.10 PARTS. Fifteen parts build the new layout; each has its rules under its own banner
-   here and a module in js/app/parts/. They use their own colors (the second half of :root),
-   so the old layout above keeps its look until each phase replaces it.
+   here and a module in js/app/parts/. They use their own colors (the second half of :root).
    ===================================================================== */
 .icon {
   display: block;
@@ -987,6 +993,10 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   .sheet-layer:not(.is-open):not(.is-dragging) .sheet {
     transition: transform 0s linear 120ms !important;
   }
+  /* Under a finger nothing is eased, here either: the rules above must not outrank the drag's. */
+  .sheet-layer.is-dragging .sheet-scrim,
+  .sheet-layer.is-dragging .sheet::before,
+  .sheet-layer.is-dragging .sheet > :not(.sheet-grabber) { transition: none !important; }
   /* Cards (M9): fade only, 100 ms. */
   .alert-layer .alert-card { transform: none; }
   .alert-layer::before, .alert-layer .alert-card { transition-duration: 100ms !important; }
@@ -1180,6 +1190,12 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 }
 /* The keyboard help is for a wide screen only. */
 .sheet-tips-heading, .sheet-keys { display: none; }
+/* A phone-only tip (a touch gesture, say) is left out on a wide screen, and so is a tips group
+   that holds only such tips (Rich, 2026-11-15). */
+@media (min-width: 761px) {
+  .sheet-tips > .sheet-hint.is-phone-only,
+  .sheet-body > .sheet-tips-group.is-phone-only { display: none; }
+}
 
 /* ---- step: Perspective ---- */
 /* Owned by js/app/perspective.js's phase. Phone-only and wide-only rules go in a
@@ -1719,7 +1735,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   #btnOpen:hover:not(:disabled) { background: var(--pressed); }
 }
 
-/* ---- narrow screens: the old layout's rules on the phone ---- */
+/* ---- narrow screens ---- */
 @media (max-width: 760px) {
   main { flex-direction: column; }
 

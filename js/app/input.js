@@ -22,6 +22,11 @@
 
   // The steps in keyboard order (keys 1–6).
   const STEP_ORDER = ['perspective', 'rotate', 'crop', 'levels', 'overlay', 'export'];
+  // The perspective handles are indices 0 to 7 (corners, then edge midpoints).
+  const LAST_HANDLE_INDEX = 7;
+  // A focus this soon after a Tab press came from that press (the browser moves focus in the
+  // key's default action, within the same task, so the gap is well under a millisecond).
+  const TAB_FOCUS_MS = 100;
   const ARROW_DIRECTIONS = {
     ArrowLeft: [-1, 0],
     ArrowRight: [1, 0],
@@ -34,6 +39,9 @@
   const pointers = new Map();
   let lastTap = { time: 0, x: 0, y: 0 };
   let lastHandleTap = { time: 0, handleIndex: -1 };
+  // The last Tab press: when, and whether Shift was down. The canvas's focus handler reads it
+  // to tell a keyboard entry, and its direction, from a click.
+  let lastTabPress = { time: -Infinity, isBackward: false };
 
   // The event's position in CSS px from the canvas's top-left.
   function localPoint(event) {
@@ -133,7 +141,11 @@
   // a pan.
   function onPointerDown(event) {
     if (!app.img) return;
-    elements.canvas.focus({ preventScroll: true });
+    lastTabPress = { time: -Infinity, isBackward: false };
+    elements.canvas.classList.remove('is-keyboard-focus');
+    // focusVisible false: a click or touch shows no focus ring, even after Tab presses (Chrome
+    // otherwise carries the keyboard's ring over to a focus made in script).
+    elements.canvas.focus({ preventScroll: true, focusVisible: false });
     try {
       elements.canvas.setPointerCapture(event.pointerId);
     } catch (error) { /* the pointer is already gone */ }
@@ -621,10 +633,16 @@
       && parts.includes('shift') === event.shiftKey;
   }
 
+  // Every key press: the shortcuts, in order (a question card first, then undo and redo, then
+  // the photo's keys). Bound on the window by main.js.
   function onKeyDown(event) {
+    if (event.key === 'Tab') {
+      lastTabPress = { time: performance.now(), isBackward: event.shiftKey };
+    }
     // A pair's question is up: Escape cancels it, and no shortcut changes the photo behind it.
     if (elements.root.classList.contains('prompting')) {
       if (event.key === 'Escape') CF.hidePrompt();
+      if (event.key === 'Tab') keepTabInPrompt(event);
       return;
     }
     if (event.key === 'Escape' && CF.closeSheets()) return;
@@ -680,14 +698,8 @@
       return;
     }
     if (app.tab !== 'perspective') return;
-    // Tab cycles handles only while the canvas (or nothing) has focus, so form navigation
-    // still works.
-    const focused = document.activeElement;
-    const isCanvasFocused = focused === elements.canvas || focused === document.body;
-    if (event.key === 'Tab' && isCanvasFocused) {
-      event.preventDefault();
-      app.selected = (app.selected + (event.shiftKey ? 7 : 1)) % 8;
-      CF.requestRender();
+    if (event.key === 'Tab') {
+      if (stepHandleByTab(event.shiftKey)) event.preventDefault();
       return;
     }
     const direction = ARROW_DIRECTIONS[event.key];
@@ -697,6 +709,52 @@
       const [dx, dy] = [direction[0] * step, direction[1] * step];
       CF.commit(state => moveHandleBy(state, app.selected, dx, dy), 'nudge');
     }
+  }
+
+  // Tab and Shift+Tab on Perspective: the eight handles are Tab stops inside the photo, and
+  // only while the canvas itself has focus, so the keyboard reaches every control from the page.
+  // Selects the next (or, backward, the previous) handle and returns true; returns false, so
+  // the browser moves focus on, from the last handle forward, the first backward, or when the
+  // canvas doesn't have focus. With none selected, forward selects the first, backward the last.
+  function stepHandleByTab(isBackward) {
+    if (document.activeElement !== elements.canvas) return false;
+    let next = app.selected + (isBackward ? -1 : 1);
+    if (app.selected < 0) next = isBackward ? LAST_HANDLE_INDEX : 0;
+    if (next < 0 || next > LAST_HANDLE_INDEX) return false;
+    app.selected = next;
+    // The ring shows from here on: after a click the canvas has focus without :focus-visible,
+    // which only a new focus could bring back.
+    elements.canvas.classList.add('is-keyboard-focus');
+    CF.requestRender();
+    return true;
+  }
+
+  // Tab and Shift+Tab while a question card is up: focus cycles through the card's buttons, so
+  // it never reaches the photo or the page behind the card (the bars are inert, the photo isn't).
+  function keepTabInPrompt(event) {
+    const card = document.getElementById('pairPrompt');
+    if (!card) return;
+    const buttons = [...card.querySelectorAll('button')]
+      .filter(button => !button.disabled && button.getClientRects().length);
+    if (!buttons.length) return;
+    const index = buttons.indexOf(document.activeElement);
+    const isBackward = event.shiftKey;
+    const isAtEnd = isBackward ? index <= 0 : index === buttons.length - 1;
+    if (index >= 0 && !isAtEnd) return;
+    event.preventDefault();
+    const target = isBackward ? buttons[buttons.length - 1] : buttons[0];
+    target.focus({ preventScroll: true });
+  }
+
+  // The canvas gained focus. When a Tab press brought it there on Perspective with no handle
+  // selected, the first handle is selected going forward and the last going backward, so the
+  // first Tab into the photo lands on a handle. A click or touch leaves the selection alone
+  // (a press on a handle has already selected it).
+  function onCanvasFocus() {
+    const isByTab = performance.now() - lastTabPress.time < TAB_FOCUS_MS;
+    if (!isByTab || !app.img || app.tab !== 'perspective' || app.selected >= 0) return;
+    app.selected = lastTabPress.isBackward ? LAST_HANDLE_INDEX : 0;
+    CF.requestRender();
   }
 
   // Moves handle `handleIndex` by (dx, dy) source px; an edge handle moves along its normal.
@@ -712,6 +770,10 @@
     const normal = edgeNormal(start, end);
     moveEdge(state.corners, k, start, end, normal, dx * normal[0] + dy * normal[1]);
   }
+
+  // The canvas is in the page before any shell script runs (index.html), so its focus handler
+  // is bound here, beside the Tab handling it belongs to.
+  elements.canvas.addEventListener('focus', onCanvasFocus);
 
   Object.assign(CF, {
     ARROW_DIRECTIONS,
