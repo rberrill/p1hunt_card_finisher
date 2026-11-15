@@ -1322,6 +1322,15 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   #cornerShotsSheet .sheet { position: relative; }
 }
 
+/* ---- step: Pairs ---- */
+/* Owned by js/app/pair.js. Rules that apply only while a front + back pair is open. */
+@media (min-width: 761px) {
+  /* Beside Together | Separately the readout's column is narrow: a Separately readout takes
+     two lines and a note three. The panel has the room, so the row grows to hold them
+     instead of cutting them at 44 px (the phone shows the note alone, in Export's rules). */
+  #exportReadoutRow:has(#pairOutput:not([hidden])) { height: auto; min-height: 44px; }
+}
+
 /* ---- shell: the phone ---- */
 @media (max-width: 760px) {
   .workspace { flex-direction: column; }

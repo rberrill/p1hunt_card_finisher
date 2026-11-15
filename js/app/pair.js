@@ -1,7 +1,8 @@
 /* =====================================================================
-   js/app/pair.js: front + back pairs. Add back keeps the front and opens the back; the header's
-   Front | Back chip switches sides and ⨯ unpairs; while paired, both sides are locked to the 5:7
-   crop with one orientation and share their export settings. Export saves the pair Together
+   js/app/pair.js: front + back pairs. Add back keeps the front and opens the back; the top bar's
+   Front | Back switches sides and Unpair beside it unpairs; while paired, both sides are
+   locked to the 5:7 crop with one orientation and share their export settings. Export saves
+   the pair Together
    (one joined image) or Separately (two files), and shows the Together image beforehand.
    The open side lives in app.* as any photo does. The other side waits in app.pair.other with
    its edits, undo history, preview copies and original bytes; its full-resolution photo is
@@ -192,13 +193,20 @@
     savePairSession(true);
   }
 
+  // Marks a side switch as running or done, and dims Front | Back and Unpair in the top bar to
+  // match, so the switch can't be tapped twice while the other photo decodes (frame F8).
+  function setSwitching(isSwitching) {
+    app.isSwitching = isSwitching;
+    syncPair();
+  }
+
   // Switches to the other side, on the step you're on (Crop on the back opens Crop on the front),
   // so the two sides can be compared step by step. Its photo is decoded before the open one is
   // released, so a failed read leaves everything as it was.
   async function switchSide() {
     const pair = app.pair;
     if (!pair || app.exporting || app.isSwitching) return;
-    app.isSwitching = true;
+    setSwitching(true);
     const startTime = performance.now();
     const other = pair.other;
     toast('Opening the ' + otherSide(pair.current) + '…');
@@ -206,13 +214,13 @@
     try {
       img = await CF.ImageSource.load(other.file, other.name);
     } catch (error) {
-      app.isSwitching = false;
+      setSwitching(false);
       toast(error.message, 'error', 6000);
       return;
     }
     if (app.pair !== pair) {
       img.close();
-      app.isSwitching = false;
+      setSwitching(false);
       return;
     }
     CF.Session.flush();
@@ -224,7 +232,7 @@
     applySide(other, img);
     pair.other = leaving;
     pair.current = otherSide(pair.current);
-    app.isSwitching = false;
+    setSwitching(false);
     CF.stateChanged();
     CF.setTab(step);
     hideToast();
@@ -903,8 +911,8 @@
     };
   }
 
-  // Front | Back and Unpair in the top bar, the output dropdown and the Save edits hint follow
-  // the pair.
+  // Front | Back and Unpair in the top bar (dim while a side switch or an export runs) and the
+  // Save edits hint follow the pair. Together | Separately is synced by export-controls.js.
   function syncPair() {
     const pair = app.pair;
     elements.root.classList.toggle('paired', !!pair);
