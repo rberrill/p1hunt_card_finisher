@@ -383,6 +383,6 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`. 
 | 15. Environments | ➖ |  | |
 | Smoke test (pre-release) | | | |
 
-**Decision (phase 4, 1.10.0-dev.N, date):** ☐ Phase 4 passed, start phase 5 ☐ Fix first
+**Decision (phase 4, 1.10.0-dev.12, 2026-11-15):** ☑ Phase 4 passed ☐ Fix first (Rich)
 
 **Previous: phase 3 (1.10.0-dev.9):** passed.
