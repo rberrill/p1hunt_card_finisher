@@ -11,6 +11,9 @@
   const TOP_BAR_PADDING_PX = 8;
   // A sheet's open and close slides take at most 280 ms (css/app.css); the probe waits longer.
   const SHEET_SETTLE_MS = 400;
+  // A question card fades and grows in over 180 ms and fades out over 120 ms before its layer
+  // is hidden (css/app.css, alert-card.js); the probe waits longer.
+  const ALERT_SETTLE_MS = 300;
   const isShown = el => {
     const rect = rectOf(el);
     return rect.width > 0 && rect.height > 0 && getComputedStyle(el).visibility !== 'hidden';
@@ -111,7 +114,8 @@
   }
 
   // The grabber's tab on the open step: its box against the control area's top edge, its
-  // colors, and its glyph's two arms (their transforms and the pill color's opacity).
+  // colors, its glyph's two arms (their transforms) and the glyph's opacity (under 1 when it
+  // takes the pill's lighter color).
   function measureTab(area) {
     const tab = area.querySelector('.grabber .handle-tab');
     if (!tab || !isShown(tab)) return null;
@@ -127,7 +131,7 @@
       borderTop: style.borderTopColor,
       borderBottomPx: parseFloat(style.borderBottomWidth),
       armTransforms: arms.map(arm => getComputedStyle(arm).transform),
-      pillOpacity: arms.map(arm => getComputedStyle(arm, '::after').opacity),
+      glyphOpacity: getComputedStyle(tab.querySelector('.handle-glyph')).opacity,
       glyph: glyphSize(tab),
     };
   }
@@ -397,6 +401,7 @@
     ];
     const question = { title: 'Upscale to 2000 px?', text: 'The crop is 994 × 994 px.', choices };
     CF.showAlert(card, question);
+    await wait(ALERT_SETTLE_MS);
     const cardRect = rectOf(card.querySelector('.alert-card'));
     const cardSizes = {
       card: size(card.querySelector('.alert-card')),
@@ -410,6 +415,7 @@
     answer = 'none';
     CF.showAlert(card, question);
     card.click();
+    await wait(ALERT_SETTLE_MS);
     return {
       ...sheetSizes,
       areTipsOpen,

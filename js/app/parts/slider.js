@@ -1,7 +1,7 @@
 /* =====================================================================
    js/app/parts/slider.js: the Slider part (Flatten, Opacity, Quality). A native range input,
    so the keyboard and screen readers work as usual, drawn with a white fill up to a round thumb
-   that grows while it is held.
+   that grows while it is held (the class is-held).
    Shell modules share one namespace, CF (created in core.js). Names from core are destructured
    below; anything from another module is called as CF.name. tests/selftest.js checks these
    boundaries.
@@ -40,8 +40,26 @@
       makeEl('span', { class: 'slider-fill' }),
       input);
     input.addEventListener('input', () => drawSliderFill(slider));
+    bindHeld(slider, input);
     drawSliderFill(slider);
     return slider;
+  }
+
+  // Marks the slider is-held while a finger, pen or mouse is down on its input, so the thumb
+  // grows (css/app.css, motion M5). A class, not :active, which did not match a range input
+  // under a touch drag in Chrome. The release is heard on the window: a mouse can be let go
+  // outside the input.
+  function bindHeld(slider, input) {
+    const release = () => {
+      slider.classList.remove('is-held');
+      window.removeEventListener('pointerup', release);
+      window.removeEventListener('pointercancel', release);
+    };
+    input.addEventListener('pointerdown', () => {
+      slider.classList.add('is-held');
+      window.addEventListener('pointerup', release);
+      window.addEventListener('pointercancel', release);
+    });
   }
 
   // Updates a slider; a value left out stays as it is. value: in the input's own units.

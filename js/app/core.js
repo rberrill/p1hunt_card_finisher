@@ -145,6 +145,10 @@
   // How long a toast stays when its caller gives no duration, by kind, in ms: info 3 s, a
   // warning 5 s, an error 6 s (the plan's frames T1 to T3).
   const TOAST_DURATIONS_MS = { '': 3000, warn: 5000, error: 6000 };
+  // How long a replaced message takes to fade out, in ms (css/app.css, .is-ghost; motion M10),
+  // and the margin after it before its copy is removed if no transitionend comes.
+  const TOAST_REPLACE_MS = 80;
+  const TOAST_GHOST_FALLBACK_MS = TOAST_REPLACE_MS + 70;
   let toastTimer = 0;
 
   // Builds the toast (the Toast part) at the end of the stage, once; returns it. The parts
@@ -185,6 +189,7 @@
   // long as its kind does (TOAST_DURATIONS_MS).
   function toast(text, kind = '', durationMs = TOAST_DURATIONS_MS[kind]) {
     const toastEl = mountToast();
+    if (toastEl.classList.contains('is-shown')) fadeOutCopy(toastEl);
     CF.updateToast(toastEl, { text, kind, isShown: false });
     placeToast();
     // Reading its size makes the browser take in the hidden state first, so each message
@@ -193,6 +198,26 @@
     CF.updateToast(toastEl, { isShown: true });
     clearTimeout(toastTimer);
     toastTimer = setTimeout(hideToast, durationMs || TOAST_DURATIONS_MS['']);
+  }
+
+  // Leaves a copy of the message that is up where it is, fading out in 80 ms, while the toast
+  // itself takes the new message and rises in over it. The live element keeps its id and gets
+  // the new text at once, for callers, the tests and screen readers; the copy is hidden from
+  // them and removed when its fade ends.
+  function fadeOutCopy(toastEl) {
+    const ghost = toastEl.cloneNode(true);
+    ghost.removeAttribute('id');
+    ghost.removeAttribute('role');
+    ghost.removeAttribute('aria-live');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.classList.add('is-ghost');
+    toastEl.before(ghost);
+    // Read a layout value so the copy is drawn opaque before its fade starts.
+    ghost.getBoundingClientRect();
+    ghost.classList.add('is-leaving');
+    const removeGhost = () => ghost.remove();
+    ghost.addEventListener('transitionend', removeGhost);
+    setTimeout(removeGhost, TOAST_GHOST_FALLBACK_MS);
   }
 
   // Takes the toast down now.

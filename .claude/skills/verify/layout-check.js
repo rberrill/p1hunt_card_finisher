@@ -61,7 +61,7 @@ function tabChecks(label, steps) {
   const badTab = steps.filter(({ tab }) => !tab || tab.width !== 80 || tab.risePx !== 24
     || Math.abs(tab.centerOffPx) > 0.5 || tab.background !== surface
     || tab.borderTop !== track || tab.borderBottomPx !== 0);
-  const isChevron = tab => tab && tab.pillOpacity.every(opacity => opacity === '0')
+  const isChevron = tab => tab && tab.glyphOpacity === '1'
     && Math.abs(tab.glyph.width - STROKE_SPREAD_PX - 16) <= 1
     && Math.abs(tab.glyph.height - STROKE_SPREAD_PX - 8) <= 1;
   const badGlyph = steps.filter(step => !isChevron(step.tab));

@@ -326,12 +326,19 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   pointer-events: none;
 }
 .is-pressed > .handle-tab, .sheet-layer.is-dragging .handle-tab { background: var(--pressed); }
-/* The glyph's center, in the middle of the tab's 24 px. */
-.handle-glyph { position: absolute; left: 50%; top: 11px; }
+/* The glyph's center, in the middle of the tab's 24 px. The pill's lighter color (--soft) is
+   the white arms at 87% over the tab (--glyph-flat 1): the pair fades as one group, so where
+   the arms overlap there is no edge between them (a fade per arm left a faint seam). */
+.handle-glyph {
+  position: absolute;
+  left: 50%;
+  top: 11px;
+  opacity: calc(1 - .13 * var(--glyph-flat, 0));
+  transition: opacity 150ms linear;
+}
 /* Each arm is a 20 x 5 px bar posed by its transform: an up chevron of about 16 x 8 px with a
    2 px stroke at rest; a sheet's open tab poses them as one 36 x 5 px pill (js/app/parts/
-   sheet.js poses them in between under a finger). The pill's color fades in over the arm's
-   own, since only transform and opacity animate. */
+   sheet.js poses them in between under a finger). */
 .handle-arm {
   position: absolute;
   left: -10px;
@@ -344,15 +351,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   transition: transform 150ms ease-out;
 }
 .handle-arm.is-right { transform: translateX(4px) rotate(45deg) scale(.57, .4); }
-.handle-arm::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--soft);
-  opacity: var(--arm-flat, 0);
-  transition: opacity 150ms linear;
-}
 .label-row, .control-row {
   height: 44px;
   flex: none;
@@ -496,9 +494,11 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   background: var(--ink);
   transition: transform 100ms ease-out;
 }
-/* 30 px while held. */
-.slider input:active::-webkit-slider-thumb { transform: scale(1.364); }
-.slider input:active::-moz-range-thumb { transform: scale(1.364); }
+/* 30 px while held (slider.js sets is-held: :active does not match a range input under a
+   touch in Chrome). One selector per rule, since a browser drops a list with a foreign
+   pseudo-element. */
+.slider.is-held input::-webkit-slider-thumb { transform: scale(1.364); }
+.slider.is-held input::-moz-range-thumb { transform: scale(1.364); }
 
 /* ---- part: tool ---- */
 .tool {
@@ -517,6 +517,8 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   font-weight: 600;
   letter-spacing: -.2px;
   white-space: nowrap;
+  /* Motion M12: a tool dims (disabled) and comes back in 120 ms. */
+  transition: opacity 120ms ease-out;
 }
 .tool:active:not(:disabled), .tool.is-flashing { background: var(--pressed); }
 .tool-glyph { display: grid; height: 22px; }
@@ -536,8 +538,19 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   font-weight: 700;
 }
 .tool-mode[aria-pressed="true"] .icon { stroke-width: 2; }
-/* A switch that is on: a white ring, and On in its corner. */
-.tool-switch[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--ink); }
+/* A switch that is on: a white ring, and On in its corner. The ring is drawn by ::after and
+   fades in and out in 120 ms (M12), since only opacity and transform animate. */
+.tool-switch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+.tool-switch[aria-pressed="true"]::after { opacity: 1; }
 .tool-state { position: absolute; top: 7px; right: 9px; font-size: 11px; font-weight: 800; }
 .tool-switch[aria-pressed="false"] .tool-state { color: var(--soft); }
 
@@ -777,7 +790,10 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 
 /* ---- part: alert card ---- */
 /* The layer is the dimmed backdrop; it takes every touch, so nothing behind it can be used. It
-   lies over an open sheet too (frames U4 and U5), so a question never closes one. */
+   lies over an open sheet too (frames U4 and U5), so a question never closes one. Motion M9:
+   the dim (drawn by ::before, so it fades on its own) comes in 150 ms linear, the card in
+   180 ms from 96%; both go in 120 ms, while alert-card.js keeps the layer shown. A leaving
+   card takes no touch. */
 .alert-layer {
   position: fixed;
   inset: 0;
@@ -785,20 +801,40 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   display: grid;
   place-items: center;
   padding: 24px;
-  background: var(--scrim);
 }
+.alert-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+.alert-layer.is-open::before { opacity: 1; transition-duration: 150ms; }
+.alert-layer:not(.is-open) { pointer-events: none; }
 /* A wide screen dims only the photo it is mounted over (the stage), so the card is centered
    on the photo and the panel stays readable (frame DT7). */
 @media (min-width: 761px) {
   .alert-layer { position: absolute; }
 }
 .alert-card {
+  position: relative;
   width: 300px;
   max-width: 100%;
   padding: 22px 16px 6px;
   border-radius: 18px;
   background: var(--raised);
   color: var(--ink);
+  opacity: 0;
+  transform: scale(.96);
+  transition: opacity 120ms linear, transform 120ms cubic-bezier(.4, 0, 1, 1);
+}
+.alert-layer.is-open .alert-card {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 180ms cubic-bezier(.2, .8, .2, 1),
+    transform 180ms cubic-bezier(.2, .8, .2, 1);
 }
 .alert-title { margin: 0; font-size: 18px; font-weight: 800; }
 .alert-text { margin: 8px 0 0; font-size: 14px; line-height: 19px; color: var(--soft); }
@@ -812,7 +848,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
    open sheet covers, which puts the toast as far above that sheet's edge, so it clears the
    sheet's tab too. The pill grows upward from its bottom edge, to three lines at most, and
    never takes a touch. Motion M10: it rises 8 px as it fades in (160 ms) and fades out in
-   200 ms; under reduced motion it only fades. */
+   200 ms; one it replaces fades out in 80 ms; under reduced motion it only fades. */
 .toast-message {
   position: absolute;
   left: 16px;
@@ -844,6 +880,14 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 @keyframes toast-rise {
   from { opacity: 0; transform: translateY(calc(8px - var(--toast-lift, 0px))); }
 }
+/* Reduced motion's fade in (the reduced motion block). */
+@keyframes toast-fade {
+  from { opacity: 0; }
+}
+/* A message being replaced: a copy of it (core.js) stays where it is and fades out in 80 ms
+   under the new one, which rises in as usual. */
+.toast-message.is-ghost { animation: none; opacity: 1; transition: opacity 80ms linear; }
+.toast-message.is-ghost.is-leaving { opacity: 0; }
 .toast-message.is-warn { background: var(--warn); }
 .toast-message.is-error { background: var(--accent); color: var(--ink); }
 .toast-icon { flex: none; display: grid; }
@@ -883,6 +927,13 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   transition: transform 100ms linear;
 }
 .sheet .progress-line { top: 0; border-radius: 2px; }
+/* Motion M11: the export has ended, and the line fades out in 200 ms before it is hidden. */
+.progress-line.is-done {
+  opacity: 0;
+  transition: opacity 200ms linear, transform 100ms linear;
+}
+/* A new export starts from zero at once, not by shrinking back across the screen. */
+.progress-line.is-restarting { transition: none; }
 
 /* ---- reduced motion ---- */
 /* Travel and scaling go; short fades stay. Progress still moves, in steps, because it is
@@ -892,9 +943,38 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
     animation: none !important;
     transition-property: opacity !important;
   }
-  .ruler.is-held .ruler-pointer,
-  .slider input:active::-webkit-slider-thumb,
-  .slider input:active::-moz-range-thumb { transform: none; }
+  /* One selector per rule: a browser drops a whole selector list when one of its pseudo-
+     elements is foreign to it (Chrome and Safari reject ::-moz-range-thumb). */
+  .ruler.is-held .ruler-pointer { transform: none; }
+  .slider.is-held input::-webkit-slider-thumb { transform: none; }
+  .slider.is-held input::-moz-range-thumb { transform: none; }
+  /* Sheets (M1, M2): no slide. The dim fades in 120 ms; a closing sheet fades where it is, then
+     drops to its resting place in one step (a delayed jump, so sheet.js still sees its
+     transitionend), with its tab. */
+  .sheet-layer .sheet-scrim { transition-duration: 120ms !important; }
+  .sheet-layer .sheet::before,
+  .sheet-layer .sheet > :not(.sheet-grabber) { transition-duration: 120ms !important; }
+  .sheet-layer:not(.is-open):not(.is-dragging) .sheet {
+    transition: transform 0s linear 120ms !important;
+  }
+  /* Cards (M9): fade only, 100 ms. */
+  .alert-layer .alert-card { transform: none; }
+  .alert-layer::before, .alert-layer .alert-card { transition-duration: 100ms !important; }
+  /* Toasts (M10): a new message fades in, from nothing even when it replaces one. */
+  .toast-message.is-shown {
+    animation: toast-fade 160ms linear !important;
+    /* No transition while shown: the fade out of the message it replaces would run on under
+       the fade in (only the ride above a sheet is a transition here, and it does not travel). */
+    transition: none !important;
+  }
+  .toast-message.is-ghost {
+    animation: none !important;
+    transition: opacity 80ms linear !important;
+  }
+  /* Progress (M11): gone at once when the export ends. */
+  .progress-line.is-done { transition: none !important; }
+  /* Tools (M12): the switch's ring and the dimming are instant. */
+  .tool, .tool-switch::after { transition: none !important; }
 }
 
 /* =====================================================================
@@ -1017,7 +1097,8 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
    top edge on the control area's (--sheet-rest: how much of it stays below that edge) and its
    tab on the area's (which hides meanwhile, in the phone block); opening, it fades in and
    rises from there, so there is one handle, not two. Open 280 ms, fast then settling; close
-   200 ms, accelerating away. A finger drag has no easing (.is-dragging). */
+   200 ms, starting off and settling into rest, where its tab stays in view (the plan's curve
+   accelerated away and stopped the tab dead). A finger drag has no easing (.is-dragging). */
 .sheet-layer {
   --sheet-rest: calc(
     var(--control-area-height) + var(--tab-bar-height) + env(safe-area-inset-bottom)
@@ -1025,7 +1106,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 }
 .sheet-layer .sheet {
   transform: translateY(calc(100% - var(--sheet-rest)));
-  transition: transform 200ms cubic-bezier(.4, 0, 1, 1);
+  transition: transform 200ms cubic-bezier(.4, 0, .2, 1);
 }
 .sheet-layer .sheet-scrim { opacity: 0; transition: opacity 200ms linear; }
 .sheet-layer.is-open .sheet {
@@ -1037,13 +1118,11 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 .sheet-layer.is-dragging .sheet-scrim { transition: none; }
 /* The tab's glyph: an up chevron while the sheet is closed or closing, a pill once it is open
    (its close button already says close), in 150 ms. sheet.js poses it under a finger. */
-.sheet-layer.is-open .handle-arm {
-  --arm-flat: 1;
-  transform: translateX(-8px) rotate(0deg) scale(1, 1);
-}
+.sheet-layer.is-open .handle-glyph { --glyph-flat: 1; }
+.sheet-layer.is-open .handle-arm { transform: translateX(-8px) rotate(0deg) scale(1, 1); }
 .sheet-layer.is-open .handle-arm.is-right { transform: translateX(8px) rotate(0deg) scale(1, 1); }
 .sheet-layer.is-dragging .handle-arm,
-.sheet-layer.is-dragging .handle-arm::after { transition: none; }
+.sheet-layer.is-dragging .handle-glyph { transition: none; }
 @media (max-width: 760px) {
   /* Everything but the tab fades: the panel's color (drawn by ::before, so the tab can stay
      opaque inside it) and its contents. A drag sets the fade (--sheet-fade, sheet.js). */

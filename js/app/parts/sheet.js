@@ -23,9 +23,11 @@
   const SHEET_SETTLE_FRACTION = 1 / 3;
   // A press that moves less than this, in CSS px, is a tap.
   const TAP_SLOP_PX = 6;
-  // How long the sheet takes to close, in ms (css/app.css, .sheet-layer); its hidden attribute
-  // is set once the slide has finished.
+  // How long the sheet takes to close, in ms (css/app.css, .sheet-layer). Its hidden attribute
+  // is set when the slide ends (its transitionend); this long after the close, plus a margin,
+  // as a fallback, for a close with nothing to slide (a sheet dragged down to its rest).
   const SHEET_CLOSE_MS = 200;
+  const SHEET_CLOSE_FALLBACK_MS = SHEET_CLOSE_MS + 100;
   // A dragged sheet is fully opaque once it has risen this far, in CSS px.
   const SHEET_FADE_PX = 24;
   // The tab's chevron is a flat pill once the sheet has risen this fraction of its travel.
@@ -48,7 +50,8 @@
   }
 
   // Poses a sheet's glyph part of the way from chevron (flatFraction 0) to pill (1), with no
-  // easing, under a finger. The pill's lighter color fades in over the arms as they flatten.
+  // easing, under a finger. The glyph fades to the pill's lighter color as the arms flatten
+  // (css/app.css reads --glyph-flat), as one group, so the overlapping arms show no seam.
   function shapeGlyph(layer, flatFraction) {
     const fraction = Math.min(1, Math.max(0, flatFraction));
     const mix = (start, end) => start + (end - start) * fraction;
@@ -60,16 +63,16 @@
       const scaleY = mix(CHEVRON_POSE.scaleY, PILL_POSE.scaleY);
       arm.style.transform =
         `translateX(${offsetPx}px) rotate(${angleDeg}deg) scale(${scaleX}, ${scaleY})`;
-      arm.style.setProperty('--arm-flat', fraction);
     }
+    layer.querySelector('.sheet-grabber .handle-glyph').style.setProperty('--glyph-flat', fraction);
   }
 
   // Hands a sheet's glyph back to its classes: chevron while closed, pill while open.
   function clearGlyph(layer) {
     for (const arm of layer.querySelectorAll('.sheet-grabber .handle-arm')) {
       arm.style.transform = '';
-      arm.style.removeProperty('--arm-flat');
     }
+    layer.querySelector('.sheet-grabber .handle-glyph').style.removeProperty('--glyph-flat');
   }
 
   // Builds a closed sheet: a layer holding the backdrop and the panel (its grabber with the
@@ -121,7 +124,7 @@
   // Opens a sheet: it slides up and the backdrop fades in (css/app.css), then the focus moves
   // to its close button. Tells its listeners with a `sheetopen` event on the layer.
   function openSheet(layer) {
-    clearTimeout(layer.closeTimer);
+    cancelHide(layer);
     layer.hidden = false;
     // Read a layout value so the closed position is drawn before the class change animates it.
     layer.getBoundingClientRect();
@@ -137,11 +140,41 @@
     if (!isSheetOpen(layer)) return;
     clearDrag(layer);
     layer.classList.remove('is-open');
-    clearTimeout(layer.closeTimer);
-    layer.closeTimer = setTimeout(() => {
-      if (!isSheetOpen(layer)) layer.hidden = true;
-    }, SHEET_CLOSE_MS);
+    hideWhenSettled(layer);
     layer.dispatchEvent(new Event('sheetclose'));
+  }
+
+  // Hides a closing sheet once its slide has ended, on the sheet's own transitionend: a timer
+  // started at the tap fired a frame early (the slide starts on the next frame), so the last
+  // stretch was never drawn and the tab jumped to the control area's. Under reduced motion the
+  // slide is a delayed jump, which ends the same way. A fallback timer covers a close with
+  // nothing to slide. openSheet and a new drag cancel both (cancelHide).
+  function hideWhenSettled(layer) {
+    cancelHide(layer);
+    const sheet = layer.querySelector('.sheet');
+    const hide = () => {
+      cancelHide(layer);
+      if (!isSheetOpen(layer)) layer.hidden = true;
+    };
+    layer.onSlideEnd = event => {
+      if (event.target === sheet && event.propertyName === 'transform') hide();
+    };
+    // A sheet dragged down to its rest has nothing to slide: it is hidden at once.
+    const isSliding = sheet.getAnimations().some(slide => slide.transitionProperty === 'transform');
+    if (!isSliding) {
+      hide();
+      return;
+    }
+    sheet.addEventListener('transitionend', layer.onSlideEnd);
+    layer.closeTimer = setTimeout(hide, SHEET_CLOSE_FALLBACK_MS);
+  }
+
+  // Stops a pending hide (hideWhenSettled): the sheet is opening again, or under a finger.
+  function cancelHide(layer) {
+    clearTimeout(layer.closeTimer);
+    if (!layer.onSlideEnd) return;
+    layer.querySelector('.sheet').removeEventListener('transitionend', layer.onSlideEnd);
+    layer.onSlideEnd = null;
   }
 
   // How far the sheet travels between closed and open, in CSS px. Closed, its top edge rests
@@ -213,7 +246,7 @@
       const dy = event.clientY - press.startY;
       if (!press.travelPx && Math.abs(dy) < TAP_SLOP_PX) return;
       if (!press.travelPx) {
-        clearTimeout(press.layer.closeTimer);
+        cancelHide(press.layer);
         press.layer.hidden = false;
         press.travelPx = sheetTravelPx(press.layer);
       }

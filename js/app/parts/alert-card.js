@@ -10,6 +10,16 @@
   'use strict';
   const { makeEl } = CF;
 
+  // How long the card and its dim take to fade out, in ms (css/app.css, .alert-card; motion
+  // M9). The layer is hidden when the card's fade ends, or this long after, plus a margin, as a
+  // fallback (under reduced motion the fade is 100 ms).
+  const ALERT_OUT_MS = 120;
+  const ALERT_HIDE_FALLBACK_MS = ALERT_OUT_MS + 80;
+
+  // True while a card is up (shown and not leaving). Read this, not `hidden`: a closing card
+  // stays in the page, faded and taking no touch, for its 120 ms fade.
+  const isAlertOpen = layer => layer.classList.contains('is-open');
+
   // Builds a hidden card. Its two choice buttons and Cancel are bound once, here; what a choice
   // does comes with each question (showAlert). buttonIds: { first, second, cancel }, the ids
   // of the two choices and of Cancel, each optional.
@@ -65,32 +75,61 @@
     });
   }
 
-  // Asks a question: shows the card and puts the focus on its first choice.
-  // choices: two of { label, isMain, action }; the chosen one's action runs after the card
-  // closes. Cancel, a tap outside and hideAlert run nothing.
+  // Asks a question: shows the card and puts the focus on its first choice. The dim and the
+  // card fade in (css/app.css). choices: two of { label, isMain, action }; the chosen one's
+  // action runs after the card closes. Cancel, a tap outside and hideAlert run nothing.
   function showAlert(layer, { title, text, choices }) {
+    cancelAlertHide(layer);
     updateAlertCard(layer, { title, text, choices });
     layer.alertActions = choices.map(choice => choice.action);
     layer.hidden = false;
+    // Read a layout value so the faded-out state is drawn before the class change fades it in.
+    layer.getBoundingClientRect();
+    layer.classList.add('is-open');
     layer.querySelector('.alert-choices .action-button').focus({ preventScroll: true });
   }
 
   // Closes the card without an answer, and tells its listeners with an `alertclose` event on
-  // the layer. (A choice closes it the same way, before its action runs.) Nothing happens when
-  // the card isn't up.
+  // the layer, at once. (A choice closes it the same way, before its action runs.) The card
+  // fades out and the layer is hidden after. Nothing happens when the card isn't up.
   function hideAlert(layer) {
-    if (layer.hidden) return;
-    layer.hidden = true;
+    if (!isAlertOpen(layer)) return;
+    layer.classList.remove('is-open');
     layer.alertActions = null;
+    hideAlertWhenFaded(layer);
     layer.dispatchEvent(new Event('alertclose'));
   }
 
-  // A choice was tapped: close the card, then run that choice's action.
+  // Sets `hidden` on a closing card's layer when the card's fade ends, or after a fallback.
+  function hideAlertWhenFaded(layer) {
+    cancelAlertHide(layer);
+    const card = layer.querySelector('.alert-card');
+    const hide = () => {
+      cancelAlertHide(layer);
+      if (!isAlertOpen(layer)) layer.hidden = true;
+    };
+    layer.onFadeEnd = event => {
+      if (event.target === card && event.propertyName === 'opacity') hide();
+    };
+    card.addEventListener('transitionend', layer.onFadeEnd);
+    layer.hideTimer = setTimeout(hide, ALERT_HIDE_FALLBACK_MS);
+  }
+
+  // Stops a pending hide: a new question is going up on the same card.
+  function cancelAlertHide(layer) {
+    clearTimeout(layer.hideTimer);
+    if (!layer.onFadeEnd) return;
+    layer.querySelector('.alert-card').removeEventListener('transitionend', layer.onFadeEnd);
+    layer.onFadeEnd = null;
+  }
+
+  // A choice was tapped: close the card, then run that choice's action, in the same tap (Copy
+  // must reach the clipboard while the tap still counts as the user's).
   function answerAlert(layer, choiceIndex) {
     const action = layer.alertActions && layer.alertActions[choiceIndex];
     hideAlert(layer);
     if (action) action();
   }
 
-  Object.assign(CF, { buildAlertCard, updateAlertCard, showAlert, hideAlert });
+  Object.assign(CF, { buildAlertCard, updateAlertCard, showAlert, hideAlert, isAlertOpen });
 })(window.CF);
