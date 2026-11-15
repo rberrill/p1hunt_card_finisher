@@ -207,8 +207,12 @@
   // Unpair in the top bar dim to match, so the switch can't be tapped twice while the other
   // photo decodes (frame F8), and so do the save buttons: an export must not start on a photo
   // that is being swapped out.
-  function setSwitching(isSwitching) {
+  // sideOpening: the side a switch is opening, so Front | Back's pill moves to it at the tap
+  // (M8); it goes back to the open side when the switch ends, which is also how a failed
+  // switch returns it.
+  function setSwitching(isSwitching, sideOpening) {
     app.isSwitching = isSwitching;
+    app.sideOpening = isSwitching ? sideOpening || null : null;
     syncPair();
     if (app.state) CF.syncReadouts();
   }
@@ -219,7 +223,7 @@
   async function switchSide() {
     const pair = app.pair;
     if (!pair || app.exporting || app.isSwitching) return;
-    setSwitching(true);
+    setSwitching(true, otherSide(pair.current));
     const startTime = performance.now();
     const other = pair.other;
     toast('Opening the ' + otherSide(pair.current) + '…');
@@ -930,7 +934,7 @@
     const pair = app.pair;
     elements.root.classList.toggle('paired', !!pair);
     CF.updateTopBar(elements.topBar, {
-      pairSide: pair ? pair.current : null,
+      pairSide: pair ? app.sideOpening || pair.current : null,
       isSwitchDisabled: !!app.exporting || !!app.isSwitching,
     });
     byId('editsPairHint').hidden = !pair;

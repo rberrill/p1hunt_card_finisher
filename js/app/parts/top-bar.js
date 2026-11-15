@@ -50,6 +50,7 @@
       id: 'sideSwitch',
       label: 'Card side',
       isCompact: true,
+      isSliding: true,
       options: [
         { value: 'front', label: 'Front' },
         { value: 'back', label: 'Back' },
@@ -88,7 +89,8 @@
   // Updates the bar; a value left out stays as it is.
   //   canUndo, canRedo   whether there is a step to undo or redo
   //   isFitShown         the photo is zoomed or panned (on a wide screen Fit always shows)
-  //   pairSide           'front' | 'back' while a pair is open, null otherwise
+  //   pairSide           'front' | 'back' while a pair is open (the side being opened, while
+  //                      a switch runs), null otherwise
   //   isSwitchDisabled   a side switch or an export is running
   function updateTopBar(bar, { canUndo, canRedo, isFitShown, pairSide, isSwitchDisabled }) {
     const find = selector => bar.querySelector(selector);
@@ -101,6 +103,8 @@
       CF.updateSegmented(find('#sideSwitch'), pairSide);
     }
     if (isSwitchDisabled !== undefined) {
+      // The pill isn't a button, so the control carries the dim for it.
+      find('#sideSwitch').classList.toggle('is-disabled', !!isSwitchDisabled);
       bar.querySelectorAll('#sideSwitch .segment, #btnUnpair').forEach(control => {
         control.disabled = !!isSwitchDisabled;
       });

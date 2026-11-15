@@ -499,13 +499,119 @@
     };
   }
 
+  /* ---------- motion (the plan's M6): the rings' fades, the lit ring, the logo's snap ----------
+     The rings and the logo are drawn on the canvas, so these are timed redraws: a tap on a
+     ring commits the snapped placement at once (undo, export and the saved session see the
+     final place) and only the drawing travels there. Each frame of a fade or a snap asks for
+     the next. Under reduced motion the rings appear and the logo jumps. */
+
+  // The rings fade in over RING_IN_MS, RING_IN_DELAY_MS after a gesture ends, and out over
+  // RING_OUT_MS when one starts; a snap lasts SNAP_MS, and the tapped ring is lit for as long.
+  const RING_IN_DELAY_MS = 100;
+  const RING_IN_MS = 150;
+  const RING_OUT_MS = 80;
+  const SNAP_MS = 180;
+  // The snap's easing, the plan's arriving curve: cubic-bezier(.2, .8, .2, 1).
+  const ARRIVING_CURVE = [0.2, 0.8, 0.2, 1];
+  // Halving steps when solving the curve for its time: 2^-20 is far below a pixel.
+  const CURVE_SOLVE_STEPS = 20;
+
+  // The rings' fade: alpha goes from fromAlpha to toAlpha over durationMs, delayMs after
+  // startedAt (performance.now() ms). At rest it is a finished fade to 1 or to 0.
+  let ringFade = { fromAlpha: 1, toAlpha: 1, startedAt: 0, delayMs: 0, durationMs: 0 };
+  // The snap being drawn: { spot, from, target, startedAt }, with from and target as
+  // { cx, cy, w } (the effective placement, fractions of the crop); or null.
+  let snapMotion = null;
+
+  // A cubic Bézier easing (CSS's cubic-bezier with its two control points) at a time fraction
+  // 0 to 1: finds the curve's parameter whose x is that fraction by halving, and returns its y.
+  function easeCubicBezier([firstX, firstY, secondX, secondY], timeFrac) {
+    const coordinate = (parameter, first, second) => {
+      const rest = 1 - parameter;
+      return 3 * rest * rest * parameter * first
+        + 3 * rest * parameter * parameter * second
+        + parameter * parameter * parameter;
+    };
+    let low = 0;
+    let high = 1;
+    for (let i = 0; i < CURVE_SOLVE_STEPS; i++) {
+      const middle = (low + high) / 2;
+      if (coordinate(middle, firstX, secondX) < timeFrac) low = middle;
+      else high = middle;
+    }
+    return coordinate((low + high) / 2, firstY, secondY);
+  }
+
+  // The rings' alpha (0 to 1) at `now`.
+  function ringAlphaAt(now) {
+    const { fromAlpha, toAlpha, startedAt, delayMs, durationMs } = ringFade;
+    const elapsedMs = now - startedAt - delayMs;
+    if (elapsedMs <= 0) return fromAlpha;
+    if (elapsedMs >= durationMs) return toAlpha;
+    return fromAlpha + (toAlpha - fromAlpha) * elapsedMs / durationMs;
+  }
+
+  // Starts the rings fading in (isWanted) or out, from where they are, unless they are already
+  // heading there. A gesture's start and end are seen here, at the next draw.
+  function aimRings(isWanted, now) {
+    const toAlpha = isWanted ? 1 : 0;
+    if (ringFade.toAlpha === toAlpha) return;
+    const fromAlpha = CF.isMotionReduced() ? toAlpha : ringAlphaAt(now);
+    ringFade = {
+      fromAlpha,
+      toAlpha,
+      startedAt: now,
+      delayMs: isWanted ? RING_IN_DELAY_MS : 0,
+      durationMs: isWanted ? RING_IN_MS : RING_OUT_MS,
+    };
+  }
+
+  // Whether the rings belong on screen: between gestures, and while a finger rests on a ring
+  // without moving (so the ring it lifts from can light up as the logo snaps to it).
+  function areRingsWanted() {
+    const gesture = app.gesture;
+    return !gesture || (!!gesture.spot && !gesture.moved);
+  }
+
+  // The placement to draw at `now`: the committed one, or a point on the way to it while a snap
+  // runs. A new gesture, or any other change of the placement (undo), ends the snap at once.
+  function drawnPlacement(overlay, now) {
+    if (!snapMotion) return overlay;
+    const { from, target, startedAt } = snapMotion;
+    const isStale = !!app.gesture
+      || overlay.cx !== target.cx
+      || overlay.cy !== target.cy
+      || overlay.w !== target.w;
+    const timeFrac = (now - startedAt) / SNAP_MS;
+    if (isStale || timeFrac >= 1) {
+      snapMotion = null;
+      return overlay;
+    }
+    const progress = easeCubicBezier(ARRIVING_CURVE, Math.max(0, timeFrac));
+    const between = key => from[key] + (target[key] - from[key]) * progress;
+    return Object.assign({}, overlay, { cx: between('cx'), cy: between('cy'), w: between('w') });
+  }
+
+  // The ring lit by a tap, while its snap runs; null otherwise.
+  function litSpotAt(now) {
+    if (!snapMotion || now - snapMotion.startedAt >= SNAP_MS) return null;
+    return snapMotion.spot;
+  }
+
+  // True while a fade or a snap still has frames to draw.
+  function isOverlayMoving(now) {
+    const fadeEndsAt = ringFade.startedAt + ringFade.delayMs + ringFade.durationMs;
+    return now < fadeEndsAt || !!snapMotion;
+  }
+
   // The overlay on the Overlay and Export steps; on Overlay also its box, resize handles and
   // (between gestures) the snap rings.
   function drawOverlayPreview(ctx, view) {
     const placed = current();
     if (!placed) return;
+    const now = performance.now();
     const image = images.get(placed.overlay.id);
-    const rect = screenRect(view, placed.overlay, placed.crop);
+    const rect = screenRect(view, drawnPlacement(placed.overlay, now), placed.crop);
     CF.setScreen(ctx);
     ctx.save();
     ctx.globalAlpha = placed.overlay.opacity;
@@ -514,7 +620,10 @@
     ctx.drawImage(image.el, rect.x, rect.y, rect.width, rect.height);
     ctx.restore();
     if (app.tab !== 'overlay') return;
-    if (!app.gesture) drawHotSpots(ctx, view, placed.crop);
+    aimRings(areRingsWanted(), now);
+    const ringAlpha = ringAlphaAt(now);
+    if (ringAlpha > 0) drawHotSpots(ctx, view, placed.crop, ringAlpha, litSpotAt(now));
+    if (isOverlayMoving(now)) CF.requestRender();
     ctx.setLineDash([6, 5]);
     ctx.strokeStyle = 'rgba(255,255,255,.85)';
     ctx.lineWidth = 1.5;
@@ -574,31 +683,55 @@
     return placed ? nearestTarget(hotSpots(view, placed.crop), point) : null;
   }
 
-  function drawHotSpots(ctx, view, crop) {
-    for (const spot of Object.values(hotSpots(view, crop))) {
+  // Draws the nine rings at `alpha` (0 to 1, their fade). The lit ring (a spot key, or null)
+  // is drawn brighter and filled: the one a tap is snapping the logo to.
+  function drawHotSpots(ctx, view, crop, alpha, litSpot) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    for (const [key, spot] of Object.entries(hotSpots(view, crop))) {
+      const isLit = key === litSpot;
       ctx.beginPath();
       ctx.arc(spot[0], spot[1], 11, 0, FULL_CIRCLE);
+      if (isLit) {
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        ctx.fill();
+      }
       ctx.lineWidth = 4;
       ctx.strokeStyle = 'rgba(0,0,0,.45)';
       ctx.stroke();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255,255,255,.9)';
+      ctx.lineWidth = isLit ? 3 : 2;
+      ctx.strokeStyle = isLit ? '#fff' : 'rgba(255,255,255,.9)';
       ctx.stroke();
       ctx.beginPath();
       ctx.arc(spot[0], spot[1], 2.5, 0, FULL_CIRCLE);
       ctx.fillStyle = 'rgba(255,255,255,.9)';
       ctx.fill();
     }
+    ctx.restore();
   }
 
   // On pointer-up for a tap (no drag) that started on a ring: undo any sub-threshold jitter,
-  // then snap.
+  // then snap. The snapped placement is committed now; the drawing travels there (M6).
   function overlaySpotTap(gesture) {
     app.gesture = null;
     app.state.overlay = clone(gesture.before.overlay);
+    const before = current();
     adjust((overlay, crop) => (
       CardEngine.snapOverlay(overlay, gesture.spot, crop.width, crop.height)
     ));
+    const after = current();
+    if (!before || !after) return;
+    const pick = overlay => ({ cx: overlay.cx, cy: overlay.cy, w: overlay.w });
+    // Under reduced motion the logo jumps (it "travels" from where it lands); the ring still
+    // lights, which is feedback, not motion.
+    const from = CF.isMotionReduced() ? after.overlay : before.overlay;
+    snapMotion = {
+      spot: gesture.spot,
+      from: pick(from),
+      target: pick(after.overlay),
+      startedAt: performance.now(),
+    };
+    CF.requestRender();
   }
 
   /* ---------- gestures ----------

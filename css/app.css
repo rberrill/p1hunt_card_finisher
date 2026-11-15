@@ -391,6 +391,25 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   white-space: nowrap;
 }
 .tool-row { height: 70px; flex: none; margin-top: 6px; display: flex; gap: 5px; }
+/* M3, a mode tap swaps the line (160 ms): the old rows fade out in 60 ms, then the new ones
+   rise 6 px and fade in over 100 ms, ease-out (CF.swapLine sequences the two). */
+.label-row.is-leaving, .control-row.is-leaving { opacity: 0; transition: opacity 60ms ease-out; }
+.label-row.is-entering, .control-row.is-entering { animation: line-in 100ms ease-out; }
+@keyframes line-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+/* M7, a step change: the new step's rows fade in over 120 ms, ease-out. The grabber's tab and
+   the progress line stay as they are; on a wide screen the inline options don't fade. */
+.control-area.is-arriving > :not(.grabber):not(.progress-line) {
+  animation: area-in 120ms ease-out;
+}
+@keyframes area-in {
+  from { opacity: 0; }
+}
+/* Reduced motion: both are instant (the global rule drops the animations; JS skips the wait). */
+@media (prefers-reduced-motion: reduce) {
+  .label-row.is-leaving, .control-row.is-leaving { opacity: 1; transition: none; }
+}
 
 /* ---- part: status ---- */
 .status-icon { flex: none; display: grid; color: var(--quiet); }
@@ -643,6 +662,29 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   font-size: 13px;
 }
 .segmented-control.is-compact .segment::after { content: ''; position: absolute; inset: -6px 0; }
+/* M8, Front | Back: the white fill is one pill (two equal halves inside the 2 px rim) that
+   slides 180 ms to the tapped side, decelerating into place. The labels' color and weight
+   change at once. Before the pill is placed (no data-index) it isn't shown. */
+.segmented-control.is-sliding { position: relative; }
+.segmented-control.is-sliding .segment[aria-pressed="true"] { background: transparent; }
+.segment-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / 2);
+  border-radius: 16px;
+  background: var(--ink);
+  pointer-events: none;
+  transition: transform 180ms cubic-bezier(.2, .8, .2, 1);
+}
+.segmented-control:not([data-index]) .segment-thumb { display: none; }
+.segmented-control[data-index="1"] .segment-thumb { transform: translateX(100%); }
+.segmented-control.is-sliding.is-disabled .segment-thumb { opacity: .38; }
+/* Reduced motion: the pill jumps. */
+@media (prefers-reduced-motion: reduce) {
+  .segment-thumb { transition: none; }
+}
 
 /* ---- part: nudge pad ---- */
 .nudge-pad {

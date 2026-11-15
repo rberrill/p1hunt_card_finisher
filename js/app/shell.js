@@ -24,7 +24,10 @@
   const isStep = tab => Object.prototype.hasOwnProperty.call(STEPS, tab);
 
   /* ---------- steps ---------- */
+  // Opens a step. When the step really changes with a photo open, its control rows fade in
+  // (M7); the tab's weight changes at once, in syncUI.
   function setTab(tab) {
+    const isNewStep = tab !== app.tab;
     app.tab = tab;
     elements.root.dataset.tab = tab;
     document.querySelectorAll('section[data-panel]').forEach(section => {
@@ -42,6 +45,7 @@
     closeSheets();
     CF.Session.saveSoon();
     syncUI();
+    if (isNewStep && app.img) CF.fadeInControlArea(byId(`${tab}Area`));
     CF.requestRender();
     CF.requestMini();
   }

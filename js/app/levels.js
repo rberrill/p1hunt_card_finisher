@@ -188,9 +188,18 @@
     });
   }
 
+  // M13: the "Before levels" badge fades in over this long once the photo shows without levels
+  // (the photo itself swaps at once). Reduced motion keeps the fade: it is short and says what
+  // is on screen.
+  const COMPARE_BADGE_FADE_MS = 80;
+  // When the current compare started (performance.now() ms), for the badge's fade.
+  let compareStartedAt = 0;
+
+  // Starts or ends a compare: the photo without levels while it is on.
   function setCompare(isOn) {
     if (app.compare === isOn) return;
     app.compare = isOn;
+    if (isOn) compareStartedAt = performance.now();
     CF.requestRender();
   }
 
@@ -231,9 +240,14 @@
     ctx.fillText(label, point[0] + 11, point[1] - 9);
   }
 
-  // The "Before levels" badge while comparing.
+  // The "Before levels" badge while comparing, fading in over its first 80 ms: each frame of
+  // the fade asks for the next.
   function drawCompareBadge(ctx) {
     const text = 'Before levels';
+    const fadeFrac = (performance.now() - compareStartedAt) / COMPARE_BADGE_FADE_MS;
+    if (fadeFrac < 1) CF.requestRender();
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, fadeFrac));
     ctx.font = '600 13px system-ui, sans-serif';
     ctx.textAlign = 'left';
     const width = ctx.measureText(text).width + 20;
@@ -241,6 +255,7 @@
     ctx.fillRect(12, 12, width, 28);
     ctx.fillStyle = '#fff';
     ctx.fillText(text, 22, 31);
+    ctx.restore();
   }
 
   // The Levels step's overlays: the pick markers, the compare badge and the dropper loupe.

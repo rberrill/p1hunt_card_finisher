@@ -28,9 +28,16 @@
   // The true minus sign, as the plan writes negative angles (−3.5°).
   const MINUS_SIGN = '−';
 
-  // What the control area shows, kept in this module only: the mode ('straighten' or 'flip')
-  // and whether the angle is being typed. Neither is edit state, so neither is undone or saved.
-  const rotateView = { mode: 'straighten', isTyping: false, isPressingTypingKey: false };
+  // What the control area shows, kept in this module only: the mode ('straighten' or 'flip'),
+  // the mode whose rows are on screen (it trails `mode` for the 60 ms the old line takes to
+  // fade after a mode tap, CF.swapLine) and whether the angle is being typed. None is edit
+  // state, so none is undone or saved.
+  const rotateView = {
+    mode: 'straighten',
+    shownMode: 'straighten',
+    isTyping: false,
+    isPressingTypingKey: false,
+  };
 
   /* ---------- building the control area and the sheet ---------- */
   // Builds Rotate's control area and options sheet into its section (the shell's contract).
@@ -340,11 +347,16 @@
   }
 
   /* ---------- binding and syncing ---------- */
-  // Shows the mode's label and control rows and lights its tool.
+  // Lights the tapped mode's tool at once, then swaps in its label and control rows (M3).
   function setRotateMode(mode) {
     if (rotateView.isTyping) stopTyping(false);
+    if (mode === rotateView.mode) return;
     rotateView.mode = mode;
     if (app.state) syncRotate(app.state);
+    CF.swapLine(byId('rotateArea'), () => {
+      rotateView.shownMode = rotateView.mode;
+      if (app.state) syncRotate(app.state);
+    });
   }
 
   // Binds the step's controls once, at start-up.
@@ -382,13 +394,14 @@
     if (rotateView.isTyping && app.tab !== 'rotate') stopTyping(false);
     const fine = state.rotation.fine;
     const isFlipMode = rotateView.mode === 'flip';
+    const isFlipShown = rotateView.shownMode === 'flip';
     byId('rotateAngleText').textContent = angleText(fine);
     byId('btnRotateReset').disabled = !app.img || fine === 0;
     CF.updateRuler(byId('fine').closest('.ruler'), { value: fine });
-    byId('rotateStraightenLine').hidden = isFlipMode;
-    byId('rotateRulerRow').hidden = isFlipMode;
-    byId('rotateFlipLine').hidden = !isFlipMode;
-    byId('rotateFlipRow').hidden = !isFlipMode;
+    byId('rotateStraightenLine').hidden = isFlipShown;
+    byId('rotateRulerRow').hidden = isFlipShown;
+    byId('rotateFlipLine').hidden = !isFlipShown;
+    byId('rotateFlipRow').hidden = !isFlipShown;
     CF.updateTool(byId('toolStraighten'), { isOn: !isFlipMode });
     CF.updateTool(byId('toolFlip'), { isOn: isFlipMode });
     CF.updateTool(byId('toolFillFrame'), { isOn: !!state.rotation.fillFrame });

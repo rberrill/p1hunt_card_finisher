@@ -49,6 +49,9 @@
   // The adjustment showing in the control area: 'nudge' (the resting line) or 'flatten'.
   // Preview, a switch, replaces both while it is on. Only this module reads it.
   let lineMode = 'nudge';
+  // The mode whose rows are on screen. It trails lineMode for the 60 ms the old line takes to
+  // fade after a mode tap (CF.swapLine), while the tapped tool is already lit.
+  let shownLineMode = 'nudge';
 
   /* ---------- building ---------- */
   // Builds Perspective's control area and options sheet into its section of index.html, around
@@ -219,8 +222,13 @@
   // The tool row: the two modes swap the line, Candidate cycles, Snap and Preview switch.
   function bindPerspectiveTools() {
     const pickMode = mode => {
+      if (mode === lineMode) return;
       lineMode = mode;
       CF.syncUI();
+      CF.swapLine(byId('perspectiveArea'), () => {
+        shownLineMode = lineMode;
+        CF.syncUI();
+      });
     };
     byId('toolNudge').addEventListener('click', () => pickMode('nudge'));
     byId('toolFlatten').addEventListener('click', () => pickMode('flatten'));
@@ -261,8 +269,8 @@
   function syncPerspective(state) {
     const isPreview = !!app.previewMode;
     const flattenPercent = Math.round(state.strength * 100);
-    byId('perspectiveNudgeRow').hidden = isPreview || lineMode !== 'nudge';
-    byId('perspectiveFlattenRow').hidden = isPreview || lineMode !== 'flatten';
+    byId('perspectiveNudgeRow').hidden = isPreview || shownLineMode !== 'nudge';
+    byId('perspectiveFlattenRow').hidden = isPreview || shownLineMode !== 'flatten';
     byId('perspectivePreviewRow').hidden = !isPreview;
     CF.updateSlider(byId('strength').parentElement, { value: flattenPercent });
     syncFlattenValue(flattenPercent);
@@ -289,7 +297,7 @@
   // Flatten's value, in the tool (in place of its icon) and in its label row.
   function syncFlattenValue(flattenPercent) {
     CF.updateTool(byId('toolFlatten'), { valueText: `${flattenPercent}%` });
-    if (lineMode === 'flatten') {
+    if (shownLineMode === 'flatten') {
       CF.updateAdjustmentLine(byId('perspectiveLine'), { value: `${flattenPercent}%` });
     }
   }
@@ -341,7 +349,7 @@
     const readout = candidate
       ? ['Confidence ', makeEl('b', {}, `${Math.round(candidate.confidence * 100)}%`)]
       : '';
-    const isFlatten = lineMode === 'flatten';
+    const isFlatten = shownLineMode === 'flatten';
     CF.updateAdjustmentLine(line, {
       name: isFlatten ? 'Flatten' : 'Nudge',
       value: isFlatten

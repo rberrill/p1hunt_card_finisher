@@ -17,11 +17,15 @@
   //   isDense    smaller labels and tighter sides, where two controls share a row (Export's
   //              Size and Format)
   //   isCompact  the 36 px size, for the top bar
-  function buildSegmented({ id, label, options, isFitted, isDense, isCompact }) {
+  //   isSliding  the white fill is one pill that slides to the tapped choice (M8: 180 ms).
+  //              Only for choices of equal width (Front | Back): a pill that changed width as
+  //              it slid would animate a size, which the motion rules don't allow.
+  function buildSegmented({ id, label, options, isFitted, isDense, isCompact, isSliding }) {
     const classes = ['segmented-control'];
     if (isFitted) classes.push('is-fitted');
     if (isDense) classes.push('is-dense');
     if (isCompact) classes.push('is-compact');
+    if (isSliding) classes.push('is-sliding');
     const segments = options.map(option => makeEl('button', {
       class: 'segment',
       type: 'button',
@@ -33,14 +37,22 @@
       id,
       role: 'group',
       'aria-label': label,
-    }, ...segments);
+    }, isSliding && makeEl('span', { class: 'segment-thumb', 'aria-hidden': 'true' }),
+    ...segments);
   }
 
-  // Selects the choice with this value; null (or a value no choice has) selects none.
+  // Selects the choice with this value; null (or a value no choice has) selects none. A
+  // sliding control also takes the choice's position in data-index, which places its pill.
   function updateSegmented(control, value) {
-    control.querySelectorAll('.segment').forEach(segment => {
-      segment.setAttribute('aria-pressed', String(segment.dataset.value === String(value)));
+    let selectedIndex = -1;
+    control.querySelectorAll('.segment').forEach((segment, index) => {
+      const isSelected = segment.dataset.value === String(value);
+      segment.setAttribute('aria-pressed', String(isSelected));
+      if (isSelected) selectedIndex = index;
     });
+    if (!control.classList.contains('is-sliding')) return;
+    if (selectedIndex < 0) delete control.dataset.index;
+    else control.dataset.index = String(selectedIndex);
   }
 
   // Calls onPick(value) when a choice is tapped. The caller decides what that selects.
