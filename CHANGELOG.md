@@ -10,9 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **A new layout.** The header, the step menu, the "next step →" buttons and the **More options** bar are gone. On a phone the screen is now, top to bottom:
   - a **top bar** with **Open**; **Front | Back** and **Unpair** while a pair is open; **Fit** while the photo is zoomed in; and **Undo** and **Redo**;
   - the photo;
-  - the step's controls, in an area the same height on every step, with a grabber on its top edge;
+  - the step's controls, in an area the same height on every step, with a small tab on its top edge that opens the step's options;
   - a **tab bar** with the six steps along the bottom.
-- **Options sheets.** Each step's less-used options (what was under More options) are in a sheet that rises over the lower half of the photo: tap the grabber or drag it up. Tap outside the sheet, drag it down, tap ✕ or press Escape to close it. Each sheet ends with a **Tips** row.
+- **Options sheets.** Each step's less-used options (what was under More options) are in a sheet that rises over the lower half of the photo: tap the tab with the up arrow on the controls' top edge, or drag it up. The arrow flattens into a bar as the sheet rises. Tap outside the sheet, drag it down, tap ✕ or press Escape to close it. Each sheet ends with a **Tips** row.
 - **On a wide screen** the steps are in the top bar, **Fit** is always there, and every step's options are listed in a panel on the right, with nothing to open.
 - **The start screen** shows no bars on a phone until a photo is open, and offers the last photo on a new **Resume** card.
 - **Perspective:** **Nudge**, **Flatten**, **Candidate**, **Snap** and **Preview** sit in one row of tools, and the detection confidence is always shown. While **Tap to find card** waits for your tap, its message has a **Cancel**.

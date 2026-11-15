@@ -8,7 +8,7 @@ It's a single web page that runs entirely in your browser. **Your photos never l
 
 ## What it does
 
-Six steps, in order. On a phone they're the tabs along the bottom of the screen; on a wide screen they're in the top bar. Each step's controls sit under the photo. Its less-used options are in an **options sheet**: tap the grabber on the top edge of the controls, or drag it up, and tap outside, drag down, tap ✕ or press Escape to close it. Each sheet ends with **Tips** (on Levels and Overlay the tips are all it holds). On a wide screen every option is listed in the panel on the right instead.
+Six steps, in order. On a phone they're the tabs along the bottom of the screen; on a wide screen they're in the top bar. Each step's controls sit under the photo. Its less-used options are in an **options sheet**: tap the small tab with the up arrow on the top edge of the controls, or drag it up, and tap outside, drag down, tap ✕ or press Escape to close it. Each sheet ends with **Tips** (on Levels and Overlay the tips are all it holds). On a wide screen every option is listed in the panel on the right instead.
 
 1. **Perspective.** Finds the card's four corners automatically, even inside a case or slab, and corrects the camera angle.
    - Drag corners or edges, with a magnifier that stays clear of your finger. Double-tap a handle to zoom in on it.

@@ -2,7 +2,7 @@
 
 Phase 5 of the 1.10 redesign: front and back pairs. Front / Back and Unpair in the top bar on every step, the 5:7 lock and its label, Together / Separately on Export, the pair's questions on the card, and Resume of a pair. Run on the dev build, desktop and iPhone: the cases below, then the smoke test. The redesign is released once, after phase 6, so this script has no Live column and no After deploy section.
 
-- **Version under test:** `1.10.0-dev.13` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the line above **Tips** in Export's options sheet.
+- **Version under test:** `1.10.0-dev.14` or later. Desktop: the console's first line reads `[card-finisher] v1.10.0-dev.N`. Phone: the line above **Tips** in Export's options sheet.
 - **Automated tests first:** `node tests/selftest.js` and `tests/sample-regression.js` must both pass (see `tests/README.md`). Claude runs these, plus the `verify` skill's layout, subfolder and `file://` checks, before handing over a build.
 - **IDs** are the permanent IDs from `tests/uat/catalog.md` (`D` Desktop, `P` Phone, `E` Environments, then section.row). 🆕 marks a case added in this phase; ✏️ a case whose steps or Expected were rewritten in this phase to match the plan's frames. Unmarked rows are copied from the catalog unchanged: the pair's existing cases in section 11, and the connected cases in the other sections.
 - **One row per behavior, on one device.** A behavior is tested once, on the device that can judge it best; the rest is shared out so both devices exercise every feature. Each row is one flow with one verdict.
@@ -30,6 +30,8 @@ Phase 5 of the 1.10 redesign: front and back pairs. Front / Back and Unpair in t
 - **A new photo while paired** asks **New photo / Replace front** (or **back**), naming the side you're on: from Open (F17: P11.10, D11.19, D11.20), from a drop, with the same outline as for a single photo (DT8: D11.21 ✏️), and from a paste (D1: D11.27 🆕). On Overlay a drop or a paste becomes the logo, with no question (D11.22, D11.27 🆕).
 - **The Upscale question for a pair** is asked once: Together names the joined image's size (U2: D11.23, P11.14), Separately both sides' sizes (U3: D11.24 ✏️).
 - **On a wide screen** Front / Back and Unpair sit just before Undo, and a question is a centered card over the dimmed photo while the panel stays readable (DT7: D11.26 🆕).
+
+**Also in this build: the grabber is a tab** (Rich, 2026-11-15; not in the plan's frames). The handle that opens each step's options sheet is now a small tab with an up arrow, rising over the photo's bottom edge from the control area; the arrow flattens into a bar as the sheet rises, and messages over the photo sit above the tab (P1.2 ✏️, P1.9 ✏️, P2.7 ✏️, P2.10 🆕, D2.2 ✏️; connected: P5.2, the crop handle under the tab).
 
 **Frame D1 is drawn on a phone, but its row is on desktop** (D11.27): an iPhone has no way to paste into the page without a keyboard. The same card on the phone is P11.10's.
 
@@ -77,7 +79,30 @@ Connected: every photo that comes in goes through the pair's code, paired or not
 
 ### Phone
 
-No cases in this phase.
+| ID | Test | Steps | Expected | Result | Notes |
+| --- | --- | --- | --- | --- | --- |
+| P1.2 ✏️ | Phone layout | Look at the screen | Top bar (Open on the left, Undo and Redo on the right, no Fit), the photo, the control area, then the tab bar with six steps. Centered on the control area's top edge is the grabber: a small tab in the panel's color with an up arrow, rising over the photo's bottom edge. Nothing else overlaps the photo |  |  |
+| P1.9 ✏️ | Toasts | Reload and tap **Resume**; then on Levels tap **Pick black** and tap the card's white border | "Resumed where you left off." in a white pill with black text, gone after about 3 s; then the too-light warning in amber with a triangle, which stays longer. Each sits at the bottom of the photo, just above the grabber's tab and never over it, on three lines at most with no word cut off |  |  |
+
+---
+
+## 2. Navigation
+
+The grabber's new tab. The other navigation rows are unchanged and not repeated.
+
+### Desktop
+
+| ID | Test | Steps | Expected | Result | Notes |
+| --- | --- | --- | --- | --- | --- |
+| D2.2 ✏️ | Narrow and wide | Narrow the window below 760 px, then widen it again | Narrow: the steps move to a tab bar at the bottom, the panel goes, the control area sits under the photo with the grabber's tab on its top edge, and **Fit** shows only while zoomed. Wide: the pill and the panel come back, the options listed inline |  |  |
+
+### Phone
+
+| ID | Test | Steps | Expected | Result | Notes |
+| --- | --- | --- | --- | --- | --- |
+| P2.7 ✏️ | Grabber opens the sheet | On Perspective, tap the grabber (the tab with the up arrow); close the sheet with ✕; then drag the grabber up slowly and stop halfway | Both open "Perspective options" over the lower half of the photo, with the top of the photo still in view. While dragging, the sheet rises from the control area's top edge under your finger with the tab on its top edge: one tab on screen, never two. As it rises the arrow flattens into a short bar, and the open sheet shows the bar. On Export the tab is whole, not cut off, and **Original** and the other Size and Format choices still take their taps |  |  |
+| P2.10 🆕 | Grabber springs back and closes | Drag the grabber up about a finger's width and let go; then tap it; then drag the open sheet's tab down and let go | The short drag springs back closed and the bar turns back into the up arrow. The tap opens the sheet. Dragging the open sheet's tab down closes it, and the arrow is back on the control area's edge |  |  |
+| P5.2 | Move and resize the box | Drag inside the box with your finger, drag a corner handle, then drag the handle in the middle of the box's bottom edge | It moves, then resizes, and the size in the label row follows. The drag from the bottom handle resizes the box, even close to the grabber, and doesn't open the options sheet |  |  |
 
 ---
 
@@ -255,7 +280,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`, 
 ### Desktop
 *Setup: Chrome with DevTools open on the Console tab, in a window wider than 760 px. The 14 pair from `samples/` (`14_front_portrait_raw_white`, `14_back_portrait_raw_white`) and a transparent PNG logo to hand. When a Download or Copy asks **Upscale to 2000 px?**, answer **No**.*
 
-| ID | Test | Steps | Expected | Pre-release (dev.13) | Notes |
+| ID | Test | Steps | Expected | Pre-release (dev.14) | Notes |
 |---|---|---|---|---|---|
 | SD1 | Right build | Open the page; look at the tab, the console and the logo's tooltip | The tab shows the P1 icon; the console's version line and the tooltip read the version under test (`-dev` pre-release) |  |  |
 | SD2 | Drop and detect | Drag `14_front_portrait_raw_white` onto the page | It loads with four corners on or near the card |  |  |
@@ -277,7 +302,7 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`, 
 ### Phone
 *Setup: iPhone Safari; clear the LAN address's website data in Safari's settings (Advanced → Website Data) first, so no cached build runs. In Photos: a slabbed card's front and back, shot the same way up. A logo saved from an earlier run (or a PNG to upload). If Safari shows a downloaded image in the tab, go Back and tap **Resume**.*
 
-| ID | Test | Steps | Expected | Pre-release (dev.13) | Notes |
+| ID | Test | Steps | Expected | Pre-release (dev.14) | Notes |
 |---|---|---|---|---|---|
 | SP1 | Open and detect | **Open**, choose the slab's front | It loads and the corners sit on the card; top bar, photo, control area and tab bar, with nothing over the photo and no button text cut off |  |  |
 | SP2 | Long-press and drag | Press and hold a corner for 2 s, then drag it | No iOS magnifier or callout; the loupe pins to the top corner away from your finger |  |  |
@@ -302,7 +327,8 @@ Run on both devices after the sections above. Copied from `tests/uat/smoke.md`, 
 
 | Area | Desktop | Phone | Blocking issues |
 |---|---|---|---|
-| 1. Start and layout |  | ➖ | |
+| 1. Start and layout |  |  | |
+| 2. Navigation |  |  | |
 | 7. Overlay |  | ➖ | |
 | 8. Export |  |  | |
 | 10. Upscale question |  |  | |

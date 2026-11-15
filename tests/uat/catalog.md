@@ -46,14 +46,14 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
 | P1.1 | Start screen and Open | Open the page, look, then tap **Open photo** and choose a photo from Photos | No top bar or tab bar on the start screen: the app icon, "Finish a card photo" and a red **Open photo**. While it loads, "Loading…" sits at the bottom of the photo area; then the bars arrive and the corners are detected |  |  |
-| P1.2 | Phone layout | Look at the screen | Top bar (Open on the left, Undo and Redo on the right, no Fit), the photo, the control area with a grabber pill on its top edge, then the tab bar with six steps. Nothing overlaps the photo |  |  |
+| P1.2 | Phone layout | Look at the screen | Top bar (Open on the left, Undo and Redo on the right, no Fit), the photo, the control area, then the tab bar with six steps. Centered on the control area's top edge is the grabber: a small tab in the panel's color with an up arrow, rising over the photo's bottom edge. Nothing else overlaps the photo |  |  |
 | P1.3 | Every step fits | Tap each of the six tabs in turn | The photo is the same height on every step; the tab you're on is lit; no tab label or button text is cut off; the tab bar clears the home indicator. The control area doesn't scroll on any step |  |  |
 | P1.4 | Turn the phone | Rotate to landscape and back | Nothing breaks; the layout recovers |  |  |
 | P1.5 | Home-screen icon | Safari's Share button → **Add to Home Screen**, then look at the home screen | The icon is the red P and white 1 on a full black tile, not a screenshot of the page |  |  |
 | P1.6 | Resume card | Edit the photo, wait a few minutes, reload the page | The Resume card has a drawn thumbnail, reads "Last photo · N min ago" over "Resume <name>?", with **Resume** in red, **Start fresh** beside it and **Open photo** below in grey; still no bars |  |  |
 | P1.7 | Fit in the top bar | **Resume**, pinch to zoom in, tap **Fit** | **Fit** appears in the top bar once the photo is zoomed or panned; the tap fits the photo and **Fit** goes again |  |  |
 | P1.8 | Safari's bar | In a Safari tab with its address bar at the bottom, look at the tab bar and the grabber, then tap each tab and the grabber | Safari's floating bar covers neither: every tab and the grabber take the tap on the first try, and their labels are readable. If they collide, note how much is hidden (the fallback is more bottom padding, at the photo's expense) |  |  |
-| P1.9 | Toasts | Reload and tap **Resume**; then on Levels tap **Pick black** and tap the card's white border | "Resumed where you left off." in a white pill with black text, gone after about 3 s; then the too-light warning in amber with a triangle, which stays longer. Each sits at the bottom of the photo, just above the control area, on three lines at most with no word cut off |  |  |
+| P1.9 | Toasts | Reload and tap **Resume**; then on Levels tap **Pick black** and tap the card's white border | "Resumed where you left off." in a white pill with black text, gone after about 3 s; then the too-light warning in amber with a triangle, which stays longer. Each sits at the bottom of the photo, just above the grabber's tab and never over it, on three lines at most with no word cut off |  |  |
 
 ---
 
@@ -65,7 +65,7 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 | ID | Test | Steps | Expected | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
 | D2.1 | Steps and number keys | Look at the steps in the top bar, then press 1 to 6 | Perspective, Rotate, Crop, Levels, Overlay, Export, in that order; each key opens its step and the pill marks it |  |  |
-| D2.2 | Narrow and wide | Narrow the window below 760 px, then widen it again | Narrow: the steps move to a tab bar at the bottom, the panel goes, the control area sits under the photo with a grabber, and **Fit** shows only while zoomed. Wide: the pill and the panel come back, the options listed inline |  |  |
+| D2.2 | Narrow and wide | Narrow the window below 760 px, then widen it again | Narrow: the steps move to a tab bar at the bottom, the panel goes, the control area sits under the photo with the grabber's tab on its top edge, and **Fit** shows only while zoomed. Wide: the pill and the panel come back, the options listed inline |  |  |
 | D2.3 | Undo and Redo in the top bar | On Rotate click the angle, type `2` and press Enter, press 3 for Crop, click Undo, then Redo; then press Ctrl+Z and Ctrl+Y | Redo is dimmed until you undo. Undo takes the 2° back and Redo restores it, from Crop; the keys do the same |  |  |
 | D2.4 | Fit on desktop | Look at the top bar, zoom in with the mouse wheel, click **Fit**; zoom again and press F | **Fit** is shown at all times on desktop; both fit the photo to the screen |  |  |
 | D2.5 | Escape closes the sheet | Narrow the window below 760 px, click the grabber, then press Escape | The step's options sheet opens, then closes |  |  |
@@ -77,9 +77,10 @@ UAT runs on the **dev build** before release. GitHub Pages only serves the `rele
 | --- | --- | --- | --- | --- | --- |
 | P2.3 | Unapplied Levels dot | Make a Levels change without Apply, then tap other tabs | A white dot on the Levels tab, on every step |  |  |
 | P2.6 | Tab bar | From Perspective, tap **Crop**, then **Rotate** | One tap opens each step; the tab you're on is lit and the others dim |  |  |
-| P2.7 | Grabber opens the sheet | On Perspective, tap the grabber; close the sheet with ✕; then drag the grabber up slowly and stop halfway | Both open "Perspective options" over the lower half of the photo, with the top of the photo still in view. While dragging, the sheet rises from the control area's top edge under your finger and there is one grabber on screen, never two. On Export the grabber is whole, not cut off |  |  |
+| P2.7 | Grabber opens the sheet | On Perspective, tap the grabber (the tab with the up arrow); close the sheet with ✕; then drag the grabber up slowly and stop halfway | Both open "Perspective options" over the lower half of the photo, with the top of the photo still in view. While dragging, the sheet rises from the control area's top edge under your finger with the tab on its top edge: one tab on screen, never two. As it rises the arrow flattens into a short bar, and the open sheet shows the bar. On Export the tab is whole, not cut off, and **Original** and the other Size and Format choices still take their taps |  |  |
 | P2.8 | The sheet closes | Open the sheet and drag it down; open it and tap the photo above it; open it and tap ✕ | Each closes it; the tap on the photo moves no corner |  |  |
 | P2.9 | Every step has its options | On each of the six steps, open the sheet and scroll it | Each opens with that step's title: Perspective options, Rotate options, Crop options, Levels tips, Overlay options, Export options. What each holds is in rows P3.13, P4.5, P5.5, P6.10, P7.19 and P8.10 |  |  |
+| P2.10 | Grabber springs back and closes | Drag the grabber up about a finger's width and let go; then tap it; then drag the open sheet's tab down and let go | The short drag springs back closed and the bar turns back into the up arrow. The tap opens the sheet. Dragging the open sheet's tab down closes it, and the arrow is back on the control area's edge |  |  |
 
 ---
 
