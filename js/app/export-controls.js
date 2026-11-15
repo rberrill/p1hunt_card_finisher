@@ -456,8 +456,10 @@
     });
   }
 
-  // The readout, the note under it, the save row and Add back. A note hides nothing: it is
-  // the readout row's second line, and stays beside Next card after an export.
+  // The readout, the notes under it, the save row and Add back. A note hides no button: it is
+  // the readout row's second line, and stays beside Next card after an export. (On the phone,
+  // css/app.css shows one note at a time, and beside a pair's Together | Separately gives the
+  // note the readout's place until it is dealt with.)
   function syncExportReadouts() {
     const state = app.state;
     const geometry = app.geometry;
