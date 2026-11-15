@@ -30,6 +30,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 **Rich's preferences:**
 - Direct feedback; push back when something is wrong.
+- **One question at a time, as a multiple-choice picker.** When there are several decisions to make, ask the first with the question tool (options to pick from, the recommended one first, what each costs), wait for the answer, then ask the next. Never a batch of questions in one message (Rich, 2026-11-15).
 - Simplicity over features: he removed case detection, Square up mode and the Before button when they didn't earn their place.
 - No messages a user can't act on (such as "needs HTTPS").
 - Nothing blocks the photo, except a temporary flyout the user opens or an alert they must answer before they can go on.
