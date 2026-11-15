@@ -145,7 +145,7 @@
   // saves, Cancel doesn't. Never marks the edits as exported: only the main
   // export shows Next card.
   function saveCornerShots(kind) {
-    if (!app.img || app.exporting) return;
+    if (!app.img || app.exporting || app.isSwitching) return;
     const shots = currentShots();
     if (!shots.ok) {
       toast(shots.reason, 'error', 5000);
@@ -250,7 +250,7 @@
     const state = app.state;
     if (!state) return;
     const shots = currentShots();
-    const isSaving = !!app.exporting;
+    const isSaving = !!app.exporting || !!app.isSwitching;
     const isTooSmall = !shots.ok && !!shots.reason;
     const canSave = shots.ok || isTooSmall;
     CF.updateSegmented(byId('cornerOutput'), app.cornerShotsOutput);

@@ -433,7 +433,12 @@
   function syncSaveButtons(isValid) {
     const canShare = CF.Exporter.canShare();
     const isSeparately = !!app.pair && app.pairOutput === 'separately';
-    const isBusy = !!app.exporting;
+    // Busy: an export runs, or a pair's other photo is being opened.
+    const isBusy = !!app.exporting || !!app.isSwitching;
+    // Together | Separately waits too: the export under way keeps the output it began with.
+    byId('pairOutput').querySelectorAll('.segment').forEach(segment => {
+      segment.disabled = isBusy;
+    });
     CF.updateActionButton(byId('btnShare'), {
       label: app.pendingSave ? 'Share now' : 'Share',
       isHidden: !canShare,

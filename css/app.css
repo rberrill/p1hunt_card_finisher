@@ -1201,7 +1201,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 @media (max-width: 760px) {
   /* The row is 44 px: a readout line and one note of two lines, never cut. So only the first
      note shows (the next comes when it is dealt with), and while one shows the readout keeps
-     to one line by dropping its "not upscaled" tail. A wide screen has room for all of it. */
+     to one line by dropping its "not upscaled" tail. A wide screen lets the row grow instead. */
   .export-readout-column { max-height: 44px; overflow: hidden; }
   .export-note + .export-note { display: none; }
   .export-readout-column:has(.export-note) .export-readout-tail { display: none; }
@@ -1282,6 +1282,9 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   /* The panel's scrollbar takes about 15 px from the 380, which Size and Format need: their
      row reaches 6 px into the panel's padding on each side. */
   #exportChoices { margin: 0 -6px; }
+  /* The panel has the room, so the readout row grows to hold a long readout and every note
+     (beside a pair's Together | Separately its column is narrow) instead of cutting at 44 px. */
+  #exportReadoutRow { height: auto; min-height: 44px; }
 }
 
 /* ---- step: Corner shots ---- */
@@ -1320,15 +1323,6 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 @media (min-width: 761px) {
   /* Listed inline in the panel: its progress line still sits on its own top edge. */
   #cornerShotsSheet .sheet { position: relative; }
-}
-
-/* ---- step: Pairs ---- */
-/* Owned by js/app/pair.js. Rules that apply only while a front + back pair is open. */
-@media (min-width: 761px) {
-  /* Beside Together | Separately the readout's column is narrow: a Separately readout takes
-     two lines and a note three. The panel has the room, so the row grows to hold them
-     instead of cutting them at 44 px (the phone shows the note alone, in Export's rules). */
-  #exportReadoutRow:has(#pairOutput:not([hidden])) { height: auto; min-height: 44px; }
 }
 
 /* ---- shell: the phone ---- */

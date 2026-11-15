@@ -181,9 +181,19 @@
     const wasPairCrop = app.isPairCrop;
     app.pair = pair;
     app.isPairCrop = true;
-    if (!(await CF.openFile(file, name))) {
+    // While the back decodes the front is still on screen: nothing may be saved or switched
+    // until the back is up (a Download in that moment would export the front twice).
+    setSwitching(true);
+    let isOpened = false;
+    try {
+      isOpened = await CF.openFile(file, name);
+    } finally {
+      setSwitching(false);
+    }
+    if (!isOpened) {
       if (app.pair === pair) app.pair = null;
       app.isPairCrop = wasPairCrop;
+      CF.syncUI();
       return;
     }
     front.state.crop.mode = 'fit';
@@ -193,11 +203,14 @@
     savePairSession(true);
   }
 
-  // Marks a side switch as running or done, and dims Front | Back and Unpair in the top bar to
-  // match, so the switch can't be tapped twice while the other photo decodes (frame F8).
+  // Marks a side switch (or the back's first opening) as running or done. Front | Back and
+  // Unpair in the top bar dim to match, so the switch can't be tapped twice while the other
+  // photo decodes (frame F8), and so do the save buttons: an export must not start on a photo
+  // that is being swapped out.
   function setSwitching(isSwitching) {
     app.isSwitching = isSwitching;
     syncPair();
+    if (app.state) CF.syncReadouts();
   }
 
   // Switches to the other side, on the step you're on (Crop on the back opens Crop on the front),

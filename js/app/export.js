@@ -471,11 +471,12 @@
   }
 
   // Exports the current edits. kind: 'download', 'share' or 'copy' (PNG to the clipboard). A
-  // pair exports both sides as chosen, except that Copy with Separately copies the open side.
+  // pair exports both sides as chosen, except that Copy with Separately copies the open side
+  // (the Copy button is hidden then, so only a caller in code reaches that).
   // When the crop is under the chosen Size, the upscale question comes first (offeredUpscale);
   // Copy still reaches the clipboard inside the tap that answers it.
   function doExport(kind) {
-    if (!app.img || app.exporting) return;
+    if (!app.img || app.exporting || app.isSwitching) return;
     if (app.pair && (kind !== 'copy' || app.pairOutput !== 'separately')) {
       CF.exportPair(kind);
       return;
