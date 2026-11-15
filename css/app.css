@@ -292,12 +292,14 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   border-top: 1px solid var(--edge);
   color: var(--ink);
 }
-/* The grabber opens the step's sheet (drag it up, or tap it). Its pill straddles the control
-   area's top edge, so the area stays 200 px; the target around it is 44 px tall. */
+/* The grabber opens the step's sheet (drag it up, or tap it). Its tab rises 24 px over the
+   photo from the control area's top edge, so the area stays 200 px and the photo keeps its
+   size; the target runs 19 px on into the area, 44 px tall in all and 88 px wide. (It is
+   placed against the area's padding box, inside its 1 px top border.) */
 .grabber {
   position: absolute;
   left: 50%;
-  top: -22px;
+  top: -25px;
   z-index: 4;
   width: 88px;
   height: 44px;
@@ -306,15 +308,50 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* A drag on the grabber, or on a sheet's top edge, moves the sheet: the browser must not
    take it as a page pan (it would cancel the drag). */
 .grabber, .sheet-grabber, .sheet-header { touch-action: none; }
-.grabber::before {
+/* An export's progress runs on across the tab's foot. */
+.control-area > .progress-line { z-index: 5; }
+/* The tab (the Sheet part's buildHandleTab; a sheet carries the same one): 80 px wide, in the
+   panel's color, outlined on its top and sides only. It reaches 1 px below the edge, over the
+   area's top border, so no line parts it from the panel. Pressed or dragged, it fills. */
+.handle-tab {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 80px;
+  height: 25px;
+  border: 1px solid var(--track);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--surface);
+  pointer-events: none;
+}
+.is-pressed > .handle-tab, .sheet-layer.is-dragging .handle-tab { background: var(--pressed); }
+/* The glyph's center, in the middle of the tab's 24 px. */
+.handle-glyph { position: absolute; left: 50%; top: 11px; }
+/* Each arm is a 20 x 5 px bar posed by its transform: an up chevron of about 16 x 8 px with a
+   2 px stroke at rest; a sheet's open tab poses them as one 36 x 5 px pill (js/app/parts/
+   sheet.js poses them in between under a finger). The pill's color fades in over the arm's
+   own, since only transform and opacity animate. */
+.handle-arm {
+  position: absolute;
+  left: -10px;
+  top: -2.5px;
+  width: 20px;
+  height: 5px;
+  border-radius: 2.5px;
+  background: var(--ink);
+  transform: translateX(-4px) rotate(-45deg) scale(.57, .4);
+  transition: transform 150ms ease-out;
+}
+.handle-arm.is-right { transform: translateX(4px) rotate(45deg) scale(.57, .4); }
+.handle-arm::after {
   content: '';
   position: absolute;
-  left: 26px;
-  top: 19px;
-  width: 36px;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--grip);
+  inset: 0;
+  border-radius: inherit;
+  background: var(--soft);
+  opacity: var(--arm-flat, 0);
+  transition: opacity 150ms linear;
 }
 .label-row, .control-row {
   height: 44px;
@@ -629,24 +666,20 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 0 16px calc(28px + env(safe-area-inset-bottom));
+  padding: 14px 16px calc(28px + env(safe-area-inset-bottom));
   border-radius: 18px 18px 0 0;
   background: var(--surface);
   color: var(--ink);
 }
+/* The sheet's grabber: the control area's tab, on the sheet's top edge, at the same place at
+   rest, with the same 44 px tall target for a drag down. */
 .sheet-grabber {
-  height: 14px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  margin-bottom: -10px;
-}
-.sheet-grabber::before {
-  content: '';
-  width: 36px;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--grip);
+  position: absolute;
+  left: 50%;
+  top: -24px;
+  width: 88px;
+  height: 44px;
+  margin-left: -44px;
 }
 .sheet-header {
   height: 44px;
@@ -774,9 +807,10 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 .alert-cancel { width: 100%; height: 46px; font-size: 15px; font-weight: 600; color: var(--quiet); }
 
 /* ---- part: toast ---- */
-/* Over the photo's bottom edge: inset 16 px, 12 px up, above every other layer. core.js sets
-   --toast-lift to the height of the photo an open sheet covers, which puts the toast 12 px
-   above that sheet. The pill grows upward from its bottom edge, to three lines at most, and
+/* Over the photo's bottom edge: inset 16 px, 36 px up on the phone (12 px above the grabber's
+   24 px tab), above every other layer. core.js sets --toast-lift to the height of the photo an
+   open sheet covers, which puts the toast as far above that sheet's edge, so it clears the
+   sheet's tab too. The pill grows upward from its bottom edge, to three lines at most, and
    never takes a touch. Motion M10: it rises 8 px as it fades in (160 ms) and fades out in
    200 ms; under reduced motion it only fades. */
 .toast-message {
@@ -828,6 +862,9 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
    (frame DT10). */
 @media (min-width: 761px) {
   .toast-message { bottom: 20px; width: fit-content; max-width: 460px; margin: 0 auto; }
+}
+@media (max-width: 760px) {
+  .toast-message { bottom: 36px; }
 }
 
 /* ---- part: progress line ---- */
@@ -976,29 +1013,62 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 #app.has-img[data-tab="overlay"] .stage.drag-over::after { content: 'Drop to add as the logo'; }
 
 /* ---- shell: sheets open and close (motion M1) ---- */
-/* The sheet is the control area's drawer. Closed, it rests unseen with its grabber on the
-   control area's grabber (--sheet-rest: how much of it stays below that edge); opening, it
-   fades in and rises from there, so there is one handle, not two. Open 280 ms, fast then
-   settling; close 200 ms, accelerating away. A finger drag has no easing (.is-dragging). */
+/* The sheet is the control area's drawer. Closed, it rests unseen but for its tab, with its
+   top edge on the control area's (--sheet-rest: how much of it stays below that edge) and its
+   tab on the area's (which hides meanwhile, in the phone block); opening, it fades in and
+   rises from there, so there is one handle, not two. Open 280 ms, fast then settling; close
+   200 ms, accelerating away. A finger drag has no easing (.is-dragging). */
 .sheet-layer {
   --sheet-rest: calc(
-    var(--control-area-height) + var(--tab-bar-height) + env(safe-area-inset-bottom) + 7px
+    var(--control-area-height) + var(--tab-bar-height) + env(safe-area-inset-bottom)
   );
 }
 .sheet-layer .sheet {
-  opacity: 0;
   transform: translateY(calc(100% - var(--sheet-rest)));
-  transition: transform 200ms cubic-bezier(.4, 0, 1, 1), opacity 200ms linear;
+  transition: transform 200ms cubic-bezier(.4, 0, 1, 1);
 }
 .sheet-layer .sheet-scrim { opacity: 0; transition: opacity 200ms linear; }
 .sheet-layer.is-open .sheet {
-  opacity: 1;
   transform: none;
-  transition: transform 280ms cubic-bezier(.2, .8, .2, 1), opacity 120ms linear;
+  transition: transform 280ms cubic-bezier(.2, .8, .2, 1);
 }
 .sheet-layer.is-open .sheet-scrim { opacity: 1; transition-duration: 280ms; }
 .sheet-layer.is-dragging .sheet,
 .sheet-layer.is-dragging .sheet-scrim { transition: none; }
+/* The tab's glyph: an up chevron while the sheet is closed or closing, a pill once it is open
+   (its close button already says close), in 150 ms. sheet.js poses it under a finger. */
+.sheet-layer.is-open .handle-arm {
+  --arm-flat: 1;
+  transform: translateX(-8px) rotate(0deg) scale(1, 1);
+}
+.sheet-layer.is-open .handle-arm.is-right { transform: translateX(8px) rotate(0deg) scale(1, 1); }
+.sheet-layer.is-dragging .handle-arm,
+.sheet-layer.is-dragging .handle-arm::after { transition: none; }
+@media (max-width: 760px) {
+  /* Everything but the tab fades: the panel's color (drawn by ::before, so the tab can stay
+     opaque inside it) and its contents. A drag sets the fade (--sheet-fade, sheet.js). */
+  .sheet { background: transparent; isolation: isolate; }
+  .sheet::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--surface);
+  }
+  .sheet-layer .sheet::before,
+  .sheet-layer .sheet > :not(.sheet-grabber) { opacity: 0; transition: opacity 200ms linear; }
+  .sheet-layer.is-open .sheet::before,
+  .sheet-layer.is-open .sheet > :not(.sheet-grabber) {
+    opacity: 1;
+    transition: opacity 120ms linear;
+  }
+  .sheet-layer.is-dragging .sheet::before,
+  .sheet-layer.is-dragging .sheet > :not(.sheet-grabber) {
+    opacity: var(--sheet-fade, 1);
+    transition: none;
+  }
+}
 /* The keyboard help is for a wide screen only. */
 .sheet-tips-heading, .sheet-keys { display: none; }
 
@@ -1163,7 +1233,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* Four rows in the area's 200 px: 44, 44, 48 and 44, with the area's 4 px between them
    (frame E1). Its rows keep 6 px between their controls. */
 #exportArea .control-row { gap: 6px; }
-/* Size at the left edge, Format at the right. The grabber's target reaches 22 px down into
+/* Size at the left edge, Format at the right. The grabber's target reaches 20 px down into
    this row; a choice under it takes the tap (as a control in a label row does), so every
    choice keeps its 44 px and the grabber keeps the strip above them. */
 #exportChoices { justify-content: space-between; }
@@ -1209,15 +1279,16 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
      lines and the readout waits until the note is gone. */
   #exportReadoutRow:has(#pairOutput:not([hidden])) .export-readout-column:has(.export-note)
     .export-readout { display: none; }
-  /* The grabber's target reaches 22 px down into the first row, where Size and Format take
-     the tap. It gets those 16 px back above, over the photo, so its strip is still 44 px. */
+  /* The grabber's target reaches 20 px down into the first row, where Size and Format take
+     the tap. It gets those 20 px back above its tab, over the photo, so its strip is still
+     44 px. */
   #exportArea > .grabber::after {
     content: '';
     position: absolute;
     left: 0;
     right: 0;
     bottom: 100%;
-    height: 16px;
+    height: 20px;
   }
   /* The tallest sheet. Closer rows, smaller hints and less empty space under the last row let
      everything down to Tips show without a scroll (frame E11). */
@@ -1335,9 +1406,20 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   .sheet-layer { overflow: hidden; }
   /* An open sheet always reaches above the control area it rose from. */
   .sheet { min-height: calc(var(--sheet-rest) + 72px); }
-  /* While a sheet is rising, open or closing, its grabber stands in for the control area's. */
-  .grabber::before { transition: opacity 120ms linear; }
-  #app:has(.sheet-layer:not([hidden])) .grabber::before { opacity: 0; }
+  /* While a sheet is rising, open or closing, its tab stands in for the control area's: at
+     once, so there is never one tab too many or too few. */
+  #app:has(.sheet-layer:not([hidden])) .grabber > .handle-tab { opacity: 0; }
+  /* Rotate's angle sits under the grabber's left half and takes the taps there (as Size and
+     Format do on Export, whose rule is in its own block): the grabber's target gets that strip
+     back above its tab, so it is 44 px tall across its whole width. */
+  #rotateArea > .grabber::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 20px;
+  }
   /* No bars before a photo: nothing in them would work. */
   #app:not(.has-img) .top-bar-host,
   #app:not(.has-img) .panel,

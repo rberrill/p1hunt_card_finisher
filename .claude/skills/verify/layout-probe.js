@@ -50,7 +50,7 @@
   }
 
   // Elements outside the photo area that overlap it (nothing may, unless a sheet or a card is
-  // open). The grabber is allowed: its pill straddles the control area's top edge by design.
+  // open). The grabber is allowed: its tab rises over the photo's bottom edge by design.
   // An element's box as it shows: cut to every ancestor that clips its overflow (a ruler's
   // scale is wider than the ruler). Null when nothing of it shows.
   function visibleRect(el) {
@@ -86,9 +86,65 @@
     return found;
   }
 
+  // The grabber's hit strip on the open step: in each 1 px column across its 88 px, how many
+  // CSS px from 60 above the control area's edge to 40 below it reach the grabber (its tab and
+  // any ::after extension count). Returns the shortest column's height and how many columns
+  // are at least 44 px tall.
+  function measureHitStrip(area) {
+    const grabber = area.querySelector('.grabber');
+    const box = rectOf(grabber);
+    if (!box.width) return { height: 0, width: 0 };
+    const edgeY = rectOf(area).top;
+    const heights = [];
+    for (let x = Math.ceil(box.left); x < box.right; x++) {
+      let count = 0;
+      for (let y = edgeY - 60; y < edgeY + 40; y++) {
+        const found = document.elementFromPoint(x, y);
+        if (found && grabber.contains(found)) count++;
+      }
+      heights.push(count);
+    }
+    return {
+      height: Math.min(...heights),
+      width: heights.filter(height => height >= 44).length,
+    };
+  }
+
+  // The grabber's tab on the open step: its box against the control area's top edge, its
+  // colors, and its glyph's two arms (their transforms and the pill color's opacity).
+  function measureTab(area) {
+    const tab = area.querySelector('.grabber .handle-tab');
+    if (!tab || !isShown(tab)) return null;
+    const box = rectOf(tab);
+    const areaBox = rectOf(area);
+    const style = getComputedStyle(tab);
+    const arms = [...tab.querySelectorAll('.handle-arm')];
+    return {
+      width: round(box.width),
+      risePx: round(areaBox.top - box.top),
+      centerOffPx: round(box.left + box.width / 2 - (areaBox.left + areaBox.width / 2)),
+      background: style.backgroundColor,
+      borderTop: style.borderTopColor,
+      borderBottomPx: parseFloat(style.borderBottomWidth),
+      armTransforms: arms.map(arm => getComputedStyle(arm).transform),
+      pillOpacity: arms.map(arm => getComputedStyle(arm, '::after').opacity),
+      glyph: glyphSize(tab),
+    };
+  }
+
+  // The drawn size of a tab's glyph: the box around its two arms, in CSS px.
+  function glyphSize(tab) {
+    const boxes = [...tab.querySelectorAll('.handle-arm')].map(rectOf);
+    const left = Math.min(...boxes.map(box => box.left));
+    const right = Math.max(...boxes.map(box => box.right));
+    const top = Math.min(...boxes.map(box => box.top));
+    const bottom = Math.max(...boxes.map(box => box.bottom));
+    return { width: round(right - left), height: round(bottom - top) };
+  }
+
   // On every step: the photo's height, the control area's height and whether it overflows, any
-  // sideways page scroll, and anything over the photo. Works on the old layout (.controls) and
-  // on the new one (.control-area).
+  // sideways page scroll, anything over the photo, and the grabber's tab and hit strip. Works on
+  // the old layout (.controls) and on the new one (.control-area).
   async function measureSteps() {
     await openSample('IMG_9136');
     const steps = [];
@@ -107,6 +163,8 @@
         pageOverflowPx: document.documentElement.scrollWidth - window.innerWidth,
         overPhoto: overPhoto(),
         clippedButtons: clipped,
+        tab: measureTab(area),
+        hitStrip: measureHitStrip(area),
       });
     }
     window.__straightener.setTab('perspective');
@@ -175,7 +233,7 @@
       sideSwitch: size(bar.querySelector('#sideSwitch')),
       sideHalves: [...bar.querySelectorAll('#sideSwitch .segment')].map(touchSize),
       tabBarHeight: size(tabs).height,
-      grabberPill: getComputedStyle(sample.area.querySelector('.grabber'), '::before').width,
+      grabberTab: size(sample.area.querySelector('.grabber .handle-tab')),
       tabs: stepTabs.map(touchSize),
       tabsOverflowPx: round(rectOf(stepTabs[5]).right - rectOf(tabs).right),
       tabFontPx: parseFloat(getComputedStyle(stepTabs[0]).fontSize),

@@ -11,8 +11,9 @@
   const { makeEl } = CF;
 
   // Builds the control area: the 200 px block under the photo that holds a step's rows. Its
-  // grabber (id `${id}Grabber`) opens the step's sheet, and its progress line (id
-  // `${id}Progress`) runs along its top edge during an export. The caller binds the grabber.
+  // grabber (id `${id}Grabber`), a tab with an up chevron on its top edge (the Sheet part's
+  // buildHandleTab), opens the step's sheet, and its progress line (id `${id}Progress`) runs
+  // along its top edge during an export. The caller binds the grabber.
   function buildControlArea(id, ...children) {
     return makeEl('div', { class: 'control-area', id },
       makeEl('button', {
@@ -21,7 +22,7 @@
         type: 'button',
         'aria-label': 'Options',
         'aria-haspopup': 'dialog',
-      }),
+      }, CF.buildHandleTab()),
       CF.buildProgressLine(id && `${id}Progress`),
       ...children);
   }

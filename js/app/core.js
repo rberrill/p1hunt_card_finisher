@@ -171,8 +171,9 @@
     return Math.max(0, elements.stage.getBoundingClientRect().bottom - sheetTopPx);
   }
 
-  // Puts the toast in its place: 12 px above the photo's bottom edge or, while a sheet is
-  // open, 12 px above that sheet's top edge (css/app.css, .toast-message reads --toast-lift).
+  // Puts the toast in its place: on the phone 36 px above the photo's bottom edge or, while a
+  // sheet is open, 36 px above that sheet's top edge, which is 12 px above the grabber's or the
+  // sheet's 24 px tab (css/app.css, .toast-message reads --toast-lift).
   function placeToast() {
     // A resize can fire before the parts have loaded: there is no toast to place yet.
     if (!CF.buildToast) return;

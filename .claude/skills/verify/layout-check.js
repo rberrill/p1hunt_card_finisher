@@ -34,8 +34,11 @@ function stepChecks(label, steps, isPhone) {
     [`${label}: nothing over the photo`,
       !over.length, over.map(step => `${step.step}: ${list(step.overPhoto)}`).join('; ')],
   ];
-  if (!isPhone) return checks;
-  return checks.concat([
+  if (!isPhone) {
+    return checks.concat([[`${label}: no grabber tab on any step`,
+      steps.every(step => !step.tab && !step.hitStrip.width), '']]);
+  }
+  return checks.concat(tabChecks(label, steps), [
     [`${label}: photo the same height on every step`, allEqual(heights), `${list(heights)} px`],
     [`${label}: control area the same height on every step`,
       allEqual(areas) && areas[0] === NEW_AREA_PX, `${list(areas)} px`],
@@ -45,6 +48,40 @@ function stepChecks(label, steps, isPhone) {
     [`${label}: no clipped button label in a control area`,
       steps.every(step => !step.clippedButtons), ''],
   ]);
+}
+
+// The phone's grabber on every step: an 80 px tab rising 24 px, centered, in the panel's color
+// outlined in the track's with no bottom line; an up chevron of about 16 x 8 px in white; and a
+// hit strip at least 44 px tall across 88 px (Export's above Size and Format).
+function tabChecks(label, steps) {
+  // A 2 px stroke at 45° widens the glyph's box by about 1.4 px each way.
+  const STROKE_SPREAD_PX = 1.4;
+  const surface = 'rgb(22, 22, 24)';
+  const track = 'rgb(74, 74, 82)';
+  const badTab = steps.filter(({ tab }) => !tab || tab.width !== 80 || tab.risePx !== 24
+    || Math.abs(tab.centerOffPx) > 0.5 || tab.background !== surface
+    || tab.borderTop !== track || tab.borderBottomPx !== 0);
+  const isChevron = tab => tab && tab.pillOpacity.every(opacity => opacity === '0')
+    && Math.abs(tab.glyph.width - STROKE_SPREAD_PX - 16) <= 1
+    && Math.abs(tab.glyph.height - STROKE_SPREAD_PX - 8) <= 1;
+  const badGlyph = steps.filter(step => !isChevron(step.tab));
+  const badStrip = steps.filter(step => step.hitStrip.height < MIN_TARGET_PX
+    || step.hitStrip.width < 88);
+  const firstTab = steps[0].tab || {};
+  return [
+    [`${label}: grabber is an 80 px tab rising 24 px, outlined, on every step`,
+      !badTab.length && firstTab.background !== undefined,
+      badTab.map(step => `${step.step}: ${JSON.stringify(step.tab)}`).join('; ')
+        || `fill ${firstTab.background}, outline ${firstTab.borderTop}`],
+    [`${label}: its glyph is an up chevron of about 16 × 8 px on every step`,
+      !badGlyph.length,
+      JSON.stringify(firstTab.glyph)
+        + badGlyph.map(step => ` ${step.step}: ${JSON.stringify(step.tab)}`).join(';')],
+    [`${label}: its hit strip is at least 44 px tall across 88 px on every step`,
+      !badStrip.length,
+      steps.map(step => `${step.step} ${step.hitStrip.height}×${step.hitStrip.width}`)
+        .join(', ')],
+  ];
 }
 
 // Checks of the shell parts against the plan's component inventory (section 5).
@@ -76,10 +113,10 @@ function shellChecks(label, shell, isPhone) {
         && !shell.toolLabelsClipped,
       `${toolWidths[0]} px wide each`],
     // A wide screen has no grabber: its options are always open.
-    [`${label}: grabber is ${isPhone ? 'a 36 px pill in a 44 px tall target' : 'hidden'}`,
+    [`${label}: grabber is ${isPhone ? 'an 80 × 25 tab in a 44 px tall target' : 'hidden'}`,
       isPhone
-        ? shell.grabberPill === '36px' && shell.grabber.height >= MIN_TARGET_PX
-          && shell.grabber.width >= MIN_TARGET_PX
+        ? shell.grabberTab.width === 80 && shell.grabberTab.height === 25
+          && shell.grabber.height >= MIN_TARGET_PX && shell.grabber.width >= 88
         : shell.grabber.height === 0,
       JSON.stringify(shell.grabber)],
     [`${label}: nudge keys are 52 × 44`,
@@ -145,9 +182,10 @@ function partChecks(label, { controls, layers }, isPhone, height) {
     + `${layers.toastInsetPx} px, ${layers.toastBottomPx} px up`;
   if (isPhone) {
     checks.push([
-      `${label}: toast is at least 44 px tall, inset 16 px, 12 px above the photo's edge`,
+      `${label}: toast is at least 44 px tall, inset 16 px, 36 px above the photo's edge`
+        + ' (12 px above the tab)',
       layers.toast.height >= MIN_TARGET_PX && layers.toastInsetPx === 16
-        && layers.toastBottomPx === 12,
+        && layers.toastBottomPx === 36,
       toastDetail,
     ]);
   } else {

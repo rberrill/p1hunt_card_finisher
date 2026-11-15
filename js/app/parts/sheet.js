@@ -2,9 +2,11 @@
    js/app/parts/sheet.js: the Sheet part. A step's options, the Corner shots and the Levels
    tips: a panel that rises over the lower half of the photo, above a dimmed backdrop. A tap on
    the backdrop or on its close button closes it, and so does a drag down on its top edge; a
-   drag up on a grabber opens it, following the finger. Closed, it rests (unseen) with its top
-   edge on the control area's, so it rises from where the grabber is and takes its place. It
-   never resizes the photo. On a wide screen css/app.css shows it inline instead, always open.
+   drag up on a grabber opens it, following the finger. Closed, it rests (unseen but for its
+   tab) with its top edge on the control area's, so it rises from where the grabber is and
+   takes its place. The grabber and the sheet carry the same tab (buildHandleTab), whose up
+   chevron flattens into a pill as the sheet rises. It never resizes the photo. On a wide
+   screen css/app.css shows it inline instead, always open.
    Shell modules share one namespace, CF (created in core.js). Names from core are destructured
    below; anything from another module is called as CF.name. tests/selftest.js checks these
    boundaries.
@@ -26,9 +28,53 @@
   const SHEET_CLOSE_MS = 200;
   // A dragged sheet is fully opaque once it has risen this far, in CSS px.
   const SHEET_FADE_PX = 24;
+  // The tab's chevron is a flat pill once the sheet has risen this fraction of its travel.
+  const GLYPH_FLAT_FRACTION = 0.4;
+  // The left arm of the tab's glyph in its two poses (the right arm mirrors it): its center's
+  // offset from the glyph's center in CSS px, its angle, and the scale of its 20 x 5 px bar.
+  // The chevron is about 16 x 8 px with a 2 px stroke; the pill 36 x 5 px. css/app.css draws
+  // the same two poses at rest (.handle-arm); these are for a drag, which sits in between.
+  const CHEVRON_POSE = { offsetPx: -4, angleDeg: -45, scaleX: 0.57, scaleY: 0.4 };
+  const PILL_POSE = { offsetPx: -8, angleDeg: 0, scaleX: 1, scaleY: 1 };
 
-  // Builds a closed sheet: a layer holding the backdrop and the panel (its grabber, a title row
-  // with the close button, a progress line on its top edge, then `content`). Returns the layer.
+  // Builds the handle's tab: an 80 px tab that rises 24 px above an edge, with a glyph of two
+  // arms (an up chevron, or a pill once its sheet is open). The control area's grabber and
+  // every sheet's own grabber hold one, so the two read as the same handle. Returns the tab.
+  function buildHandleTab() {
+    return makeEl('span', { class: 'handle-tab', 'aria-hidden': 'true' },
+      makeEl('span', { class: 'handle-glyph' },
+        makeEl('span', { class: 'handle-arm is-left' }),
+        makeEl('span', { class: 'handle-arm is-right' })));
+  }
+
+  // Poses a sheet's glyph part of the way from chevron (flatFraction 0) to pill (1), with no
+  // easing, under a finger. The pill's lighter color fades in over the arms as they flatten.
+  function shapeGlyph(layer, flatFraction) {
+    const fraction = Math.min(1, Math.max(0, flatFraction));
+    const mix = (start, end) => start + (end - start) * fraction;
+    for (const arm of layer.querySelectorAll('.sheet-grabber .handle-arm')) {
+      const side = arm.classList.contains('is-right') ? -1 : 1;
+      const offsetPx = side * mix(CHEVRON_POSE.offsetPx, PILL_POSE.offsetPx);
+      const angleDeg = side * mix(CHEVRON_POSE.angleDeg, PILL_POSE.angleDeg);
+      const scaleX = mix(CHEVRON_POSE.scaleX, PILL_POSE.scaleX);
+      const scaleY = mix(CHEVRON_POSE.scaleY, PILL_POSE.scaleY);
+      arm.style.transform =
+        `translateX(${offsetPx}px) rotate(${angleDeg}deg) scale(${scaleX}, ${scaleY})`;
+      arm.style.setProperty('--arm-flat', fraction);
+    }
+  }
+
+  // Hands a sheet's glyph back to its classes: chevron while closed, pill while open.
+  function clearGlyph(layer) {
+    for (const arm of layer.querySelectorAll('.sheet-grabber .handle-arm')) {
+      arm.style.transform = '';
+      arm.style.removeProperty('--arm-flat');
+    }
+  }
+
+  // Builds a closed sheet: a layer holding the backdrop and the panel (its grabber with the
+  // tab, a title row with the close button, a progress line on its top edge, then `content`).
+  // Returns the layer.
   function buildSheet({ id, title }, ...content) {
     const titleId = id && `${id}Title`;
     const close = makeEl('button', {
@@ -45,7 +91,7 @@
         'aria-labelledby': titleId,
       },
       CF.buildProgressLine(id && `${id}Progress`),
-      makeEl('div', { class: 'sheet-grabber' }),
+      makeEl('div', { class: 'sheet-grabber' }, buildHandleTab()),
       makeEl('div', { class: 'sheet-header' },
         makeEl('h2', { class: 'sheet-title', id: titleId }, title),
         close),
@@ -115,14 +161,17 @@
   }
 
   // Shows the sheet raised by `openFraction` (0 closed, 1 open) of its travel under a finger:
-  // no easing. It fades in over its first few pixels, as it takes the control area's place.
+  // no easing. It fades in over its first few pixels, as it takes the control area's place,
+  // all but its tab (css/app.css reads --sheet-fade), which stands in for the area's from the
+  // start. The tab's chevron flattens as it rises.
   function dragTo(layer, openFraction, travelPx) {
     const fraction = Math.min(1, Math.max(0, openFraction));
     const sheet = layer.querySelector('.sheet');
     layer.classList.add('is-dragging');
     sheet.style.transform = `translateY(${(1 - fraction) * travelPx}px)`;
-    sheet.style.opacity = Math.min(1, fraction * travelPx / SHEET_FADE_PX);
+    sheet.style.setProperty('--sheet-fade', Math.min(1, fraction * travelPx / SHEET_FADE_PX));
     layer.querySelector('.sheet-scrim').style.opacity = fraction;
+    shapeGlyph(layer, fraction / GLYPH_FLAT_FRACTION);
   }
 
   // Hands the sheet back to its classes after a drag.
@@ -130,8 +179,9 @@
     layer.classList.remove('is-dragging');
     const sheet = layer.querySelector('.sheet');
     sheet.style.transform = '';
-    sheet.style.opacity = '';
+    sheet.style.removeProperty('--sheet-fade');
     layer.querySelector('.sheet-scrim').style.opacity = '';
+    clearGlyph(layer);
   }
 
   // Ends a drag with the sheet open or closed, sliding from where the finger left it.
@@ -147,13 +197,15 @@
 
   // Lets `handle` open or close a sheet. getLayer() names the sheet when the press starts (null
   // for none). A tap toggles it; a drag follows the finger (up opens, down closes) and, when
-  // the finger lifts, settles open past a third of the way and closed short of it.
+  // the finger lifts, settles open past a third of the way and closed short of it. While it is
+  // pressed the handle has the class is-pressed (its tab fills, css/app.css).
   function bindSheetHandle(handle, getLayer) {
     let press = null;
     handle.addEventListener('pointerdown', event => {
       const layer = getLayer();
       if (!layer) return;
       handle.setPointerCapture(event.pointerId);
+      handle.classList.add('is-pressed');
       press = { layer, startY: event.clientY, wasOpen: isSheetOpen(layer), travelPx: 0 };
     });
     handle.addEventListener('pointermove', event => {
@@ -169,6 +221,7 @@
       dragTo(press.layer, start - dy / press.travelPx, press.travelPx);
     });
     const end = event => {
+      handle.classList.remove('is-pressed');
       if (!press) return;
       const { layer, startY, wasOpen, travelPx } = press;
       press = null;
@@ -281,6 +334,7 @@
     closeSheet,
     isSheetOpen,
     bindSheetHandle,
+    buildHandleTab,
     updateSheet,
     buildSheetHeading,
     buildSheetHint,

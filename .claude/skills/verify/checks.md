@@ -16,8 +16,8 @@ The sections follow Rich's UAT catalog (`tests/uat/catalog.md`), so a failure he
 | Both | The fifteen parts (scripted) | each part builds, has the plan's sizes (section 5) and behaves: the ruler's drag, the sheet's close, the alert card's choices |
 | Both | Reduced motion (scripted) | with `prefers-reduced-motion`, only opacity transitions |
 | Phone | Labels fit (scripted) | no button in a control area has `scrollWidth > clientWidth`; the tab bar's bottom is inside the safe area |
-| Phone | The sheet is the control area's drawer | drag the grabber up and stop: the sheet's top edge is under the finger, it rose from the control area's top edge (not from the bottom of the screen), and the control area's own grabber pill has opacity 0 while the sheet shows; on a step its phase hasn't converted the pill is whole (not clipped by the scrolling controls) |
-| Phone | Nothing blocks the photo (scripted) | with no sheet open and no alert waiting on an answer, no element intersects `#stage` (the grabber's pill straddles the control area's top edge by design) |
+| Phone | The sheet is the control area's drawer | drag the grabber's tab up and stop: the sheet's top edge is under the finger with the tab on it, it rose from the control area's top edge (not from the bottom of the screen), and exactly one tab shows at every moment; the chevron is flat by 40% of the travel and comes back after a spring-back; the open sheet's tab drags it closed |
+| Phone | Nothing blocks the photo (scripted) | with no sheet open and no alert waiting on an answer, no element intersects `#stage` (the grabber's tab rises 24 px over the photo's bottom edge by design, and the toast sits 12 px above it) |
 
 ## 2. Navigation
 
