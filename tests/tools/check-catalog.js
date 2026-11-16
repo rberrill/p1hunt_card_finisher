@@ -40,7 +40,7 @@ const REQUIRED_FIELDS = [
 const RISKS = ['high', 'medium', 'low'];
 const CHECK_KINDS = ['script', 'touch', 'saved file', 'source', 'eye', 'phone'];
 const ENTRY_HEADING = /^## ([A-Z]+-\d+) (.+)$/;
-const CASE_HEADING = /^### ([A-Z]+-\d+\.\d+) (.+?)\s+\[(auto: [a-z, ]+|eye|phone)\]\s*$/;
+const CASE_HEADING = /^### ([A-Z]+-\d+\.\d+) (.+?)\s+\[(auto: [a-z, ]+|eye|phone|source)\]\s*$/;
 const FIELD_LINE = /^- ([A-Z][a-z]+): (.*)$/;
 // A test's title starts with its case ID: test('ROT-04.1 A typed angle…', …).
 const TEST_TITLE = /\btest\(\s*['"`]([A-Z]+-\d+(?:\.\d+)?[a-z]?)\b/g;
@@ -181,7 +181,7 @@ function testProblems(entries, root) {
     .filter(id => !id.startsWith(TRIAL_PREFIX));
   const cases = entries.flatMap(entry => entry.cases);
   const automated = cases
-    .filter(testCase => testCase.mark !== 'phone')
+    .filter(testCase => testCase.mark !== 'phone' && testCase.mark !== 'source')
     .map(testCase => testCase.id);
   const problems = [];
   for (const id of automated) {

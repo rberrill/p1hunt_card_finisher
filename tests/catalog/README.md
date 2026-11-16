@@ -124,7 +124,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 **An eye case** may also hold results a script decides; only the rows that need a person's judgment are left to the eye. The description given to the judge says exactly what to look for.
 
-The mark after the title says who decides: `[auto: …]` (a script), `[eye]` (a script saves the screenshot, a person judges it) or `[phone]` (a person, on a real iPhone).
+The mark after the title says who decides: `[auto: …]` (a script), `[eye]` (a script saves the screenshot, a person judges it) `[phone]` (a person, on a real iPhone) or `[source]` (a check on the code itself, run by `node tests/selftest.js`; the case names the check and what it must print, and has no browser test).
 
 **Where an automated case runs.** A case runs only where its verdict could come out differently (Rich, 2026-11-15):
 
