@@ -19,7 +19,7 @@ const APP_FILES = ['index.html', 'css', 'js', 'icons'];
 // The licence travels with every copy of the code.
 const LICENSE_FILE = 'LICENSE';
 // Files the UAT repository keeps between builds.
-const KEPT = new Set(['.git', 'README.md', '.nojekyll']);
+const KEPT = new Set(['.git', 'README.md', '.nojekyll', '.gitattributes']);
 
 const README = [
   '# Card Finisher: test builds',
@@ -63,6 +63,8 @@ function copyBuild() {
   }
   fs.copyFileSync(path.join(root, LICENSE_FILE), path.join(uatDir, LICENSE_FILE));
   fs.writeFileSync(path.join(uatDir, 'README.md'), README);
+  // Git must store every file exactly as it is here, with no line-ending conversion.
+  fs.writeFileSync(path.join(uatDir, '.gitattributes'), ['* -text', ''].join('\n'));
   // Tells GitHub Pages to serve the files as they are, without its site builder.
   fs.writeFileSync(path.join(uatDir, '.nojekyll'), '');
 }
