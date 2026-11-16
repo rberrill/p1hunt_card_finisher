@@ -411,6 +411,7 @@ A pick that can't work shows a warning and leaves the color picker armed: a spot
 - Changed: none
 - Anchors: "That spot is outside the photo.", "That spot is darker than the black point. Pick something brighter.", "That spot is too light to be a black point. ", `CONFIG.levels.maxBlackLuma`
 - Source: `js/app/levels.js` (`pickAt`, `pickProblem`)
+- Ruling: R38. A tap outside the visible picture is ignored and the pick stays armed. The app differs today.
 - Cases: 5
 
 ### LEV-12.1 A tap outside the photo warns and stays armed   [auto: phone]
@@ -503,6 +504,7 @@ A ring labelled **W** or **B** marks where each point was picked (Auto's points 
 - Changed: none
 - Anchors: "W", "B"
 - Source: `js/app/levels.js` (`drawPickMarker`, `drawLevelsOverlay`)
+- Ruling: R39. The W and B are white letters with a dark outline. The app differs today.
 - Cases: 1
 
 ### LEV-13.1 The pick marks, for a person to judge   [eye]

@@ -240,6 +240,7 @@ For a pair saved **Together**, it is asked when the joined image's long edge is 
 - Changed: none
 - Anchors: `#pairOutput`, "The image is ", " px at the photos’ resolution."
 - Source: `js/app/pair.js` (`pairUpscaleOffer`, `togetherLayout`, `encodeTogether`); `js/engine.js` (`pairLayout`)
+- Ruling: R37, widened. The question is asked only when Yes would save a bigger file than No. The app differs today.
 - Flag: to confirm. Where the fit would pass a canvas cap, the question is still asked, and **Yes** then saves the same image as **No** (what R37 found for a link that turns upscaling on). Only a link that lowers a cap brings this about with the sample photos.
 - Cases: 2
 
