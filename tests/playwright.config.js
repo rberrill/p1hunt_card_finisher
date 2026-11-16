@@ -9,7 +9,8 @@ const { runFolder } = require('./automation/support/run-folder.js');
 
 // The port the suite's own server uses. The preview servers use 8766 and 8771, and Rich's
 // LAN server 8765, so a run never collides with them.
-const PORT = 8770;
+// Set CARD_FINISHER_PORT when two runs must not share a server (several writers at once).
+const PORT = Number(process.env.CARD_FINISHER_PORT) || 8770;
 const root = path.resolve(__dirname, '..');
 const runDir = runFolder(root);
 // Set CARD_FINISHER_URL to run the cases against a deployed site (the UAT site or the live
