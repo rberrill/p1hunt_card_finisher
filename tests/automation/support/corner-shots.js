@@ -1,0 +1,411 @@
+// Helpers for the Corner shots, Upscale question and Question card cases
+// (tests/automation/corner-shots.spec.js, upscale-question.spec.js, question-cards.spec.js):
+// starting on Export, the Corner shots sheet, the question card, saved files and what is in
+// them. Like support/app.js, they act through the app's controls and read its state (through
+// window.__straightener and CF) only to wait for a result or to check one. The few that act
+// through the page's code say why: there is no control a person could use for it.
+'use strict';
+const fs = require('fs');
+const { expect } = require('@playwright/test');
+const {
+  openApp,
+  openPhoto,
+  goToStep,
+  handFor,
+  openOptions,
+  closeOptions,
+  readSavedImage,
+} = require('./app.js');
+const { installShareStandIn, recordExports, waitForQuestion } = require('./export.js');
+const { downloadAll } = require('./front-and-back.js');
+
+// The case photo for corner shots: a raw chrome card flat on a black mat. Its card is found the
+// same in Chromium and WebKit (14_front_portrait_raw_white.JPEG is not: its corner shots are
+// 144 px in Chromium and 136 px in WebKit), and the light card on the dark mat shows where the
+// card's corner sits in each shot.
+const CORNER_PHOTO = '01_chrome_flat_black.JPEG';
+// A link that never asks the Upscale question for corner shots (0 never asks), for cases about
+// something else.
+const NO_CORNER_QUESTION = 'index.html?cornerShots.upscaleTargetPx=0';
+// How long a case waits for downloads before giving up.
+const DOWNLOAD_TIMEOUT_MS = 20000;
+// A pixel's luminance weights for red, green and blue (Rec. 601).
+const LUMA_WEIGHTS = [0.299, 0.587, 0.114];
+// How many rows (or columns) around a profile's line are averaged, so the mat's texture and
+// JPEG noise don't move the edge.
+const PROFILE_BAND_PX = 5;
+// Where cardEdgeAlong reads the mat's level (the outer stretch of a line) and the card's (a
+// stretch well inside it), as fractions of the line's length.
+const MAT_STRETCH = [0, 0.15];
+const CARD_STRETCH = [0.45, 0.55];
+// For how many pixels in a row a line must stay past the halfway mark to count as the card, so
+// a light speck in the mat's weave isn't taken for its edge.
+const CARD_RUN_PX = 3;
+// How much of a shot a corner measurement averages across, as a fraction of its side: half,
+// all of it on the card's side of the corner, so the card's own pattern evens out.
+const SHOT_BAND = 0.5;
+// The same for the card's width in an export: a strip 4% of its height.
+const EXPORT_BAND = 0.04;
+// The row cardWidthInExport measures along, as a fraction of the export's height.
+const WIDTH_ROW_AT = 0.3;
+
+// Opens the app with a photo (CORNER_PHOTO unless `photo` names another) and goes to a step
+// (Export unless `step` says another). The page gets a stand-in share sheet first
+// (support/export.js; 'share' unless `share` names another behavior), so Share shows as it does
+// on an iPhone and no real sheet ever opens. address: the page to open, for a link with
+// settings in it. isWatched: record the screen as each save begins (recordExports).
+// Returns the hand for this target.
+async function startOnExport(page, testInfo, options = {}) {
+  const {
+    step = 'export',
+    share = 'share',
+    address = 'index.html',
+    photo = CORNER_PHOTO,
+    isWatched = false,
+  } = options;
+  if (share) await installShareStandIn(page, share);
+  if (isWatched) await recordExports(page);
+  await openApp(page, address);
+  await openPhoto(page, photo);
+  const hand = handFor(page, testInfo);
+  await goToStep(page, step, hand);
+  return hand;
+}
+
+// True while the Corner shots sheet is open (on a wide screen it is listed in the panel and
+// counts as open only on a phone's terms: never).
+function isCornerSheetOpen(page) {
+  return page.evaluate(() => window.CF.isSheetOpen(document.getElementById('cornerShotsSheet')));
+}
+
+// Waits until the Corner shots sheet is open (true) or has gone (false), and has stopped
+// moving.
+async function waitForCornerSheet(page, isOpen) {
+  await page.waitForFunction(wanted => {
+    const layer = document.getElementById('cornerShotsSheet');
+    const isOpenNow = window.CF.isSheetOpen(layer);
+    return wanted ? isOpenNow : !isOpenNow && layer.hidden;
+  }, isOpen);
+}
+
+// Taps Corner shots on Export. On a phone it waits for the sheet to rise; on a wide screen the
+// section is always shown in the panel.
+async function openCornerSheet(page, hand) {
+  await hand.tap(page.locator('#btnCornerShots'));
+  if (hand.isTouch) await waitForCornerSheet(page, true);
+}
+
+// Closes the Corner shots sheet on a phone with its Close button (× at its top right); on a wide
+// screen it does nothing.
+function closeCornerSheet(page, hand) {
+  return closeOptions(page, hand, 'cornerShots');
+}
+
+// Opens the Corner shots sheet and chooses one of its outputs ('4 photos' or '1 sheet').
+async function chooseCornerOutput(page, hand, label) {
+  if (hand.isTouch && !(await isCornerSheetOpen(page))) await openCornerSheet(page, hand);
+  await hand.tap(page.locator('#cornerOutput').getByRole('button', { name: label, exact: true }));
+}
+
+// The Corner shots size line's text as the screen shows it.
+function cornerReadout(page) {
+  return page.locator('#cornerReadout').evaluate(el => el.innerText.replace(/\s+/g, ' ').trim());
+}
+
+// Taps Download corners (or, with button '#btnCornerShare', Share corners), answers the Upscale
+// question with `answer` if it is asked, and collects `count` downloads. Returns
+// [{ name, file, atMs }] in the order they arrived.
+function saveCorners(page, hand, count = 1, answer = 'No') {
+  return downloadAll(page, hand, count, answer, '#btnCornerDownload');
+}
+
+// The question card over the photo, and one of its buttons by label.
+const questionCard = page => page.locator('#pairPrompt');
+const questionButton = (page, label) => questionCard(page)
+  .getByRole('button', { name: label, exact: true });
+
+// Expects the question card to be up, asking `title` (and, when given, saying `text`).
+async function expectQuestion(page, title, text = null) {
+  await waitForQuestion(page, true);
+  await expect(questionCard(page).locator('.alert-title')).toHaveText(title);
+  if (text !== null) await expect(questionCard(page).locator('.alert-text')).toHaveText(text);
+}
+
+// True while the question card is up (shown and not leaving).
+function isQuestionUp(page) {
+  return page.evaluate(() => window.CF.isAlertOpen(document.getElementById('pairPrompt')));
+}
+
+// A saved image's size in px: [width, height].
+async function imageSize(page, file) {
+  const image = await readSavedImage(page, file);
+  return [image.width, image.height];
+}
+
+// Collects every download that arrives from now on into the returned list ({ name, file }
+// promises resolve as each finishes). Call stop() to stop collecting.
+function collectDownloads(page) {
+  const downloads = [];
+  const onDownload = download => downloads.push(download);
+  page.on('download', onDownload);
+  return {
+    downloads,
+    stop: () => page.off('download', onDownload),
+  };
+}
+
+// Waits a moment and returns how many downloads `collector` has seen: for a case that must
+// show that nothing was saved.
+async function downloadsAfterWait(page, collector, waitMs) {
+  await page.waitForTimeout(waitMs);
+  return collector.downloads.length;
+}
+
+// Waits until `count` downloads have reached `collector`, and returns them as
+// [{ name, file }].
+async function downloadsArrived(page, collector, count) {
+  const deadline = Date.now() + DOWNLOAD_TIMEOUT_MS;
+  while (collector.downloads.length < count && Date.now() < deadline) {
+    await page.waitForTimeout(50);
+  }
+  if (collector.downloads.length < count) {
+    throw new Error(`Expected ${count} downloads, ${collector.downloads.length} arrived`);
+  }
+  const saved = [];
+  for (const download of collector.downloads.slice(0, count)) {
+    saved.push({ name: download.suggestedFilename(), file: await download.path() });
+  }
+  return saved;
+}
+
+// The luminance (0 to 255) along a line across a saved image, one value per pixel: a row
+// (axis 'row', at `lineAt` of the height, read left to right) or a column (axis 'column', at
+// `lineAt` of the width, read top to bottom). Each value averages `band` lines around it: a
+// number of px, or, under 1, a fraction of the image's size across the line.
+async function luminanceProfile(page, file, axis, lineAt, band = PROFILE_BAND_PX) {
+  const base64 = fs.readFileSync(file).toString('base64');
+  const type = file.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+  return page.evaluate(async ({ data, mimeType, lineAxis, fraction, bandSize, weights }) => {
+    const bytes = Uint8Array.from(atob(data), character => character.charCodeAt(0));
+    const bitmap = await createImageBitmap(new Blob([bytes], { type: mimeType }));
+    const { width, height } = bitmap;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bitmap, 0, 0);
+    const pixels = ctx.getImageData(0, 0, width, height).data;
+    const isRow = lineAxis === 'row';
+    const length = isRow ? width : height;
+    const across = isRow ? height : width;
+    const middle = Math.round(fraction * across);
+    const bandPx = bandSize < 1 ? Math.max(1, Math.round(bandSize * across)) : bandSize;
+    // The lines averaged: from `reach` before the middle one to `reach` after it.
+    const reach = Math.floor(bandPx / 2);
+    const lineCount = 2 * reach + 1;
+    const profile = [];
+    for (let along = 0; along < length; along++) {
+      let total = 0;
+      for (let offset = -reach; offset <= reach; offset++) {
+        const line = Math.min(across - 1, Math.max(0, middle + offset));
+        const x = isRow ? along : line;
+        const y = isRow ? line : along;
+        const index = (y * width + x) * 4;
+        total += pixels[index] * weights[0]
+          + pixels[index + 1] * weights[1]
+          + pixels[index + 2] * weights[2];
+      }
+      profile.push(total / lineCount);
+    }
+    return profile;
+  }, {
+    data: base64,
+    mimeType: type,
+    lineAxis: axis,
+    fraction: lineAt,
+    bandSize: band,
+    weights: LUMA_WEIGHTS,
+  });
+}
+
+// A fingerprint of the pixels inside a rectangle of a saved image ({ x, y, width, height } in
+// its px): a string that is the same for two rectangles exactly when their [r, g, b, a] values
+// are, short of a collision. For comparing parts of two lossless (PNG) files.
+async function regionFingerprint(page, file, rect) {
+  const base64 = fs.readFileSync(file).toString('base64');
+  const type = file.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+  return page.evaluate(async ({ data, mimeType, area }) => {
+    const bytes = Uint8Array.from(atob(data), character => character.charCodeAt(0));
+    const bitmap = await createImageBitmap(new Blob([bytes], { type: mimeType }));
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bitmap, 0, 0);
+    const pixels = ctx.getImageData(area.x, area.y, area.width, area.height).data;
+    const digest = await crypto.subtle.digest('SHA-256', pixels);
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  }, { data: base64, mimeType: type, area: rect });
+}
+
+// The mean of a stretch of a profile, from fromFraction to toFraction of its length.
+function meanOf(profile, fromFraction, toFraction) {
+  const start = Math.floor(fromFraction * profile.length);
+  const end = Math.max(start + 1, Math.floor(toFraction * profile.length));
+  const stretch = profile.slice(start, end);
+  return stretch.reduce((sum, value) => sum + value, 0) / stretch.length;
+}
+
+// Where a light card begins on a dark mat along a profile, as a fraction (0 to 1) of its
+// length: the first point, going in from the side `fromEnd` names ('start' or 'end'), past the
+// halfway mark between the mat's level (its outer 15%) and the card's (from 45% to 55% in),
+// that stays past it for CARD_RUN_PX. Returns null when it never does: no card edge on this
+// line.
+function cardEdgeAlong(profile, fromEnd) {
+  const ordered = fromEnd === 'start' ? profile : profile.slice().reverse();
+  const halfway = (meanOf(ordered, ...MAT_STRETCH) + meanOf(ordered, ...CARD_STRETCH)) / 2;
+  const index = ordered.findIndex((value, start) => ordered
+    .slice(start, start + CARD_RUN_PX)
+    .every(next => next > halfway));
+  if (index < 0) return null;
+  const fraction = index / ordered.length;
+  return fromEnd === 'start' ? fraction : 1 - fraction;
+}
+
+// Where the card's corner sits in a saved corner shot: { across, down }, each a fraction (0 to
+// 1) of the shot's side, measured along a row and a column through the card's part of the
+// shot. label: 'tl', 'tr', 'br' or 'bl', the corner it shows, which says on which sides the
+// mat is.
+async function cardCornerInShot(page, file, label) {
+  const isLeft = label.endsWith('l');
+  const isTop = label.startsWith('t');
+  // A line through the card's part, away from the rounded corner.
+  const throughCard = isTop ? 0.65 : 0.35;
+  const throughCardAcross = isLeft ? 0.65 : 0.35;
+  const row = await luminanceProfile(page, file, 'row', throughCard, SHOT_BAND);
+  const column = await luminanceProfile(page, file, 'column', throughCardAcross, SHOT_BAND);
+  return {
+    across: cardEdgeAlong(row, isLeft ? 'start' : 'end'),
+    down: cardEdgeAlong(column, isTop ? 'start' : 'end'),
+  };
+}
+
+// The card's width in a saved export, in px: from its left edge to its right edge along a row
+// 30% of the way down (a light card on a dark mat; the row runs through the card's silver
+// lettering, clear of the darker helmet below it).
+async function cardWidthInExport(page, file) {
+  const row = await luminanceProfile(page, file, 'row', WIDTH_ROW_AT, EXPORT_BAND);
+  const left = cardEdgeAlong(row, 'start');
+  const right = cardEdgeAlong(row, 'end');
+  return Math.round((right - left) * row.length);
+}
+
+// Makes the corner shots impossible from now on, as the engine says for a card too small to
+// frame: CardEngine.cornerShots answers { ok: false, reason }. A person can't bring this about
+// with today's controls and photos (the engine refuses only a frame it can't invert, or a card
+// with no size), so this one change is made in the page's code. The screen is updated after it.
+async function makeCornerShotsImpossible(page, reason) {
+  await page.evaluate(engineReason => {
+    window.CardEngine.cornerShots = () => ({ ok: false, reason: engineReason });
+    window.CF.syncReadouts();
+  }, reason);
+}
+
+// Gives the page a stand-in share sheet whose "can this browser share files?" answer can change
+// while the app runs (window.testCanShare, false to start with), as when a page that could not
+// share becomes able to. Shares are recorded as installShareStandIn's are.
+async function installSwitchableShare(page) {
+  await page.addInitScript(() => {
+    window.testCanShare = false;
+    window.testShares = [];
+    window.testSharedFiles = [];
+    navigator.canShare = () => window.testCanShare;
+    navigator.share = async data => {
+      window.testSharedFiles.push(data.files);
+      window.testShares.push({
+        files: data.files.map(file => ({ name: file.name, type: file.type, size: file.size })),
+      });
+    };
+  });
+}
+
+// Records each value the Corner shots sheet's progress line is set to (0 to 100), in order, in
+// window.testCornerProgress, from before the app loads. Several values can be set before the
+// page reports them; each report's old values give the ones in between.
+async function recordCornerProgress(page) {
+  await page.addInitScript(() => {
+    window.testCornerProgress = [];
+    document.addEventListener('DOMContentLoaded', () => {
+      new MutationObserver(changes => {
+        const lineChanges = changes.filter(change => !!change.target.closest('#cornerShotsSheet'));
+        lineChanges.forEach((change, index) => {
+          if (index > 0) window.testCornerProgress.push(Number(change.oldValue));
+        });
+        const line = lineChanges.length ? lineChanges[0].target : null;
+        if (line) window.testCornerProgress.push(Number(line.getAttribute('aria-valuenow')));
+      }).observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ['aria-valuenow'],
+      });
+    });
+  });
+}
+
+// The values recordCornerProgress has seen so far.
+const cornerProgressSoFar = page => page.evaluate(() => window.testCornerProgress.slice());
+
+// Opens Export options, picks an Interpolation ('Bilinear' or 'Bicubic (sharper, slower)'), and
+// closes them again on a phone.
+async function chooseInterpolation(page, hand, label) {
+  await openOptions(page, hand, 'export');
+  await page.locator('#interp').selectOption({ label });
+  await closeOptions(page, hand, 'export');
+}
+
+// Where an element's box is on the page: { x, y, width, height } in CSS px.
+const boxOf = locator => locator.boundingBox();
+
+// The element on top at the middle of `locator`'s box: the id of the nearest element with an
+// id, from what the page would hit there.
+function topElementAt(page, locator) {
+  return locator.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    const holder = hit && hit.closest('[id]');
+    return holder ? holder.id : '';
+  });
+}
+
+module.exports = {
+  CORNER_PHOTO,
+  NO_CORNER_QUESTION,
+  startOnExport,
+  isCornerSheetOpen,
+  waitForCornerSheet,
+  openCornerSheet,
+  closeCornerSheet,
+  chooseCornerOutput,
+  cornerReadout,
+  saveCorners,
+  questionCard,
+  questionButton,
+  expectQuestion,
+  isQuestionUp,
+  imageSize,
+  collectDownloads,
+  downloadsAfterWait,
+  downloadsArrived,
+  luminanceProfile,
+  regionFingerprint,
+  cardCornerInShot,
+  cardWidthInExport,
+  makeCornerShotsImpossible,
+  installSwitchableShare,
+  recordCornerProgress,
+  cornerProgressSoFar,
+  chooseInterpolation,
+  boxOf,
+  topElementAt,
+};

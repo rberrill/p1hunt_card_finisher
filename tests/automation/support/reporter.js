@@ -96,7 +96,10 @@ class RunReporter {
     fs.writeFileSync(path.join(runDir, 'results.json'), JSON.stringify(results, null, 2));
     const summary = summaryText(runDir, results, Date.now() - this.startedAt);
     fs.writeFileSync(path.join(runDir, 'summary.md'), summary);
-    pruneRuns(path.dirname(runDir));
+    // Old runs are deleted only from tests/runs. A run sent elsewhere (CARD_FINISHER_RUN_DIR)
+    // sits in a folder that isn't ours to tidy.
+    const ownRuns = path.join(root, 'tests', 'runs');
+    if (path.dirname(runDir) === ownRuns) pruneRuns(ownRuns);
     console.log(`\nRun folder: ${runDir}`);
   }
 }
