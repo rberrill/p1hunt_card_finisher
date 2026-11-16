@@ -84,8 +84,13 @@ function readEntries(file) {
 // The anchors written in an entry's Anchors field: `code spans` and "quoted text".
 function anchorsOf(entry) {
   const text = entry.fields.Anchors || '';
-  const spans = [...text.matchAll(/`([^`]+)`/g)].map(match => match[1]);
-  const quoted = [...text.replace(/`[^`]*`/g, '').matchAll(/"([^"]+)"/g)].map(match => match[1]);
+  const allSpans = [...text.matchAll(/`([^`]+)`/g)].map(match => match[1]);
+  const bare = [...text.replace(/`[^`]*`/g, '').matchAll(/"([^"]+)"/g)]
+    .map(match => match[1]);
+  // A message may be written with or without code formatting around its quotes.
+  const isQuoted = span => span.length > 1 && span.startsWith('"') && span.endsWith('"');
+  const spans = allSpans.filter(span => !isQuoted(span));
+  const quoted = [...bare, ...allSpans.filter(isQuoted).map(span => span.slice(1, -1))];
   return { spans, quoted };
 }
 
@@ -95,7 +100,9 @@ function readCode(root) {
     .map(file => fs.readFileSync(file, 'utf8'))
     .join('\n');
   const markup = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const styles = fs.readFileSync(path.join(root, 'css/app.css'), 'utf8');
+  // The selftest is read too: the security and privacy entries point at its checks.
+  const selftest = fs.readFileSync(path.join(root, 'tests/selftest.js'), 'utf8');
+  const styles = fs.readFileSync(path.join(root, 'css/app.css'), 'utf8') + selftest;
   const context = {};
   const config = fs.readFileSync(path.join(root, 'js/config.js'), 'utf8');
   vm.runInNewContext(`${config};this.CONFIG = CONFIG;`, context);
@@ -112,6 +119,18 @@ function hasSetting(config, dottedName) {
   return true;
 }
 
+// True when the app listens for a key: its name is in the code as a quoted text ('f'), as a
+// word (ArrowLeft, in a table of keys) or, for a digit, inside a range such as [1-6].
+function keyExists(scripts, key) {
+  const quotes = ['\'', '"', '`'];
+  const lowerScripts = scripts.toLowerCase();
+  const lowerKey = key.toLowerCase();
+  if (quotes.some(quote => lowerScripts.includes(quote + lowerKey + quote))) return true;
+  if (key.length > 1) return scripts.split(/\W+/).includes(key);
+  const ranges = [...scripts.matchAll(/\[(\d)-(\d)\]/g)];
+  return ranges.some(range => range[1] <= key && key <= range[2]);
+}
+
 // True when a code-span anchor exists in the code. kind is read from how it is written.
 function spanExists(code, span) {
   const everything = `${code.scripts}\n${code.markup}\n${code.styles}`;
@@ -120,11 +139,7 @@ function spanExists(code, span) {
     return new RegExp(`['"\`]${id}['"\`]|id="${id}"`).test(`${code.scripts}\n${code.markup}`);
   }
   if (span.startsWith('CONFIG.')) return hasSetting(code.config, span);
-  if (span.startsWith('key:')) {
-    const key = span.slice('key:'.length);
-    return new RegExp(`['"\`]${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"\`]`, 'i')
-      .test(code.scripts);
-  }
+  if (span.startsWith('key:')) return keyExists(code.scripts, span.slice('key:'.length));
   if (span.startsWith('.')) return everything.includes(span.slice(1));
   return everything.includes(span);
 }

@@ -59,7 +59,8 @@ Tap the angle beside **Straighten** to type a number of degrees; **Done** or Ent
 | Field | Values |
 |---|---|
 | Risk | `high`, `medium` or `low`: how likely it is to break and how much that would hurt a listing |
-| Check | How it can be verified. One of: `script` (a browser script decides), `script, touch` (the script needs touch input), `script, saved file` (the verdict needs the saved file inspected), `source` (a check on the code alone), `eye` (a script captures a screenshot and a person judges it), `phone` (it needs a real iPhone). Several may be listed when a capability has parts, the main one first |
+| Check | How it can be verified. One of: `script` (a browser script decides), `script, touch` (the script needs touch input), `script, saved file` (the verdict needs the saved file inspected), `source` (a check on the code alone), `eye` (a script captures a screenshot and a person judges it), `phone` (it needs a real iPhone). Several may be listed when a capability has parts, the main one first; a note after a `;` or in brackets says which part needs which |
+| Limit | Speed entries only: the longest the operation may take, with its unit, or `to be measured` until Rich has approved a number |
 | Layout | `both`, `phone` or `wide`, then any difference between the two in a sentence |
 | Added | The version it first shipped in. `1.10 baseline` for everything present when the catalog was first written |
 | Changed | The version it last changed in, or `none` |
@@ -80,6 +81,8 @@ An anchor is something in the code that a script can find. Use the most specific
 | A setting | `` `CONFIG.export.quality` `` | A key in `js/config.js` |
 | A keyboard key | `` `key:F` `` | A key the app listens for |
 | A style hook | `` `.preset-chip` `` | A class the code or the stylesheet uses, only when there is no id |
+| A value the app keeps | `` `app.loadDurationMs` `` | A name in the code, written as the code writes it. For the few entries about what the app records or exposes |
+| A check in the selftest | `` "Privacy: sample photos carry no GPS location" `` | The check's name in `tests/selftest.js`, for entries that a source check proves |
 
 ## A test case
 

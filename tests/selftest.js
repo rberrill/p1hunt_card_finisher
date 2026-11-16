@@ -1,6 +1,6 @@
 // Node checks, no dependencies: engine purity, asset cache-busting, shell module boundaries,
-// security and privacy rules, CONFIG consistency, code style, and the CardEngine self-tests
-// (from js/engine.js).
+// security and privacy rules, CONFIG consistency, the catalog, code style, and the CardEngine
+// self-tests (from js/engine.js).
 //   node tests/selftest.js
 // Exit code 0 = everything passed, 1 = a test failed or the code broke a structural rule.
 'use strict';
@@ -9,6 +9,7 @@ const path = require('path');
 const vm = require('vm');
 const { tokenize, topLevelDecls, idUses, freeNames, declaredNames } = require('./jstok.js');
 const { checkStyle } = require('./style-check.js');
+const { checkCatalog } = require('./tools/check-catalog.js');
 
 const root = path.join(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
@@ -353,6 +354,16 @@ new Function(engine)();
   report(!badLimits.length,
     'CONFIG: every URL limit names a CONFIG number with its default in range',
     badLimits.length ? badLimits.join(', ') : `${limitCount} limits`);
+}
+
+// The catalog (tests/catalog/): every entry well formed, every ID unique and in its area's
+// file, every anchor present in the code, one test for each automated case.
+{
+  const catalog = checkCatalog(root);
+  const detail = catalog.problems.length
+    ? catalog.problems.slice(0, 8).join('; ')
+    : `${catalog.entries} capabilities, ${catalog.covered} with a case`;
+  report(!catalog.problems.length, 'Catalog: entries are well formed and match the code', detail);
 }
 
 // Code style (.claude/rules/code-style.md): the rules a tokenizer can check.
