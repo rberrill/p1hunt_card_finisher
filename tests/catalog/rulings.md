@@ -39,3 +39,7 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R31 | A failed open (unreadable file) stops autosave for the photo that is open (BUG-001, reproduced by script) | FIX: a failed open changes nothing; the open photo keeps being saved |
 | R32 | Undo/redo keys and a dropped or pasted logo get past ruling 17 during an export | FIX: both are blocked until the export ends; the logo is refused with the dropped-photo message |
 | R33 | The options tab on the phone layout ignores Enter and Space | FIX: Enter and Space open the sheet |
+| R34 | In Playwright's Chromium 158 detection misses the card in 02_black_flat_black (18.5% against a 0.24% baseline); Chrome 157 finds it, so a small decoding difference flips it (BUG-065) | FIX before 1.10.0: detection is made robust for this photo in both browsers; no baseline is raised |
+| R35 | Replace logo, Undo, reload, Resume: the logo Undo brought back is no longer stored, and the export fails | FIX: whatever logo Undo can bring back stays stored, so after Resume the photo exports as it looked |
+| R36 | The save made as the page closes isn't guaranteed to land, so an edit made under 0.4 s before closing can be lost | FIX: save sooner after each change (about 0.1 s), with the save on close kept as a backstop |
+| R37 | From a link that switches upscaling on, the Upscale question states the wrong crop size and Yes saves the same file as No | FIX: no question when upscaling is already on |

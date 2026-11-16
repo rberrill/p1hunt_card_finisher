@@ -503,7 +503,7 @@ A resumed photo that had a logo gets its logo image back: from the logo stored w
 - Changed: none
 - Anchors: `#btnResume`, "The overlay image isn’t loaded. Open the Overlay step and add it again."
 - Source: `js/app/overlay.js` (`ensureOverlayImage`); `js/app/state.js` (`openFile`)
-- Ruling: R22. **Remove** leaves the photo's logo in storage, so Undo after a resume can bring it back. The app already does this.
+- Ruling: R22. **Remove** leaves the photo's logo in storage, so Undo after a resume can bring it back. The app already does this. R35. Whatever logo Undo can bring back stays stored, so after Resume the photo exports as it looked. The app differs today.
 - Cases: 4
 
 To add a logo: on the Overlay step, tap **Add logo** (or **Replace logo** when a logo is on the photo) and choose the file. The logos are the app's own icons, from the icons/ folder of the build: icon.svg and apple-touch-icon.png.
@@ -767,6 +767,7 @@ The edits are saved straight away when the page is hidden or left (switching app
 - Changed: none
 - Anchors: `#btnDownload`, `#btnCornerDownload`, `#btnSaveEdits`, `CONFIG.session.enabled`
 - Source: `js/app/main.js` (`bindWindowEvents`); `js/app/export.js` (`deliverExport`, `saveEdits`); `js/app/corner-shots.js` (`deliverCornerShots`); `js/app/pair.js` (`deliverPair`)
+- Ruling: R36. Edits are saved sooner after each change (about 0.1 s), with the save on close kept as a backstop. The app differs today.
 - Cases: 5
 
 ### STA-15.1 Hiding the page saves at once   [auto: desktop, webkit]

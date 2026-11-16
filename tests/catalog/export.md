@@ -1401,6 +1401,7 @@ The saved photo is at most 12000 px on its long side and 16,777,216 px in area; 
 - Changed: none
 - Anchors: `CONFIG.maxOutputPx`, `CONFIG.maxOutputArea`
 - Source: `js/engine.js` (`outputSize`)
+- Ruling: R37. With upscaling switched on from a link, the Upscale question is not asked. The app differs today.
 - Flag: to confirm. With upscaling turned on by a link and the output scaled down to the area cap, Download still asks "Upscale to 12000 px?" and calls the 4096 × 4096 px output the crop at the photo's resolution (it is 1400 × 1400 px); **Yes** saves the same 4096 × 4096 px.
 - Cases: 2
 
