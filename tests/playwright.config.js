@@ -12,6 +12,9 @@ const { runFolder } = require('./automation/support/run-folder.js');
 const PORT = 8770;
 const root = path.resolve(__dirname, '..');
 const runDir = runFolder(root);
+// Set CARD_FINISHER_URL to run the cases against a deployed site (the UAT site or the live
+// one) instead of the local files; the [disk] cases still use the local files.
+const siteUrl = process.env.CARD_FINISHER_URL || '';
 
 const PHONE = { width: 390, height: 844 };
 const SMALL_PHONE = { width: 375, height: 667 };
@@ -39,11 +42,11 @@ module.exports = defineConfig({
     ['./automation/support/reporter.js'],
   ],
   use: {
-    baseURL: `http://127.0.0.1:${PORT}/`,
+    baseURL: siteUrl || `http://127.0.0.1:${PORT}/`,
     trace: 'retain-on-failure',
     acceptDownloads: true,
   },
-  webServer: {
+  webServer: siteUrl ? undefined : {
     command: `node automation/support/serve.js ${PORT}`,
     url: `http://127.0.0.1:${PORT}/index.html`,
     reuseExistingServer: false,
