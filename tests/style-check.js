@@ -39,6 +39,7 @@ function styledFiles(root) {
       ...listJs('tests'),
       ...listJs('tests/automation'),
       ...listJs('tests/automation/support'),
+      ...listJs('tests/tools'),
       ...claudeScripts,
     ],
     other: ['css/app.css', 'index.html'],
