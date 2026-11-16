@@ -2,7 +2,7 @@
 
 Everything the app can do, and the test cases that prove it, in one place. One file per area. Each capability is an entry; its test cases sit under it. A capability with no case under it is not covered, and a case cannot exist without a capability.
 
-This folder is the only list. It is checked against the code by `node tests/selftest.js`.
+This folder is the only list. It is checked against the code by `node tests/selftest.js`. The check works both ways: an anchor that is no longer in the code fails, and so does an element id or a message in the code that no entry claims. A new control or message cannot be added without an entry for it.
 
 ## Areas
 

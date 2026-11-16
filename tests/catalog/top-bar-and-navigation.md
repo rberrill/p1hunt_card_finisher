@@ -239,7 +239,7 @@ A tab with an up arrow sits on the top edge of the controls, over the bottom of 
 - Layout: phone
 - Added: 1.10 baseline
 - Changed: none
-- Anchors: `.grabber`, "Options", `.handle-tab`
+- Anchors: `.grabber`, "Options", `.handle-tab`, `#perspectiveSheet`, `#rotateSheet`, `#cropSheet`
 - Source: `js/app/parts/adjustment-line.js` (`buildControlArea`); `js/app/parts/sheet.js` (`buildHandleTab`, `bindSheetHandle`, `openSheet`); `js/app/shell.js` (`bindNavigation`, `currentSheet`)
 - Cases: none yet
 

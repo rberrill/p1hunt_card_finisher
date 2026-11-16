@@ -196,6 +196,42 @@ function testProblems(entries, root) {
   return problems;
 }
 
+// The surface of the app that a script can list from the code: the ids of the elements it
+// creates and the fixed text of the messages it shows over the photo.
+function codeSurface(root) {
+  const scripts = filesUnder(path.join(root, 'js/app'), ['.js'])
+    .map(file => fs.readFileSync(file, 'utf8'))
+    .join('\n');
+  const markup = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const ids = [
+    ...[...markup.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]),
+    ...[...scripts.matchAll(/\bid: '([A-Za-z][\w-]*)'/g)].map(match => match[1]),
+  ];
+  // The opening literal of each toast(…) call: the whole message, or its fixed first part.
+  const messages = [...scripts.matchAll(/\btoast\(\s*(['`])((?:(?!\1)[^\\$]|\\.)+)/g)]
+    .map(match => match[2].replace(/\\'/g, '\''));
+  return { ids: [...new Set(ids)], messages: [...new Set(messages)] };
+}
+
+// The problems the other way round: an id or a message in the code that no entry claims.
+// A new control or message cannot land without a capability that names it.
+function surfaceProblems(entries, root) {
+  const anchors = entries.map(anchorsOf);
+  const claimedIds = new Set(anchors.flatMap(anchor => anchor.spans)
+    .filter(span => span.startsWith('#'))
+    .map(span => span.slice(1)));
+  const claimedText = anchors.flatMap(anchor => anchor.quoted);
+  const { ids, messages } = codeSurface(root);
+  const isClaimed = message => claimedText
+    .some(text => message.includes(text) || text.includes(message));
+  return [
+    ...ids.filter(id => !claimedIds.has(id))
+      .map(id => `#${id}: an element in the code that no catalog entry claims`),
+    ...messages.filter(message => !isClaimed(message))
+      .map(message => `"${message}": a message in the code that no catalog entry claims`),
+  ];
+}
+
 // Runs every check. Returns the problems and the coverage counts.
 function checkCatalog(root) {
   const folder = path.join(root, 'tests/catalog');
@@ -215,6 +251,7 @@ function checkCatalog(root) {
     ...entries.flatMap(fieldProblems),
     ...entries.flatMap(entry => anchorProblems(entry, code)),
     ...testProblems(entries, root),
+    ...surfaceProblems(entries, root),
   ];
   const covered = entries.filter(entry => entry.cases.length).length;
   return { problems, entries: entries.length, covered };
