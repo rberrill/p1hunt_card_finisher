@@ -34,7 +34,7 @@ module.exports = defineConfig({
   testMatch: '**/*.spec.js',
   outputDir: path.join(runDir, 'traces'),
   fullyParallel: true,
-  workers: 4,
+  workers: 8,
   retries: 0,
   timeout: 60000,
   reporter: [

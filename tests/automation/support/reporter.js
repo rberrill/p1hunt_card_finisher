@@ -34,7 +34,8 @@ function resultLines(results) {
   return results.map(result => {
     const eyeCount = result.verdicts.filter(verdict => verdict.status === 'eye').length;
     const failed = result.verdicts.find(verdict => verdict.status === 'fail');
-    const note = failed ? `step ${failed.step}: ${failed.found}` : '';
+    const detail = failed ? `step ${failed.step}: ${failed.found}` : '';
+    const note = [result.bug, detail].filter(Boolean).join(' ');
     const verdictText = `${result.verdicts.length}${eyeCount ? ` (${eyeCount} to judge)` : ''}`;
     return `| ${result.caseId} | ${result.target} | ${result.status} | ${verdictText} `
       + `| ${(result.durationMs / 1000).toFixed(1)} s | ${note.replace(/\|/g, '/')} |`;
@@ -44,7 +45,9 @@ function resultLines(results) {
 // The whole summary file's text.
 function summaryText(runDir, results, wallClockMs) {
   const { version, commit, isDirty } = buildInfo(root);
-  const failedCount = results.filter(result => result.status !== 'passed').length;
+  const knownCount = results.filter(result => result.status === 'known defect').length;
+  const failedCount = results
+    .filter(result => result.status !== 'passed' && result.status !== 'known defect').length;
   const screenshots = filesUnder(path.join(runDir, 'evidence'));
   const megabytes = filesUnder(runDir)
     .reduce((total, file) => total + fs.statSync(file).size, 0) / BYTES_PER_MB;
@@ -53,8 +56,8 @@ function summaryText(runDir, results, wallClockMs) {
     `# Test run ${path.basename(runDir)}`,
     '',
     `- **Build:** ${version}, commit ${commit}${isDirty ? ' with uncommitted changes' : ''}`,
-    `- **Result:** ${results.length - failedCount} passed, ${failedCount} failed, of `
-      + `${results.length} case runs`,
+    `- **Result:** ${results.length - failedCount - knownCount} passed, ${failedCount} failed, `
+      + `${knownCount} known defects, of ${results.length} case runs`,
     `- **Time:** ${(wallClockMs / 1000).toFixed(1)} s wall clock`,
     `- **Evidence:** ${screenshots.length} screenshots; the run folder is `
       + `${megabytes.toFixed(1)} MB`,

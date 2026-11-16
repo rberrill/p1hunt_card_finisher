@@ -32,6 +32,25 @@ function firstLine(error) {
     .slice(0, FOUND_MAX_LENGTH);
 }
 
+// Waits until no transition or animation with an end is still running on the page.
+function waitForStill(page) {
+  return page.waitForFunction(() => document.getAnimations().every(animation => {
+    const hasEnd = animation.effect.getComputedTiming().endTime !== Infinity;
+    return animation.playState !== 'running' || !hasEnd;
+  })).catch(() => {});
+}
+
+// How a case run ended, for the results file. A case marked test.fail(true, 'BUG-0NN') that
+// fails is a known defect, not a failure; if it passes, the defect is fixed and the mark is
+// stale, which Playwright reports as a failure.
+function outcomeOf(testInfo) {
+  const mark = testInfo.annotations.find(annotation => annotation.type === 'fail');
+  const bug = mark && mark.description ? mark.description : '';
+  if (testInfo.expectedStatus !== 'failed') return { status: testInfo.status, bug };
+  const status = testInfo.status === 'failed' ? 'known defect' : 'fixed, remove the mark';
+  return { status, bug };
+}
+
 // Builds the recorder for one case in one browser target. kind: 'auto' (the assertion
 // decides) or 'eye' (a person judges the screenshot).
 function makeRecorder(page, testInfo, verdicts, errors) {
@@ -52,6 +71,8 @@ function makeRecorder(page, testInfo, verdicts, errors) {
     // In WebKit, Playwright's screenshot adds a stylesheet of its own, which the app's
     // security policy refuses with a console error. That error is the tool's, not the app's,
     // so anything logged while the screenshot is taken is dropped.
+    // A screenshot for a person to judge is taken with the screen at rest, not mid-fade.
+    if (kind === 'eye') await waitForStill(page);
     const errorsBefore = errors.length;
     const shot = { path: file, scale: 'css', type: 'jpeg', quality: SCREENSHOT_QUALITY };
     await page.screenshot(shot).catch(() => {});
@@ -78,7 +99,7 @@ function writeResult(testInfo, verdicts) {
     caseId,
     title: testInfo.title,
     target: testInfo.project.name,
-    status: testInfo.status,
+    ...outcomeOf(testInfo),
     durationMs: Math.round(testInfo.duration),
     verdicts,
   };

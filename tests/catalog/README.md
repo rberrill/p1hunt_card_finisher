@@ -114,4 +114,14 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 ```
 
+**A case for both layouts.** A case marked `[auto: all]` runs on a phone and on a wide screen, so a step that differs says both, once: "Open **Rotate options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls."
+
+**A named action.** When several steps always go together, a case may define them once above its table and then use the name as one step: "Type the angle N: tap the angle, type N, tap **Done**." The definition names every control; the step still has one result.
+
+**A flag.** A case under an entry with `Flag: to confirm` carries the line `Flag: to confirm` under its title, with a sentence saying it is written to what the app does today.
+
+**A ruling the app doesn't meet yet.** The case is written to the ruling. Under its title it says "Written to ruling R<n>; it fails until that is built (BUG-0NN)", and the bug is a row in `tests/bugs.md`.
+
+**An eye case** may also hold results a script decides; only the rows that need a person's judgment are left to the eye. The description given to the judge says exactly what to look for.
+
 The mark after the title says who decides: `[auto: all]`, `[auto: phone]`, `[auto: desktop]` or `[auto: small]` (a script, on those targets), `[eye]` (a script saves the screenshot, a person judges it) or `[phone]` (a person, on a real iPhone). An `auto` or `eye` case has exactly one test in `tests/automation/` whose title starts with its ID.
