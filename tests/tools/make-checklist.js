@@ -103,15 +103,10 @@ function phoneCases(entries) {
 function findOutItems() {
   const file = path.join(catalogDir, FIND_OUT);
   if (!fs.existsSync(file)) return { count: 0, text: '' };
-  const sections = fs.readFileSync(file, 'utf8').split(/?
-(?=## Q-d+ )/).slice(1);
+  const sections = fs.readFileSync(file, 'utf8').split(/\r?\n(?=## Q-\d+ )/).slice(1);
   const blocks = sections
-    .map(section => `${section.trim().replace(/^## /, '#### ')}
-
-${ANSWER_LINE}
-`);
-  return { count: blocks.length, text: blocks.join('
-') };
+    .map(section => `${section.trim().replace(/^## /, '#### ')}\n\n${ANSWER_LINE}\n`);
+  return { count: blocks.length, text: blocks.join('\n') };
 }
 
 // What is being tested: the version and the short commit.
