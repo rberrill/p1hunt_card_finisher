@@ -241,6 +241,7 @@ A tab with an up arrow sits on the top edge of the controls, over the bottom of 
 - Changed: none
 - Anchors: `.grabber`, "Options", `.handle-tab`, `#perspectiveSheet`, `#rotateSheet`, `#cropSheet`
 - Source: `js/app/parts/adjustment-line.js` (`buildControlArea`); `js/app/parts/sheet.js` (`buildHandleTab`, `bindSheetHandle`, `openSheet`); `js/app/shell.js` (`bindNavigation`, `currentSheet`)
+- Ruling: R33. Enter and Space open the sheet from the tab, as on any button. The app differs today.
 - Cases: none yet
 
 ## TOP-19 Drag the options sheet open or closed

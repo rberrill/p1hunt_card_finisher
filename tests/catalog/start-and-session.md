@@ -292,6 +292,7 @@ Opening a file that can't be read as an image shows the red message "Couldn’t 
 - Changed: none
 - Anchors: `#fileInput`, "Couldn’t read that file as an image."
 - Source: `js/app/state.js` (`openFile`); `js/app/adapters.js` (`ImageSource.load`)
+- Ruling: R31. A failed open changes nothing: the photo that was open goes on being saved for Resume. The app differs today (BUG-001: its edits stop being saved).
 - Cases: none yet
 
 ## STA-23 Two photos opened quickly

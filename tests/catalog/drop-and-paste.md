@@ -52,7 +52,7 @@ On the Overlay step with a photo open, a dropped or pasted image is added as the
 - Changed: none
 - Anchors: `"Drop to add as the logo"`, `#overlayInput`
 - Source: `js/app/main.js` (`bindPhotoInput`), `js/app/overlay.js` (`addOverlayFile`, `place`)
-- Ruling: R19. Each logo added is its own undo step, even two within 900 ms, and a dropped logo is accepted by its file extension, as the logo picker does. The app differs today.
+- Ruling: R19. Each logo added is its own undo step, even two within 900 ms, and a dropped logo is accepted by its file extension, as the logo picker does. The app differs today. R32. While an export is running a dropped or pasted logo is refused, with the message a dropped photo gets. The app differs today.
 - Cases: none yet
 
 ## DND-05 A photo arriving while the app is busy is refused

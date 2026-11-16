@@ -13,6 +13,7 @@ Ctrl+Z (Cmd+Z on a Mac) undoes the last edit, as **Undo** does.
 - Changed: none
 - Anchors: `CONFIG.keys.undo`, `#btnUndo`, `"Undo (Ctrl/Cmd+Z)"`
 - Source: `js/app/input.js` (`onKeyDown`, `keyMatches`)
+- Ruling: R32. The undo and redo keys do nothing while an export is running. The app differs today.
 - Cases: none yet
 
 ## KEY-02 Redo from the keyboard
@@ -26,6 +27,7 @@ Shift+Ctrl+Z (Shift+Cmd+Z on a Mac), or Ctrl+Y (Cmd+Y), redoes, as **Redo** does
 - Changed: none
 - Anchors: `CONFIG.keys.redo`, `CONFIG.keys.redoAlt`, `#btnRedo`, `"Redo (Shift+Ctrl/Cmd+Z)"`
 - Source: `js/app/input.js` (`onKeyDown`, `keyMatches`)
+- Ruling: R32. The undo and redo keys do nothing while an export is running. The app differs today.
 - Flag: to confirm. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z, though Ctrl/Cmd+Y also works.
 - Cases: none yet
 
