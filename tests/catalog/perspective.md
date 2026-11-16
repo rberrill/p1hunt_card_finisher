@@ -21,10 +21,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/ (a card in a clear graded slab)
 - Starting screen: the start screen, with no photo open
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9136.JPEG | The photo opens on the Perspective step, and for a moment the line above the controls reads "Detecting…" |
+| 1 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9136.JPEG | The photo opens on the Perspective step, and for a moment the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
 | 2 | Wait until "Detecting…" has gone, and look at the white outline over the photo | Its four corners sit on the card's own corners, inside the slab, not on the slab's edge |
 | 3 | Look at the line above the controls | It reads NUDGE and Corner 1 of 4, with Confidence and a percentage at its right |
 | 4 | Look at **Undo** (the arrow curving left, at the top right) | It is greyed out: the corners' first move is not an undo step |
@@ -49,15 +50,16 @@ If that first search finds no card, the corners rest on a centered rectangle 20%
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photo: blank.png, a plain mid-grey picture 1200 × 1600 px with no card in it (make one in any image editor; the script draws its own)
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
 - Starting screen: the start screen, with no photo open
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose blank.png | The grey picture opens on the Perspective step |
+| 1 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose plain-grey.png | The grey picture opens on the Perspective step |
 | 2 | Look at the white outline over the picture | It is a rectangle centered on the picture, a fifth of the picture's width in from each side and a fifth of its height in from the top and the bottom |
 | 3 | Look over the picture's bottom edge | No pop-up message is showing |
-| 4 | Look at the line above the controls | It reads "Nothing detected. Drag the corners into place." |
+| 4 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Nothing detected. Drag the corners into place." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -72,24 +74,50 @@ If a new search for the card starts before an older one finishes, or a front and
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: none
-- Source: `js/app/state.js` (`runDetect`)
-- Cases: 1
+- Source: `js/app/state.js` (`runDetect`); `js/app/pair.js` (`switchSide`)
+- Cases: 2
 
 ### PER-03.1 A second photo opened during the search keeps its own corners   [auto: phone]
+Script only
+Stand-in: the script chooses the second picture while the first photo's search is still running, and checks that it was. The search takes about half a second, too short for a person to choose another file in.
+
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photos: IMG_9136.JPEG from samples/, and blank.png, a plain mid-grey picture 1200 × 1600 px with no card in it (the script draws its own)
+- Photos: IMG_9136.JPEG from samples/, and plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
 - Starting screen: the start screen, with no photo open
-
-The search takes about half a second, so a person rarely beats it; the script opens the second picture while the first search is still running, and checks that it was.
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9136.JPEG | The photo opens and the line above the controls reads "Detecting…" |
-| 2 | While it still reads "Detecting…", tap **Open** and choose blank.png | The grey picture opens |
+| 1 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9136.JPEG | The photo opens and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | While it still reads "Detecting…", tap **Open** and choose plain-grey.png | The grey picture opens |
 | 3 | Wait two seconds | The first search's result was thrown away: the outline on the grey picture is the rectangle a fifth in from each edge, not the card found in IMG_9136.JPEG |
 | 4 | Look at the line above the controls | It reads "Nothing detected. Drag the corners into place." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-03.2 A search still running when a pair switches sides is thrown away   [auto: phone]
+Script only
+Stand-in: the script holds the back's search open until the switch to the front has finished, then lets it end. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open and the back added with **Add back** on Export, so the back is open on the Perspective step, with **Front** and **Back** in the top bar
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the back's top-left corner ring 40 px right and 40 px down, and let go | That corner is off the back card's corner |
+| 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 3 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo." |
+| 4 | Tap the middle of the back card once, without moving | The line reads "Detecting…" |
+| 5 | Tap **Front** in the top bar, while the search runs | The front opens on Perspective, its corners on the front card |
+| 6 | Wait two seconds (the script lets the back's search end) | The front's corners have not moved |
+| 7 | Tap **Back** in the top bar | The back opens; its top-left corner is still where you dragged it in row 1: the search's result was thrown away |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -113,12 +141,13 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the outline joining the four corners | A thin solid white line with a dark band along it (a halo), clear over both the light label and the dark parts of the photo |
 | 2 | Drag the top-left corner ring to 40 px right of and 40 px below the top-right corner ring, and let go | The outline now crosses itself, and the whole line is red and dashed, with no halo |
-| 3 | Look at the line above the controls | It reads "Corners cross or fold inward. Drag them back into a convex shape." |
+| 3 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Corners cross or fold inward. Drag them back into a convex shape." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -142,6 +171,7 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -170,11 +200,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the outline | A ring with a dot in its middle on each corner and a small white square at the middle of each edge; the top-left ring is red and a little larger than the other rings |
-| 2 | Click **Next handle** (under the line above the controls) four times | The line reads Edge 1 of 4 |
+| 2 | Click **Next handle**, under the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen), four times | The line reads Edge 1 of 4 |
 | 3 | Click an empty part of the photo, away from the outline | The round magnifier goes; the square at the middle of the top edge is red and a little larger than the other squares, and no ring is red |
 | 4 | Scroll the mouse wheel up over the middle of the photo, three notches | The photo zooms in; the rings and squares are the same size on screen as in row 3 |
 
@@ -186,14 +217,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Drag a corner handle to move that corner. A press counts when it lands within 24 px of the handle; where a corner and an edge handle are both in reach, the corner wins.
 
 - Risk: high
-- Check: script, touch
+- Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `CONFIG.handle.hitRadius`, "Drag a corner or the middle of an edge."
 - Source: `js/app/input.js` (`hitHandle`, `stepGesture`, `moveHandle`, `endGesture`)
 - Ruling: R8. A cancelled drag puts the corner back, with no undo step. The app differs today.
-- Cases: 4
+- Cases: 6
 
 ### PER-07.1 Dragging a corner moves it, as one undo step   [auto: phone, webkit]
 Before you start:
@@ -201,6 +232,7 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 The handles are the ring on each corner of the white outline and the small square at the middle of each edge.
 
@@ -214,16 +246,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-07.2 A press within reach of a corner grabs it; further away it moves the photo   [auto: phone, webkit]
 Before you start:
-- Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
+- Device and browser: a computer with a mouse; a phone-width window, 390 × 844 px (a fingertip is too broad to place a press this exactly; the script also presses with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+A corner ring is 22 px across. Distances below are measured from the middle of the top-left ring, in ring widths.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Press 16 px to the left of the middle of the top-left corner ring, drag 30 px down, and let go | The top-left corner has moved 30 px down |
-| 2 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back where it was |
-| 3 | Press 30 px to the left of the middle of the top-left corner ring, drag 30 px down, and let go | The whole photo, outline and all, has moved 30 px down; every corner is still on the same point of the card |
+| 1 | Press three quarters of a ring's width to the left of the top-left ring's middle (just outside the ring), drag 30 px down, and let go | The top-left corner has moved 30 px down |
+| 2 | Click **Undo** (the arrow curving left, at the top right) | The corner is back where it was |
+| 3 | Press one and a half ring widths to the left of the top-left ring's middle, drag 30 px down, and let go | The whole photo, outline and all, has moved 30 px down; every corner is still on the same point of the card |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -234,29 +269,68 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-right corner ring left until it is 30 px to the right of the top-left ring, and let go | The top edge is 30 px long, with its square midway between the two rings |
-| 2 | Press on that square, drag 30 px down, and let go | One of the two top corners (the one nearer the press) has moved 30 px down and the other has not: the edge did not slide as a whole |
+| 2 | Press on that square, drag 30 px down, and let go | Exactly one of the two top corners has moved 30 px down and the other has not moved: a corner took the press, and the edge did not slide as a whole. Which of the two corners moved does not matter: the square is as near one as the other |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-07.4 A drag the phone cancels puts the corner back   [auto: phone]
+### PER-07.4 A drag the browser cancels puts the corner back   [auto: phone]
 Written to ruling R8; it fails until that is built (BUG-060).
+Script only
+Stand-in: the script sends the browser's "touch cancelled" signal in the middle of the drag, as an iPhone does when Control Center takes the touch. A person can't make a browser cancel a touch on a computer; on a real iPhone this is PER-07.6.
 
 Before you start:
-- Device and browser: an iPhone, Safari (the script uses a phone-width window and has the browser cancel the touch)
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Put a finger on the top-right corner ring and drag it 40 px left, without lifting | The corner follows the finger |
-| 2 | Without lifting that finger, swipe down from the top-right corner of the screen with another, so the phone opens Control Center and takes the touch | Control Center opens |
-| 3 | Close Control Center | The corner is back where it was before the drag; **Undo** (the arrow curving left, at the top right) is greyed out |
+| 2 | The browser cancels the touch, with the finger still down | The corner is back where it was before the drag; **Undo** (the arrow curving left, at the top right) is greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-07.5 On an iPhone, a finger drags a corner and Safari leaves the page still   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Put a finger on the top-right corner ring and slide it slowly toward the middle of the photo, about a finger's width, without lifting | The corner follows the finger, and a round magnifier shows it; the page does not scroll, and the address bar does not change size |
+| 2 | Lift the finger | The corner stays where the finger left it; the magnifier goes |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back on the card's corner; **Undo** is greyed out again |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
+
+### PER-07.6 On an iPhone, a corner drag that Control Center takes goes back   [phone]
+Written to ruling R8; it fails until that is built (BUG-060).
+
+Before you start:
+- Device and browser: an iPhone with Face ID (Control Center opens with a swipe down from the top-right corner of the screen), Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Put a finger on the top-right corner ring and slide it left, about a finger's width, without lifting | The corner follows the finger |
+| 2 | Without lifting that finger, swipe down from the top-right corner of the screen with another finger | Control Center opens |
+| 3 | Swipe Control Center away | The corner is back on the card's corner, where it was before the drag; **Undo** (the arrow curving left, at the top right) is greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -266,14 +340,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Drag the square at the middle of an edge to slide the whole edge in or out without turning it; both of its corners move with it.
 
 - Risk: high
-- Check: script, touch
+- Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `CONFIG.handle.edgeSize`, `CONFIG.handle.hitRadius`
 - Source: `js/app/input.js` (`hitHandle`, `moveHandle`, `edgeNormal`, `moveEdge`, `endGesture`)
 - Ruling: R8. A cancelled drag puts the edge back, with no undo step. The app differs today.
-- Cases: 2
+- Cases: 4
 
 ### PER-08.1 Dragging an edge's square slides the whole edge, as one undo step   [auto: phone, webkit]
 Before you start:
@@ -281,6 +355,7 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -290,20 +365,58 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-08.2 An edge drag the phone cancels puts the edge back   [auto: phone]
+### PER-08.2 An edge drag the browser cancels puts the edge back   [auto: phone]
 Written to ruling R8; it fails until that is built (BUG-060).
+Script only
+Stand-in: the script sends the browser's "touch cancelled" signal in the middle of the drag, as an iPhone does when Control Center takes the touch. A person can't make a browser cancel a touch on a computer; on a real iPhone this is PER-08.4.
 
 Before you start:
-- Device and browser: an iPhone, Safari (the script uses a phone-width window and has the browser cancel the touch)
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Put a finger on the small square at the middle of the top edge and drag it 40 px down, without lifting | The top edge follows the finger |
-| 2 | Without lifting that finger, swipe down from the top-right corner of the screen with another, so the phone opens Control Center and takes the touch | Control Center opens |
-| 3 | Close Control Center | The top edge is back where it was before the drag; **Undo** (the arrow curving left, at the top right) is greyed out |
+| 2 | The browser cancels the touch, with the finger still down | The top edge is back where it was before the drag; **Undo** (the arrow curving left, at the top right) is greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-08.3 On an iPhone, a finger drags an edge and Safari leaves the page still   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Put a finger on the small square at the middle of the top edge and slide it slowly down, about a finger's width, without lifting | The whole top edge follows the finger, keeping its slope, with both top corners moving; the page does not scroll, and the address bar does not change size |
+| 2 | Lift the finger | The edge stays where the finger left it |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) | The top edge is back on the card's edge; **Undo** is greyed out again |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
+
+### PER-08.4 On an iPhone, an edge drag that Control Center takes goes back   [phone]
+Written to ruling R8; it fails until that is built (BUG-060).
+
+Before you start:
+- Device and browser: an iPhone with Face ID (Control Center opens with a swipe down from the top-right corner of the screen), Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Put a finger on the small square at the middle of the top edge and slide it down, about a finger's width, without lifting | The top edge follows the finger |
+| 2 | Without lifting that finger, swipe down from the top-right corner of the screen with another finger | Control Center opens |
+| 3 | Swipe Control Center away | The top edge is back on the card's edge, where it was before the drag; **Undo** (the arrow curving left, at the top right) is greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -327,11 +440,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the bottom-right corner ring (a quick tap, without dragging) | The line above the controls reads Corner 3 of 4 |
-| 2 | Tap the right arrow (→) under that line | The bottom-right corner moves right by a hair; the top-left corner has not moved |
+| 1 | Tap the bottom-right corner ring (a quick tap, without dragging) | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads Corner 3 of 4 |
+| 2 | Tap the right arrow (→) under that line ten times | The bottom-right corner has moved about 10 px right (one screen pixel a tap); the top-left corner has not moved |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -342,10 +456,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click the bottom-right corner ring (without dragging) | The line above the controls reads Corner 3 of 4 |
+| 1 | Click the bottom-right corner ring (without dragging) | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads Corner 3 of 4 |
 | 2 | Press the left arrow key (←) | The bottom-right corner moves left by one pixel of the photo; the top-left corner has not moved |
 
 Pass: every row's result is seen.
@@ -370,6 +485,7 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -387,12 +503,13 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Press on the bottom-left corner ring and drag it 30 px right, keeping the button down | A round magnifier 150 px across sits up and to the right of the pointer, with the photo around that corner 4 times larger, the outline, a crosshair and a white rim |
 | 2 | Let go | The magnifier goes |
-| 3 | Press on the top-left corner ring and drag it 100 px up, keeping the button down | Near the top of the photo area the magnifier sits below and to the right of the pointer instead |
+| 3 | Press on the top-left corner ring and drag it up to 10 px below the top edge of the photo area, keeping the button down | Near the top of the photo area the magnifier sits below and to the right of the pointer instead |
 | 4 | Let go | The magnifier goes |
 
 Pass: every row's result is seen.
@@ -404,6 +521,7 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the app opened with a link ending `?loupeSize=400` (a setting that asks for a magnifier 400 px across), the photo open on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -418,14 +536,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Double tap a handle to zoom to 6 times the fitted size, centered on that handle. Double tap a handle again while zoomed in past twice the fitted size to go back to the fitted view.
 
 - Risk: medium
-- Check: script, touch
+- Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `CONFIG.handleZoom`, "Double tap a handle to zoom in on it"
 - Source: `js/app/input.js` (`checkHandleDoubleTap`, `zoomToHandle`, `onPointerUp`)
 - Flag: to confirm. The second tap only has to land on the same handle within 350 ms, a longer window than the 300 ms each tap may last, with no limit on how far it is from the first.
-- Cases: 1
+- Cases: 2
 
 ### PER-11.1 A double tap on a handle zooms in on it, and another zooms back out   [auto: phone, webkit]
 Flag: to confirm. Written to today's behavior.
@@ -435,11 +553,30 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Double tap the top-left corner ring (on a wide screen, double-click it) | The photo zooms in to 6 times the size it had when it fitted, with that corner in the middle of the photo area |
 | 2 | Double tap the same ring again | The whole photo fits the photo area again |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-11.2 On an iPhone, a double tap on a handle zooms the photo, not the page   [phone]
+Flag: to confirm. Written to today's behavior.
+
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Double tap the top-left corner ring, quickly, with one finger | The photo zooms in on that corner, which is now in the middle of the photo area; the top bar, the controls and the step tabs (the six tabs Perspective to Export along the bottom) stay their usual size: Safari has not zoomed the page |
+| 2 | Double tap the same ring again | The whole photo fits the photo area again, and the page is still at its usual size |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -463,10 +600,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls | It reads NUDGE, then Corner 1 of 4 |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads NUDGE, then Corner 1 of 4 |
 | 2 | Tap the bottom-left corner ring (a quick tap, without dragging) | The line reads Corner 4 of 4 |
 | 3 | Tap the small square at the middle of the left edge | The line reads Edge 4 of 4 |
 | 4 | Tap the small square at the middle of the top edge | The line reads Edge 1 of 4 |
@@ -480,10 +618,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click an empty part of the photo, away from the outline | The line above the controls reads Corner 1 of 4 |
+| 1 | Click an empty part of the photo, away from the outline | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads Corner 1 of 4 |
 | 2 | Press Tab | The line reads Corner 2 of 4 |
 | 3 | Press Tab again | The line reads Corner 3 of 4 |
 
@@ -501,9 +640,9 @@ At the right of that line, **Confidence** and a percentage say how sure detectio
 - Changed: none
 - Anchors: "Confidence", `#perspectiveLine`
 - Source: `js/app/perspective.js` (`syncPerspectiveReadouts`)
-- Ruling: R6. Once the corners are moved by hand the confidence is cleared; Undo and Reset perspective bring back the right one. The app differs today.
+- Ruling: R6. Once the corners are moved by hand the confidence is cleared; Undo and Reset perspective bring back the right one. R7. "Nothing detected" clears after the first corner move, so only then can the empty confidence be seen. The app differs today on both.
 - Flag: to confirm. Any message in that line, and Preview, hides the confidence, so it is not always on screen.
-- Cases: 3
+- Cases: 4
 
 ### PER-13.1 Confidence shows at the right of the line, except in Preview   [auto: phone]
 Flag: to confirm. Written to today's behavior: Preview hides the confidence.
@@ -513,12 +652,13 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the right end of the line above the controls | It reads Confidence 99% |
-| 2 | Tap **Flatten** in the row of tools | The line reads FLATTEN 100%, still with Confidence 99% at its right |
-| 3 | Tap **Preview** in the row of tools | The line reads PREVIEW and "The corrected card. Handles are hidden.", with no confidence |
+| 1 | Look at the right end of the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads Confidence 99% |
+| 2 | Tap **Flatten** | The line reads FLATTEN 100%, still with Confidence 99% at its right |
+| 3 | Tap **Preview** | The line reads PREVIEW and "The corrected card. Handles are hidden.", with no confidence |
 | 4 | Tap **Preview** again | The line reads FLATTEN 100% with Confidence 99% again |
 
 Pass: every row's result is seen.
@@ -532,10 +672,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the right end of the line above the controls | It reads Confidence 99% |
+| 1 | Look at the right end of the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads Confidence 99% |
 | 2 | Drag the top-right corner ring 30 px right, and let go | No confidence shows at the right of the line |
 | 3 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back, and the line reads Confidence 99% again |
 
@@ -550,14 +691,33 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/ (detection finds three candidates: 99%, 100% and 99%)
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Candidate** in the row of tools | It reads 2/3, and the line reads Confidence 100% |
+| 1 | Tap **Candidate** | It reads 2/3, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads Confidence 100% |
 | 2 | Tap **Undo** (the arrow curving left, at the top right) | The corners are back on the first candidate, and the line reads Confidence 99% |
 | 3 | Tap **Candidate** again | It reads 2/3, and the line reads Confidence 100% |
-| 4 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Reset perspective** shows |
+| 4 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Reset perspective** shows |
 | 5 | Tap **Reset perspective** | The corners are back on the first candidate, and the line reads Confidence 99% |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-13.4 With nothing detected, the line shows no confidence   [auto: phone]
+Written to ruling R7; it fails until that is built (BUG-064). Today "Nothing detected" never leaves the line, so the line's right end can't be seen.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
+- Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Nothing detected. Drag the corners into place." |
+| 2 | Tap the right arrow (→) under that line | The message has gone: the line reads NUDGE and Corner 1 of 4, with nothing at its right end (no Confidence) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -578,21 +738,22 @@ Four arrow buttons move the selected handle one screen pixel per press, and neve
 
 ### PER-14.1 Each arrow button moves the handle one screen pixel, never less than one photo pixel   [auto: phone]
 Before you start:
-- Device and browser: any; a phone-width or a wide window
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
-- Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area, the line above the controls reading Corner 1 of 4
+- Photo: IMG_9136.JPEG from samples/ (1498 × 2098 px: fitted to the phone's photo area, one screen pixel is about 4.4 pixels of the photo)
+- Starting screen: the app opened with a link ending `?handleZoom=20` (a setting that makes a double tap on a handle zoom to 20 times the fitted size), the photo open on the Perspective step, the whole photo fitting the photo area, the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reading Corner 1 of 4
+- Browser data: none for this site (a private window, or the site's data cleared)
 
-The four arrow buttons sit under the line above the controls, left of **Next handle**. With the whole photo fitted, one screen pixel is several pixels of the photo.
+The four arrow buttons sit under the line above the controls, left of **Next handle**.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the right arrow (→) | The top-left corner moves one screen pixel right |
-| 2 | Tap the down arrow (↓) | It moves one screen pixel down |
-| 3 | Tap the left arrow (←) | It moves one screen pixel left |
-| 4 | Tap the up arrow (↑) | It moves one screen pixel up, back where it started |
-| 5 | Double tap the top-left corner ring (on a wide screen, double-click it) | The photo zooms in to 6 times its fitted size, so one pixel of the photo is now more than one screen pixel |
-| 6 | Tap the right arrow (→) | The corner moves right by exactly one pixel of the photo |
+| 1 | Tap the right arrow (→) ten times | The top-left corner has moved 10 px right on the screen |
+| 2 | Tap the down arrow (↓) ten times | It has moved 10 px down |
+| 3 | Tap the left arrow (←) ten times | It has moved 10 px left |
+| 4 | Tap the up arrow (↑) ten times | It has moved 10 px up, back where it started |
+| 5 | Double tap the top-left corner ring | The photo zooms in to 20 times its fitted size, with that corner in the middle of the photo area: one pixel of the photo is now about 4.6 px on the screen |
+| 6 | Tap the right arrow (→) ten times | The corner has moved about 46 px right on the screen: ten pixels of the photo, one a tap, not ten screen pixels |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -604,7 +765,8 @@ Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area, the line above the controls reading Corner 1 of 4
+- Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area, the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reading Corner 1 of 4
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -621,13 +783,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Holding an arrow button repeats it after 350 ms, every 60 ms, until the finger lifts, slides off or is cancelled. Nudges less than 0.9 s apart, held or tapped, are one undo step.
 
 - Risk: medium
-- Check: script, touch
+- Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `CONFIG.nudge.delayMs`, `CONFIG.nudge.repeatMs`, "The arrows nudge the selected handle. Hold one to repeat."
 - Source: `js/app/parts/nudge-pad.js` (`bindNudgePad`); `js/app/perspective.js` (`bindHandleNudge`); `js/app/state.js` (`commit`, `History.push`)
-- Cases: 3
+- Cases: 4
 
 ### PER-15.1 Holding an arrow repeats it until it is let go, as one undo step   [auto: phone]
 Before you start:
@@ -635,12 +797,15 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Press and hold the right arrow (→) under the line above the controls for one second, then let go | The top-left corner moves one step at once, then after about a third of a second keeps moving about 16 steps a second while held: at least 6 steps in all |
-| 2 | Wait half a second | The corner has stopped |
-| 3 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back where it started; **Undo** is greyed out |
+| 1 | Press the right arrow (→) under the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen), and keep holding it | At once a round magnifier shows the top-left corner, which has taken one step right; for about 0.4 seconds it moves no further |
+| 2 | Keep holding for two seconds more | The corner glides steadily right, one screen pixel a step, about 16 steps a second: more than 25 px from where it started |
+| 3 | Let go | The corner stops |
+| 4 | Wait half a second | The corner has not moved since row 3 |
+| 5 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back where it started; **Undo** is greyed out: the whole hold was one undo step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -651,13 +816,17 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+Each tap on an arrow moves the selected corner one screen pixel.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the right arrow (→) twice, quickly | The top-left corner has moved two screen pixels right |
-| 2 | Wait a second and a half, then tap the right arrow once more | It has moved three screen pixels right in all |
-| 3 | Tap **Undo** (the arrow curving left, at the top right) | It is two screen pixels right of where it started: only the last tap was undone |
-| 4 | Tap **Undo** again | It is back where it started: the two quick taps were one step |
+| 1 | Tap the right arrow (→) ten times, quickly (less than 0.9 seconds between taps) | The top-left corner has moved 10 px right |
+| 2 | Wait a second and a half | The corner stays where it is |
+| 3 | Tap the right arrow ten times more, quickly | It has moved 20 px right in all |
+| 4 | Tap **Undo** (the arrow curving left, at the top right) | It is 10 px right of where it started: only the second ten taps were undone |
+| 5 | Tap **Undo** again | It is back where it started, and **Undo** is greyed out: the first ten quick taps were one step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -668,12 +837,31 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Press and hold the mouse button on the right arrow (→) under the line above the controls | The top-left corner moves, and after about a third of a second keeps moving |
+| 1 | Press and hold the mouse button on the right arrow (→) under the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | The top-left corner moves, and after about 0.4 seconds keeps moving |
 | 2 | Keeping the button down, move the pointer 100 px up, off the arrow | The corner stops moving |
-| 3 | Wait half a second, then let go | The corner has not moved since row 2 |
+| 3 | Wait half a second, keeping the button down | The corner has not moved since row 2 |
+| 4 | Let go of the button | The corner still has not moved since row 2 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-15.4 On an iPhone, holding an arrow repeats it with no menu from Safari   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Press the right arrow (→) under the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) with one finger, and hold it still for three seconds | A round magnifier shows the top-left corner gliding steadily right the whole time; no text is selected, and no menu, callout or magnifying glass of Safari's own appears |
+| 2 | Lift the finger | The corner stops, and no menu appears |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back on the card's corner; **Undo** is greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -696,13 +884,19 @@ Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Perspective step, the line above the controls reading Corner 1 of 4
+- Starting screen: the photo open, on the Perspective step, the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reading Corner 1 of 4
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Next handle** three times, reading the line after each tap | Corner 2 of 4, Corner 3 of 4, Corner 4 of 4 |
-| 2 | Tap **Next handle** four more times, reading the line after each tap | Edge 1 of 4, Edge 2 of 4, Edge 3 of 4, Edge 4 of 4 |
-| 3 | Tap **Next handle** once more | Corner 1 of 4 |
+| 1 | Tap **Next handle** | The line reads Corner 2 of 4 |
+| 2 | Tap **Next handle** | The line reads Corner 3 of 4 |
+| 3 | Tap **Next handle** | The line reads Corner 4 of 4 |
+| 4 | Tap **Next handle** | The line reads Edge 1 of 4 |
+| 5 | Tap **Next handle** | The line reads Edge 2 of 4 |
+| 6 | Tap **Next handle** | The line reads Edge 3 of 4 |
+| 7 | Tap **Next handle** | The line reads Edge 4 of 4 |
+| 8 | Tap **Next handle** | The line reads Corner 1 of 4 again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -725,16 +919,18 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Perspective step, the line above the controls reading Corner 1 of 4
+- Starting screen: the photo open, on the Perspective step, the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reading Corner 1 of 4
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap the right arrow (→) under the line above the controls | A round magnifier shows the top-left corner, in the top right corner of the photo area |
 | 2 | Wait five seconds without touching anything | The magnifier has gone (it stays 4 seconds) |
 | 3 | Tap **Next handle** | The line reads Corner 2 of 4, and the magnifier shows the top-right corner, in the top left corner of the photo area |
-| 4 | Tap **Snap** in the row of tools | The magnifier goes at once |
+| 4 | Tap **Snap** | The magnifier goes at once |
 | 5 | Tap the right arrow again | The magnifier shows the top-right corner |
-| 6 | Tap **Rotate** in the step bar, then **Perspective** | Back on Perspective, no magnifier shows |
+| 6 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
+| 7 | Tap **Perspective** in the step tabs | Back on Perspective, no magnifier shows |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -758,10 +954,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step for the first time since the page was loaded
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the row of tools and the lines above it | **Nudge** is selected (a solid white button); above it the line reads NUDGE and Corner 1 of 4, and under that are the four arrow buttons and **Next handle** |
+| 1 | Look at the controls (the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | In their bottom row **Nudge** is selected (a solid white button); the line of text at their top reads NUDGE and Corner 1 of 4, and under that line are the four arrow buttons and **Next handle** |
 | 2 | Tap **Flatten** | **Flatten** is selected instead of **Nudge**; the arrows and **Next handle** have gone |
 | 3 | Tap **Nudge** | **Nudge** is selected again; the line reads NUDGE and Corner 1 of 4, with the arrows and **Next handle** under it |
 
@@ -790,11 +987,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, with **Nudge** selected
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the **Flatten** button in the row of tools | It shows 100% above its name, where the other buttons show an icon |
-| 2 | Tap **Flatten** | **Flatten** is selected (a solid white button); the line above reads FLATTEN and 100%, and a slider under it has its knob at the right end |
+| 1 | Look at the **Flatten** button | It shows 100% above its name, where the other buttons show an icon |
+| 2 | Tap **Flatten** | **Flatten** is selected (a solid white button); the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads FLATTEN and 100%, and a slider under it has its knob at the right end |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -818,10 +1016,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Flatten** in the row of tools | The line above reads FLATTEN 100%, with the slider's knob at its right end |
+| 1 | Tap **Flatten** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads FLATTEN 100%, with the slider's knob at its right end |
 | 2 | Tap **Preview** | The corrected card is an upright rectangle, 5 wide to 7 tall, with square corners |
 | 3 | Tap **Preview** again | The slider shows again, its knob at the right end |
 | 4 | Tap the slider's track at its far left end | The knob is at the left end; the line and the **Flatten** button read 0% |
@@ -838,10 +1037,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Flatten** in the row of tools | The line above reads FLATTEN 100% |
+| 1 | Tap **Flatten** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads FLATTEN 100% |
 | 2 | Tap the middle of the slider's track | The line reads FLATTEN 50% |
 | 3 | At once, tap the slider's track at its far left end | The line reads FLATTEN 0% |
 | 4 | Tap **Undo** (the arrow curving left, at the top right) | The line reads FLATTEN 100% and **Undo** is greyed out: the two quick changes were one undo step |
@@ -855,11 +1055,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **Flatten** in the row of tools | The slider shows, its knob at the right end |
-| 2 | Press on the knob and drag it to the left end of the track, keeping the button down | Before you let go, the line reads FLATTEN 0% and the **Result** picture has changed |
+| 1 | Click **Flatten** | The slider shows, its knob at the right end |
+| 2 | Press on the knob and drag it to the left end of the track, keeping the button down | Before you let go, the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads FLATTEN 0% and the **Result** picture has changed |
 | 3 | Let go | The line still reads FLATTEN 0% |
 | 4 | Click **Undo** (the arrow curving left, at the top right) | The line reads FLATTEN 100%: the whole slide was one undo step |
 
@@ -867,23 +1068,22 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-20.4 On an iPhone, a slide of the Flatten knob is one undo step   [phone]
+Waiting on find-out Q-01: what Safari does with a tap on the slider's track, away from its knob. The rows for that tap are added here once Rich has seen it on the phone.
+
 Before you start:
 - Device and browser: an iPhone, Safari
-- Build: the build under test
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
 - Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
-
-Playwright's WebKit sends no "change" when the slider's track is tapped, so the automated cases run this slider in Chromium only; this case checks Safari itself.
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Flatten** in the row of tools | The line above reads FLATTEN 100%, with the slider's knob at its right end |
-| 2 | Drag the knob to the left end of the track, and lift the finger | The line reads FLATTEN 0%; **Undo** is no longer greyed out |
-| 3 | Tap **Undo** | The line reads FLATTEN 100% and **Undo** is greyed out again |
-| 4 | Tap the slider's track halfway along | Either the knob jumps there and the line reads about 50%, with **Undo** no longer greyed out, or the knob does not move at all and **Undo** stays greyed out; record which |
-| 5 | Tap **Undo** if it is not greyed out | The line reads FLATTEN 100% |
+| 1 | Tap **Flatten** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo) reads FLATTEN 100%, with the slider's knob at its right end |
+| 2 | Put a finger on the knob, slide it to the left end of the track, and lift the finger | The line reads FLATTEN 0%; **Undo** (the arrow curving left, at the top right) is no longer greyed out |
+| 3 | Tap **Undo** | The line reads FLATTEN 100% and **Undo** is greyed out again: the whole slide was one undo step |
 
-Pass: rows 1 to 3 are seen, and in row 4 the line and **Undo** agree (the value changed and Undo lit, or neither).
+Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-21 Candidate
@@ -906,10 +1106,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/ (detection keeps three candidates)
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at **Candidate** in the row of tools | It shows 1/3 in place of an icon |
+| 1 | Look at **Candidate** | It shows 1/3 in place of an icon |
 | 2 | Tap **Candidate** | It reads 2/3, and the corners move to the second candidate |
 | 3 | Tap **Candidate** | It reads 3/3, and the corners move to the third |
 | 4 | Tap **Candidate** | It reads 1/3, and the corners are back on the first |
@@ -922,12 +1123,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photo: blank.png, a plain mid-grey picture 1200 × 1600 px with no card in it (the script draws its own)
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
 - Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at **Candidate** in the row of tools | It is greyed out and shows its icon, with no number |
+| 1 | Look at **Candidate** | It is greyed out and shows its icon, with no number |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -940,10 +1142,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at **Candidate** in the row of tools | It shows 1/3 |
+| 1 | Look at **Candidate** | It shows 1/3 |
 | 2 | Drag the top-right corner ring 30 px right, and let go | **Candidate** shows no number |
 | 3 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back, and **Candidate** shows 1/3 again |
 
@@ -958,13 +1161,14 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Candidate** in the row of tools | It reads 2/3 |
+| 1 | Tap **Candidate** | It reads 2/3 |
 | 2 | Tap **Undo** (the arrow curving left, at the top right) | The corners are back on the first candidate, and **Candidate** reads 1/3 |
 | 3 | Tap **Candidate** | It reads 2/3 |
-| 4 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Reset perspective** shows |
+| 4 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Reset perspective** shows |
 | 5 | Tap **Reset perspective** | The corners are back on the first candidate, and **Candidate** reads 1/3 |
 
 Pass: every row's result is seen.
@@ -989,10 +1193,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step for the first time since the page was loaded, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at **Snap** in the row of tools | Its corner reads Off |
+| 1 | Look at **Snap** | Its corner reads Off |
 | 2 | Tap **Snap** | It reads On, with a white ring; **Undo** is still greyed out |
 | 3 | Tap **Snap** again | It reads Off |
 
@@ -1018,16 +1223,18 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under Developer |
-| 2 | Tap the **Debug overlay** switch, then close the options (on a phone, the **×** at their top right) | Thin yellow lines run across the photo: the lines detection found |
-| 3 | Tap **Snap** in the row of tools | It reads On |
-| 4 | Drag the top-left corner ring 10 px right and 6 px down, and let go | The corner does not stop 10 px right and 6 px down: it jumps onto the nearest point where two yellow lines cross |
-| 5 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back where it was |
-| 6 | Tap **Snap** | It reads Off |
-| 7 | Drag the top-left corner ring 10 px right and 6 px down again, and let go | The corner stops exactly 10 px right and 6 px down of where it was |
+| 1 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under Developer |
+| 2 | Tap the **Debug overlay** switch | It is on |
+| 3 | Close the options: on a phone, tap the **×** at their top right (on a wide screen they stay shown) | Thin yellow lines run across the photo: the lines detection found |
+| 4 | Tap **Snap** | It reads On |
+| 5 | Drag the top-left corner ring 10 px right and 6 px down, and let go | The corner does not stop 10 px right and 6 px down: it jumps onto the nearest point where two yellow lines cross |
+| 6 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back where it was |
+| 7 | Tap **Snap** | It reads Off |
+| 8 | Drag the top-left corner ring 10 px right and 6 px down again, and let go | The corner stops exactly 10 px right and 6 px down of where it was |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1051,16 +1258,18 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under Developer |
-| 2 | Tap the **Debug overlay** switch, then close the options (on a phone, the **×** at their top right) | Thin yellow lines run across the photo: the lines detection found |
-| 3 | Tap **Snap** in the row of tools | It reads On |
-| 4 | Drag the small square at the middle of the top edge 10 px down, and let go | The top edge lies exactly along a yellow line that runs the same way as the edge |
-| 5 | Tap **Undo** (the arrow curving left, at the top right) | The edge is back where it was |
-| 6 | Tap **Snap** | It reads Off |
-| 7 | Drag the same square 10 px down again, and let go | The top edge stops exactly 10 px lower than it was |
+| 1 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under Developer |
+| 2 | Tap the **Debug overlay** switch | It is on |
+| 3 | Close the options: on a phone, tap the **×** at their top right (on a wide screen they stay shown) | Thin yellow lines run across the photo: the lines detection found |
+| 4 | Tap **Snap** | It reads On |
+| 5 | Drag the small square at the middle of the top edge 10 px down, and let go | The top edge lies exactly along a yellow line that runs the same way as the edge |
+| 6 | Tap **Undo** (the arrow curving left, at the top right) | The edge is back where it was |
+| 7 | Tap **Snap** | It reads Off |
+| 8 | Drag the same square 10 px down again, and let go | The top edge stops exactly 10 px lower than it was |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1085,11 +1294,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, with **Nudge** selected
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Preview** in the row of tools | It reads On; the photo area shows the corrected card, filling it, with no outline and no handles |
-| 2 | Look at the lines above the row of tools | The top one reads PREVIEW and "The corrected card. Handles are hidden."; the one under it reads "Pinch to zoom, drag to pan. Tap Preview again for the corners." |
+| 1 | Tap **Preview** | It reads On; the photo area shows the corrected card, filling it, with no outline and no handles |
+| 2 | Look at the two lines of text at the top of the controls (the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | The top one reads PREVIEW and "The corrected card. Handles are hidden."; the one under it reads "Pinch to zoom, drag to pan. Tap Preview again for the corners." |
 | 3 | Tap **Preview** again | It reads Off; the photo, its outline and handles are back, with the line NUDGE and Corner 1 of 4 |
 
 Pass: every row's result is seen.
@@ -1103,12 +1313,13 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring to 40 px right of and 40 px below the top-right corner ring, and let go | The outline crosses itself and turns red and dashed |
-| 2 | Tap **Preview** in the row of tools | The photo area is empty except for grey text in its middle: "Fix the corners in Perspective first." |
-| 3 | Look at the line above the controls | It reads "Corners cross or fold inward. Drag them back into a convex shape." |
+| 2 | Tap **Preview** | The photo area is empty except for grey text in its middle: "Fix the corners in Perspective first." |
+| 3 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Corners cross or fold inward. Drag them back into a convex shape." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1118,7 +1329,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 While Preview is on, **Nudge** and **Flatten** are off, the arrow buttons and the slider are hidden, the handles can't be grabbed, and dragging or pinching pans and zooms the corrected card.
 
 - Risk: medium
-- Check: script, touch
+- Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -1126,7 +1337,7 @@ While Preview is on, **Nudge** and **Flatten** are off, the arrow buttons and th
 - Source: `js/app/perspective.js` (`syncPerspective`, `bindHandleNudge`); `js/app/input.js` (`stepGesture`, `hitsPhotoControl`)
 - Ruling: R2. The keyboard's arrow keys and Tab do nothing while Preview is on. The app differs today.
 - Flag: to confirm. While Preview is on both mode buttons are off, so the Nudge or Flatten mode can't change until Preview is turned off.
-- Cases: 3
+- Cases: 4
 
 ### PER-26.1 While Preview is on, the modes are off and a drag moves the corrected card   [auto: phone, webkit]
 Flag: to confirm. Written to today's behavior: **Nudge** and **Flatten** are both greyed out while Preview is on.
@@ -1136,10 +1347,13 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, with **Nudge** selected, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+Before row 1, note where the top-left corner ring is on the screen.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Note where the top-left corner ring is, then tap **Preview** in the row of tools | **Nudge** and **Flatten** are greyed out and neither is white; the arrows, **Next handle** and the slider are not shown |
+| 1 | Tap **Preview** | **Nudge** and **Flatten** are greyed out and neither is white; the arrows, **Next handle** and the slider are not shown |
 | 2 | Drag from where the top-left ring was, 30 px down, and let go | The corrected card moves 30 px down with the drag |
 | 3 | Tap **Preview** again | The corners are where they were before row 1, and **Undo** is still greyed out |
 
@@ -1148,15 +1362,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-26.2 While Preview is on, a pinch zooms the corrected card   [auto: phone]
 Before you start:
-- Device and browser: a phone (pinch with two fingers); the script uses a phone-width window
+- Device and browser: a phone or tablet with a touch screen (pinch with two fingers); the script uses a phone-width window with touch
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Preview** in the row of tools | The corrected card fills the photo area |
-| 2 | Put two fingers 100 px apart on the middle of the card and spread them to 200 px apart | The card zooms in to twice its size |
+| 1 | Tap **Preview** | The corrected card fills the photo area |
+| 2 | Put two fingers on the middle of the card and spread them to twice as far apart | The card zooms in to about twice its size |
 | 3 | Tap **Preview** again | The corners have not moved, and **Undo** (the arrow curving left, at the top right) is greyed out |
 
 Pass: every row's result is seen.
@@ -1169,15 +1384,34 @@ Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Perspective step, the line above the controls reading Corner 1 of 4, nothing changed yet (**Undo** at the top right is greyed out)
+- Starting screen: the photo open, on the Perspective step, the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reading Corner 1 of 4, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **Preview** in the row of tools | The corrected card shows, with no handles |
+| 1 | Click **Preview** | The corrected card shows, with no handles |
 | 2 | Click the middle of the corrected card | Nothing changes |
 | 3 | Press the right arrow key (→) three times | Nothing changes, and **Undo** is still greyed out |
 | 4 | Press Tab | Nothing changes |
 | 5 | Click **Preview** again | The corners are where they were, the line reads Corner 1 of 4, and **Undo** is still greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-26.4 On an iPhone, a pinch in Preview zooms the card, not the page   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Preview** | The corrected card fills the photo area |
+| 2 | Put two fingers on the middle of the card and spread them to twice as far apart | The card zooms in to about twice its size; the top bar, the controls and the step tabs (the six tabs Perspective to Export along the bottom) stay their usual size: Safari has not zoomed the page |
+| 3 | Put two fingers on the card and pinch them together | The card zooms back out; the page is still at its usual size |
+| 4 | Tap **Preview** again | The photo and its handles are back, with the corners on the card; **Undo** (the arrow curving left, at the top right) is greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1204,12 +1438,13 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Preview** in the row of tools | It reads On; the corrected card shows |
-| 2 | Tap **Rotate** in the step bar | The Rotate step shows |
-| 3 | Tap **Perspective** in the step bar | **Preview** still reads On, the line reads PREVIEW, and the corrected card shows with no handles |
+| 1 | Tap **Preview** | It reads On; the corrected card shows |
+| 2 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
+| 3 | Tap **Perspective** in the step tabs | **Preview** still reads On, the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads PREVIEW, and the corrected card shows with no handles |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1220,11 +1455,12 @@ Before you start:
 - Build: the build under test
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Preview** in the row of tools | It reads On |
-| 2 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | The new photo opens on Perspective with its outline and handles; **Preview** reads Off and the line reads NUDGE |
+| 1 | Tap **Preview** | It reads On |
+| 2 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | The new photo opens on Perspective with its outline and handles; **Preview** reads Off and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads NUDGE |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1235,11 +1471,12 @@ Before you start:
 - Build: the build under test
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open, on the Export step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on Perspective, with **Front** and **Back** in the top bar |
-| 2 | Tap **Preview** in the row of tools | It reads On |
+| 2 | Tap **Preview** | It reads On |
 | 3 | Tap **Front** in the top bar | The front opens on Perspective with its outline and handles; **Preview** reads Off |
 
 Pass: every row's result is seen.
@@ -1251,14 +1488,17 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, no levels applied
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Preview** in the row of tools | The corrected card shows; note its colors |
-| 2 | Tap **Levels** in the step bar, then **Auto** in its row of tools | The photo brightens: an unapplied draft, with **Apply** in the line above |
-| 3 | Tap **Perspective** in the step bar | The corrected card shows with the colors noted in row 1, not the draft's |
-| 4 | Tap **Levels**, then **Apply** | The levels are applied |
-| 5 | Tap **Perspective** | The corrected card now shows the applied, brighter colors |
+| 1 | Tap **Preview** | The corrected card shows; note its colors |
+| 2 | Tap **Levels** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Levels step shows, with **Auto** among its buttons |
+| 3 | Tap **Auto** | The photo brightens: an unapplied draft, with **Apply** lit in the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) and a white dot on the **Levels** tab |
+| 4 | Tap **Perspective** in the step tabs | The corrected card shows with the colors noted in row 1, not the draft's |
+| 5 | Tap **Levels** in the step tabs | The Levels step shows, with **Apply** lit |
+| 6 | Tap **Apply** | The white dot on the **Levels** tab has gone, and **Apply** is greyed out |
+| 7 | Tap **Perspective** in the step tabs | The corrected card now shows the applied, brighter colors |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1283,11 +1523,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | The first row reads **Tap to find card**, with "then tap the card" at its right |
-| 2 | Tap **Tap to find card** | The line above the controls reads "Tap the card in the photo.", with **Cancel** at its right. On a phone the options have closed, leaving the whole photo; on a wide screen the row stays, shown as pressed |
+| 1 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | The first row reads **Tap to find card**, with "then tap the card" at its right |
+| 2 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo.", with **Cancel** at its right. On a phone the options have closed, leaving the whole photo; on a wide screen the row stays, shown as pressed |
 | 3 | On a phone, open **Perspective options** again (on a wide screen they are still shown) | **Tap to find card** is shown as pressed |
 | 4 | Tap **Tap to find card** again | It is no longer pressed, and the line above the controls reads NUDGE and Corner 1 of 4 |
 
@@ -1302,12 +1543,13 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the **Options** tab (the tab with an up arrow on the top edge of the controls) | **Perspective options** rise from the bottom |
-| 2 | Tap **Tap to find card** | The options close, and the line above the controls reads "Tap the card in the photo." |
-| 3 | Tap the **Options** tab again | The options rise; **Tap to find card** is shown as pressed |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | **Perspective options** rise from the bottom |
+| 2 | Tap **Tap to find card** | The options close, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo." |
+| 3 | Tap the options tab again | The options rise; **Tap to find card** is shown as pressed |
 | 4 | Press Escape | The options close; the line still reads "Tap the card in the photo." |
 
 Pass: every row's result is seen.
@@ -1318,14 +1560,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 While armed, a still tap on the photo, however long it is held, searches for the card at that point, moves the corners as one undo step and disarms. The point is used for that search only. If nothing is found, the corners stay and a pop-up says "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again."
 
 - Risk: high
-- Check: script, touch
+- Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#btnFindCard`, `CONFIG.detect.seedMissFactor`, "No card-shaped edges found. "
 - Source: `js/app/input.js` (`stepGesture`, `onPointerUp`); `js/app/state.js` (`findCardAt`, `runDetect`)
 - Flag: to confirm. On a photo with no card, the pop-up "No card-shaped edges found…" and the line "Nothing detected. Drag the corners into place." show at the same time.
-- Cases: 3
+- Cases: 5
 
 ### PER-29.1 A tap on the card finds it, as one undo step, and disarms   [auto: phone, webkit]
 Before you start:
@@ -1333,12 +1575,13 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring 40 px right and 40 px down, and let go | That corner is now off the card's corner |
-| 2 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
-| 3 | Tap **Tap to find card** | The line above the controls reads "Tap the card in the photo." |
+| 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 3 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo." |
 | 4 | Tap the middle of the card once, without moving | All four corners land on the card's own corners, and the line reads NUDGE again: it is no longer armed |
 | 5 | Tap **Undo** (the arrow curving left, at the top right) | The top-left corner is back where you dragged it in row 1: the find was one undo step |
 
@@ -1351,12 +1594,13 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring 40 px right and 40 px down, and let go | That corner is now off the card's corner |
-| 2 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
-| 3 | Tap **Tap to find card** | The line above the controls reads "Tap the card in the photo." |
+| 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 3 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo." |
 | 4 | Press the middle of the card and hold it still for a full second, then lift | All four corners land on the card's own corners, and the line reads NUDGE again |
 
 Pass: every row's result is seen.
@@ -1368,15 +1612,56 @@ Flag: to confirm. Written to today's behavior: the pop-up and the line's own mes
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photo: blank.png, a plain mid-grey picture 1200 × 1600 px with no card in it (the script draws its own)
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
 - Starting screen: the picture open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
-| 2 | Tap **Tap to find card** | The line above the controls reads "Tap the card in the photo." |
+| 1 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 2 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo." |
 | 3 | Tap the middle of the picture once, without moving | A pop-up over the picture's bottom edge reads "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again." and, at the same time, the line above the controls reads "Nothing detected. Drag the corners into place." |
 | 4 | Look at the outline and at **Undo** | The corners have not moved, and **Undo** is still greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-29.4 The tapped point steers that one search and is not kept   [auto: phone]
+Script only
+Stand-in: the script records the point each search for the card is handed. Nothing on the screen shows which point a search was given, so a person can't see whether a later search still uses the tapped one.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 2 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo." |
+| 3 | Tap the middle of the card once, without moving | The corners land on the card, and the line reads NUDGE again; the search was handed the tapped point |
+| 4 | Open **Perspective options** again (on a wide screen they are still shown) | **Debug overlay** shows under DEVELOPER, off |
+| 5 | Tap the **Debug overlay** switch | It is on, and a new search runs (the switch starts one to have something to draw); it is handed no point: the point tapped in row 3 was not kept |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-29.5 On an iPhone, a long press while armed finds the card, with no menu from Safari   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the top-left corner ring toward the middle of the photo, about a finger's width, and lift | That corner is off the card's corner |
+| 2 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | **Perspective options** rise, with **Tap to find card** at the top |
+| 3 | Tap **Tap to find card** | The options close, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo." |
+| 4 | Press the middle of the card with one finger and hold it still for two seconds, then lift | All four corners land on the card's own corners, and the line reads NUDGE again; at no point did Safari show a menu or callout (such as Save Image or Copy), select anything, or show its magnifying glass |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1400,11 +1685,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
-| 2 | Tap **Tap to find card** | The line above the controls reads "Tap the card in the photo." |
+| 1 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 2 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo." |
 | 3 | Drag from the top-left corner ring 40 px down, and let go | The whole photo, outline and all, has moved 40 px down; every corner is still on the same point of the card |
 | 4 | Look at the line above the controls | It still reads "Tap the card in the photo." |
 
@@ -1430,11 +1716,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
-| 2 | Tap **Tap to find card** | The line above the controls reads "Tap the card in the photo.", with **Cancel** at its right |
+| 1 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 2 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo.", with **Cancel** at its right |
 | 3 | Tap **Cancel** | The line reads NUDGE and Corner 1 of 4 |
 | 4 | Tap the middle of the card once, without moving | Nothing happens: no "Detecting…", the corners stay, and **Undo** is still greyed out |
 
@@ -1452,24 +1739,27 @@ Under **Card orientation** in the options sheet, **Auto**, **Portrait** and **La
 - Changed: none
 - Anchors: `#orientation`, "Card orientation", "Portrait", "Landscape"
 - Source: `js/app/perspective.js` (`buildPerspectiveSheet`, `bindPerspective`, `syncPerspective`); `js/app/parts/segmented-control.js` (`buildSegmented`, `bindSegmented`)
-- Cases: 2
+- Cases: 3
 
-### PER-32.1 Landscape and Portrait set which way the card stands, one undo step each   [auto: phone]
+### PER-32.1 Landscape turns an upright card on its side, as one undo step   [auto: phone]
 Before you start:
-- Device and browser: any; a phone-width or a wide window
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/ (an upright card)
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | Under CARD ORIENTATION, **Auto** is selected (white) |
-| 2 | Tap **Landscape** | **Landscape** is selected instead |
-| 3 | Close the options (on a phone, the **×** at their top right; on a wide screen there is nothing to close), then tap **Preview** in the row of tools | The corrected card is wider than tall, 7 wide to 5 tall |
-| 4 | Tap **Preview** again | The photo and its handles are back |
-| 5 | Tap **Undo** (the arrow curving left, at the top right) | **Undo** is greyed out: Landscape was one undo step |
-| 6 | Open **Perspective options** | **Auto** is selected again |
-| 7 | Tap **Portrait** | **Portrait** is selected, and the corrected card stands upright, 5 wide to 7 tall |
+| 1 | Open **Perspective options**: tap the options tab (the small tab with an up arrow on the top edge of the controls) | Under CARD ORIENTATION, **Auto** is selected (white) |
+| 2 | Tap **Landscape** | **Landscape** is selected instead; **Undo** (the arrow curving left, at the top right) is no longer greyed out |
+| 3 | Close the options with the **×** at their top right | The options have gone, and the whole photo shows |
+| 4 | Tap **Preview** | The corrected card is wider than tall, 7 wide to 5 tall |
+| 5 | Tap **Preview** again | The photo and its handles are back |
+| 6 | Tap **Undo** | **Undo** is greyed out: Landscape was one undo step |
+| 7 | Tap **Preview** | The corrected card stands upright again, 5 wide to 7 tall |
+| 8 | Tap **Preview** again | The photo and its handles are back |
+| 9 | Open **Perspective options** | **Auto** is selected again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1480,11 +1770,35 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the **Options** tab (the tab with an up arrow on the top edge of the controls) | **Perspective options** rise from the bottom |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | **Perspective options** rise from the bottom |
 | 2 | Measure the **Auto** / **Portrait** / **Landscape** control under CARD ORIENTATION | It is 44 px tall |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-32.3 Portrait stands a sideways card upright, as one undo step   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Photo: 13_front_landscape_onetouch_labeled_white.JPEG from samples/ (a card lying on its side, in a one-touch holder)
+- Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Preview** | The corrected card is wider than tall, 7 wide to 5 tall: with **Auto**, it follows the card |
+| 2 | Tap **Preview** again | The photo and its handles are back |
+| 3 | Open **Perspective options**: tap the options tab (the small tab with an up arrow on the top edge of the controls) | Under CARD ORIENTATION, **Auto** is selected (white) |
+| 4 | Tap **Portrait** | **Portrait** is selected instead; **Undo** (the arrow curving left, at the top right) is no longer greyed out |
+| 5 | Close the options with the **×** at their top right | The options have gone, and the whole photo shows |
+| 6 | Tap **Preview** | The corrected card stands upright, 5 wide to 7 tall |
+| 7 | Tap **Preview** again | The photo and its handles are back |
+| 8 | Tap **Undo** | **Undo** is greyed out: Portrait was one undo step |
+| 9 | Tap **Preview** | The corrected card is wider than tall again, 7 wide to 5 tall |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1508,17 +1822,19 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring 40 px right and 40 px down, and let go | That corner is off the card's corner |
-| 2 | Tap **Flatten** in the row of tools | The line above reads FLATTEN 100% |
+| 2 | Tap **Flatten** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads FLATTEN 100% |
 | 3 | Tap the slider's track at its far left end | The line reads FLATTEN 0% |
-| 4 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Reset perspective** shows, in red |
+| 4 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Reset perspective** shows, in bold, with a red icon |
 | 5 | Tap **Landscape** under CARD ORIENTATION | **Landscape** is selected |
 | 6 | Tap **Reset perspective** | **Auto** is selected again, the line reads FLATTEN 100%, and the top-left corner is back on the card's corner |
-| 7 | Close the options (on a phone, the **×** at their top right; on a wide screen there is nothing to close) | The options are closed |
-| 8 | Tap **Undo** (the arrow curving left, at the top right) | All three come back at once: the line reads FLATTEN 0%, the top-left corner is where you dragged it, and the options show **Landscape** |
+| 7 | Close the options: on a phone, tap the **×** at their top right (on a wide screen they stay shown) | On a phone the options have gone |
+| 8 | Tap **Undo** (the arrow curving left, at the top right) | The line reads FLATTEN 0%, and the top-left corner is where you dragged it in row 1 |
+| 9 | Open **Perspective options** again (on a wide screen they are still shown) | **Landscape** is selected: the one Undo brought back all three |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1527,13 +1843,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test
-- Photo: blank.png, a plain mid-grey picture 1200 × 1600 px with no card in it (the script draws its own)
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
 - Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring 40 px right and 40 px down, and let go | That corner has moved |
-| 2 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Reset perspective** shows |
+| 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Reset perspective** shows |
 | 3 | Tap **Reset perspective** | The outline is the rectangle a fifth of the picture's width and height in from each edge again |
 
 Pass: every row's result is seen.
@@ -1559,13 +1876,16 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the **Options** tab (the tab with an up arrow on the top edge of the controls) | **Perspective options** rise; under DEVELOPER the **Debug overlay** switch is off |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | **Perspective options** rise; under DEVELOPER the **Debug overlay** switch is off |
 | 2 | Tap the **Debug overlay** switch | It is on |
 | 3 | Close the options with the **×** at their top right | Drawn over the photo: cyan dots tracing the edges detection found; thin yellow lines running right across the photo along the strongest edges; and magenta outlines of the shapes detection scored, the best one drawn thicker, each of the first eight labelled near its top-left corner with #1, #2 and so on, a score and a percentage |
-| 4 | Tap the **Options** tab, tap the **Debug overlay** switch, then close the options with the **×** | The cyan, yellow and magenta drawing has gone; the white outline and its handles are as before |
+| 4 | Tap the options tab again | **Perspective options** rise; the **Debug overlay** switch is on |
+| 5 | Tap the **Debug overlay** switch | It is off |
+| 6 | Close the options with the **×** at their top right | The cyan, yellow and magenta drawing has gone; the white outline and its handles are as before |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1578,11 +1898,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring 40 px right and 40 px down, and let go | That corner has moved 40 px right and 40 px down, off the card's corner |
-| 2 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under DEVELOPER, off |
+| 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under DEVELOPER, off |
 | 3 | Tap the **Debug overlay** switch | It is on |
 | 4 | Close the options (on a phone, the **×** at their top right; on a wide screen there is nothing to close), and look at the top-left corner ring | It is still where you dragged it in row 1 |
 
@@ -1608,10 +1929,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the side panel, under the row of tools | Under the heading RESULT, a picture of the corrected card runs the panel's full width inside its margins, and is 150 px tall |
+| 1 | Look at the side panel at the right, under its row of buttons | Under the heading RESULT, a picture of the corrected card runs the panel's full width inside its margins, and is 150 px tall |
 | 2 | Press on the top-left corner ring and drag it 40 px right and 40 px down, keeping the button down | Before you let go, the **Result** picture has changed with the corner |
 | 3 | Let go | The **Result** picture still shows the card as it was at the end of the drag |
 
@@ -1624,11 +1946,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the controls under the photo | No RESULT heading and no small picture of the corrected card |
-| 2 | Tap the **Options** tab (the tab with an up arrow on the top edge of the controls) | **Perspective options** rise, with no RESULT heading and no small picture of the corrected card in them |
+| 2 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | **Perspective options** rise, with no RESULT heading and no small picture of the corrected card in them |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1646,9 +1969,9 @@ The line above the controls shows at most one message, in this order: Tap to fin
 - Source: `js/app/perspective.js` (`perspectiveStatus`, `asSentences`, `syncPerspectiveReadouts`)
 - Ruling: R7. "Low confidence" and "Nothing detected" clear after the first corner move, by drag or with the arrow buttons. The app differs today.
 - Flag: to confirm. Messages the user can't act on take the line, such as "Detecting…" and "Corrected frame clamped to 12000px on the long side." (written without a space before px).
-- Cases: 6
+- Cases: 9
 
-None of the sample photos is found with low confidence, so the cases that need it open the app with a link setting that counts any confidence under 100% as low, and the one that needs a clamped frame with a setting that lowers the largest corrected frame to 1000 px.
+None of the sample photos is found with low confidence, so the cases that need it open the app with a link setting that counts any confidence under 100% as low, and the ones that need a clamped frame with a setting that lowers the largest corrected frame to 1000 px. Low confidence needs a card found and "Nothing detected" needs none, so those two never compete for the line.
 
 ### PER-36.1 Tap to find card's prompt takes the line over the crossed-corners message   [auto: phone]
 Before you start:
@@ -1656,11 +1979,12 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag the top-left corner ring to 40 px right of and 40 px below the top-right corner ring, and let go | The line above the controls reads "Corners cross or fold inward. Drag them back into a convex shape." |
-| 2 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 1 | Drag the top-left corner ring to 40 px right of and 40 px below the top-right corner ring, and let go | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Corners cross or fold inward. Drag them back into a convex shape." |
+| 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
 | 3 | Tap **Tap to find card** | The line reads "Tap the card in the photo.", with **Cancel** at its right |
 | 4 | Tap **Cancel** | The line reads "Corners cross or fold inward. Drag them back into a convex shape." again |
 
@@ -1673,10 +1997,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/ (detection is 99% sure of it)
 - Starting screen: the app opened with a link ending `?detect.minConfidence=1` (a setting that counts any confidence under 100% as low), the photo open on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls | It reads "Low confidence (99%). Check the corners." |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Low confidence (99%). Check the corners." |
 | 2 | Drag the top-left corner ring to 40 px right of and 40 px below the top-right corner ring, and let go | The line reads "Corners cross or fold inward. Drag them back into a convex shape." |
 
 Pass: every row's result is seen.
@@ -1690,10 +2015,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/ (detection is 99% sure of it)
 - Starting screen: the app opened with a link ending `?detect.minConfidence=1` (a setting that counts any confidence under 100% as low), the photo open on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls | It reads "Low confidence (99%). Check the corners." |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Low confidence (99%). Check the corners." |
 | 2 | Drag the top-left corner ring 20 px right, and let go | The message has gone: the line reads NUDGE and Corner 1 of 4 |
 
 Pass: every row's result is seen.
@@ -1705,13 +2031,14 @@ Written to ruling R7; it fails until that is built (BUG-064).
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photo: blank.png, a plain mid-grey picture 1200 × 1600 px with no card in it (the script draws its own)
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
 - Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls | It reads "Nothing detected. Drag the corners into place." |
-| 2 | Tap the right arrow (→) under that line | The top-left corner moves right by a hair, and the message has gone: the line reads NUDGE and Corner 1 of 4 |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Nothing detected. Drag the corners into place." |
+| 2 | Tap the right arrow (→) under that line | A round magnifier shows the top-left corner (the arrow moved it one screen pixel), and the message has gone: the line reads NUDGE and Corner 1 of 4 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1724,10 +2051,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the app opened with a link ending `?maxOutputPx=1000` (a setting that makes the largest corrected frame 1000 px on its long side), the photo open on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls | It reads "Corrected frame clamped to 1000px on the long side." |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Corrected frame clamped to 1000px on the long side." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1738,10 +2066,62 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/ (detection is 99% sure of it)
 - Starting screen: the app opened with a link ending `?detect.minConfidence=1&maxOutputPx=1000` (two settings: any confidence under 100% counts as low, and the largest corrected frame is 1000 px on its long side), the photo open on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls | It reads "Low confidence (99%). Check the corners.", not the clamped-frame message |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Low confidence (99%). Check the corners.", not the clamped-frame message |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-36.7 The crossed-corners message takes the line over "Detecting…"   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the top-left corner ring to 40 px right of and 40 px below the top-right corner ring, and let go | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Corners cross or fold inward. Drag them back into a convex shape." |
+| 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 3 | Tap **Tap to find card** | The line reads "Tap the card in the photo." |
+| 4 | Tap the middle of the card in the photo once, without moving (not the outline, which now crosses itself) | While the search runs, the line reads the crossed-corners message and never "Detecting…"; then the corners land on the card and the line reads NUDGE and Corner 1 of 4 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-36.8 "Detecting…" takes the line over low confidence   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/ (detection is 99% sure of it)
+- Starting screen: the app opened with a link ending `?detect.minConfidence=1` (a setting that counts any confidence under 100% as low), the photo open on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Low confidence (99%). Check the corners." |
+| 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 3 | Tap **Tap to find card** | The line reads "Tap the card in the photo." |
+| 4 | Tap the middle of the card once, without moving | For a moment the line reads "Detecting…", in place of the low-confidence message; then it reads "Low confidence (99%). Check the corners." again |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-36.9 "Nothing detected" takes the line over a clamped frame   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it: the centered rectangle the corners fall back to makes a corrected frame longer than 1000 px, so it is clamped)
+- Starting screen: the app opened with a link ending `?maxOutputPx=1000` (a setting that makes the largest corrected frame 1000 px on its long side), the picture open on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Nothing detected. Drag the corners into place.", not the clamped-frame message |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1768,16 +2148,18 @@ Before you start:
 - Build: the build under test
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open, on the Perspective step for the first time since the page was loaded
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Flatten** in the row of tools | **Flatten** is selected (a solid white button) |
+| 1 | Tap **Flatten** | **Flatten** is selected (a solid white button) |
 | 2 | Tap **Snap** | It reads On |
-| 3 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | The **Debug overlay** switch is off |
-| 4 | Tap the **Debug overlay** switch, then close the options (on a phone, the **×** at their top right) | Thin yellow lines run across the photo |
-| 5 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | The new photo opens on the Perspective step |
-| 6 | Look at the row of tools | **Flatten** is selected, with the line FLATTEN 100% above; **Snap** reads On |
-| 7 | Open **Perspective options** | The **Debug overlay** switch is on |
+| 3 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | The **Debug overlay** switch is off |
+| 4 | Tap the **Debug overlay** switch | It is on |
+| 5 | Close the options: on a phone, tap the **×** at their top right (on a wide screen they stay shown) | Thin yellow lines run across the photo |
+| 6 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | The new photo opens on the Perspective step |
+| 7 | Look at the controls (the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | In their bottom row **Flatten** is selected, and the line of text at their top reads FLATTEN 100%; **Snap** reads On |
+| 8 | Open **Perspective options** again (on a wide screen they are still shown) | The **Debug overlay** switch is on |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1790,17 +2172,20 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step for the first time since the page was loaded
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Flatten** in the row of tools | **Flatten** is selected (a solid white button) |
+| 1 | Tap **Flatten** | **Flatten** is selected (a solid white button) |
 | 2 | Tap **Snap** | It reads On |
-| 3 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | The **Debug overlay** switch is off |
-| 4 | Tap the **Debug overlay** switch, then close the options (on a phone, the **×** at their top right) | Thin yellow lines run across the photo |
-| 5 | Wait two seconds, then reload the page | The start screen offers to resume IMG_9136.JPEG, with **Resume** and **Start fresh** |
-| 6 | Tap **Resume** | The photo opens on the Perspective step |
-| 7 | Look at the row of tools | **Nudge** is selected, with the line NUDGE above; **Snap** reads Off |
-| 8 | Open **Perspective options** | The **Debug overlay** switch is off |
+| 3 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | The **Debug overlay** switch is off |
+| 4 | Tap the **Debug overlay** switch | It is on |
+| 5 | Close the options: on a phone, tap the **×** at their top right (on a wide screen they stay shown) | Thin yellow lines run across the photo |
+| 6 | Wait two seconds without touching anything (the app saves the photo for **Resume**) | Nothing changes: **Snap** still reads On |
+| 7 | Reload the page | The start screen offers to resume IMG_9136.JPEG, with **Resume** and **Start fresh** |
+| 8 | Tap **Resume** | The photo opens on the Perspective step |
+| 9 | Look at the controls (the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | In their bottom row **Nudge** is selected, and the line of text at their top reads NUDGE; **Snap** reads Off |
+| 10 | Open **Perspective options** | The **Debug overlay** switch is off |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1825,17 +2210,18 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at **Undo** (the arrow curving left, at the top right) | It is greyed out: the search for the card on opening was not an undo step |
-| 2 | Tap the bottom-right corner ring (a quick tap, without dragging) | The line above the controls reads Corner 3 of 4; **Undo** is still greyed out |
+| 2 | Tap the bottom-right corner ring (a quick tap, without dragging) | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads Corner 3 of 4; **Undo** is still greyed out |
 | 3 | Tap **Next handle** | The line reads Corner 4 of 4; **Undo** is still greyed out |
-| 4 | Tap **Flatten** in the row of tools | **Flatten** is selected; **Undo** is still greyed out |
+| 4 | Tap **Flatten** | **Flatten** is selected; **Undo** is still greyed out |
 | 5 | Tap **Snap** | It reads On; **Undo** is still greyed out |
 | 6 | Tap **Preview** | It reads On; **Undo** is still greyed out |
 | 7 | Tap **Preview** again | It reads Off; **Undo** is still greyed out |
-| 8 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 8 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
 | 9 | Tap **Tap to find card** | The line reads "Tap the card in the photo."; **Undo** is still greyed out |
 | 10 | Tap **Cancel** at the right of that line | The line reads FLATTEN 100%; **Undo** is still greyed out |
 
@@ -1850,13 +2236,15 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring 40 px right and 40 px down, and let go | That corner has moved; **Undo** (the arrow curving left, at the top right) is no longer greyed out |
-| 2 | Open **Perspective options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under DEVELOPER, off |
-| 3 | Tap the **Debug overlay** switch, then close the options (on a phone, the **×** at their top right) | The switch was on as the options closed |
-| 4 | Tap **Undo** | The top-left corner is back on the card's corner, and **Undo** is greyed out: the drag was the only undo step |
+| 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under DEVELOPER, off |
+| 3 | Tap the **Debug overlay** switch | It is on |
+| 4 | Close the options: on a phone, tap the **×** at their top right (on a wide screen they stay shown) | On a phone the options have gone |
+| 5 | Tap **Undo** | The top-left corner is back on the card's corner, and **Undo** is greyed out: the drag was the only undo step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1875,14 +2263,18 @@ Detection puts the corners on the card's own outer edge, not on the slab, stand,
 - Ruling: R34. Detection is made robust for 02_black_flat_black in both browsers before 1.10.0; no baseline is raised. The app differs today (BUG-065).
 - Cases: 1
 
-### PER-39.1 Every sample photo is detected within its own baseline   [auto: desktop]
-One photo is a known defect (BUG-065): in the browser the automated cases run in, the card in 02_black_flat_black.JPEG is not found. The script expects that one photo to miss until the bug is fixed, and holds every other photo to its rules.
+### PER-39.1 Every sample photo is detected within its own baseline   [auto: desktop, webkit]
+Script only
+Stand-in: the script reads where the corners landed in the photo's own pixels and measures them against hand-placed corners kept in a file of the tests (tests/automation/support/detection-baselines.js), 22 photos in a row, in Chrome's engine and in Safari's (WebKit). A person can't read a corner's place to the pixel, and nothing on the screen shows the hand-placed corners.
+
+Known defects, each expected to miss until it is fixed, while every other photo is held to its rules: in both engines the card in 02_black_flat_black.JPEG is not found (BUG-065); in WebKit only, IMG_9216.JPEG's top pick and 07_dark_flat_black.JPEG's best of 3 land further from the card's corners than their baselines allow (BUG-240).
 
 Before you start:
-- Device and browser: a computer; a wide window, 1280 × 800 px
+- Device and browser: a computer; a wide window, 1280 × 800 px; Chrome's engine and WebKit, one run in each
 - Build: the build under test
 - Photos: the 22 sample photos in samples/ listed in tests/README.md under "Detection (R1)", each with its hand-placed corners and its two baselines (top pick and best of 3)
 - Starting screen: the start screen, with no photo open
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 A photo's **error** for a set of four corners: measure how far each corner is from the hand-placed one, take the largest of the four, and divide it by the length of the photo's diagonal, as a percentage. Its **group** comes from its top-pick baseline: **within 1%** (under 1%), **near miss** (1% to 5%) or **wrong shape** (over 5%).
 
@@ -1890,7 +2282,7 @@ A photo's **error** for a set of four corners: measure how far each corner is fr
 | --- | --- | --- |
 | 1 | Tap **Open** (the folder at the top left) and choose the first photo in the list | The photo opens on the Perspective step, and "Detecting…" comes and goes |
 | 2 | Work out the error of the corners as they landed (the top pick) | Within 1%: under 1%, and at most 0.25 points above its baseline. Near miss: at most 0.25 points above its baseline. Wrong shape: write it down; it is not held to a limit |
-| 3 | Tap **Candidate** in the row of tools until it has shown each of its numbers once, working out the error at each | Where the photo's best-of-3 baseline is under 1%, the smallest of these errors (the best of 3) is under 1% |
+| 3 | Tap **Candidate** until it has shown each of its numbers once, working out the error at each | Where the photo's best-of-3 baseline is under 1%, the smallest of these errors (the best of 3) is under 1% |
 | 4 | Repeat rows 1 to 3 for each of the other 21 photos | Every photo meets its rules in rows 2 and 3 |
 
 Pass: every row's result is seen.

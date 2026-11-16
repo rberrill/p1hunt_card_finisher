@@ -10,7 +10,7 @@ To add one: give it the next number, say exactly what to do and what to record, 
 
 - Waiting: PER-20.4
 - Do: open a card photo, tap **Flatten** on Perspective, then tap once on the slider's track well away from its knob (do not drag).
-- Write down: whether the knob jumps to where you tapped or stays put; and whether **Undo** is then lit.
+- Write down: whether the knob jumps to where you tapped or stays put; and whether **Undo** is then lit. The answer becomes PER-20.4's rows for that tap (and, if the knob jumps but **Undo** stays greyed out, a question for Rich: that tap would be a change with no undo step).
 
 ## Q-02 Which iPhone photos are 48 MP
 

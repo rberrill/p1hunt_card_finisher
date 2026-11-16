@@ -21,8 +21,8 @@ const {
 const {
   PHOTO,
   startOnPerspective,
-  startOnBlank,
-  blankPicture,
+  fixturePicture,
+  startOnFixture,
   openPicture,
   handleOnPage,
   offsetBy,
@@ -31,7 +31,6 @@ const {
   fittedZoom,
   tapAt,
   doubleTapAt,
-  holdButton,
   pressAt,
   pinchAt,
   middleColor,
@@ -40,6 +39,14 @@ const {
   releaseDrag,
   recordStatuses,
   readStatuses,
+  holdNextSearch,
+  releaseSearch,
+  recordSearchPoints,
+  readSearchPoints,
+  pressButton,
+  releaseButton,
+  recordCornerMoveTimes,
+  readCornerMoveTimes,
 } = require('./support/perspective.js');
 const {
   GROUND_TRUTH,
@@ -52,10 +59,17 @@ const {
   isTopPickHeld,
   isBestHeld,
 } = require('./support/detection-baselines.js');
-const { PORTRAIT_PAIR, makePair, switchTo } = require('./support/front-and-back.js');
+const {
+  PORTRAIT_PAIR,
+  makePair,
+  addBack,
+  sideButton,
+  switchTo,
+} = require('./support/front-and-back.js');
 
-// The plain picture's size (blankPicture's default) and its fallback corners, 20% in from each
-// edge (CONFIG.defaultInsetPct).
+// The plain picture with no card in it (tests/fixtures/plain-grey.png, 1200 × 1600 px) and
+// its fallback corners, 20% in from each edge (CONFIG.defaultInsetPct).
+const BLANK_FIXTURE = 'plain-grey.png';
 const BLANK_INSET_CORNERS = [[240, 320], [960, 320], [960, 1280], [240, 1280]];
 // A second photo, opened after the first.
 const SECOND_PHOTO = 'IMG_9075.JPEG';
@@ -153,7 +167,7 @@ test('PER-01.1 Opening a photo puts the corners on the card, with no undo step [
 
 test('PER-02.1 A picture with no card gets the centered rectangle and a line, not a pop-up '
   + '[phone]', async ({ page, check }, testInfo) => {
-  await startOnBlank(page, testInfo);
+  await startOnFixture(page, testInfo, BLANK_FIXTURE);
   await check('the outline is a rectangle a fifth in from each edge', async () => {
     expectSameCorners(await cornersNow(page), BLANK_INSET_CORNERS);
   });
@@ -170,7 +184,8 @@ test('PER-03.1 A second photo opened during the search keeps its own corners [ph
   check,
 }) => {
   await openApp(page);
-  const blank = await blankPicture(page);
+  const blank = fixturePicture(BLANK_FIXTURE);
+  await recordStatuses(page);
   await page.setInputFiles('#fileInput', samplePath(PHOTO));
   await page.waitForFunction(() => {
     const app = window.__straightener.app;
@@ -180,7 +195,15 @@ test('PER-03.1 A second photo opened during the search keeps its own corners [ph
   await page.evaluate(() => {
     window.testFirstSearch = window.__straightener.app.detection;
   });
+  await check('the photo opens and the line above the controls reads "Detecting…"', async () => {
+    expect(await editState(page)).toHaveProperty('source.name', PHOTO);
+    expect(await readStatuses(page)).toContain('Detecting…');
+  });
   await openPicture(page, blank);
+  await check('the grey picture opens, while the first search was still running', async () => {
+    expect(await editState(page)).toHaveProperty('source.name', blank.name);
+    expect(await page.evaluate(() => window.testFirstSearch.message)).toBe('Detecting…');
+  });
   await page.waitForTimeout(SEARCH_SETTLE_MS);
   await check('the first search\'s result was thrown away: the outline is the rectangle a fifth '
     + 'in from each edge', async () => {
@@ -191,6 +214,61 @@ test('PER-03.1 A second photo opened during the search keeps its own corners [ph
     await expectStatus(page, NOTHING_DETECTED);
   });
 });
+
+// Waits until a pair's `side` is open. Unlike switchTo it doesn't wait for the side's search
+// to finish: in PER-03.2 the side left behind has a search that never reports back.
+function waitForSideOpen(page, side) {
+  return page.waitForFunction(wanted => {
+    const app = window.__straightener.app;
+    return !!app.pair && app.pair.current === wanted && !app.isSwitching;
+  }, side);
+}
+
+test('PER-03.2 A search still running when a pair switches sides is thrown away [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = handFor(page, testInfo);
+    await openApp(page);
+    await openPhoto(page, PORTRAIT_PAIR.front);
+    const frontCorners = await cornersNow(page);
+    await addBack(page, hand, PORTRAIT_PAIR.back);
+    const backMiddle = await cardMiddle(page);
+    const topLeft = await handleOnPage(page, TOP_LEFT);
+    await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
+    await check('that corner is off the back card\'s corner', async () => {
+      expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 40, 40);
+    });
+    const dragged = await cornersNow(page);
+    await openOptions(page, hand, 'perspective');
+    await check('Tap to find card shows', async () => {
+      await expect(page.locator('#btnFindCard')).toBeVisible();
+    });
+    await tapFindCard(page, hand);
+    await check(`the line reads "${FIND_PROMPT}"`, async () => {
+      await expectStatus(page, FIND_PROMPT);
+    });
+    await holdNextSearch(page);
+    await tapAt(page, hand, backMiddle);
+    await check('the line reads "Detecting…"', async () => {
+      await expectStatus(page, 'Detecting…');
+    });
+    await hand.tap(sideButton(page, 'front'));
+    await waitForSideOpen(page, 'front');
+    await check('the front opens on Perspective, its corners on the front card', async () => {
+      await expect(page.locator('#perspectiveArea')).toBeVisible();
+      expectSameCorners(await cornersNow(page), frontCorners);
+    });
+    await releaseSearch(page);
+    await page.waitForTimeout(SEARCH_SETTLE_MS);
+    await check('the front\'s corners have not moved', async () => {
+      expectSameCorners(await cornersNow(page), frontCorners);
+    });
+    await hand.tap(sideButton(page, 'back'));
+    await waitForSideOpen(page, 'back');
+    await check('the back opens; its top-left corner is still where it was dragged in row 1: the '
+      + 'search\'s result was thrown away', async () => {
+      expectSameCorners(await cornersNow(page), dragged);
+    });
+  });
 
 test('PER-04.1 The corner outline, white or red and dashed, for a person to judge [phone]',
   async ({ page, check }, testInfo) => {
@@ -262,6 +340,15 @@ function arrowButton(page, direction) {
   return page.locator(`#perspectiveNudge .nudge-key[data-key="${keys[direction]}"]`);
 }
 
+// How many times the arrow cases tap an arrow in a row: enough that the move (one screen
+// pixel a tap) is easy to see.
+const ARROW_TAPS = 10;
+
+// Taps the arrow button for `direction` `times` times in a row, as quickly as a person would.
+async function tapArrow(page, hand, direction, times) {
+  for (let tap = 0; tap < times; tap++) await hand.tap(arrowButton(page, direction));
+}
+
 // The handle's name in the line above the controls (Corner 1 of 4, Edge 2 of 4 and so on).
 const handleName = page => page.locator('#perspectiveLine .line-value');
 
@@ -288,11 +375,17 @@ test('PER-07.1 Dragging a corner moves it, as one undo step [phone] [webkit]', a
   });
 });
 
+// PER-07.2's presses, in ring widths from the middle of a corner ring: just outside the ring
+// (within CONFIG.handle.hitRadius, 24 px), and well beyond that reach.
+const RING_NEAR = 0.75;
+const RING_FAR = 1.5;
+
 test('PER-07.2 A press within reach of a corner grabs it; further away it moves the photo '
   + '[phone] [webkit]', async ({ page, check }, testInfo) => {
   const hand = await startOnPerspective(page, testInfo);
   const topLeft = await handleOnPage(page, TOP_LEFT);
-  const near = offsetBy(topLeft, -16, 0);
+  const ringWidthPx = 2 * await page.evaluate(() => CONFIG.handle.cornerRadius);
+  const near = offsetBy(topLeft, -RING_NEAR * ringWidthPx, 0);
   await hand.drag(near, offsetBy(near, 0, 30));
   await check('the top-left corner has moved 30 px down', async () => {
     expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 0, 30);
@@ -303,7 +396,7 @@ test('PER-07.2 A press within reach of a corner grabs it; further away it moves 
   });
   const cornersBefore = await cornersNow(page);
   const pagePointsBefore = await cornersOnPage(page);
-  const far = offsetBy(topLeft, -30, 0);
+  const far = offsetBy(topLeft, -RING_FAR * ringWidthPx, 0);
   await hand.drag(far, offsetBy(far, 0, 30));
   await check('the whole photo, outline and all, has moved 30 px down; every corner is still on '
     + 'the same point of the card', async () => {
@@ -360,7 +453,7 @@ async function checkCancelledDrag(page, check, testInfo, handleIndex, label) {
   });
 }
 
-test('PER-07.4 A drag the phone cancels puts the corner back [phone]', async ({
+test('PER-07.4 A drag the browser cancels puts the corner back [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -406,7 +499,7 @@ test('PER-08.1 Dragging an edge\'s square slides the whole edge, as one undo ste
   });
 });
 
-test('PER-08.2 An edge drag the phone cancels puts the edge back [phone]', async ({
+test('PER-08.2 An edge drag the browser cancels puts the edge back [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -424,15 +517,17 @@ test('PER-09.1 A tapped handle is the one the arrow buttons move [phone]', async
     await expect(handleName(page)).toHaveText('Corner 3 of 4');
   });
   const before = await cornersNow(page);
-  const stepPx = Math.max(1, 1 / await zoomNow(page));
-  await hand.tap(arrowButton(page, 'right'));
-  await check('the bottom-right corner moves right by a hair; the top-left has not moved',
-    async () => {
-      const after = await cornersNow(page);
-      const movedPx = after[BOTTOM_RIGHT][0] - before[BOTTOM_RIGHT][0];
-      expect(Math.abs(movedPx - stepPx)).toBeLessThan(PHOTO_TOLERANCE_PX);
-      expectSameCorners([after[TOP_LEFT]], [before[TOP_LEFT]]);
-    });
+  const zoom = await zoomNow(page);
+  const stepPx = Math.max(1, 1 / zoom);
+  await tapArrow(page, hand, 'right', ARROW_TAPS);
+  await check('the bottom-right corner has moved about 10 px right (one screen pixel a tap); the '
+    + 'top-left corner has not moved', async () => {
+    const after = await cornersNow(page);
+    const movedPx = after[BOTTOM_RIGHT][0] - before[BOTTOM_RIGHT][0];
+    expect(Math.abs(movedPx - ARROW_TAPS * stepPx)).toBeLessThan(PHOTO_TOLERANCE_PX);
+    expect(Math.abs(movedPx * zoom - ARROW_TAPS)).toBeLessThan(SCREEN_TOLERANCE_PX);
+    expectSameCorners([after[TOP_LEFT]], [before[TOP_LEFT]]);
+  });
 });
 
 test('PER-09.2 A clicked handle is the one the keyboard\'s arrow keys move [desktop]', async ({
@@ -473,6 +568,9 @@ test('PER-10.1 The magnifier under a finger, for a person to judge [phone]', asy
   await check.eye('the finger lifted: no magnifier');
 });
 
+// PER-10.2 drags a corner to this far below the top edge of the photo area, in CSS px.
+const NEAR_TOP_PX = 10;
+
 test('PER-10.2 The magnifier beside the mouse, for a person to judge [desktop]', async ({
   page,
   check,
@@ -485,7 +583,9 @@ test('PER-10.2 The magnifier beside the mouse, for a person to judge [desktop]',
   await releaseDrag(page, hand);
   await check.eye('the button let go: no magnifier');
   const topLeft = await handleOnPage(page, TOP_LEFT);
-  await holdDragAt(page, hand, topLeft, offsetBy(topLeft, 0, -100));
+  const viewBox = await page.locator('#view').boundingBox();
+  const nearTop = { x: topLeft.x, y: viewBox.y + NEAR_TOP_PX };
+  await holdDragAt(page, hand, topLeft, nearTop);
   await check.eye('near the top of the photo area, the magnifier sits below and to the right of '
     + 'the pointer');
   await releaseDrag(page, hand);
@@ -665,6 +765,23 @@ test('PER-13.3 Undo and Reset perspective bring back the confidence of the corne
     });
 });
 
+test('PER-13.4 With nothing detected, the line shows no confidence [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  test.fail(true, 'BUG-064');
+  const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
+  await check(`the line reads "${NOTHING_DETECTED}"`, async () => {
+    await expectStatus(page, NOTHING_DETECTED);
+  });
+  await hand.tap(arrowButton(page, 'right'));
+  await check('the message has gone: the line reads NUDGE and Corner 1 of 4, with nothing at its '
+    + 'right end (no Confidence)', async () => {
+    expect(await isNudgeLineNow(page)).toBe(true);
+    expect(await confidence(page).textContent()).toBe('');
+  });
+});
+
 // How far the top-left corner is from `start`, in photo px: [dx, dy].
 async function topLeftMovedFrom(page, start) {
   const [corner] = await cornersNow(page);
@@ -677,34 +794,46 @@ function expectMove(move, dx, dy) {
   expect(Math.abs(move[1] - dy)).toBeLessThan(PHOTO_TOLERANCE_PX);
 }
 
+// PER-14.1 opens the app with a link that makes a double tap on a handle zoom to 20 times the
+// fitted size (the most CONFIG_LIMITS allows), where one photo pixel is several screen pixels.
+const DEEP_HANDLE_ZOOM = 20;
+const DEEP_ZOOM_LINK = `index.html?handleZoom=${DEEP_HANDLE_ZOOM}`;
+
 test('PER-14.1 Each arrow button moves the handle one screen pixel, never less than one photo '
   + 'pixel [phone]', async ({ page, check }, testInfo) => {
-  const hand = await startOnPerspective(page, testInfo);
+  const hand = await startOnPerspective(page, testInfo, { address: DEEP_ZOOM_LINK });
   const [start] = await cornersNow(page);
-  const stepPx = Math.max(1, 1 / await zoomNow(page));
+  const fitted = await zoomNow(page);
+  const tenScreenPx = ARROW_TAPS * Math.max(1, 1 / fitted);
   const presses = [
-    ['right', [stepPx, 0], 'the top-left corner moves one screen pixel right'],
-    ['down', [stepPx, stepPx], 'it moves one screen pixel down'],
-    ['left', [0, stepPx], 'it moves one screen pixel left'],
-    ['up', [0, 0], 'it moves one screen pixel up, back where it started'],
+    ['right', [tenScreenPx, 0], 'the top-left corner has moved 10 px right on the screen'],
+    ['down', [tenScreenPx, tenScreenPx], 'it has moved 10 px down'],
+    ['left', [0, tenScreenPx], 'it has moved 10 px left'],
+    ['up', [0, 0], 'it has moved 10 px up, back where it started'],
   ];
   for (const [direction, [dx, dy], expected] of presses) {
-    await hand.tap(arrowButton(page, direction));
+    await tapArrow(page, hand, direction, ARROW_TAPS);
     await check(expected, async () => {
       expectMove(await topLeftMovedFrom(page, start), dx, dy);
     });
   }
-  const fitted = await fittedZoom(page);
   await doubleTapAt(page, hand, await handleOnPage(page, TOP_LEFT));
   await page.waitForFunction(zoom => window.CF.currentView().zoom > zoom * 2, fitted);
-  await check('the photo zooms in to 6 times its fitted size: a photo pixel is now more than a '
-    + 'screen pixel', async () => {
-    expect(Math.abs(await zoomNow(page) / fitted - HANDLE_ZOOM)).toBeLessThan(ZOOM_TOLERANCE);
-    expect(await zoomNow(page)).toBeGreaterThan(1);
+  const zoomed = await zoomNow(page);
+  const zoomedFrom = await handleOnPage(page, TOP_LEFT);
+  await check('the photo zooms in to 20 times its fitted size, with that corner in the middle of '
+    + 'the photo area: one pixel of the photo is now about 4.6 px on the screen', async () => {
+    expect(Math.abs(zoomed / fitted - DEEP_HANDLE_ZOOM)).toBeLessThan(ZOOM_TOLERANCE);
+    const box = await page.locator('#view').boundingBox();
+    const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    expectMovedBy(zoomedFrom, middle, 0, 0);
+    expect(zoomed).toBeGreaterThan(1);
   });
-  await hand.tap(arrowButton(page, 'right'));
-  await check('the corner moves right by exactly one pixel of the photo', async () => {
-    expectMove(await topLeftMovedFrom(page, start), 1, 0);
+  await tapArrow(page, hand, 'right', ARROW_TAPS);
+  await check('the corner has moved about 46 px right on the screen: ten pixels of the photo, '
+    + 'one a tap, not ten screen pixels', async () => {
+    expectMove(await topLeftMovedFrom(page, start), ARROW_TAPS, 0);
+    expectMovedBy(await handleOnPage(page, TOP_LEFT), zoomedFrom, ARROW_TAPS * zoomed, 0);
   });
 });
 
@@ -743,10 +872,19 @@ test('PER-14.2 The keyboard\'s arrow keys move one photo pixel, or ten with Shif
 
 // The selector of the right arrow button, for a held press.
 const RIGHT_ARROW = '#perspectiveNudge .nudge-key[data-key="1,0"]';
-// A held arrow repeats after CONFIG.nudge.delayMs (350 ms), every CONFIG.nudge.repeatMs (60):
-// a one-second hold moves at least this many steps, allowing for a slow machine.
-const HOLD_MS = 1000;
-const HELD_STEPS_MIN = 6;
+// A held arrow starts repeating after CONFIG.nudge.delayMs (350 ms), every
+// CONFIG.nudge.repeatMs (60 ms, about 16 steps a second): its second step comes about 410 ms
+// after the first. PER-15.1 checks that gap is between FIRST_REPEAT_MIN_MS (the delay, less a
+// frame for reading the corner once a frame) and FIRST_REPEAT_MAX_MS, and that the repeats
+// come no faster than REPEATS_PER_SECOND_MAX; a slow machine may be slower, never faster.
+const FIRST_REPEAT_MIN_MS = 330;
+const FIRST_REPEAT_MAX_MS = 700;
+const KEEP_HOLDING_MS = 2000;
+const HELD_MOVE_MIN_PX = 25;
+const REPEATS_PER_SECOND_MAX = 20;
+// How long PER-15.1 watches the corner after the arrow is let go, in ms.
+const STOP_WATCH_MS = 200;
+const STILL_WAIT_MS = 500;
 
 // How many arrow steps the top-left corner has moved right of `start` (photo px).
 async function stepsRightOf(page, start, stepPx) {
@@ -758,45 +896,75 @@ test('PER-15.1 Holding an arrow repeats it until it is let go, as one undo step 
   async ({ page, check }, testInfo) => {
     const hand = await startOnPerspective(page, testInfo);
     const [start] = await cornersNow(page);
-    const stepPx = Math.max(1, 1 / await zoomNow(page));
-    await holdButton(page, hand, RIGHT_ARROW, HOLD_MS);
-    const heldSteps = await stepsRightOf(page, start, stepPx);
-    await check('the corner moved one step at once, then kept moving while held: at least 6 '
-      + 'steps in all', async () => {
-      expect(heldSteps).toBeGreaterThanOrEqual(HELD_STEPS_MIN);
+    const zoom = await zoomNow(page);
+    const stepPx = Math.max(1, 1 / zoom);
+    await recordCornerMoveTimes(page);
+    const pressed = await pressButton(page, hand, RIGHT_ARROW);
+    await check('at once a round magnifier shows the top-left corner, which has taken one step '
+      + 'right; for about 0.4 seconds it moves no further', async () => {
+      expect(await stepsRightOf(page, start, stepPx)).toBe(1);
+      expect(await isNudgeMagnifierUp(page)).toBe(true);
+      await page.waitForTimeout(FIRST_REPEAT_MAX_MS);
+      const [firstStep, secondStep] = await readCornerMoveTimes(page);
+      expect(secondStep - firstStep).toBeGreaterThanOrEqual(FIRST_REPEAT_MIN_MS);
+      expect(secondStep - firstStep).toBeLessThan(FIRST_REPEAT_MAX_MS);
     });
-    await page.waitForTimeout(500);
-    await check('half a second later the corner has stopped', async () => {
-      expect(await stepsRightOf(page, start, stepPx)).toBe(heldSteps);
+    await page.waitForTimeout(KEEP_HOLDING_MS);
+    await check('the corner glides steadily right, one screen pixel a step, about 16 steps a '
+      + 'second: more than 25 px from where it started', async () => {
+      const [movedPx] = await topLeftMovedFrom(page, start);
+      expect(movedPx * zoom).toBeGreaterThan(HELD_MOVE_MIN_PX);
+      const times = await readCornerMoveTimes(page);
+      const repeats = times.length - 2;
+      const perSecond = repeats * 1000 / (times[times.length - 1] - times[1]);
+      expect(perSecond).toBeLessThan(REPEATS_PER_SECOND_MAX);
+    });
+    await releaseButton(page, hand, RIGHT_ARROW, pressed);
+    const stepsAtRelease = await stepsRightOf(page, start, stepPx);
+    await page.waitForTimeout(STOP_WATCH_MS);
+    await check('the corner stops', async () => {
+      expect(await stepsRightOf(page, start, stepPx)).toBe(stepsAtRelease);
+    });
+    await page.waitForTimeout(STILL_WAIT_MS);
+    await check('the corner has not moved since row 3', async () => {
+      expect(await stepsRightOf(page, start, stepPx)).toBe(stepsAtRelease);
     });
     await hand.tap(page.locator('#btnUndo'));
-    await check('one Undo puts it back where it started; Undo is greyed out', async () => {
+    await check('the corner is back where it started; Undo is greyed out: the whole hold was one '
+      + 'undo step', async () => {
       expectMove(await topLeftMovedFrom(page, start), 0, 0);
       await expect(page.locator('#btnUndo')).toBeDisabled();
     });
   });
+
+// How long PER-15.2 waits between its two runs of taps: longer than the 0.9 s that merges.
+const BETWEEN_RUNS_MS = 1500;
 
 test('PER-15.2 Taps on the arrows less than 0.9 seconds apart are one undo step [phone]',
   async ({ page, check }, testInfo) => {
     const hand = await startOnPerspective(page, testInfo);
     const [start] = await cornersNow(page);
     const stepPx = Math.max(1, 1 / await zoomNow(page));
-    await hand.tap(arrowButton(page, 'right'));
-    await hand.tap(arrowButton(page, 'right'));
-    await check('the corner has moved two screen pixels right', async () => {
-      expect(await stepsRightOf(page, start, stepPx)).toBe(2);
+    await tapArrow(page, hand, 'right', ARROW_TAPS);
+    await check('the top-left corner has moved 10 px right', async () => {
+      expect(await stepsRightOf(page, start, stepPx)).toBe(ARROW_TAPS);
     });
-    await page.waitForTimeout(1500);
-    await hand.tap(arrowButton(page, 'right'));
-    await check('it has moved three screen pixels right in all', async () => {
-      expect(await stepsRightOf(page, start, stepPx)).toBe(3);
+    await page.waitForTimeout(BETWEEN_RUNS_MS);
+    await check('the corner stays where it is', async () => {
+      expect(await stepsRightOf(page, start, stepPx)).toBe(ARROW_TAPS);
     });
-    await hand.tap(page.locator('#btnUndo'));
-    await check('Undo takes back only the last tap: two pixels right', async () => {
-      expect(await stepsRightOf(page, start, stepPx)).toBe(2);
+    await tapArrow(page, hand, 'right', ARROW_TAPS);
+    await check('it has moved 20 px right in all', async () => {
+      expect(await stepsRightOf(page, start, stepPx)).toBe(2 * ARROW_TAPS);
     });
     await hand.tap(page.locator('#btnUndo'));
-    await check('a second Undo takes back both quick taps: back where it started', async () => {
+    await check('it is 10 px right of where it started: only the second ten taps were undone',
+      async () => {
+        expect(await stepsRightOf(page, start, stepPx)).toBe(ARROW_TAPS);
+      });
+    await hand.tap(page.locator('#btnUndo'));
+    await check('it is back where it started, and Undo is greyed out: the first ten quick taps '
+      + 'were one step', async () => {
       expectMove(await topLeftMovedFrom(page, start), 0, 0);
       await expect(page.locator('#btnUndo')).toBeDisabled();
     });
@@ -1120,7 +1288,7 @@ test('PER-21.2 With fewer than two candidates, Candidate is off [phone]', async 
   page,
   check,
 }, testInfo) => {
-  await startOnBlank(page, testInfo);
+  await startOnFixture(page, testInfo, BLANK_FIXTURE);
   await check('Candidate is greyed out and shows its icon, with no number', async () => {
     const candidate = page.locator('#toolCandidate');
     await expect(candidate).toBeDisabled();
@@ -1199,61 +1367,96 @@ test('PER-22.1 Snap starts off and switches on and off, with no undo step [phone
   });
 });
 
-// Turns the Debug overlay on from Perspective's options and waits for the search it runs, so
-// the detected lines show. Leaves the options closed on a phone.
-async function showDetectedLines(page, hand) {
-  await openOptions(page, hand, 'perspective');
+// Two detected lines cross "roughly square" when the cosine of the angle between them is at
+// most this: 60° to 120° apart.
+const SQUARE_COSINE_MAX = 0.5;
+
+// Where Snap should put the top-left corner after a drag of (dx, dy) CSS px: the nearest point
+// where two roughly square detected lines cross, worked out here from the lines themselves,
+// within CONFIG.snapRadiusPx screen px of where the drag alone would leave it, or null when
+// there is none. Returns { unsnapped, snapped } in photo px.
+function expectedCornerSnap(page, dx, dy) {
+  return page.evaluate(({ moveX, moveY, cosineMax }) => {
+    const app = window.__straightener.app;
+    const zoom = window.CF.currentView().zoom;
+    const corner = app.state.corners[0];
+    const unsnapped = [corner[0] + moveX / zoom, corner[1] + moveY / zoom];
+    const lines = app.detection.snapLines;
+    let snapped = null;
+    let bestDistance = CONFIG.snapRadiusPx / zoom;
+    for (let i = 0; i < lines.length; i++) {
+      for (let j = i + 1; j < lines.length; j++) {
+        const first = lines[i];
+        const second = lines[j];
+        const cosine = first.normalX * second.normalX + first.normalY * second.normalY;
+        if (Math.abs(cosine) > cosineMax) continue;
+        // Each line is the points p with normal · p = offset; solve the two for p.
+        const determinant = first.normalX * second.normalY - first.normalY * second.normalX;
+        const crossing = [
+          (first.offset * second.normalY - second.offset * first.normalY) / determinant,
+          (first.normalX * second.offset - second.normalX * first.offset) / determinant,
+        ];
+        const distance = Math.hypot(crossing[0] - unsnapped[0], crossing[1] - unsnapped[1]);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          snapped = crossing;
+        }
+      }
+    }
+    return { unsnapped, snapped };
+  }, { moveX: dx, moveY: dy, cosineMax: SQUARE_COSINE_MAX });
+}
+
+// Taps the Debug overlay switch in the open options and waits for the search it starts.
+async function tapDebugSwitch(page, hand) {
   await hand.tap(page.locator('#debugOverlay'));
   await page.waitForFunction(() => {
     const detection = window.__straightener.app.detection;
     return detection.message === '' && !!detection.last && !!detection.last.debug;
   });
-  await closeOptions(page, hand, 'perspective');
 }
 
-// Where Snap should put the top-left corner after a drag of (dx, dy) CSS px: the nearest
-// crossing of two detected lines within CONFIG.snapRadiusPx screen px of where the drag alone
-// would leave it, or null when there is none. Returns { unsnapped, snapped } in photo px.
-function expectedCornerSnap(page, dx, dy) {
-  return page.evaluate(({ moveX, moveY }) => {
+// True when the lines detection found are drawn: the Debug overlay is on and has lines.
+function areDetectedLinesDrawn(page) {
+  return page.evaluate(() => {
     const app = window.__straightener.app;
-    const zoom = window.CF.currentView().zoom;
-    const corner = app.state.corners[0];
-    const unsnapped = [corner[0] + moveX / zoom, corner[1] + moveY / zoom];
-    let snapped = null;
-    let bestDistance = CONFIG.snapRadiusPx / zoom;
-    for (const point of app.detection.snapPoints) {
-      const distance = Math.hypot(point[0] - unsnapped[0], point[1] - unsnapped[1]);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        snapped = point;
-      }
-    }
-    return { unsnapped, snapped };
-  }, { moveX: dx, moveY: dy });
+    const hasDebug = !!app.detection.last && !!app.detection.last.debug;
+    return app.debugOverlay && hasDebug && app.detection.snapLines.length > 0;
+  });
 }
 
-test('PER-23.1 With Snap on, a dragged corner lands where two detected lines cross [phone] '
-  + '[webkit]', async ({ page, check }, testInfo) => {
-  const hand = await startOnPerspective(page, testInfo);
+// The first rows of PER-23.1 and PER-24.1: the options opened, the Debug overlay switched on,
+// the options closed, so the detected lines show; then Snap switched on.
+async function showLinesAndSnap(page, hand, check) {
   await openOptions(page, hand, 'perspective');
   await check('Debug overlay shows under Developer', async () => {
     await expect(page.locator('#debugOverlay')).toBeVisible();
   });
-  await showDetectedLines(page, hand);
-  await check('the detected lines are drawn: Debug overlay is on', async () => {
+  await tapDebugSwitch(page, hand);
+  await check('it is on', async () => {
     await expect(page.locator('#debugOverlay')).toBeChecked();
+  });
+  await closeOptions(page, hand, 'perspective');
+  await check('thin yellow lines run across the photo: the lines detection found', async () => {
+    expect(await areDetectedLinesDrawn(page)).toBe(true);
+    if (await isPhoneLayout(page)) await expect(page.locator('#perspectiveSheet')).toBeHidden();
   });
   await hand.tap(page.locator('#toolSnap'));
   await check('Snap reads On', async () => {
     await expect(page.locator('#toolSnap .tool-state')).toHaveText('On');
   });
+}
+
+test('PER-23.1 With Snap on, a dragged corner lands where two detected lines cross [phone] '
+  + '[webkit]', async ({ page, check }, testInfo) => {
+  const hand = await startOnPerspective(page, testInfo);
+  await showLinesAndSnap(page, hand, check);
   const [start] = await cornersNow(page);
   const expected = await expectedCornerSnap(page, SNAP_DRAG.x, SNAP_DRAG.y);
   const topLeft = await handleOnPage(page, TOP_LEFT);
   await hand.drag(topLeft, offsetBy(topLeft, SNAP_DRAG.x, SNAP_DRAG.y));
-  await check('the corner jumps onto the nearest crossing of two detected lines, not 10 px '
-    + 'right and 6 px down', async () => {
+  await check('the corner does not stop 10 px right and 6 px down: it jumps onto the nearest '
+    + 'point where two yellow lines cross', async () => {
     expect(expected.snapped).not.toBeNull();
     const [corner] = await cornersNow(page);
     expectSameCorners([corner], [expected.snapped]);
@@ -1261,7 +1464,7 @@ test('PER-23.1 With Snap on, a dragged corner lands where two detected lines cro
       .toBeGreaterThan(PHOTO_TOLERANCE_PX);
   });
   await hand.tap(page.locator('#btnUndo'));
-  await check('Undo puts the corner back where it was', async () => {
+  await check('the corner is back where it was', async () => {
     expectSameCorners([(await cornersNow(page))[0]], [start]);
   });
   await hand.tap(page.locator('#toolSnap'));
@@ -1269,7 +1472,7 @@ test('PER-23.1 With Snap on, a dragged corner lands where two detected lines cro
     await expect(page.locator('#toolSnap .tool-state')).toHaveText('Off');
   });
   await hand.drag(topLeft, offsetBy(topLeft, SNAP_DRAG.x, SNAP_DRAG.y));
-  await check('the corner stops exactly 10 px right and 6 px down', async () => {
+  await check('the corner stops exactly 10 px right and 6 px down of where it was', async () => {
     expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, SNAP_DRAG.x, SNAP_DRAG.y);
   });
 });
@@ -1300,26 +1503,16 @@ test('PER-24.1 With Snap on, a dragged edge lands on a detected line [phone] [we
   check,
 }, testInfo) => {
   const hand = await startOnPerspective(page, testInfo);
-  await openOptions(page, hand, 'perspective');
-  await check('Debug overlay shows under Developer', async () => {
-    await expect(page.locator('#debugOverlay')).toBeVisible();
-  });
-  await showDetectedLines(page, hand);
-  await check('the detected lines are drawn: Debug overlay is on', async () => {
-    await expect(page.locator('#debugOverlay')).toBeChecked();
-  });
-  await hand.tap(page.locator('#toolSnap'));
-  await check('Snap reads On', async () => {
-    await expect(page.locator('#toolSnap .tool-state')).toHaveText('On');
-  });
+  await showLinesAndSnap(page, hand, check);
   const before = await cornersNow(page);
   const square = await handleOnPage(page, TOP_EDGE);
   await hand.drag(square, offsetBy(square, 0, 10));
-  await check('the top edge lies exactly along a detected line running its way', async () => {
-    expect(await topEdgeGapToLine(page)).toBeLessThan(PHOTO_TOLERANCE_PX);
-  });
+  await check('the top edge lies exactly along a yellow line that runs the same way as the edge',
+    async () => {
+      expect(await topEdgeGapToLine(page)).toBeLessThan(PHOTO_TOLERANCE_PX);
+    });
   await hand.tap(page.locator('#btnUndo'));
-  await check('Undo puts the edge back where it was', async () => {
+  await check('the edge is back where it was', async () => {
     expectSameCorners(await cornersNow(page), before);
   });
   await hand.tap(page.locator('#toolSnap'));
@@ -1563,23 +1756,41 @@ test('PER-27.4 Preview shows the applied levels, not an unapplied draft [phone]'
   await hand.tap(page.locator('#toolPreview'));
   await waitForStill(page);
   const colorsBefore = await middleColor(page);
-  await check('the corrected card shows', async () => {
+  await check('the corrected card shows; note its colors', async () => {
     await expect(previewState(page)).toHaveText('On');
   });
+  const apply = page.locator('#btnApplyLevels');
+  const levelsMark = page.locator('[data-step="levels"]:visible .step-tab-mark');
   await goToStep(page, 'levels', hand);
+  await waitForStill(page);
+  const levelsBefore = await middleColor(page);
+  await check('the Levels step shows, with Auto among its buttons', async () => {
+    await expect(page.locator('#levelsArea')).toBeVisible();
+    await expect(page.locator('#toolAutoLevels')).toBeVisible();
+  });
   await hand.tap(page.locator('#toolAutoLevels'));
-  await check('Levels has an unapplied draft, with Apply in the line above', async () => {
-    await expect(page.locator('#btnApplyLevels')).toBeVisible();
+  await check('the photo brightens: an unapplied draft, with Apply lit in the line above the '
+    + 'controls and a white dot on the Levels tab', async () => {
+    await expect.poll(async () => colorChange(await middleColor(page), levelsBefore))
+      .toBeGreaterThan(LEVELS_CHANGE_MIN);
+    await expect(apply).toBeEnabled();
+    await expect(levelsMark).toBeVisible();
   });
   await goToStep(page, 'perspective', hand);
   await waitForStill(page);
-  await check('the corrected card shows the colors it had before, not the draft\'s', async () => {
-    expect(colorChange(await middleColor(page), colorsBefore)).toBeLessThan(LEVELS_CHANGE_MIN);
-  });
+  await check('the corrected card shows with the colors noted in row 1, not the draft\'s',
+    async () => {
+      expect(colorChange(await middleColor(page), colorsBefore)).toBeLessThan(LEVELS_CHANGE_MIN);
+    });
   await goToStep(page, 'levels', hand);
-  await hand.tap(page.locator('#btnApplyLevels'));
-  await check('the levels are applied', async () => {
-    expect(await page.evaluate(() => !!window.__straightener.app.state.levels)).toBe(true);
+  await check('the Levels step shows, with Apply lit', async () => {
+    await expect(page.locator('#levelsArea')).toBeVisible();
+    await expect(apply).toBeEnabled();
+  });
+  await hand.tap(apply);
+  await check('the white dot on the Levels tab has gone, and Apply is greyed out', async () => {
+    await expect(levelsMark).toBeHidden();
+    await expect(apply).toBeDisabled();
   });
   await goToStep(page, 'perspective', hand);
   await check('the corrected card now shows the applied, brighter colors', async () => {
@@ -1742,7 +1953,7 @@ test('PER-29.2 A long, still press on the card finds it too [phone]', async ({
 
 test('PER-29.3 A find tap on a picture with no card leaves the corners, with a pop-up [phone]',
   async ({ page, check }, testInfo) => {
-    const hand = await startOnBlank(page, testInfo);
+    const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
     const corners = await cornersNow(page);
     await openOptions(page, hand, 'perspective');
     await check('Tap to find card shows', async () => {
@@ -1765,6 +1976,54 @@ test('PER-29.3 A find tap on a picture with no card leaves the corners, with a p
       await expect(page.locator('#btnUndo')).toBeDisabled();
     });
   });
+
+// Where a point of the photo (source px) is on the page, in CSS px.
+function photoPointOnPage(page, point) {
+  return page.evaluate(photoPoint => {
+    const [x, y] = window.CF.toScreen(window.CF.currentView(), photoPoint);
+    const box = document.getElementById('view').getBoundingClientRect();
+    return { x: box.left + x, y: box.top + y };
+  }, point);
+}
+
+test('PER-29.4 The tapped point steers that one search and is not kept [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnPerspective(page, testInfo);
+  await recordSearchPoints(page);
+  await openOptions(page, hand, 'perspective');
+  await check('Tap to find card shows', async () => {
+    await expect(page.locator('#btnFindCard')).toBeVisible();
+  });
+  await tapFindCard(page, hand);
+  await check(`the line reads "${FIND_PROMPT}"`, async () => {
+    await expectStatus(page, FIND_PROMPT);
+  });
+  const middle = await cardMiddle(page);
+  await tapAt(page, hand, middle);
+  await waitForFind(page);
+  await check('the corners land on the card, and the line reads NUDGE again; the search was '
+    + 'handed the tapped point', async () => {
+    expect(await errorAgainstTruth(page, 'IMG_9136')).toBeLessThan(WITHIN_PCT);
+    await expectNudgeLine(page);
+    const points = await readSearchPoints(page);
+    expect(points).toHaveLength(1);
+    expect(points[0]).not.toBeNull();
+    expectMovedBy(await photoPointOnPage(page, points[0]), middle, 0, 0);
+  });
+  await openOptions(page, hand, 'perspective');
+  await check('Debug overlay shows under DEVELOPER, off', async () => {
+    await expect(debugSwitch(page)).toBeVisible();
+    await expect(debugSwitch(page)).not.toBeChecked();
+  });
+  await tapDebugSwitch(page, hand);
+  await check('it is on, and a new search runs; it is handed no point: the point tapped in row 3 '
+    + 'was not kept', async () => {
+    await expect(debugSwitch(page)).toBeChecked();
+    expect(await readSearchPoints(page)).toEqual([expect.anything(), null]);
+  });
+});
 
 test('PER-30.1 While armed, a drag from a corner moves the photo, not the corner [phone] '
   + '[webkit]', async ({ page, check }, testInfo) => {
@@ -1840,45 +2099,98 @@ async function cardStands(page) {
   };
 }
 
-test('PER-32.1 Landscape and Portrait set which way the card stands, one undo step each '
-  + '[phone]', async ({ page, check }, testInfo) => {
-  const hand = await startOnPerspective(page, testInfo);
-  await openOptions(page, hand, 'perspective');
-  await check('under CARD ORIENTATION, Auto is selected', async () => {
-    await expect(orientationChoice(page, 'auto')).toHaveAttribute('aria-pressed', 'true');
-  });
-  await hand.tap(orientationChoice(page, 'landscape'));
-  await check('Landscape is selected instead', async () => {
-    await expect(orientationChoice(page, 'landscape')).toHaveAttribute('aria-pressed', 'true');
-    await expect(orientationChoice(page, 'auto')).toHaveAttribute('aria-pressed', 'false');
-  });
-  await closeOptions(page, hand, 'perspective');
+// Taps Preview and checks which way the corrected card stands: 'landscape' (7 wide to 5
+// tall) or 'portrait' (5 wide to 7 tall). `expected` is the row's result.
+async function previewShows(page, hand, check, way, expected) {
   await hand.tap(page.locator('#toolPreview'));
-  await check('the corrected card is wider than tall, 7 wide to 5 tall', async () => {
+  await check(expected, async () => {
+    await expect(previewState(page)).toHaveText('On');
     const stands = await cardStands(page);
-    expect(stands.way).toBe('landscape');
+    expect(stands.way).toBe(way);
     expect(Math.abs(stands.ratio / CARD_ASPECT - 1)).toBeLessThan(ASPECT_TOLERANCE);
   });
+}
+
+// Taps Preview again and checks the photo and its handles are back.
+async function previewOff(page, hand, check) {
   await hand.tap(page.locator('#toolPreview'));
   await check('the photo and its handles are back', async () => {
     await expect(previewState(page)).toHaveText('Off');
+    expect(await isHandleAt(page, await handleOnPage(page, TOP_LEFT))).toBe(true);
   });
+}
+
+// Closes the options with their Close button (the phone layout).
+async function closeOrientationOptions(page, hand, check) {
+  await closeOptions(page, hand, 'perspective');
+  await check('the options have gone, and the whole photo shows', async () => {
+    await expect(page.locator('#perspectiveSheet')).toBeHidden();
+  });
+}
+
+// Taps one of Card orientation's choices and checks it is selected, as an undo step.
+async function chooseOrientation(page, hand, check, value, name) {
+  await hand.tap(orientationChoice(page, value));
+  await check(`${name} is selected instead; Undo is no longer greyed out`, async () => {
+    await expect(orientationChoice(page, value)).toHaveAttribute('aria-pressed', 'true');
+    await expect(orientationChoice(page, 'auto')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('#btnUndo')).toBeEnabled();
+  });
+}
+
+// Opens the options and checks Auto is selected under CARD ORIENTATION.
+async function expectAutoSelected(page, hand, check, expected) {
+  await openOptions(page, hand, 'perspective');
+  await check(expected, async () => {
+    await expect(orientationChoice(page, 'auto')).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => hasWhiteFill(orientationChoice(page, 'auto'))).toBe(true);
+  });
+}
+
+test('PER-32.1 Landscape turns an upright card on its side, as one undo step [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnPerspective(page, testInfo);
+  await expectAutoSelected(page, hand, check, 'under CARD ORIENTATION, Auto is selected (white)');
+  await chooseOrientation(page, hand, check, 'landscape', 'Landscape');
+  await closeOrientationOptions(page, hand, check);
+  await previewShows(page, hand, check, 'landscape',
+    'the corrected card is wider than tall, 7 wide to 5 tall');
+  await previewOff(page, hand, check);
   await hand.tap(page.locator('#btnUndo'));
   await check('Undo is greyed out: Landscape was one undo step', async () => {
     await expect(page.locator('#btnUndo')).toBeDisabled();
   });
-  await openOptions(page, hand, 'perspective');
-  await check('Auto is selected again', async () => {
-    await expect(orientationChoice(page, 'auto')).toHaveAttribute('aria-pressed', 'true');
+  await previewShows(page, hand, check, 'portrait',
+    'the corrected card stands upright again, 5 wide to 7 tall');
+  await previewOff(page, hand, check);
+  await expectAutoSelected(page, hand, check, 'Auto is selected again');
+});
+
+// A card photographed lying on its side, in a one-touch holder.
+const SIDEWAYS_PHOTO = '13_front_landscape_onetouch_labeled_white.JPEG';
+
+test('PER-32.3 Portrait stands a sideways card upright, as one undo step [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnPerspective(page, testInfo, { photo: SIDEWAYS_PHOTO });
+  await previewShows(page, hand, check, 'landscape',
+    'the corrected card is wider than tall, 7 wide to 5 tall: with Auto, it follows the card');
+  await previewOff(page, hand, check);
+  await expectAutoSelected(page, hand, check, 'under CARD ORIENTATION, Auto is selected (white)');
+  await chooseOrientation(page, hand, check, 'portrait', 'Portrait');
+  await closeOrientationOptions(page, hand, check);
+  await previewShows(page, hand, check, 'portrait',
+    'the corrected card stands upright, 5 wide to 7 tall');
+  await previewOff(page, hand, check);
+  await hand.tap(page.locator('#btnUndo'));
+  await check('Undo is greyed out: Portrait was one undo step', async () => {
+    await expect(page.locator('#btnUndo')).toBeDisabled();
   });
-  await hand.tap(orientationChoice(page, 'portrait'));
-  await check('Portrait is selected, and the corrected card stands upright, 5 wide to 7 tall',
-    async () => {
-      await expect(orientationChoice(page, 'portrait')).toHaveAttribute('aria-pressed', 'true');
-      const stands = await cardStands(page);
-      expect(stands.way).toBe('portrait');
-      expect(Math.abs(stands.ratio / CARD_ASPECT - 1)).toBeLessThan(ASPECT_TOLERANCE);
-    });
+  await previewShows(page, hand, check, 'landscape',
+    'the corrected card is wider than tall again, 7 wide to 5 tall');
 });
 
 // The height every control row keeps, in CSS px (the 44 px touch target).
@@ -1896,6 +2208,11 @@ test('PER-32.2 Card orientation keeps its 44 px height in the options [phone] [w
       expect(Math.abs(box.height - CONTROL_HEIGHT_PX)).toBeLessThan(SCREEN_TOLERANCE_PX);
     });
   });
+
+// The reset rows' look: bold text (css/app.css, .sheet-row.is-danger) and an icon in the
+// brand's red, #e5322d (--accent).
+const BOLD_WEIGHT = 700;
+const BRAND_RED = 'rgb(229, 50, 45)';
 
 test('PER-33.1 Reset perspective restores the corners, Flatten and orientation in one undo '
   + 'step [phone]', async ({ page, check }, testInfo) => {
@@ -1916,8 +2233,15 @@ test('PER-33.1 Reset perspective restores the corners, Flatten and orientation i
     await expect(flattenValue(page)).toHaveText('0%');
   });
   await openOptions(page, hand, 'perspective');
-  await check('Reset perspective shows', async () => {
-    await expect(page.locator('#btnResetPerspective')).toBeVisible();
+  await check('Reset perspective shows, in bold with a red icon', async () => {
+    const reset = page.locator('#btnResetPerspective');
+    await expect(reset).toBeVisible();
+    const look = await reset.evaluate(row => ({
+      weight: Number(getComputedStyle(row).fontWeight),
+      iconColor: getComputedStyle(row.querySelector('.icon')).color,
+    }));
+    expect(look.weight).toBeGreaterThanOrEqual(BOLD_WEIGHT);
+    expect(look.iconColor).toBe(BRAND_RED);
   });
   await hand.tap(orientationChoice(page, 'landscape'));
   await check('Landscape is selected', async () => {
@@ -1931,21 +2255,24 @@ test('PER-33.1 Reset perspective restores the corners, Flatten and orientation i
     expectSameCorners(await cornersNow(page), candidates[0]);
   });
   await closeOptions(page, hand, 'perspective');
-  await check('the options are closed', async () => {
+  await check('on a phone the options have gone', async () => {
     if (await isPhoneLayout(page)) await expect(page.locator('#perspectiveSheet')).toBeHidden();
   });
   await hand.tap(page.locator('#btnUndo'));
-  await check('one Undo brings all three back: FLATTEN 0%, the dragged corner, Landscape',
-    async () => {
-      await expect(flattenValue(page)).toHaveText('0%');
-      expectSameCorners(await cornersNow(page), dragged);
-      await expect(orientationChoice(page, 'landscape')).toHaveAttribute('aria-pressed', 'true');
-    });
+  await check('the line reads FLATTEN 0%, and the top-left corner is where it was dragged in '
+    + 'row 1', async () => {
+    await expect(flattenValue(page)).toHaveText('0%');
+    expectSameCorners(await cornersNow(page), dragged);
+  });
+  await openOptions(page, hand, 'perspective');
+  await check('Landscape is selected: the one Undo brought back all three', async () => {
+    await expect(orientationChoice(page, 'landscape')).toHaveAttribute('aria-pressed', 'true');
+  });
 });
 
 test('PER-33.2 With no candidate, Reset perspective puts the corners on the centered rectangle '
   + '[phone]', async ({ page, check }, testInfo) => {
-  const hand = await startOnBlank(page, testInfo);
+  const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
   const topLeft = await handleOnPage(page, TOP_LEFT);
   await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
   await check('that corner has moved', async () => {
@@ -1990,7 +2317,14 @@ test('PER-34.1 The Debug overlay\'s drawing, for a person to judge [phone]', asy
     + 'along the strongest edges; magenta outlines of the scored shapes, the best one thicker, '
     + 'the first eight labelled #1, #2… with a score and a percentage');
   await openOptions(page, hand, 'perspective');
+  await check('Perspective options rise; the Debug overlay switch is on', async () => {
+    await expect(debugSwitch(page)).toBeVisible();
+    await expect(debugSwitch(page)).toBeChecked();
+  });
   await hand.tap(debugSwitch(page));
+  await check('it is off', async () => {
+    await expect(debugSwitch(page)).not.toBeChecked();
+  });
   await closeOptions(page, hand, 'perspective');
   await check.eye('the cyan, yellow and magenta drawing has gone; the white outline and its '
     + 'handles are as before');
@@ -2156,16 +2490,17 @@ test('PER-36.3 Low confidence clears once a corner is dragged [phone]', async ({
 test('PER-36.4 "Nothing detected" clears once a corner is nudged with an arrow [phone]',
   async ({ page, check }, testInfo) => {
     test.fail(true, 'BUG-064');
-    const hand = await startOnBlank(page, testInfo);
+    const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
     await check(`the line reads "${NOTHING_DETECTED}"`, async () => {
       await expectStatus(page, NOTHING_DETECTED);
     });
     const [start] = await cornersNow(page);
     const stepPx = Math.max(1, 1 / await zoomNow(page));
     await hand.tap(arrowButton(page, 'right'));
-    await check('the top-left corner moves right by a hair, and the message has gone: the line '
-      + 'reads NUDGE and Corner 1 of 4', async () => {
+    await check('a round magnifier shows the top-left corner (the arrow moved it one screen '
+      + 'pixel), and the message has gone: the line reads NUDGE and Corner 1 of 4', async () => {
       expectMove(await topLeftMovedFrom(page, start), stepPx, 0);
+      expect(await isNudgeMagnifierUp(page)).toBe(true);
       expect(await isNudgeLineNow(page)).toBe(true);
     });
   });
@@ -2190,6 +2525,80 @@ test('PER-36.6 Low confidence takes the line over a clamped frame [phone]', asyn
   });
 });
 
+// The messages recordStatuses has seen since the find tap: the prompt it starts on left out.
+async function statusesAfterTap(page) {
+  return (await readStatuses(page)).filter(text => text !== FIND_PROMPT);
+}
+
+test('PER-36.7 The crossed-corners message takes the line over "Detecting…" [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnPerspective(page, testInfo);
+  const middle = await cardMiddle(page);
+  await crossTheCorners(page, hand);
+  await check(`the line reads "${CROSSED}"`, async () => {
+    await expectStatus(page, CROSSED);
+  });
+  await openOptions(page, hand, 'perspective');
+  await check('Tap to find card shows', async () => {
+    await expect(page.locator('#btnFindCard')).toBeVisible();
+  });
+  await tapFindCard(page, hand);
+  await check(`the line reads "${FIND_PROMPT}"`, async () => {
+    await expectStatus(page, FIND_PROMPT);
+  });
+  await recordStatuses(page);
+  await tapAt(page, hand, middle);
+  await waitForFind(page);
+  await check('while the search runs, the line reads the crossed-corners message and never '
+    + '"Detecting…"; then the corners land on the card and the line reads NUDGE and Corner 1 of 4',
+  async () => {
+    expect(await statusesAfterTap(page)).toEqual([CROSSED]);
+    expect(await errorAgainstTruth(page, 'IMG_9136')).toBeLessThan(WITHIN_PCT);
+    await expectNudgeLine(page);
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
+  });
+});
+
+test('PER-36.8 "Detecting…" takes the line over low confidence [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnPerspective(page, testInfo, { address: LOW_CONFIDENCE_LINK });
+  await check(`the line reads "${LOW_CONFIDENCE}"`, async () => {
+    await expectStatus(page, LOW_CONFIDENCE);
+  });
+  await openOptions(page, hand, 'perspective');
+  await check('Tap to find card shows', async () => {
+    await expect(page.locator('#btnFindCard')).toBeVisible();
+  });
+  await tapFindCard(page, hand);
+  await check(`the line reads "${FIND_PROMPT}"`, async () => {
+    await expectStatus(page, FIND_PROMPT);
+  });
+  await recordStatuses(page);
+  await tapAt(page, hand, await cardMiddle(page));
+  await waitForFind(page);
+  await check('for a moment the line reads "Detecting…", in place of the low-confidence '
+    + `message; then it reads "${LOW_CONFIDENCE}" again`, async () => {
+    expect(await statusesAfterTap(page)).toEqual(['Detecting…', LOW_CONFIDENCE]);
+    await expectStatus(page, LOW_CONFIDENCE);
+  });
+});
+
+test('PER-36.9 "Nothing detected" takes the line over a clamped frame [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  await startOnFixture(page, testInfo, BLANK_FIXTURE, CLAMPED_LINK);
+  await check(`the line reads "${NOTHING_DETECTED}", not the clamped-frame message`, async () => {
+    expect(await page.evaluate(() => window.__straightener.app.geometry.perspective.isClamped))
+      .toBe(true);
+    await expectStatus(page, NOTHING_DETECTED);
+  });
+});
+
 // Sets what PER-37 keeps for the session: Flatten, Snap on and the Debug overlay on, checking
 // each as it goes.
 async function setSessionTools(page, hand, check) {
@@ -2205,11 +2614,13 @@ async function setSessionTools(page, hand, check) {
   await check('the Debug overlay switch is off', async () => {
     await expect(debugSwitch(page)).not.toBeChecked();
   });
-  await showDetectedLines(page, hand);
-  await check('thin yellow lines run across the photo', async () => {
+  await tapDebugSwitch(page, hand);
+  await check('it is on', async () => {
     await expect(debugSwitch(page)).toBeChecked();
-    expect(await page.evaluate(() => window.__straightener.app.detection.snapLines.length))
-      .toBeGreaterThan(0);
+  });
+  await closeOptions(page, hand, 'perspective');
+  await check('thin yellow lines run across the photo', async () => {
+    expect(await areDetectedLinesDrawn(page)).toBe(true);
   });
 }
 
@@ -2338,9 +2749,12 @@ test('PER-38.2 The Debug overlay switch adds no undo step after a hand-placed co
     });
     await hand.tap(debugSwitch(page));
     await waitForSearch(page);
-    await closeOptions(page, hand, 'perspective');
-    await check('the switch was on as the options closed', async () => {
+    await check('it is on', async () => {
       await expect(debugSwitch(page)).toBeChecked();
+    });
+    await closeOptions(page, hand, 'perspective');
+    await check('on a phone the options have gone', async () => {
+      if (await isPhoneLayout(page)) await expect(page.locator('#perspectiveSheet')).toBeHidden();
     });
     await hand.tap(undo);
     await check('the top-left corner is back on the card\'s corner, and Undo is greyed out: the '
@@ -2354,39 +2768,51 @@ test('PER-38.2 The Debug overlay switch adds no undo step after a hand-placed co
 const ACCURACY_TIMEOUT_MS = 240000;
 // The error recorded when a photo has no candidate at all, as R1 records it (%).
 const NO_CANDIDATE_PCT = 99;
-// Photos known to miss their rules in the suite's browser, each with its bug. They play the
-// part test.fail plays for a whole case, photo by photo, so the other photos stay gated: a
-// listed photo must miss, and the case fails the moment it is found again.
+// Photos known to miss their rules, by browser engine, each with its bug. They play the part
+// test.fail plays for a whole case, photo by photo, so the other photos stay gated: a listed
+// photo must miss, and the case fails the moment it is found again.
 const KNOWN_SLIPS = {
-  '02_black_flat_black': 'BUG-065',
+  chromium: {
+    '02_black_flat_black': 'BUG-065',
+  },
+  webkit: {
+    'IMG_9216': 'BUG-240',
+    '02_black_flat_black': 'BUG-065',
+    '07_dark_flat_black': 'BUG-240',
+  },
 };
 
-// Opens one sample with Open, as a person would, and measures its detection against the
-// hand-placed corners: { name, topPct, bestPct, confidences }, errors in % of the diagonal.
-async function measureDetection(page, name) {
-  await openPhoto(page, `${name}.JPEG`);
-  const { candidates, width, height } = await page.evaluate(() => {
-    const app = window.__straightener.app;
-    return {
-      candidates: app.detection.candidates.map(candidate => ({
-        corners: candidate.corners,
-        confidence: candidate.confidence,
-      })),
-      width: app.img.width,
-      height: app.img.height,
-    };
+// The worst corner's error of the corners as they are now, against the hand-placed ones of
+// the sample `name` (% of the photo's diagonal).
+async function errorNow(page, name) {
+  const { corners, source } = await editState(page);
+  return cornerErrorPct(corners, GROUND_TRUTH[name], source.width, source.height);
+}
+
+// Opens one sample through the app's file input, as Open does, and measures its detection
+// against the hand-placed corners: the corners as they landed (the top pick), then after each
+// tap on Candidate until it has shown each of its numbers. Returns { name, sawDetecting,
+// topPct, bestPct, confidences }, the errors in % of the diagonal.
+async function measureDetection(page, hand, name) {
+  await page.evaluate(() => {
+    window.testStatuses = [];
   });
-  const errors = candidates.map(candidate => cornerErrorPct(
-    candidate.corners,
-    GROUND_TRUTH[name],
-    width,
-    height,
-  ));
+  await openPhoto(page, `${name}.JPEG`);
+  const sawDetecting = (await readStatuses(page)).includes('Detecting…')
+    && await page.evaluate(() => window.__straightener.app.detection.message === '');
+  const confidences = await page.evaluate(() => window.__straightener.app.detection.candidates
+    .map(candidate => Math.round(candidate.confidence * 100)));
+  const errors = confidences.length ? [await errorNow(page, name)] : [];
+  for (let tap = 1; tap < confidences.length; tap++) {
+    await hand.tap(page.locator('#toolCandidate'));
+    errors.push(await errorNow(page, name));
+  }
   return {
     name,
+    sawDetecting,
     topPct: errors.length ? errors[0] : NO_CANDIDATE_PCT,
     bestPct: Math.min(NO_CANDIDATE_PCT, ...errors),
-    confidences: candidates.map(candidate => Math.round(candidate.confidence * 100)),
+    confidences,
   };
 }
 
@@ -2417,33 +2843,37 @@ function accuracyReport(measured) {
   ].join('\n');
 }
 
-test('PER-39.1 Every sample photo is detected within its own baseline [desktop]', async ({
-  page,
-  check,
-}, testInfo) => {
-  test.setTimeout(ACCURACY_TIMEOUT_MS);
-  await openApp(page);
-  const measured = [];
-  for (const name of Object.keys(GROUND_TRUTH)) measured.push(await measureDetection(page, name));
-  const report = accuracyReport(measured);
-  await testInfo.attach('detection-accuracy.md', { body: report, contentType: 'text/markdown' });
-  console.log(report);
-  // Every photo gets its verdict, so a run shows each one that slipped, not just the first.
-  const failures = [];
-  for (const photo of measured) {
-    const baseline = BASELINE[photo.name];
-    const isHeld = isTopPickHeld(photo.topPct, baseline.top)
-      && isBestHeld(photo.bestPct, baseline.best);
-    const bug = KNOWN_SLIPS[photo.name];
-    const measuredText = `${photo.name} (${groupOf(baseline.top)}): top pick `
-      + `${photo.topPct.toFixed(2)}% against ${baseline.top}%, best of 3 `
-      + `${photo.bestPct.toFixed(2)}% against ${baseline.best}%`;
-    const expected = bug
-      ? `${measuredText}; a known defect (${bug}), so it misses its rules until that is fixed`
-      : `${measuredText}, within its rules`;
-    await check(expected, async () => {
-      expect(isHeld, bug ? `${bug} is fixed: remove it from KNOWN_SLIPS` : '').toBe(!bug);
-    }).catch(error => failures.push(error));
-  }
-  expect(failures.map(String)).toEqual([]);
-});
+test('PER-39.1 Every sample photo is detected within its own baseline [desktop] [webkit]',
+  async ({ page, check, browserName }, testInfo) => {
+    test.setTimeout(ACCURACY_TIMEOUT_MS);
+    await openApp(page);
+    const hand = handFor(page, testInfo);
+    await recordStatuses(page);
+    const measured = [];
+    for (const name of Object.keys(GROUND_TRUTH)) {
+      measured.push(await measureDetection(page, hand, name));
+    }
+    const report = accuracyReport(measured);
+    await testInfo.attach('detection-accuracy.md', { body: report, contentType: 'text/markdown' });
+    console.log(`${browserName}\n${report}`);
+    // Every photo gets its verdict, so a run shows each one that slipped, not just the first.
+    const failures = [];
+    const knownSlips = KNOWN_SLIPS[browserName];
+    for (const photo of measured) {
+      const baseline = BASELINE[photo.name];
+      const isHeld = isTopPickHeld(photo.topPct, baseline.top)
+        && isBestHeld(photo.bestPct, baseline.best);
+      const bug = knownSlips[photo.name];
+      const measuredText = `${photo.name} (${groupOf(baseline.top)}): "Detecting…" came and went; `
+        + `top pick ${photo.topPct.toFixed(2)}% against ${baseline.top}%, best of 3 `
+        + `${photo.bestPct.toFixed(2)}% against ${baseline.best}%`;
+      const expected = bug
+        ? `${measuredText}; a known defect (${bug}), so it misses its rules until that is fixed`
+        : `${measuredText}, within its rules`;
+      await check(expected, async () => {
+        expect(photo.sawDetecting).toBe(true);
+        expect(isHeld, bug ? `${bug} is fixed: remove it from KNOWN_SLIPS` : '').toBe(!bug);
+      }).catch(error => failures.push(error));
+    }
+    expect(failures.map(String)).toEqual([]);
+  });

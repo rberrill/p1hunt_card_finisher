@@ -1,9 +1,13 @@
 // Helpers for the Perspective cases (tests/automation/perspective.spec.js): where a handle is on
 // the page, taps and presses at a point of the photo, held buttons, a finger whose drag the
-// browser cancels, a two-finger pinch, and a plain picture with no card in it. Like app.js, they
-// drive the app as a person would and read its state only through window.__straightener and CF.
+// browser cancels, a two-finger pinch, a plain picture with no card in it, and recorders for
+// the line's messages, the corner's moves and the searches for the card (one of which can be
+// held open). Like app.js, they drive the app as a person would and read its state only
+// through window.__straightener and CF.
 'use strict';
-const { openApp, openPhoto, handFor } = require('./app.js');
+const fs = require('fs');
+const path = require('path');
+const { root, openApp, openPhoto, handFor } = require('./app.js');
 
 // The photo most cases use: a PSA slab, found within 0.5% by detection.
 const PHOTO = 'IMG_9136.JPEG';
@@ -126,18 +130,9 @@ async function pressAt(page, hand, point, holdMs) {
 // Holds a button (the element `selector` names) down for holdMs, then lifts. A finger is
 // dispatched; the mouse is real.
 async function holdButton(page, hand, selector, holdMs) {
-  const box = await page.locator(selector).boundingBox();
-  const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-  if (hand.isTouch) {
-    await sendTouch(page, selector, 'pointerdown', middle);
-    await page.waitForTimeout(holdMs);
-    await sendTouch(page, selector, 'pointerup', middle);
-    return;
-  }
-  await page.mouse.move(middle.x, middle.y);
-  await page.mouse.down();
+  const point = await pressButton(page, hand, selector);
   await page.waitForTimeout(holdMs);
-  await page.mouse.up();
+  await releaseButton(page, hand, selector, point);
 }
 
 // The points of a straight move from start to end, end included.
@@ -235,6 +230,23 @@ async function startOnBlank(page, testInfo, { address, width, height } = {}) {
   return handFor(page, testInfo);
 }
 
+// A picture from tests/fixtures/, by file name, ready for setInputFiles (openPicture).
+function fixturePicture(name) {
+  return {
+    name,
+    mimeType: 'image/png',
+    buffer: fs.readFileSync(path.join(root, 'tests', 'fixtures', name)),
+  };
+}
+
+// Opens the app (at `address`) with a PNG from tests/fixtures/, on the Perspective step.
+// Returns the hand for this target.
+async function startOnFixture(page, testInfo, name, address) {
+  await openApp(page, address);
+  await openPicture(page, fixturePicture(name));
+  return handFor(page, testInfo);
+}
+
 // Starts recording every message the line above Perspective's controls shows, in order, into
 // a list the page keeps (readStatuses reads it).
 function recordStatuses(page) {
@@ -260,6 +272,90 @@ function readStatuses(page) {
   return page.evaluate(() => window.testStatuses.slice());
 }
 
+// Holds the next search for the card open until releaseSearch is called: the search runs, and
+// its result is handed back only on release. A search takes about half a second and no control
+// can slow it, so this one change is made in the page's code (the detector's entry point).
+function holdNextSearch(page) {
+  return page.evaluate(() => {
+    const detector = window.CF.Detector;
+    const detect = detector.detect;
+    window.testSearchHeld = new Promise(resolve => {
+      window.testReleaseSearch = resolve;
+    });
+    detector.detect = async function detectWhenReleased(imageData, options) {
+      detector.detect = detect;
+      const result = await detect.call(detector, imageData, options);
+      await window.testSearchHeld;
+      return result;
+    };
+  });
+}
+
+// Lets the search holdNextSearch held hand back its result.
+function releaseSearch(page) {
+  return page.evaluate(() => window.testReleaseSearch());
+}
+
+// Starts recording the point each search for the card is handed (in the photo's own px), or
+// null for a search handed none, into a list the page keeps (readSearchPoints reads it).
+function recordSearchPoints(page) {
+  return page.evaluate(() => {
+    const detector = window.CF.Detector;
+    const detect = detector.detect;
+    window.testSearchPoints = [];
+    detector.detect = function detectAndRecord(imageData, options) {
+      window.testSearchPoints.push(options.seed ? options.seed.slice() : null);
+      return detect.call(detector, imageData, options);
+    };
+  });
+}
+
+// The points recordSearchPoints has seen, in order.
+function readSearchPoints(page) {
+  return page.evaluate(() => window.testSearchPoints.slice());
+}
+
+// Presses a button (the element `selector` names) and keeps it down: a dispatched finger, or
+// the real mouse. Returns the point pressed, for releaseButton.
+async function pressButton(page, hand, selector) {
+  const box = await page.locator(selector).boundingBox();
+  const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  if (hand.isTouch) {
+    await sendTouch(page, selector, 'pointerdown', middle);
+    return middle;
+  }
+  await page.mouse.move(middle.x, middle.y);
+  await page.mouse.down();
+  return middle;
+}
+
+// Lets go of a button pressButton pressed, at `point`.
+function releaseButton(page, hand, selector, point) {
+  return hand.isTouch ? sendTouch(page, selector, 'pointerup', point) : page.mouse.up();
+}
+
+// Starts recording the times (performance.now(), ms) at which the top-left corner moves, read
+// once a frame, into a list the page keeps (readCornerMoveTimes reads it).
+function recordCornerMoveTimes(page) {
+  return page.evaluate(() => {
+    const app = window.__straightener.app;
+    window.testMoveTimes = [];
+    let last = app.state.corners[0].join();
+    const watch = () => {
+      const now = app.state.corners[0].join();
+      if (now !== last) window.testMoveTimes.push(performance.now());
+      last = now;
+      requestAnimationFrame(watch);
+    };
+    requestAnimationFrame(watch);
+  });
+}
+
+// The times recordCornerMoveTimes has seen, in order.
+function readCornerMoveTimes(page) {
+  return page.evaluate(() => window.testMoveTimes.slice());
+}
+
 // The mean red, green and blue (0 to 255) of the middle third of the photo area as drawn now.
 function middleColor(page) {
   return page.evaluate(() => {
@@ -280,6 +376,8 @@ module.exports = {
   PHOTO,
   startOnPerspective,
   startOnBlank,
+  startOnFixture,
+  fixturePicture,
   blankPicture,
   openPicture,
   handleOnPage,
@@ -298,5 +396,13 @@ module.exports = {
   pinchAt,
   recordStatuses,
   readStatuses,
+  holdNextSearch,
+  releaseSearch,
+  recordSearchPoints,
+  readSearchPoints,
+  pressButton,
+  releaseButton,
+  recordCornerMoveTimes,
+  readCornerMoveTimes,
   middleColor,
 };
