@@ -8,7 +8,7 @@ From choosing a photo to seeing it on screen, ready to edit.
 
 - Risk: medium
 - Check: script
-- Limit: to be measured, then proposed for Rich's approval
+- Limit: three times the median measured on 16 November 2026 (ruling R44); the number is on each case
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -17,7 +17,7 @@ From choosing a photo to seeing it on screen, ready to edit.
 - Cases: 1
 
 ### PERF-01.1 A 15 MP photo is on screen   [auto: phone]
-Limit: to be approved by Rich. Provisional: 1,250 ms, three times the median of five runs on the development PC (407 ms).
+Limit (ruling R44): 1,250 ms, three times the median of five runs on the development PC (407 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
@@ -38,7 +38,7 @@ From the start of finding the card to the corners being placed.
 
 - Risk: medium
 - Check: script
-- Limit: to be measured, then proposed for Rich's approval
+- Limit: three times the median measured on 16 November 2026 (ruling R44); the number is on each case
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -47,7 +47,7 @@ From the start of finding the card to the corners being placed.
 - Cases: 1
 
 ### PERF-02.1 Detection on a 15 MP photo finishes   [auto: phone]
-Limit: to be approved by Rich. Provisional: 8,750 ms, three times the median of five runs on the development PC (2,903 ms).
+Limit (ruling R44): 8,750 ms, three times the median of five runs on the development PC (2,903 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, opened with the link index.html?debug=1 to read the time
 - Build: the build under test
@@ -70,7 +70,7 @@ From tapping the other side in **Front** | **Back** to that side being on screen
 
 - Risk: medium
 - Check: script
-- Limit: to be measured, then proposed for Rich's approval
+- Limit: three times the median measured on 16 November 2026 (ruling R44); the number is on each case
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -79,7 +79,7 @@ From tapping the other side in **Front** | **Back** to that side being on screen
 - Cases: 1
 
 ### PERF-03.1 Switching sides in a pair   [auto: phone]
-Limit: to be approved by Rich. Provisional: 500 ms, three times the median of five runs on the development PC (152 ms).
+Limit (ruling R44): 500 ms, three times the median of five runs on the development PC (152 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
@@ -100,7 +100,7 @@ From tapping **Download** with Size **1080** to the file being saved. The finish
 
 - Risk: medium
 - Check: script
-- Limit: to be measured, then proposed for Rich's approval
+- Limit: three times the median measured on 16 November 2026 (ruling R44); the number is on each case
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -109,7 +109,7 @@ From tapping **Download** with Size **1080** to the file being saved. The finish
 - Cases: 1
 
 ### PERF-04.1 An export at Size 1080   [auto: phone]
-Limit: to be approved by Rich. Provisional: 500 ms, three times the median of five runs on the development PC (163 ms).
+Limit (ruling R44): 500 ms, three times the median of five runs on the development PC (163 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -131,7 +131,7 @@ From tapping **Download** with Size **2000** (the default) to the file being sav
 
 - Risk: medium
 - Check: script
-- Limit: to be measured, then proposed for Rich's approval
+- Limit: three times the median measured on 16 November 2026 (ruling R44); the number is on each case
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -140,7 +140,7 @@ From tapping **Download** with Size **2000** (the default) to the file being sav
 - Cases: 1
 
 ### PERF-05.1 An export at Size 2000   [auto: phone]
-Limit: to be approved by Rich. Provisional: 950 ms, three times the median of five runs on the development PC (308 ms).
+Limit (ruling R44): 950 ms, three times the median of five runs on the development PC (308 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -161,7 +161,7 @@ From tapping **Download** with Size **3000** to the file being saved. The finish
 
 - Risk: medium
 - Check: script
-- Limit: to be measured, then proposed for Rich's approval
+- Limit: three times the median measured on 16 November 2026 (ruling R44); the number is on each case
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -170,7 +170,7 @@ From tapping **Download** with Size **3000** to the file being saved. The finish
 - Cases: 1
 
 ### PERF-06.1 An export at Size 3000   [auto: phone]
-Limit: to be approved by Rich. Provisional: 1,650 ms, three times the median of five runs on the development PC (544 ms).
+Limit (ruling R44): 1,650 ms, three times the median of five runs on the development PC (544 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -192,7 +192,7 @@ From tapping **Download** with Size **Original** to the file being saved, at the
 
 - Risk: medium
 - Check: script
-- Limit: to be measured, then proposed for Rich's approval
+- Limit: three times the median measured on 16 November 2026 (ruling R44); the number is on each case
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -201,7 +201,7 @@ From tapping **Download** with Size **Original** to the file being saved, at the
 - Cases: 1
 
 ### PERF-07.1 An export at Size Original   [auto: phone]
-Limit: to be approved by Rich. Provisional: 1,650 ms, three times the median of five runs on the development PC (548 ms).
+Limit (ruling R44): 1,650 ms, three times the median of five runs on the development PC (548 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -223,7 +223,7 @@ From answering **Yes** to the Upscale question to the enlarged, sharpened file b
 
 - Risk: medium
 - Check: script
-- Limit: to be measured, then proposed for Rich's approval
+- Limit: three times the median measured on 16 November 2026 (ruling R44); the number is on each case
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -232,7 +232,7 @@ From answering **Yes** to the Upscale question to the enlarged, sharpened file b
 - Cases: 1
 
 ### PERF-08.1 An upscaled export   [auto: phone]
-Limit: to be approved by Rich. Provisional: 4,750 ms, three times the median of five runs on the development PC (1,576 ms).
+Limit (ruling R44): 4,750 ms, three times the median of five runs on the development PC (1,576 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -254,7 +254,7 @@ On an iPhone, from tapping **Share** with Size **Original** to the share sheet o
 
 - Risk: medium
 - Check: phone
-- Limit: to be measured, then proposed for Rich's approval
+- Limit: three times the median measured on 16 November 2026 (ruling R44); the number is on each case
 - Layout: phone. Share shows only on a secure page, so this runs on the live site.
 - Added: 1.10 baseline
 - Changed: none

@@ -35,7 +35,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 - No messages a user can't act on (such as "needs HTTPS").
 - Nothing blocks the photo, except a temporary flyout the user opens or an alert they must answer before they can go on.
 
-**Brand:** matte black, white, and P1Hunt red (`#e5322d`, for main actions; not a hard limit of one per screen: where two main actions are both in view, such as Download and Download corners on desktop, both are red; Rich, 2026-11-15), bold upright type, flat shapes, no gradients, no italics. Amber only on a warning; no green. Selected is a solid white fill (Rich, 2026-11-14). Inspired by F1, never its trademarks: no F1, FIA, team or driver logos or marks in the app or the docs.
+**Brand:** matte black, white, and P1Hunt red (`#e5322d`, for main actions; not a hard limit of one per screen: where two main actions are both in view, such as Download and Download corners on desktop, both are red; Rich, 2026-11-15), bold upright type, flat shapes, no gradients, no italics. Amber only on a warning; no green. Selected is a solid white fill (Rich, 2026-11-14). Inspired by F1, never its trademarks: no F1, FIA, team or driver logos or marks in the app or the docs. This is guidance for new design, not a test to hold agreed designs to: where a design Rich has agreed differs from it, the design stands and is not flagged (Rich, 2026-11-16; the checkerboard behind the saved-logo thumbnail is built with a gradient function and is fine).
 
 ## Hard constraints (still binding)
 
