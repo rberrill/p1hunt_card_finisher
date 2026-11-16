@@ -226,6 +226,7 @@ function waitForSideOpen(page, side) {
 
 test('PER-03.2 A search still running when a pair switches sides is thrown away [phone]',
   async ({ page, check }, testInfo) => {
+    test.fail(true, 'BUG-241');
     const hand = handFor(page, testInfo);
     await openApp(page);
     await openPhoto(page, PORTRAIT_PAIR.front);
@@ -267,6 +268,10 @@ test('PER-03.2 A search still running when a pair switches sides is thrown away 
     await check('the back opens; its top-left corner is still where it was dragged in row 1: the '
       + 'search\'s result was thrown away', async () => {
       expectSameCorners(await cornersNow(page), dragged);
+    });
+    await check('the line above the controls reads the normal Nudge line, NUDGE and Corner 1 of '
+      + '4, not "Detecting…"', async () => {
+      expect(await isNudgeLineNow(page)).toBe(true);
     });
   });
 

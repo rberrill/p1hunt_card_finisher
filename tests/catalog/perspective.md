@@ -75,6 +75,7 @@ If a new search for the card starts before an older one finishes, or a front and
 - Changed: none
 - Anchors: none
 - Source: `js/app/state.js` (`runDetect`); `js/app/pair.js` (`switchSide`)
+- Ruling: R45. Switching sides never leaves a stale message: the back's line is not left reading "Detecting…". The app differs today.
 - Cases: 2
 
 ### PER-03.1 A second photo opened during the search keeps its own corners   [auto: phone]
@@ -101,6 +102,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 ### PER-03.2 A search still running when a pair switches sides is thrown away   [auto: phone]
 Script only
 Stand-in: the script holds the back's search open until the switch to the front has finished, then lets it end. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain.
+Written to ruling R45; it fails until that is built (BUG-241).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -118,6 +120,7 @@ Before you start:
 | 5 | Tap **Front** in the top bar, while the search runs | The front opens on Perspective, its corners on the front card |
 | 6 | Wait two seconds (the script lets the back's search end) | The front's corners have not moved |
 | 7 | Tap **Back** in the top bar | The back opens; its top-left corner is still where you dragged it in row 1: the search's result was thrown away |
+| 8 | Look at the line above the controls | It reads the normal Nudge line, NUDGE and Corner 1 of 4, not "Detecting…" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

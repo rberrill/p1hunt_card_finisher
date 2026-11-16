@@ -9,6 +9,11 @@ const { openApp, openPhoto, goToStep, handFor } = require('./app.js');
 const CROP_PHOTO = 'IMG_9136.JPEG';
 // How long to wait between two looks at a scrolling row, in ms.
 const SCROLL_SETTLE_MS = 100;
+// A finger swipe across the row of presets: it starts and ends this share of the row's width
+// in from its edges, in this many moves, this many ms apart (about a 0.2 s swipe).
+const SWIPE_NEAR_EDGE = 0.1;
+const SWIPE_MOVES = 10;
+const SWIPE_MOVE_MS = 16;
 
 // Opens the app (at `address`, which may carry settings from a link) with a photo and goes to
 // the Crop step. Returns the hand for this target.
@@ -110,13 +115,32 @@ async function sizeLine(page) {
   };
 }
 
-// Scrolls the row of presets sideways by dx CSS px with the mouse wheel over it (a swipe on a
-// phone): positive to the right. Chromium only.
-async function scrollPresetRow(page, dx) {
+// Swipes the row of presets with one finger, across most of its width, and waits until it has
+// stopped moving. direction: 'left' (the finger moves left, the row shows its end) or 'right'
+// (back towards its start). The touches go through the browser's own input pipeline (the
+// DevTools protocol's Input.dispatchTouchEvent), so the browser scrolls the row as it does for
+// a real finger; Playwright's touchscreen can only tap. Chromium only.
+async function swipePresetRow(page, direction) {
   const box = await page.locator('#cropPresets').boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.wheel(dx, 0);
-  // The wheel may scroll smoothly: wait until the row has stopped moving.
+  const y = Math.round(box.y + box.height / 2);
+  const nearLeft = Math.round(box.x + box.width * SWIPE_NEAR_EDGE);
+  const nearRight = Math.round(box.x + box.width * (1 - SWIPE_NEAR_EDGE));
+  const fromX = direction === 'left' ? nearRight : nearLeft;
+  const toX = direction === 'left' ? nearLeft : nearRight;
+  const client = await page.context().newCDPSession(page);
+  // Sends one touch event of `type` with the finger at (x, y); a touchEnd has no finger left.
+  const touch = (type, x) => client.send('Input.dispatchTouchEvent', {
+    type,
+    touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+  });
+  await touch('touchStart', fromX);
+  for (let i = 1; i <= SWIPE_MOVES; i++) {
+    await touch('touchMove', fromX + (toX - fromX) * i / SWIPE_MOVES);
+    await page.waitForTimeout(SWIPE_MOVE_MS);
+  }
+  await touch('touchEnd', toX);
+  await client.detach();
+  // The row may glide on after the finger lifts: wait until it has stopped moving.
   let last = -1;
   for (;;) {
     await page.waitForTimeout(SCROLL_SETTLE_MS);
@@ -124,6 +148,11 @@ async function scrollPresetRow(page, dx) {
     if (now === last) return;
     last = now;
   }
+}
+
+// How far the row of presets can scroll, in CSS px: 0 at its start.
+function rowScrollMax(page) {
+  return page.locator('#cropPresets').evaluate(row => row.scrollWidth - row.clientWidth);
 }
 
 // Where a chip sits in the row: { left, right, rowLeft, rowRight }, in CSS px, with rowRight the
@@ -167,8 +196,9 @@ module.exports = {
   viewNow,
   undoSteps,
   sizeLine,
-  scrollPresetRow,
+  swipePresetRow,
   chipPlace,
   isChipInView,
   rowScroll,
+  rowScrollMax,
 };
