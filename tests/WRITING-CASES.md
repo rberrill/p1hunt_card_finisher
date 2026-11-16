@@ -23,6 +23,17 @@ For whoever adds cases to the catalog and the Playwright tests that run them. Re
 10. **Share.** No case or test exercises a desktop browser's real share feature (Rich, 2026-11-15). A stand-in for `navigator.share` and `navigator.canShare`, installed with `page.addInitScript`, may prove the app's side. The real share sheet is a `[phone]` case.
 11. **A question card closing:** its layer's `hidden` lags by about 200 ms. Wait on `CF.isAlertOpen` or on visibility.
 
+## What a review looks for
+
+A second reader checks every new or changed case. The faults found most often in the first review:
+
+- A result nobody can see ("no longer armed", "the levels are applied", "saved"): name what is on screen instead.
+- A step a person can't do on the device the case names: a minus sign on the iPhone's number pad, a press placed 12 px from a handle, a value read from a tooltip on a phone.
+- A test that can't fail for the reason the case gives: a photo too small to show the difference, an expected value taken from the app's own list, a check on an element that is always there (`toBeVisible` on a button that is only ever greyed out).
+- A test that checks less than its rows say. Every row's result is checked, in order.
+- A capability whose description names two things and whose cases prove one.
+- A touch behavior with no `[phone]` case: anything where Safari's own gestures (double-tap zoom, the back swipe, the page pinch, the long-press menu) could take the touch from the app.
+
 ## When several writers work at once
 
 - Edit only your own area's catalog file, spec file and `tests/automation/support/<area>.js`. Read the shared helpers; don't edit them, `tests/bugs.md` or the configuration. Say in your report which of your helpers should become shared.

@@ -114,6 +114,26 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 ```
 
+**Script only.** Some cases can't be run by a person: they need a set-up nobody can create by hand (a share sheet that refuses once, storage that fails) or a result nobody can measure by eye (a save 0.4 s after a tap). Such a case says `Script only` under its title, then a `Stand-in:` line saying in plain words what the script puts in place and why a person can't. It is still written for a stranger: what is set up, what is done, what must be seen or measured. A case a person can run is never marked this way (Rich, 2026-11-16).
+
+**A phone procedure is a phone case.** A case whose steps need a real iPhone (Control Center, the home screen, Photos, the keyboard) is marked `[phone]`. Where a script proves the same logic with a stand-in, that is a second, automated case.
+
+**Nothing remembered.** The app remembers the crop preset, the export settings and a saved logo. Every case's "Before you start" has the line "Browser data: none for this site (a private window, or the site's data cleared)", unless the case is about what is remembered and says what is.
+
+**Files.** Sample photos are in `samples/`. Any other file a case needs (a logo, a file that isn't a picture, an edits file with one value changed) is in `tests/fixtures/`, named in the case. A change made to a file by hand is quoted exactly.
+
+**Words used in cases.** Define a term where a case first uses it, in these words:
+- **the controls**: the block of buttons and sliders under the photo (on a wide screen, in the panel at the right).
+- **the line above the controls**: the one line of text at the top of the controls.
+- **the step tabs**: the six tabs Perspective to Export (along the bottom on a phone, in the top bar on a wide screen).
+- **the options tab**: the small tab with an up arrow on the top edge of the controls, on a phone. It has no words on it, so it is not written in bold.
+- **the question box**: the box that appears over the dimmed photo with a question and two or three buttons. (Not "card": a card is the trading card in the photo.)
+- **the size line**: on Export, the line that gives the saved picture's size in px and its format.
+- **the color patch**: the small square beside **Pick white** or **Pick black** that shows the color picked.
+- **greyed out**: shown dim and not answering a tap.
+
+**One action per step** means one thing done by the person. Answering a question box that a tap brings up is its own step. An "if" in a step is not allowed: say what will happen with the photo the case names.
+
 **A case for both layouts.** A case marked `[auto: all]` runs on a phone and on a wide screen, so a step that differs says both, once: "Open **Rotate options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls."
 
 **A named action.** When several steps always go together, a case may define them once above its table and then use the name as one step: "Type the angle N: tap the angle, type N, tap **Done**." The definition names every control; the step still has one result.
