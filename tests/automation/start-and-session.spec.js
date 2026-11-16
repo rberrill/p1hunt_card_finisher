@@ -91,6 +91,9 @@ const QUICK_TAP_GAP_MS = 300;
 // A save made at once lands within this many ms; a download's save within this many ms of it.
 const QUICK_SAVE_MS = 100;
 const DOWNLOAD_SAVE_MS = 150;
+// The longest a change may wait before it is saved, in ms (ruling R36: about 0.1 s, so a
+// change is saved before a person could close the tab).
+const SOON_SAVE_MS = 200;
 // How close the saved time must be to the clock when the record is read, in ms.
 const SAVED_AT_TOLERANCE_MS = 5000;
 // How far a corner handle is dragged, in CSS px each way.
@@ -746,18 +749,6 @@ test('STA-09.1 Resume keeps corners placed by hand [phone] [webkit]', async ({
   });
 });
 
-// Taps Download and answers No to the Upscale question, without waiting for a file (one may
-// not come). Returns a function giving how many files were saved since the tap.
-async function downloadAnsweringNo(page, hand) {
-  let count = 0;
-  page.on('download', () => {
-    count += 1;
-  });
-  await hand.tap(page.locator('#btnDownload'));
-  await answerQuestion(page, 'No');
-  return () => count;
-}
-
 // Expects two saved images to be the same picture: every cell of the grid within a level.
 function expectSamePicture(first, second) {
   expect([second.width, second.height]).toEqual([first.width, first.height]);
@@ -839,10 +830,24 @@ test('STA-10.2 Remove and Undo after a resume bring the logo back [phone] [webki
   });
 });
 
-test('STA-10.3 After a replaced logo is undone, Resume loses the logo [phone] [webkit]', async ({
+// Taps Download and answers No to the Upscale question. Returns the saved file's path, or null
+// when the export fails instead (a red message, and no file), so a failed export is seen at
+// once rather than after a download's timeout.
+async function downloadOrFailure(page, hand) {
+  const downloading = page.waitForEvent('download')
+    .then(download => download.path(), () => null);
+  await hand.tap(page.locator('#btnDownload'));
+  await answerQuestion(page, 'No');
+  const failing = page.locator('#toast.is-error').waitFor({ state: 'visible' })
+    .then(() => null, () => null);
+  return Promise.race([downloading, failing]);
+}
+
+test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-140');
   const hand = await startWithPhoto(page, testInfo);
   await goToStep(page, 'overlay', hand);
   const first = await addLogo(page, hand, page.locator('#btnOverlayAdd'), LOGO);
@@ -859,23 +864,31 @@ test('STA-10.3 After a replaced logo is undone, Resume loses the logo [phone] [w
   await check('Undo makes the app icon the logo again', async () => {
     expect((await editState(page)).overlay.id).toBe(first);
   });
-  await waitForSaved(page, { overlayId: first });
+  await goToStep(page, 'export', hand);
+  const before = await saveByDownload(page, hand, 'No');
+  await check('a file named IMG_9136-straight.jpg is saved, with the app icon as its logo',
+    async () => {
+      expect(before.name).toBe('IMG_9136-straight.jpg');
+      expect((await editState(page)).overlay.id).toBe(first);
+    });
+  await waitForSaved(page, { overlayId: first, exported: true });
   await reloadToStart(page);
   await check('the card offers "Resume IMG_9136.JPEG?"', async () => {
     await expect(page.locator('#resumeName')).toHaveText(PHOTO);
   });
   await resumeAs(page, hand, PHOTO);
-  await check('the photo opens on the Overlay step', async () => {
-    expect(await openStep(page)).toBe('overlay');
+  await check('the photo opens on the Export step', async () => {
+    expect(await openStep(page)).toBe('export');
   });
-  await goToStep(page, 'export', hand);
-  const savedCount = await downloadAnsweringNo(page, hand);
-  await check('no file; a red message says the overlay image isn\'t loaded', async () => {
-    await expect(page.locator('#toast')).toContainText(
-      'Export failed: The overlay image isn’t loaded. Open the Overlay step and add it again.',
-    );
-    expect((await toastNow(page)).kind).toBe('error');
-    expect(savedCount()).toBe(0);
+  const after = await downloadOrFailure(page, hand);
+  const toast = await toastNow(page);
+  await check('a second file is saved, with no message about the logo: the same picture as the '
+    + 'first, logo and all', async () => {
+    expect(toast.kind, `the message: ${toast.text}`).toBe('');
+    expect(after).not.toBeNull();
+    const beforeImage = await readSavedImage(page, before.file, COMPARE_GRID);
+    const afterImage = await readSavedImage(page, after, COMPARE_GRID);
+    expectSamePicture(beforeImage, afterImage);
   });
 });
 
@@ -1211,31 +1224,30 @@ test('STA-15.1 Hiding the page saves at once [desktop] [webkit]', async ({
   });
 });
 
-// The tab is not really closed: a save started as a tab closes sometimes doesn't land (in
-// Chromium, about one run in twelve under load), and Playwright's WebKit closes a tab either
-// without its pagehide or not at all. What the app controls is that leaving starts the save.
-test('STA-15.3 Leaving the page saves at once [desktop] [webkit]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startWatched(page, testInfo, 'rotate');
-  await hand.tap(page.locator('#toolRotateRight'));
-  await check('the photo lies on its side', async () => {
-    expect((await editState(page)).rotation.quarter).toBe(1);
+// Ruling R36: a save started as a tab closes sometimes doesn't land (in Chromium, about one run
+// in twelve under load), so each change is saved soon after it is made. The tab is not left or
+// hidden here, so only the save after the change can be seen. The time is the moment the app
+// hands the edits to the device's storage.
+test('STA-15.3 A change is saved within 0.2 s, before the tab can be closed [phone] [webkit]',
+  async ({ page, check }, testInfo) => {
+    test.fail(true, 'BUG-141');
+    const hand = await startWatched(page, testInfo, 'rotate');
+    const tapMs = await tapAndTime(page, hand, page.locator('#toolRotateRight'));
+    await page.waitForTimeout(SETTLE_AFTER_SAVE_MS);
+    const writes = await editsWritesAfter(page, tapMs);
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `save times after the tap, ms: ${writes.map(write =>
+        Math.round(write.delayMs)).join(', ')}`,
+    });
+    await check('the photo lies on its side; the edits, with the turn, are saved within 0.2 s '
+      + 'of the tap', async () => {
+      expect((await editState(page)).rotation.quarter).toBe(1);
+      expect(writes.length).toBeGreaterThan(0);
+      expect(writes[0].quarter).toBe(1);
+      expect(writes[0].delayMs).toBeLessThanOrEqual(SOON_SAVE_MS);
+    });
   });
-  // A stand-in for closing the tab: the page is told it is being left.
-  const leftAtMs = await page.evaluate(() => {
-    window.dispatchEvent(new Event('pagehide'));
-    return performance.now();
-  });
-  await page.waitForTimeout(QUICK_SAVE_MS);
-  await check('the edits, with the turn, are saved within 0.1 s of leaving', async () => {
-    const writes = await editsWritesAfter(page, leftAtMs);
-    expect(writes.length).toBeGreaterThan(0);
-    expect(writes[0].delayMs).toBeLessThan(QUICK_SAVE_MS);
-    expect(writes[0].quarter).toBe(1);
-  });
-});
 
 // Expects an edits write within DOWNLOAD_SAVE_MS of the last download.
 async function expectSaveAtDownload(page) {

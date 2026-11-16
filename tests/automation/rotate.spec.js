@@ -149,7 +149,7 @@ async function flipFromStraighten(page, hand, button) {
   await hand.tap(page.locator(`#btnFlip${button}`));
 }
 
-test('ROT-01.1 The angle reads with one decimal and a true minus sign [all]', async ({
+test('ROT-01.1 The angle reads with one decimal and a true minus sign [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -168,34 +168,32 @@ test('ROT-01.1 The angle reads with one decimal and a true minus sign [all]', as
   });
 });
 
-test('ROT-02.1 Dragging the ruler turns the photo, one undo step per drag [all]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startOnRotate(page, testInfo);
-  const tiltBefore = await tiltDeg(page);
-  await dragRuler(page, hand, -2 * RULER_PX_PER_DEGREE);
-  await check('the angle reads 2.0° and the photo turns 2° clockwise', async () => {
-    await expect(angleText(page)).toHaveText('2.0°');
-    expect(Math.abs(await tiltDeg(page) - tiltBefore - 2)).toBeLessThan(ANGLE_TOLERANCE_DEG);
+test('ROT-02.1 Dragging the ruler turns the photo, one undo step per drag [phone] [webkit]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startOnRotate(page, testInfo);
+    const tiltBefore = await tiltDeg(page);
+    await dragRuler(page, hand, -2 * RULER_PX_PER_DEGREE);
+    await check('the angle reads 2.0° and the photo turns 2° clockwise', async () => {
+      await expect(angleText(page)).toHaveText('2.0°');
+      expect(Math.abs(await tiltDeg(page) - tiltBefore - 2)).toBeLessThan(ANGLE_TOLERANCE_DEG);
+    });
+    await dragRuler(page, hand, -RULER_PX_PER_DEGREE);
+    await check('a second drag 11 px to the left makes it 3.0°', async () => {
+      await expect(angleText(page)).toHaveText('3.0°');
+    });
+    await hand.tap(page.locator('#btnUndo'));
+    await check('Undo takes back only the second drag: 2.0°', async () => {
+      await expect(angleText(page)).toHaveText('2.0°');
+    });
+    await hand.tap(page.locator('#btnUndo'));
+    await check('a second Undo takes back the first drag: 0.0°', async () => {
+      await expect(angleText(page)).toHaveText('0.0°');
+    });
+    await dragRuler(page, hand, 3 * RULER_PX_PER_DEGREE);
+    await check('dragging 33 px to the right makes it −3.0°', async () => {
+      await expect(angleText(page)).toHaveText(`${MINUS}3.0°`);
+    });
   });
-  await dragRuler(page, hand, -RULER_PX_PER_DEGREE);
-  await check('a second drag 11 px to the left makes it 3.0°', async () => {
-    await expect(angleText(page)).toHaveText('3.0°');
-  });
-  await hand.tap(page.locator('#btnUndo'));
-  await check('Undo takes back only the second drag: 2.0°', async () => {
-    await expect(angleText(page)).toHaveText('2.0°');
-  });
-  await hand.tap(page.locator('#btnUndo'));
-  await check('a second Undo takes back the first drag: 0.0°', async () => {
-    await expect(angleText(page)).toHaveText('0.0°');
-  });
-  await dragRuler(page, hand, 3 * RULER_PX_PER_DEGREE);
-  await check('dragging 33 px to the right makes it −3.0°', async () => {
-    await expect(angleText(page)).toHaveText(`${MINUS}3.0°`);
-  });
-});
 
 test('ROT-02.2 The ruler\'s scale, for a person to judge [phone]', async ({
   page,
@@ -214,7 +212,7 @@ test('ROT-02.2 The ruler\'s scale, for a person to judge [phone]', async ({
     + 'tick to the right of a tall tick');
 });
 
-test('ROT-03.1 The angle stays within ±45° and is rounded to 0.1° [all]', async ({
+test('ROT-03.1 The angle stays within ±45° and is rounded to 0.1° [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -239,7 +237,7 @@ test('ROT-03.1 The angle stays within ±45° and is rounded to 0.1° [all]', asy
   });
 });
 
-test('ROT-04.1 Tapping the angle opens a box to type it in [all]', async ({
+test('ROT-04.1 Tapping the angle opens a box to type it in [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
@@ -264,7 +262,7 @@ test('ROT-04.1 Tapping the angle opens a box to type it in [all]', async ({
   });
 });
 
-test('ROT-05.1 ± changes the sign of the typed angle and Done saves it [all]', async ({
+test('ROT-05.1 ± changes the sign of the typed angle and Done saves it [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
@@ -307,7 +305,7 @@ test('ROT-05.1 ± changes the sign of the typed angle and Done saves it [all]', 
   });
 });
 
-test('ROT-06.1 Done saves the typed angle as one undo step [all]', async ({
+test('ROT-06.1 Done saves the typed angle as one undo step [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -343,7 +341,7 @@ test('ROT-06.2 Enter saves the typed angle [desktop]', async ({ page, check }, t
   });
 });
 
-test('ROT-06.3 Done on an empty box keeps the angle [all]', async ({
+test('ROT-06.3 Done on an empty box keeps the angle [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -382,7 +380,7 @@ test('ROT-07.1 Escape closes the box without saving [desktop]', async ({
   });
 });
 
-test('ROT-07.2 A tap on the photo closes the box without saving [all]', async ({
+test('ROT-07.2 A tap on the photo closes the box without saving [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
@@ -396,7 +394,7 @@ test('ROT-07.2 A tap on the photo closes the box without saving [all]', async ({
   });
 });
 
-test('ROT-07.3 Choosing Flip or Straighten closes the box without saving [all]', async ({
+test('ROT-07.3 Choosing Flip or Straighten closes the box without saving [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -419,7 +417,7 @@ test('ROT-07.3 Choosing Flip or Straighten closes the box without saving [all]',
   });
 });
 
-test('ROT-07.4 Leaving the step closes the box without saving [all]', async ({
+test('ROT-07.4 Leaving the step closes the box without saving [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -434,7 +432,7 @@ test('ROT-07.4 Leaving the step closes the box without saving [all]', async ({
   });
 });
 
-test('ROT-08.1 The box accepts a hyphen or a true minus sign [all]', async ({
+test('ROT-08.1 The box accepts a hyphen or a true minus sign [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -449,7 +447,7 @@ test('ROT-08.1 The box accepts a hyphen or a true minus sign [all]', async ({
   });
 });
 
-test('ROT-08.2 The box accepts a decimal comma and a degree sign [all]', async ({
+test('ROT-08.2 The box accepts a decimal comma and a degree sign [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -464,7 +462,7 @@ test('ROT-08.2 The box accepts a decimal comma and a degree sign [all]', async (
   });
 });
 
-test('ROT-08.3 An unreadable entry keeps the angle [all]', async ({
+test('ROT-08.3 An unreadable entry keeps the angle [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -484,7 +482,7 @@ test('ROT-08.3 An unreadable entry keeps the angle [all]', async ({
   });
 });
 
-test('ROT-09.2 On a wide screen the line stays in place while typing [desktop]', async ({
+test('ROT-09.2 On a wide screen the line stays in place while typing [desktop] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
@@ -504,7 +502,7 @@ test('ROT-09.2 On a wide screen the line stays in place while typing [desktop]',
   });
 });
 
-test('ROT-10.1 Reset sets the angle to 0° as one undo step [all]', async ({
+test('ROT-10.1 Reset sets the angle to 0° as one undo step [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -532,7 +530,7 @@ test('ROT-10.1 Reset sets the angle to 0° as one undo step [all]', async ({
   });
 });
 
-test('ROT-11.1 Straighten is the resting mode [all]', async ({ page, check }, testInfo) => {
+test('ROT-11.1 Straighten is the resting mode [phone]', async ({ page, check }, testInfo) => {
   const hand = await startOnRotate(page, testInfo);
   const straighten = page.locator('#toolStraighten');
   const flip = page.locator('#toolFlip');
@@ -556,7 +554,7 @@ test('ROT-11.1 Straighten is the resting mode [all]', async ({ page, check }, te
   });
 });
 
-test('ROT-12.1 Flip shows its line and the Horizontal and Vertical buttons [all]', async ({
+test('ROT-12.1 Flip shows its line and the Horizontal and Vertical buttons [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -606,14 +604,14 @@ async function checkOneFlip(page, check, testInfo, button) {
   });
 }
 
-test('ROT-13.1 Horizontal mirrors the photo left to right [all]', async ({
+test('ROT-13.1 Horizontal mirrors the photo left to right [phone]', async ({
   page,
   check,
 }, testInfo) => {
   await checkOneFlip(page, check, testInfo, 'Horizontal');
 });
 
-test('ROT-14.1 Vertical mirrors the photo top to bottom [all]', async ({
+test('ROT-14.1 Vertical mirrors the photo top to bottom [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -649,14 +647,14 @@ async function checkFlipAsSeen(page, check, testInfo, button) {
   });
 }
 
-test('ROT-15.1 Horizontal mirrors a tilted, turned photo as seen [all]', async ({
+test('ROT-15.1 Horizontal mirrors a tilted, turned photo as seen [phone]', async ({
   page,
   check,
 }, testInfo) => {
   await checkFlipAsSeen(page, check, testInfo, 'Horizontal');
 });
 
-test('ROT-15.2 Vertical mirrors a tilted, turned photo as seen [all]', async ({
+test('ROT-15.2 Vertical mirrors a tilted, turned photo as seen [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -672,7 +670,7 @@ async function drawCropByHand(page, hand, dx, dy) {
   await hand.drag(middleOnPage, { x: middleOnPage.x + dx, y: middleOnPage.y + dy });
 }
 
-test('ROT-15.3 A flip mirrors a crop box drawn by hand [all]', async ({
+test('ROT-15.3 A flip mirrors a crop box drawn by hand [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -698,7 +696,7 @@ test('ROT-15.3 A flip mirrors a crop box drawn by hand [all]', async ({
   });
 });
 
-test('ROT-15.4 The saved picture is mirrored too [all]', async ({
+test('ROT-15.4 The saved picture is mirrored too [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
@@ -747,21 +745,21 @@ async function checkQuarterTurn(page, check, testInfo, button, topSide) {
   });
 }
 
-test('ROT-16.1 90° left turns the photo a quarter turn counterclockwise [all]', async ({
+test('ROT-16.1 90° left turns the photo a quarter turn counterclockwise [phone]', async ({
   page,
   check,
 }, testInfo) => {
   await checkQuarterTurn(page, check, testInfo, '#toolRotateLeft', 'left');
 });
 
-test('ROT-17.1 90° right turns the photo a quarter turn clockwise [all]', async ({
+test('ROT-17.1 90° right turns the photo a quarter turn clockwise [phone]', async ({
   page,
   check,
 }, testInfo) => {
   await checkQuarterTurn(page, check, testInfo, '#toolRotateRight', 'right');
 });
 
-test('ROT-18.1 A quarter turn carries a crop box drawn by hand [all]', async ({
+test('ROT-18.1 A quarter turn carries a crop box drawn by hand [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -783,7 +781,7 @@ test('ROT-18.1 A quarter turn carries a crop box drawn by hand [all]', async ({
   });
 });
 
-test('ROT-19.1 Fill frame leaves no empty corners in the saved image [all]', async ({
+test('ROT-19.1 Fill frame leaves no empty corners in the saved image [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
@@ -805,7 +803,7 @@ test('ROT-19.1 Fill frame leaves no empty corners in the saved image [all]', asy
   });
 });
 
-test('ROT-19.2 Fill frame is a switch, and each change is one undo step [all]', async ({
+test('ROT-19.2 Fill frame is a switch, and each change is one undo step [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -863,7 +861,7 @@ test('ROT-20.1 The grid, for a person to judge [phone]', async ({ page, check },
   await check.eye('with Grid off: no grid lines; the dashed box is still there');
 });
 
-test('ROT-20.2 The grid is never exported [all]', async ({ page, check }, testInfo) => {
+test('ROT-20.2 The grid is never exported [phone] [webkit]', async ({ page, check }, testInfo) => {
   const hand = await startOnRotate(page, testInfo);
   await goToStep(page, 'export');
   const withGrid = await saveByDownload(page, hand, 'No');
@@ -899,7 +897,7 @@ test('ROT-21.1 The crop on Rotate, for a person to judge [phone]', async ({
     + 'screen, around the card');
 });
 
-test('ROT-22.1 Reset rotation clears turns, angle, flips and Fill frame in one step [all]',
+test('ROT-22.1 Reset rotation clears turns, angle, flips and Fill frame in one step [phone]',
   async ({ page, check }, testInfo) => {
     const hand = await startOnRotate(page, testInfo);
     const tiltAtStart = await tiltDeg(page);
@@ -941,7 +939,7 @@ test('ROT-22.1 Reset rotation clears turns, angle, flips and Fill frame in one s
       });
   });
 
-test('ROT-22.2 Reset rotation leaves Grid as it is [all]', async ({ page, check }, testInfo) => {
+test('ROT-22.2 Reset rotation leaves Grid as it is [phone]', async ({ page, check }, testInfo) => {
   const hand = await startOnRotate(page, testInfo);
   await openOptions(page, hand, 'rotate');
   const grid = page.locator('#rotateGrid');
@@ -964,7 +962,7 @@ async function chooseFlipAndHideGrid(page, hand) {
   await closeOptions(page, hand, 'rotate');
 }
 
-test('ROT-23.1 Flip and Grid stay as set for the next photo [all]', async ({
+test('ROT-23.1 Flip and Grid stay as set for the next photo [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -987,7 +985,7 @@ test('ROT-23.1 Flip and Grid stay as set for the next photo [all]', async ({
   });
 });
 
-test('ROT-23.2 Flip and Grid are not kept after a reload [all]', async ({
+test('ROT-23.2 Flip and Grid are not kept after a reload [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {

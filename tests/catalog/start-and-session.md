@@ -549,11 +549,11 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### STA-10.3 After a replaced logo is undone, Resume loses the logo   [auto: phone, webkit]
-Flag: to confirm. Written to today's behavior: the logo that Undo brought back is not stored for Resume, so the export after a resume fails.
+### STA-10.3 After a replaced logo is undone, Resume keeps the logo   [auto: phone, webkit]
+Written to ruling R35; it fails until R35 is built (BUG-140).
 
 Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder you can open
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/; logos: icons/icon.svg and icons/apple-touch-icon.png
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Overlay step
@@ -563,13 +563,13 @@ Before you start:
 | 1 | Add the logo icon.svg | The app icon shows on the photo as the logo |
 | 2 | Wait two seconds, then tap **Replace logo** and choose apple-touch-icon.png | The logo changes to the other picture |
 | 3 | Tap **Undo** (the arrow curving left, at the top right) | The app icon is the logo again |
-| 4 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
-| 5 | Tap **Resume** | The photo opens on the Overlay step |
-| 6 | Tap **Export** in the step bar, then **Download** | A question card asks "Upscale to 2000 px?" |
-| 7 | Tap **No** | No file is saved; a red message says "Export failed: The overlay image isn’t loaded. Open the Overlay step and add it again." |
+| 4 | Tap **Export** in the step bar, then **Download**, then **No** | A file named IMG_9136-straight.jpg is saved, with the app icon as its logo |
+| 5 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
+| 6 | Tap **Resume** | The photo opens on the Export step |
+| 7 | Tap **Download**, then **No** | A second file is saved, with no message about the logo; it is the same picture as the first, logo and all |
 
 Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
+On a fail, record: the row number, what you saw instead, a screenshot, and the two files.
 
 ### STA-10.4 Resume falls back to the logo saved in the browser   [auto: phone, webkit]
 Before you start:
@@ -804,19 +804,20 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
-### STA-15.3 Leaving the page saves at once   [auto: desktop, webkit]
+### STA-15.3 A change is saved within 0.2 s, before the tab can be closed   [auto: phone, webkit]
+Written to ruling R36; it fails until R36 is built (BUG-141).
+
 Before you start:
-- Device and browser: a computer, Chrome or Edge; a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, a second after it opened
 
-The script tells the page it is being left, as closing the tab does, without closing it, and times the save to the millisecond. It does not close the tab: whether a save started as the tab closes reaches the device is up to the browser.
+A save started as a tab closes isn't sure to reach the device, so a change must already be saved by the time a person could close the tab. The page is left open; the script times the save to the millisecond.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **90° right** in the row of tools | The photo lies on its side |
-| 2 | At once (within 0.1 s), close the tab | The edits, with the turn, are saved within 0.1 s of leaving, well before the usual 0.4 s |
+| 1 | Tap **90° right** in the row of tools | The photo lies on its side; the edits, with the turn, are saved within 0.2 s of the tap |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

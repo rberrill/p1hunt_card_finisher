@@ -1402,13 +1402,12 @@ The saved photo is at most 12000 px on its long side and 16,777,216 px in area; 
 - Anchors: `CONFIG.maxOutputPx`, `CONFIG.maxOutputArea`
 - Source: `js/engine.js` (`outputSize`)
 - Ruling: R37. With upscaling switched on from a link, the Upscale question is not asked. The app differs today.
-- Flag: to confirm. With upscaling turned on by a link and the output scaled down to the area cap, Download still asks "Upscale to 12000 px?" and calls the 4096 × 4096 px output the crop at the photo's resolution (it is 1400 × 1400 px); **Yes** saves the same 4096 × 4096 px.
 - Cases: 2
 
 The sample photos are too small to reach 12000 px on a side at their own resolution, and with upscaling on the area cap binds first, so EXP-34.2 lowers the side cap with a link to show the rule.
 
 ### EXP-34.1 The saved photo is at most 16,777,216 px in area   [auto: phone, webkit]
-Flag: to confirm. Written to today's behavior: the question is asked, and names the scaled-down output as the crop.
+Written to ruling R37; it fails until R37 is built (BUG-142).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
@@ -1419,8 +1418,8 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the size line, under the **Size** and **Format** choices | It begins Output 4096 × 4096 px · JPEG |
-| 2 | Tap **Download** | A question card asks "Upscale to 12000 px?" and reads "The crop is 4096 × 4096 px at the photo’s resolution." |
-| 3 | Tap **No** | The saved file is 4096 × 4096 px: 16,777,216 px in area |
+| 2 | Tap **Download** | No question card: upscaling is already on, so a file is saved straight away |
+| 3 | Open the saved file | It is 4096 × 4096 px: 16,777,216 px in area |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.

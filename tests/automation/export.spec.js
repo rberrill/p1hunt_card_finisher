@@ -1789,22 +1789,19 @@ test('EXP-34.1 The saved photo is at most 16,777,216 px in area [phone] [webkit]
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-142');
   const hand = await startOn(page, testInfo, { address: OVER_LIMIT_LINK });
   await check('the size line begins Output 4096 × 4096 px · JPEG', async () => {
     expect(await readoutText(page)).toMatch(/^Output 4096 × 4096 px · JPEG/);
   });
-  const downloading = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnDownload'));
-  await check('a question card asks "Upscale to 12000 px?" and names a 4096 × 4096 px crop',
-    async () => {
-      await expect(questionCard(page)).toContainText('Upscale to 12000 px?');
-      await expect(questionCard(page))
-        .toContainText('The crop is 4096 × 4096 px at the photo’s resolution.');
+  // Answers No if the question is asked, so the file still comes and its size can be read.
+  const saved = await downloadAnswering(page, hand, 'No');
+  await check('no question card: upscaling is already on, so a file is saved straight away',
+    () => {
+      expect(saved.question).toBe('');
     });
-  await hand.tap(questionButton(page, 'No'));
-  const saved = await (await downloading).path();
   await check('the saved file is 4096 × 4096 px: 16,777,216 px in area', async () => {
-    expect(await savedSize(page, saved)).toEqual([4096, 4096]);
+    expect(await savedSize(page, saved.file)).toEqual([4096, 4096]);
   });
 });
 

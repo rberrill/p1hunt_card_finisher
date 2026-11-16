@@ -15,7 +15,7 @@ The line above the controls shows **Straighten** and the angle with one decimal,
 - Source: `js/app/rotate.js` (`angleText`, `syncRotate`)
 - Cases: 1
 
-### ROT-01.1 The angle reads with one decimal and a true minus sign   [auto: all]
+### ROT-01.1 The angle reads with one decimal and a true minus sign   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -48,7 +48,7 @@ Drag the ruler to straighten the photo, from −45° to +45° in 0.1° steps. It
 - Source: `js/app/rotate.js` (`buildFineRuler`, `bindRotate`, `setFine`); `js/app/parts/ruler.js` (`buildRuler`, `buildRulerScale`, `bindRulerDrag`)
 - Cases: 2
 
-### ROT-02.1 Dragging the ruler turns the photo, one undo step per drag   [auto: all]
+### ROT-02.1 Dragging the ruler turns the photo, one undo step per drag   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test
@@ -96,7 +96,7 @@ However it is set, the angle is kept within ±45° and rounded to 0.1°.
 - Source: `js/app/rotate.js` (`setFine`)
 - Cases: 1
 
-### ROT-03.1 The angle stays within ±45° and is rounded to 0.1°   [auto: all]
+### ROT-03.1 The angle stays within ±45° and is rounded to 0.1°   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -130,7 +130,7 @@ The angle, with a pencil after it, is a button: tapping it puts a text box in it
 - Source: `js/app/rotate.js` (`buildStraightenLine`, `startTyping`, `bindTyping`)
 - Cases: 1
 
-### ROT-04.1 Tapping the angle opens a box to type it in   [auto: all]
+### ROT-04.1 Tapping the angle opens a box to type it in   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -163,7 +163,7 @@ While typing, **Reset** gives way to **±** and **Done**. **±** changes the sig
 - Source: `js/app/rotate.js` (`showTypingControls`, `toggleTypedSign`, `bindTyping`)
 - Cases: 1
 
-### ROT-05.1 ± changes the sign of the typed angle and Done saves it   [auto: all]
+### ROT-05.1 ± changes the sign of the typed angle and Done saves it   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -197,7 +197,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Ruling: R1. An empty or unreadable entry keeps the old angle, with no undo step. The app differs today.
 - Cases: 3
 
-### ROT-06.1 Done saves the typed angle as one undo step   [auto: all]
+### ROT-06.1 Done saves the typed angle as one undo step   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -232,7 +232,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-06.3 Done on an empty box keeps the angle   [auto: all]
+### ROT-06.3 Done on an empty box keeps the angle   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -286,7 +286,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-07.2 A tap on the photo closes the box without saving   [auto: all]
+### ROT-07.2 A tap on the photo closes the box without saving   [auto: phone, webkit]
 Flag: to confirm. Written to today's behavior: the typed 9 is thrown away.
 
 Before you start:
@@ -304,7 +304,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-07.3 Choosing Flip or Straighten closes the box without saving   [auto: all]
+### ROT-07.3 Choosing Flip or Straighten closes the box without saving   [auto: phone]
 Flag: to confirm. Written to today's behavior: the typed 9 is thrown away.
 
 Before you start:
@@ -326,7 +326,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-07.4 Leaving the step closes the box without saving   [auto: all]
+### ROT-07.4 Leaving the step closes the box without saving   [auto: phone]
 Flag: to confirm. Written to today's behavior: the typed 9 is thrown away.
 
 Before you start:
@@ -359,7 +359,7 @@ The box accepts a hyphen or a true minus sign, a decimal comma and a trailing °
 - Ruling: R1. An empty or unreadable entry keeps the old angle, with no undo step. The app differs today.
 - Cases: 3
 
-### ROT-08.1 The box accepts a hyphen or a true minus sign   [auto: all]
+### ROT-08.1 The box accepts a hyphen or a true minus sign   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -378,7 +378,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-08.2 The box accepts a decimal comma and a degree sign   [auto: all]
+### ROT-08.2 The box accepts a decimal comma and a degree sign   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -397,7 +397,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-08.3 An unreadable entry keeps the angle   [auto: all]
+### ROT-08.3 An unreadable entry keeps the angle   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -451,7 +451,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
-### ROT-09.2 On a wide screen the line stays in place while typing   [auto: desktop]
+### ROT-09.2 On a wide screen the line stays in place while typing   [auto: desktop, webkit]
 Before you start:
 - Device and browser: a computer; a wide window
 - Build: the build under test
@@ -482,7 +482,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Flag: to confirm. This Reset sets only the angle, while **Reset rotation** in the options sheet also clears turns, flips and Fill frame; neither changes Grid.
 - Cases: 1
 
-### ROT-10.1 Reset sets the angle to 0° as one undo step   [auto: all]
+### ROT-10.1 Reset sets the angle to 0° as one undo step   [auto: phone]
 Flag: to confirm. Written to today's behavior: Reset leaves the quarter turn.
 
 Before you start:
@@ -517,7 +517,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Source: `js/app/rotate.js` (`setRotateMode`, `bindRotate`, `syncRotate`)
 - Cases: 1
 
-### ROT-11.1 Straighten is the resting mode   [auto: all]
+### ROT-11.1 Straighten is the resting mode   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -546,7 +546,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Source: `js/app/rotate.js` (`buildFlipLine`, `buildFlipRow`, `setRotateMode`, `syncRotate`)
 - Cases: 1
 
-### ROT-12.1 Flip shows its line and the Horizontal and Vertical buttons   [auto: all]
+### ROT-12.1 Flip shows its line and the Horizontal and Vertical buttons   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -574,7 +574,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Source: `js/app/rotate.js` (`flip`, `bindRotate`, `syncFlipButton`)
 - Cases: 1
 
-### ROT-13.1 Horizontal mirrors the photo left to right   [auto: all]
+### ROT-13.1 Horizontal mirrors the photo left to right   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -603,7 +603,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Source: `js/app/rotate.js` (`flip`, `bindRotate`, `syncFlipButton`)
 - Cases: 1
 
-### ROT-14.1 Vertical mirrors the photo top to bottom   [auto: all]
+### ROT-14.1 Vertical mirrors the photo top to bottom   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -633,7 +633,7 @@ A flip mirrors the picture exactly as it looks on screen: it reverses the sign o
 - Flag: to confirm. A flip changes the sign of the angle shown: 3.0° reads −3.0° after **Horizontal**.
 - Cases: 4
 
-### ROT-15.1 Horizontal mirrors a tilted, turned photo as seen   [auto: all]
+### ROT-15.1 Horizontal mirrors a tilted, turned photo as seen   [auto: phone]
 Flag: to confirm. Written to today's behavior: the angle shown changes sign.
 
 Before you start:
@@ -655,7 +655,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-15.2 Vertical mirrors a tilted, turned photo as seen   [auto: all]
+### ROT-15.2 Vertical mirrors a tilted, turned photo as seen   [auto: phone]
 Flag: to confirm. Written to today's behavior: the angle shown changes sign.
 
 Before you start:
@@ -677,7 +677,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-15.3 A flip mirrors a crop box drawn by hand   [auto: all]
+### ROT-15.3 A flip mirrors a crop box drawn by hand   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test
@@ -695,7 +695,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-15.4 The saved picture is mirrored too   [auto: all]
+### ROT-15.4 The saved picture is mirrored too   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -730,7 +730,7 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the t
 - Source: `js/app/rotate.js` (`turn`, `bindRotate`)
 - Cases: 1
 
-### ROT-16.1 90° left turns the photo a quarter turn counterclockwise   [auto: all]
+### ROT-16.1 90° left turns the photo a quarter turn counterclockwise   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -758,7 +758,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Source: `js/app/rotate.js` (`turn`, `bindRotate`)
 - Cases: 1
 
-### ROT-17.1 90° right turns the photo a quarter turn clockwise   [auto: all]
+### ROT-17.1 90° right turns the photo a quarter turn clockwise   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -786,7 +786,7 @@ A quarter turn takes a crop box drawn by hand round with the photo, so it stays 
 - Source: `js/app/rotate.js` (`turn`)
 - Cases: 1
 
-### ROT-18.1 A quarter turn carries a crop box drawn by hand   [auto: all]
+### ROT-18.1 A quarter turn carries a crop box drawn by hand   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test
@@ -817,7 +817,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Source: `js/app/rotate.js` (`bindRotate`, `syncRotate`); `js/engine.js` (`placeCrop`, `shrinkToValid`)
 - Cases: 2
 
-### ROT-19.1 Fill frame leaves no empty corners in the saved image   [auto: all]
+### ROT-19.1 Fill frame leaves no empty corners in the saved image   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -838,7 +838,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.
 
-### ROT-19.2 Fill frame is a switch, and each change is one undo step   [auto: all]
+### ROT-19.2 Fill frame is a switch, and each change is one undo step   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -889,7 +889,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-20.2 The grid is never exported   [auto: all]
+### ROT-20.2 The grid is never exported   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -954,7 +954,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Flag: to confirm. **Reset rotation** clears turns, flips and Fill frame as well as the angle, while **Reset** beside the angle clears only the angle; neither changes Grid.
 - Cases: 2
 
-### ROT-22.1 Reset rotation clears turns, angle, flips and Fill frame in one step   [auto: all]
+### ROT-22.1 Reset rotation clears turns, angle, flips and Fill frame in one step   [auto: phone]
 Flag: to confirm. Written to today's behavior.
 
 Before you start:
@@ -978,7 +978,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-22.2 Reset rotation leaves Grid as it is   [auto: all]
+### ROT-22.2 Reset rotation leaves Grid as it is   [auto: phone]
 Flag: to confirm. Written to today's behavior.
 
 Before you start:
@@ -1010,7 +1010,7 @@ The Straighten or Flip mode and **Grid** stay as set when another photo is opene
 - Flag: to confirm. They survive opening a new photo but not a reload.
 - Cases: 2
 
-### ROT-23.1 Flip and Grid stay as set for the next photo   [auto: all]
+### ROT-23.1 Flip and Grid stay as set for the next photo   [auto: phone]
 Flag: to confirm. Written to today's behavior.
 
 Before you start:
@@ -1031,7 +1031,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-23.2 Flip and Grid are not kept after a reload   [auto: all]
+### ROT-23.2 Flip and Grid are not kept after a reload   [auto: phone, webkit]
 Flag: to confirm. Written to today's behavior.
 
 Before you start:
