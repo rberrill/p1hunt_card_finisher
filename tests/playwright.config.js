@@ -21,10 +21,22 @@ const PHONE = { width: 390, height: 844 };
 const SMALL_PHONE = { width: 375, height: 667 };
 const DESKTOP = { width: 1280, height: 800 };
 
-// A case names where it runs in its title: [all], [phone], [small], [desktop] or [disk].
-const PHONE_CASES = /\[(all|phone)\]/;
+// A case names where it runs in its title. The size: [phone], [desktop] or [both]; adding
+// [webkit] runs it in WebKit as well as Chromium. [all] is [both] with [webkit]. A case runs
+// only where its verdict could differ: Chromium at phone size by default, the desktop size
+// where the wide layout or a keyboard and mouse matter, WebKit where the engine could change
+// the answer (layout, saved files, storage, the file input, the worker, gestures).
+// Set CARD_FINISHER_FULL=1 to run every case in WebKit too, as before a release.
+const isFullRun = process.env.CARD_FINISHER_FULL === '1';
+const PHONE_CASES = /\[(all|phone|both)\]/;
 const SMALL_CASES = /\[small\]/;
-const DESKTOP_CASES = /\[(all|desktop)\]/;
+const DESKTOP_CASES = /\[(all|desktop|both)\]/;
+const WEBKIT_PHONE_CASES = isFullRun
+  ? PHONE_CASES
+  : /\[all\]|(?=.*\[webkit\]).*\[(phone|both)\]/;
+const WEBKIT_DESKTOP_CASES = isFullRun
+  ? DESKTOP_CASES
+  : /\[all\]|(?=.*\[webkit\]).*\[(desktop|both)\]/;
 const DISK_CASES = /\[disk\]/;
 
 // A touch phone of the given size, at an iPhone's pixel density.
@@ -70,12 +82,12 @@ module.exports = defineConfig({
     },
     {
       name: 'webkit-phone',
-      grep: PHONE_CASES,
+      grep: WEBKIT_PHONE_CASES,
       use: { browserName: 'webkit', ...phone(PHONE) },
     },
     {
       name: 'webkit-desktop',
-      grep: DESKTOP_CASES,
+      grep: WEBKIT_DESKTOP_CASES,
       use: { browserName: 'webkit', viewport: DESKTOP },
     },
     {

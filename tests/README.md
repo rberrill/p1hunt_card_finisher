@@ -11,11 +11,15 @@ The app itself needs no npm, Node or build step. Only this test tooling does, an
 1. Install once: `cd tests`, then `npm ci --ignore-scripts`, then `npm run browsers` (downloads Playwright's Chromium and WebKit builds to your user folder, outside the repository).
 2. Run: `cd tests`, then `npx playwright test`. It starts its own server on port 8770.
 
+A case runs only where its verdict could differ, so most run in Chromium at phone size alone. Set `CARD_FINISHER_FULL=1` to run every case in WebKit too (before a release), `CARD_FINISHER_URL=<address>` to run against a deployed site, and `CARD_FINISHER_PORT=<port>` when two runs must not share a server.
+
 | Target | Browser | Size | Runs the cases marked |
 |---|---|---|---|
-| `chromium-phone`, `webkit-phone` | Chromium, WebKit | 390 × 844, touch | `[all]`, `[phone]` |
+| `chromium-phone` | Chromium | 390 × 844, touch | `[phone]`, `[both]`, `[all]` |
+| `webkit-phone` | WebKit | 390 × 844, touch | those, when also marked `[webkit]` (or `[all]`) |
 | `chromium-small-phone` | Chromium | 375 × 667, touch | `[small]` |
-| `chromium-desktop`, `webkit-desktop` | Chromium, WebKit | 1280 × 800 | `[all]`, `[desktop]` |
+| `chromium-desktop` | Chromium | 1280 × 800 | `[desktop]`, `[both]`, `[all]` |
+| `webkit-desktop` | WebKit | 1280 × 800 | those, when also marked `[webkit]` (or `[all]`) |
 | `chromium-disk` | Chromium, opened from `file://` | 1280 × 800 | `[disk]` |
 
 Each run writes a folder under `tests/runs/` (not committed), named for the time, the app's version and the commit: `summary.md`, `results.json`, a screenshot for every verdict under `evidence/<case>/<target>/`, and Playwright's recording of each failed case under `traces/`. The newest ten runs are kept.

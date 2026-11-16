@@ -124,4 +124,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 **An eye case** may also hold results a script decides; only the rows that need a person's judgment are left to the eye. The description given to the judge says exactly what to look for.
 
-The mark after the title says who decides: `[auto: all]`, `[auto: phone]`, `[auto: desktop]` or `[auto: small]` (a script, on those targets), `[eye]` (a script saves the screenshot, a person judges it) or `[phone]` (a person, on a real iPhone). An `auto` or `eye` case has exactly one test in `tests/automation/` whose title starts with its ID.
+The mark after the title says who decides: `[auto: …]` (a script), `[eye]` (a script saves the screenshot, a person judges it) or `[phone]` (a person, on a real iPhone).
+
+**Where an automated case runs.** A case runs only where its verdict could come out differently (Rich, 2026-11-15):
+
+| Mark | Runs in |
+| --- | --- |
+| `[auto: phone]` | Chromium at phone size (390 × 844, touch). The default: the phone is the primary use |
+| `[auto: both]` | Chromium at phone size and at desktop size (1280 × 800). For a capability whose wide layout behaves differently (its Layout field says so) |
+| `[auto: desktop]` | Chromium at desktop size only. For a keyboard, a mouse wheel, drop, paste, or a wide-only capability |
+| `, webkit` added to any of those | WebKit as well as Chromium. Only where the browser engine could change the answer: layout measurements, saved files and image encoding, storage and Resume, the file input, the engine worker, gestures |
+| `[auto: small]` | Chromium at 375 × 667, for the few cases about a narrow phone |
+| `[auto: all]` | The same as `[auto: both, webkit]` |
+
+A plain-logic case (tap a control, the state changes) is `[auto: phone]`. Before a release, one switch runs every case in WebKit too.
+
+An `auto` or `eye` case has exactly one test in `tests/automation/` whose title starts with its ID.
