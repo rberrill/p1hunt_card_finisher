@@ -134,6 +134,8 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 **One action per step** means one thing done by the person. Answering a question box that a tap brings up is its own step. An "if" in a step is not allowed: say what will happen with the photo the case names.
 
+**Something only the phone can settle.** When a case depends on a fact nobody can check without a real iPhone (what Safari does with a gesture, what iOS shows, which models do what), don't guess and don't write an "if". Add an item to `find-out.md`: what to do, what to write down, which case is waiting. It goes on the next phone checklist as Part C; the answer is then written into the case and the item removed (Rich, 2026-11-16).
+
 **A case for both layouts.** A case marked `[auto: all]` runs on a phone and on a wide screen, so a step that differs says both, once: "Open **Rotate options**: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls."
 
 **A named action.** When several steps always go together, a case may define them once above its table and then use the name as one step: "Type the angle N: tap the angle, type N, tap **Done**." The definition names every control; the step still has one result.

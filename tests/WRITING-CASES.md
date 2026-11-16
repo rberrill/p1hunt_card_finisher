@@ -23,6 +23,10 @@ For whoever adds cases to the catalog and the Playwright tests that run them. Re
 10. **Share.** No case or test exercises a desktop browser's real share feature (Rich, 2026-11-15). A stand-in for `navigator.share` and `navigator.canShare`, installed with `page.addInitScript`, may prove the app's side. The real share sheet is a `[phone]` case.
 11. **A question card closing:** its layer's `hidden` lags by about 200 ms. Wait on `CF.isAlertOpen` or on visibility.
 
+## When only the phone can tell you
+
+If a case depends on something only a real iPhone can settle, add an item to `tests/catalog/find-out.md` and leave the case waiting on it. The item goes on Rich's next phone checklist; his answer is then written into the case.
+
 ## What a review looks for
 
 A second reader checks every new or changed case. The faults found most often in the first review:

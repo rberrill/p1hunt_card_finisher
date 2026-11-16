@@ -4,6 +4,8 @@
 // Part A is generated, never written from memory: it holds the [phone] cases of every
 // capability whose catalog entry was added or changed since the last checklist was committed.
 // Part B is the fixed main flow: the journeys in tests/catalog/journeys.md.
+// Part C is every open item in tests/catalog/find-out.md: things only a real iPhone can
+// settle, each with a place to write the answer.
 // The first checklist, or one made with --all, holds every phone case.
 'use strict';
 const fs = require('fs');
@@ -15,7 +17,11 @@ const catalogDir = path.join(root, 'tests/catalog');
 const checklistDir = path.join(root, 'tests/checklists');
 const JOURNEYS = 'journeys.md';
 // Catalog files that hold no capabilities.
-const NOT_AREAS = new Set(['README.md', 'rulings.md', 'wording.md', 'retired.md']);
+const NOT_AREAS = new Set([
+  'README.md', 'rulings.md', 'wording.md', 'retired.md', 'find-out.md',
+]);
+const FIND_OUT = 'find-out.md';
+const ANSWER_LINE = 'What I saw:';
 const ENTRY_HEADING = /^## ([A-Z]+-\d+) (.+)$/;
 const CASE_HEADING = /^### ([A-Z]+-\d+\.\d+) (.+?)\s+\[([^\]]+)\]\s*$/;
 const RESULT_LINE = 'Result: ☐ pass   ☐ fail   Failed at row: ____   What happened:';
@@ -93,6 +99,21 @@ function phoneCases(entries) {
   return { count: cases.length, text: cases.map(caseBlock).join('\n') };
 }
 
+// The open find-out items, as checklist text, with a count. Each is a `## Q-nn` section.
+function findOutItems() {
+  const file = path.join(catalogDir, FIND_OUT);
+  if (!fs.existsSync(file)) return { count: 0, text: '' };
+  const sections = fs.readFileSync(file, 'utf8').split(/?
+(?=## Q-d+ )/).slice(1);
+  const blocks = sections
+    .map(section => `${section.trim().replace(/^## /, '#### ')}
+
+${ANSWER_LINE}
+`);
+  return { count: blocks.length, text: blocks.join('
+') };
+}
+
 // What is being tested: the version and the short commit.
 function buildInfo() {
   const config = fs.readFileSync(path.join(root, 'js/config.js'), 'utf8');
@@ -101,7 +122,7 @@ function buildInfo() {
 }
 
 // The whole checklist's text.
-function checklistText(build, since, partA, changedIds, partB) {
+function checklistText(build, since, partA, changedIds, partB, partC) {
   const sinceText = since
     ? `capabilities added or changed since the last checklist (commit ${since.slice(0, 7)})`
     : 'every phone case in the catalog';
@@ -130,6 +151,13 @@ function checklistText(build, since, partA, changedIds, partB) {
     '',
     partB.text,
     '',
+    `## Part C: find out (${partC.count} items)`,
+    '',
+    'Not tests: nothing here passes or fails. Each is something only a real iPhone can',
+    'settle, that a test case is waiting on. Write down what you see.',
+    '',
+    partC.count ? partC.text : 'Nothing to find out.',
+    '',
     '## Result',
     '',
     '☐ Pass: every case passed   ☐ Fail: list the failed cases here',
@@ -145,7 +173,8 @@ const changed = areaFiles()
 const journeys = readEntries(fs.readFileSync(path.join(catalogDir, JOURNEYS), 'utf8'));
 const build = buildInfo();
 const changedIds = since ? changed.map(entry => entry.id) : [];
-const text = checklistText(build, since, phoneCases(changed), changedIds, phoneCases(journeys));
+const parts = [phoneCases(changed), changedIds, phoneCases(journeys), findOutItems()];
+const text = checklistText(build, since, ...parts);
 fs.mkdirSync(checklistDir, { recursive: true });
 const file = path.join(checklistDir, `${build.version}_${build.commit}.md`);
 fs.writeFileSync(file, text);
