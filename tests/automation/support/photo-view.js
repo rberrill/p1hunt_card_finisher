@@ -127,7 +127,8 @@ function stageShare(page) {
     const ctx = canvas.getContext('2d');
     const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     const stage = CONFIG.theme.stage;
-    const [red, green, blue] = [1, 3, 5].map(at => parseInt(stage.slice(at, at + 2), 16));
+    const [red, green, blue] = [1, 3, 5]
+      .map(start => parseInt(stage.slice(start, start + 2), 16));
     let count = 0;
     for (let i = 0; i < pixels.length; i += 4) {
       if (pixels[i] === red && pixels[i + 1] === green && pixels[i + 2] === blue) count += 1;

@@ -301,7 +301,8 @@ test('TOP-03.3 Ctrl+Y redoes too, though the tooltip names only Shift+Ctrl+Z [de
   const hand = await startOn(page, testInfo, 'rotate');
   const redo = page.locator('#btnRedo');
   await redo.hover();
-  await check('the tooltip reads "Redo (Shift+Ctrl/Cmd+Z)", with no mention of Ctrl+Y', async () => {
+  const redoTip = 'the tooltip reads "Redo (Shift+Ctrl/Cmd+Z)", with no mention of Ctrl+Y';
+  await check(redoTip, async () => {
     await expect(redo).toHaveAttribute('title', 'Redo (Shift+Ctrl/Cmd+Z)');
   });
   await hand.tap(turnRight(page));
@@ -707,7 +708,8 @@ test('TOP-12.2 On a wide screen the dot follows the name, dark while Levels is s
     expect(await styleOf(dot, 'backgroundColor')).toBe(PAGE_BLACK);
   });
   await goToStep(page, 'export', hand);
-  await check('with Export selected, the Levels tab is not white and its dot is white', async () => {
+  const dotOnExport = 'with Export selected, the Levels tab is not white and its dot is white';
+  await check(dotOnExport, async () => {
     expect(await hasWhiteFill(stepTab(page, 'levels'))).toBe(false);
     expect(await styleOf(dot, 'backgroundColor')).toBe(WHITE);
   });
@@ -933,7 +935,8 @@ test('TOP-18.2 The options tab\'s size, place and arrow [phone] [webkit]', async
     expect(Math.abs(box.x + box.width / 2 - PHONE_WINDOW.width / 2)).toBeLessThan(0.5);
     expect(areaTop - box.y).toBeCloseTo(24, 0);
   });
-  await check('it is the controls\' color, outlined on its top and sides, not its foot', async () => {
+  const tabLook = 'it is the controls\' color, outlined on its top and sides, not its foot';
+  await check(tabLook, async () => {
     expect(await styleOf(tab, 'backgroundColor')).toBe(SURFACE);
     const sides = ['Top', 'Left', 'Right'];
     for (const side of sides) {
@@ -1439,7 +1442,8 @@ test('TOP-31.1 Tips open in place on a phone, and are always open on a wide scre
       : 'no Tips row; the tips show, starting with the ruler tip', async () => {
       await expect(row).toBeVisible({ visible: hand.isTouch });
       await expect(tips).toBeVisible({ visible: !hand.isTouch });
-      if (!hand.isTouch) await expect(tips.locator('.sheet-hint').first()).toHaveText(ROTATE_FIRST_TIP);
+      const firstTip = tips.locator('.sheet-hint').first();
+      if (!hand.isTouch) await expect(firstTip).toHaveText(ROTATE_FIRST_TIP);
     });
     if (!hand.isTouch) return;
     await hand.tap(row);
@@ -1649,11 +1653,11 @@ test('TOP-35.1 A mode fills white, an action flashes, a switch reads On or Off [
     }).observe(tool, { attributes: true, attributeFilter: ['class'] });
   }));
   await hand.tap(turnRight(page));
-  const [on, off] = await flash;
+  const [lit, unlit] = await flash;
   await check('90° right flashes a lighter shade for about 0.15 s, then is plain', async () => {
-    expect([on.isFlashing, off.isFlashing]).toEqual([true, false]);
-    expect(off.atMs - on.atMs).toBeGreaterThanOrEqual(140);
-    expect(off.atMs - on.atMs).toBeLessThan(FLASH_PAST_MS);
+    expect([lit.isFlashing, unlit.isFlashing]).toEqual([true, false]);
+    expect(unlit.atMs - lit.atMs).toBeGreaterThanOrEqual(140);
+    expect(unlit.atMs - lit.atMs).toBeLessThan(FLASH_PAST_MS);
     expect(await styleOf(turnRight(page), 'backgroundColor')).toBe(plainFill);
   });
   await hand.tap(page.locator('#toolFillFrame'));
