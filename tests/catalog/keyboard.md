@@ -342,7 +342,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## KEY-09 The photo's keyboard focus ring
 
-The photo shows a 2 px white ring when the keyboard brought focus to it, and none after a click or a touch.
+The photo shows a 2 px white ring when the keyboard brought focus to it, and none when a click or a touch brought it. Once the keyboard has put the ring there, a click on the photo leaves it: the ring means the keyboard is acting on the photo.
 
 - Risk: low
 - Check: script
@@ -351,6 +351,7 @@ The photo shows a 2 px white ring when the keyboard brought focus to it, and non
 - Changed: none
 - Anchors: `#view`, `.is-keyboard-focus`
 - Source: `js/app/input.js` (`onPointerDown`, `stepHandleByTab`), `css/app.css` (`#view:focus-visible`)
+- Ruling: R41. After Tab puts the ring on the photo, a click on the photo leaves the ring, which means the keyboard is acting on the photo. The app already does this. (The code's comment that says otherwise is to be corrected.)
 - Cases: 2
 
 ### KEY-09.1 The photo shows a white ring when the keyboard brings the focus, not a click   [auto: desktop, webkit]
@@ -370,7 +371,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### KEY-09.2 After Tab, a click on the photo leaves the ring   [auto: desktop, webkit]
-Flag: to confirm. Written to today's behavior: the entry and the code's own note say no ring after a click, but a click on the photo while the keyboard's ring shows leaves the ring (the photo had the focus already, so the browser keeps it marked as keyboard focus).
+Ruling R41: the ring stays, as it does today (the photo had the focus already, so the browser keeps it marked as keyboard focus).
 
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window

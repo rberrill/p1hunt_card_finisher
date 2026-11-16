@@ -1134,6 +1134,8 @@ async function expectOneSaveAfter(page, tapMs, delayMs) {
   return writes[0];
 }
 
+// Written to today's 0.4 s wait before a save; the catalog's note under the case says what
+// changes when ruling R36 is built.
 test('STA-14.1 A change is saved 0.4 s after the last one [desktop] [webkit]', async ({
   page,
   check,
@@ -1200,6 +1202,8 @@ test('STA-14.2 A link can lengthen the wait before a save [phone]', async ({
   });
 });
 
+// Written to today's 0.4 s wait before a save; the catalog's note under the case says what
+// changes when ruling R36 is built.
 test('STA-15.1 Hiding the page saves at once [desktop] [webkit]', async ({
   page,
   check,
@@ -1248,6 +1252,63 @@ test('STA-15.3 A change is saved within 0.2 s, before the tab can be closed [pho
       expect(writes[0].delayMs).toBeLessThanOrEqual(SOON_SAVE_MS);
     });
   });
+
+// Tells the page it is hidden (as switching to another tab or app does) or, with
+// `event` 'pagehide', that it is being left, without closing it. Returns the moment, in
+// performance.now() ms.
+function signalLeaving(page, event) {
+  return page.evaluate(eventName => {
+    if (eventName === 'pagehide') {
+      window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));
+      return performance.now();
+    }
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    return performance.now();
+  }, event);
+}
+
+// Tells the page it is shown again, after signalLeaving(page, 'visibilitychange').
+function signalShown(page) {
+  return page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+}
+
+// Ruling R36 keeps the save on hiding or leaving the page as a backstop to the sooner save after
+// each change. The link lengthens the wait before the usual save to 1.5 s, so that only the
+// backstop can save within 0.1 s; the page is never closed, so the write can be seen.
+test('STA-15.6 Hiding or leaving the page starts a save at once [phone] [webkit]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const address = `index.html?session.saveDelayMs=${LONG_SAVE_DELAY_MS}`;
+  const hand = await startWatched(page, testInfo, 'rotate', address);
+  const turn = page.locator('#toolRotateRight');
+  await hand.tap(turn);
+  const hiddenAtMs = await signalLeaving(page, 'visibilitychange');
+  await page.waitForTimeout(QUICK_SAVE_MS);
+  await check('the page told it is hidden: the edits, with the turn, are saved within 0.1 s',
+    async () => {
+      const writes = await editsWritesAfter(page, hiddenAtMs);
+      expect(writes.length).toBeGreaterThan(0);
+      expect(writes[0].delayMs).toBeLessThan(QUICK_SAVE_MS);
+      expect(writes[0].quarter).toBe(1);
+    });
+  await signalShown(page);
+  await page.waitForTimeout(LONG_SAVE_DELAY_MS + SETTLE_AFTER_SAVE_MS);
+  await hand.tap(turn);
+  const leftAtMs = await signalLeaving(page, 'pagehide');
+  await page.waitForTimeout(QUICK_SAVE_MS);
+  await check('the page told it is being left: the edits, with the second turn, are saved within '
+    + '0.1 s', async () => {
+    const writes = await editsWritesAfter(page, leftAtMs);
+    expect(writes.length).toBeGreaterThan(0);
+    expect(writes[0].delayMs).toBeLessThan(QUICK_SAVE_MS);
+    expect(writes[0].quarter).toBe(2);
+  });
+});
 
 // Expects an edits write within DOWNLOAD_SAVE_MS of the last download.
 async function expectSaveAtDownload(page) {

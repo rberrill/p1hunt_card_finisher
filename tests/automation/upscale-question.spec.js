@@ -365,17 +365,17 @@ test('UPS-05.1 Together asks about the joined image, and Yes fits its long edge 
   });
 });
 
-test('UPS-05.2 Where the fit would pass a canvas cap, Yes saves the joined image as it is '
-  + '[phone]', async ({ page, check }, testInfo) => {
+test('UPS-05.2 Where a canvas cap leaves no room to enlarge the joined image, no question is '
+  + 'asked [phone]', async ({ page, check }, testInfo) => {
+  test.fail(true, 'BUG-142');
   const hand = await startOnPair(page, testInfo, 'together', AREA_CAP_LINK);
-  await askBy(page, hand, 'btnDownload');
-  await check(`a card asks "${ASK_2000}" and reads "${TOGETHER_TEXT}"`, async () => {
-    await expectQuestion(page, ASK_2000, TOGETHER_TEXT);
-  });
-  const [saved] = await answerAndCollect(page, hand, 'Yes');
-  await check('after Yes the file is 1583 × 1100 px: not enlarged past the 2.5 MP cap',
+  const saved = await downloadAnswering(page, hand, 'Yes');
+  const size = await imageSize(page, saved.file);
+  await check('no question; 14_front_portrait_raw_white-pair.jpg is saved at 1583 × 1100 px',
     async () => {
-      expect(await imageSize(page, saved.file)).toEqual(TOGETHER_PX);
+      expect(saved.question).toBe('');
+      expect(saved.name).toBe('14_front_portrait_raw_white-pair.jpg');
+      expect(size).toEqual(TOGETHER_PX);
     });
 });
 

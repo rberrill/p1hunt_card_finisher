@@ -377,7 +377,7 @@ Settings in the file that are not valid are reset to their defaults and named in
 - Changed: none
 - Anchors: "Some settings in these edits weren’t valid and were reset: "
 - Source: `js/app/export.js` (`loadEdits`), `js/app/state.js` (`cleanState`), `js/engine.js` (`sanitizeState`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. New wording, to be approved by Rich.
+- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. New wording, to be approved by Rich. R42. One damaged value resets its whole settings group (one bad Quality resets every export setting), and the warning names the group: a damaged file is untrusted. The app already does this.
 - Cases: 2
 
 ### EDT-08.1 A damaged setting is reset and named; the rest is applied   [auto: phone]

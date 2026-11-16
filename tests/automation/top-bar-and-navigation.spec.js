@@ -1131,11 +1131,11 @@ test('TOP-21.1 A corner under the options tab is dragged, and the sheet stays sh
   });
 });
 
-// The body of TOP-22.1 and TOP-22.2: a tap on `control` where it lies under the options tab's
-// touch area takes the tap (`isTaken` says how to see it), and a tap on the tab's raised strip,
-// above it, opens the sheet.
-async function checkControlUnderTab(page, check, hand, step, control, isTaken, description) {
-  // While a step's controls fade in (0.12 s after the step opens) the tab is on top of them.
+// Where `control` lies under `step`'s options tab's touch area: { underTab, strip }, the point
+// of the control under the tab, and the point of the tab's raised strip above the controls,
+// both in CSS px. Checks that the control does lie under the tab there. Measured once the step's
+// controls have faded in; the fade changes only their opacity, so they don't move.
+async function pointUnderTab(page, check, step, control) {
   await waitForStill(page);
   const tabBox = await optionsTab(page, step).boundingBox();
   const controlBox = await control.boundingBox();
@@ -1147,12 +1147,52 @@ async function checkControlUnderTab(page, check, hand, step, control, isTaken, d
     expect(right).toBeGreaterThan(left);
     expect(underTab.y).toBeLessThan(tabBox.y + tabBox.height);
   });
+  return { underTab, strip: { x: tabBox.x + tabBox.width / 2, y: areaTop - RAISED_STRIP_PX } };
+}
+
+// The body of TOP-22.1 and TOP-22.2: a tap on `control` where it lies under the options tab's
+// touch area takes the tap (`isTaken` says how to see it), and a tap on the tab's raised strip,
+// above it, opens the sheet.
+async function checkControlUnderTab(page, check, hand, step, control, isTaken, description) {
+  // Ruling R40: for about 0.1 s after a step change, while the step's controls fade in, the tab
+  // is on top of them and takes their taps (BUG-232, TOP-22.3 and TOP-22.4). These cases wait
+  // for the fade to end, so they test the tab's touch area once the step has settled.
+  const { underTab, strip } = await pointUnderTab(page, check, step, control);
   await page.touchscreen.tap(underTab.x, underTab.y);
   await check(description, async () => {
     await isTaken();
     expect(await isSheetOpen(page, step)).toBe(false);
   });
-  return { x: tabBox.x + tabBox.width / 2, y: areaTop - RAISED_STRIP_PX };
+  return strip;
+}
+
+// Records, in the page, whether the step's controls were still fading in when the next finger
+// came down: window.testTapWhileArriving is set to true or false at the next pointerdown.
+function watchNextTapTiming(page) {
+  return page.evaluate(() => {
+    window.testTapWhileArriving = null;
+    document.addEventListener('pointerdown', () => {
+      window.testTapWhileArriving = !!document.querySelector('.control-area.is-arriving');
+    }, { capture: true, once: true });
+  });
+}
+
+// The body of TOP-22.3 and TOP-22.4: on `step`, finds where `control` lies under the options
+// tab, goes to Crop and back to `step` with a tap on its step tab, and at once (no wait for the
+// controls to fade in) taps the control there. Returns whether that tap came during the fade.
+async function tapUnderTabAfterStepChange(page, check, hand, step, control) {
+  const { underTab } = await pointUnderTab(page, check, step, control);
+  await goToStep(page, 'crop', hand);
+  await waitForStill(page);
+  const tabBox = await stepTab(page, step).boundingBox();
+  await page.touchscreen.tap(tabBox.x + tabBox.width / 2, tabBox.y + tabBox.height / 2);
+  await watchNextTapTiming(page);
+  await page.touchscreen.tap(underTab.x, underTab.y);
+  await check(`the tap came straight after the step change, while ${step}'s controls were `
+    + 'still fading in', async () => {
+    expect(await page.evaluate(() => window.__straightener.app.tab)).toBe(step);
+    expect(await page.evaluate(() => window.testTapWhileArriving)).toBe(true);
+  });
 }
 
 test('TOP-22.1 Rotate\'s angle under the options tab takes the tap [phone] [webkit]', async ({
@@ -1188,6 +1228,33 @@ test('TOP-22.2 Size and Format under the options tab take the tap [phone] [webki
     async () => {
       expect(await isSheetOpen(page, 'export')).toBe(true);
     });
+});
+
+test('TOP-22.3 Straight after a step change to Rotate, the angle under the options tab takes '
+  + 'the tap [phone] [webkit]', async ({ page, check }, testInfo) => {
+  test.fail(true, 'BUG-232');
+  const hand = await startOn(page, testInfo, 'rotate');
+  await tapUnderTabAfterStepChange(page, check, hand, 'rotate', page.locator('#rotateAngle'));
+  // Plain reads, not retrying expects: today the sheet opens at once, so the known defect fails
+  // here without waiting out a timeout.
+  await waitForStill(page);
+  await check('a text box takes the angle\'s place; no sheet opens', async () => {
+    expect(await isSheetOpen(page, 'rotate')).toBe(false);
+    expect(await page.locator('#rotateAngleField').isVisible()).toBe(true);
+  });
+});
+
+test('TOP-22.4 Straight after a step change to Export, Size under the options tab takes the '
+  + 'tap [phone] [webkit]', async ({ page, check }, testInfo) => {
+  test.fail(true, 'BUG-232');
+  const hand = await startOn(page, testInfo, 'export');
+  const original = choiceButton(page, 'exportSize', 'Original');
+  await tapUnderTabAfterStepChange(page, check, hand, 'export', original);
+  await waitForStill(page);
+  await check('Original is selected; no sheet opens', async () => {
+    expect(await isSheetOpen(page, 'export')).toBe(false);
+    expect(await original.getAttribute('aria-pressed')).toBe('true');
+  });
 });
 
 test('TOP-23.1 An open sheet covers the lower photo, at most 470 px, and scrolls inside '

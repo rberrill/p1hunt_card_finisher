@@ -158,7 +158,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## UPS-04 When it isn't asked
 
-The question is never asked for **Original**, nor when the file is already at or over the chosen size, nor when a link turns `export.allowUpscale` on.
+The question is never asked for **Original**, nor when the file is already at or over the chosen size, nor whenever **Yes** would not save a bigger file than **No**: when a link turns `export.allowUpscale` on, or a canvas cap leaves no room to enlarge (ruling R37).
 
 - Risk: medium
 - Check: script
@@ -167,7 +167,7 @@ The question is never asked for **Original**, nor when the file is already at or
 - Changed: none
 - Anchors: `#exportSize`, `CONFIG.export.allowUpscale`
 - Source: `js/app/export.js` (`offeredUpscale`); `js/app/pair.js` (`pairUpscaleOffer`)
-- Ruling: R37. With upscaling switched on from a link, the Upscale question is not asked. The app differs today.
+- Ruling: R37, widened 16 November. The Upscale question is asked only when **Yes** would save a bigger file than **No**, so not with upscaling already switched on from a link, nor where a canvas cap leaves no room to enlarge. The app differs today.
 - Cases: 4
 
 ### UPS-04.1 Original never asks   [auto: phone]
@@ -231,7 +231,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## UPS-05 A pair saved Together
 
-For a pair saved **Together**, it is asked when the joined image's long edge is under the chosen size; **Yes** fits that long edge to exactly the size, unless that would pass a canvas cap.
+For a pair saved **Together**, it is asked when the joined image's long edge is under the chosen size; **Yes** fits that long edge to exactly the size. Where a canvas cap leaves no room to enlarge the joined image, no question is asked (ruling R37).
 
 - Risk: medium
 - Check: script, saved file
@@ -240,8 +240,7 @@ For a pair saved **Together**, it is asked when the joined image's long edge is 
 - Changed: none
 - Anchors: `#pairOutput`, "The image is ", " px at the photos’ resolution."
 - Source: `js/app/pair.js` (`pairUpscaleOffer`, `togetherLayout`, `encodeTogether`); `js/engine.js` (`pairLayout`)
-- Ruling: R37, widened. The question is asked only when Yes would save a bigger file than No. The app differs today.
-- Flag: to confirm. Where the fit would pass a canvas cap, the question is still asked, and **Yes** then saves the same image as **No** (what R37 found for a link that turns upscaling on). Only a link that lowers a cap brings this about with the sample photos.
+- Ruling: R37, widened. The question is asked only when **Yes** would save a bigger file than **No**: where a canvas cap leaves no room to enlarge the joined image, no question is asked. The app differs today: it asks, and **Yes** saves the same image as **No**. Only a link that lowers a cap brings this about with the sample photos.
 - Cases: 2
 
 ### UPS-05.1 Together asks about the joined image, and Yes fits its long edge to the size   [auto: phone]
@@ -259,8 +258,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.
 
-### UPS-05.2 Where the fit would pass a canvas cap, Yes saves the joined image as it is   [auto: phone]
-Flag: to confirm. Written to today's behavior: the question is asked, and **Yes** saves the same size as **No**.
+### UPS-05.2 Where a canvas cap leaves no room to enlarge the joined image, no question is asked   [auto: phone]
+Written to ruling R37, widened; it fails until that is built (BUG-142). No question is asked when **Yes** would not save a bigger file: today the card asks "Upscale to 2000 px?", and **Yes** saves the same 1583 × 1100 px as **No**.
 
 Before you start:
 - Device and browser: a phone-width window, with downloads saved to a folder you can open
@@ -270,8 +269,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** | A card asks "Upscale to 2000 px?" and reads "The image is 1583 × 1100 px at the photos’ resolution." |
-| 2 | Tap **Yes** | One file is saved, of 1583 × 1100 px: a fit to 2000 px would pass the 2.5 MP cap, so it isn't enlarged |
+| 1 | Tap **Download** | No question card; one file, 14_front_portrait_raw_white-pair.jpg, is saved at 1583 × 1100 px |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.

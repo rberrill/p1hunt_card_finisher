@@ -489,12 +489,14 @@ test('LAY-11.2 No gradient anywhere, Download red and the selected size white [p
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'export', hand);
   // The saved logo's thumbnail sits on a checkerboard (to show see-through parts), drawn with
-  // a hard-edged conic gradient that shows as flat squares: the one gradient in the stylesheet.
+  // a hard-edged conic gradient that shows as flat squares: the one gradient in the stylesheet,
+  // an agreed exception to "no gradients" (ruling R43).
   const gradients = await page.evaluate(() => [...document.querySelectorAll('*')]
     .filter(element => /gradient/.test(getComputedStyle(element).backgroundImage))
     .map(element => element.id || element.className)
     .filter(name => name !== 'overlayThumb'));
-  await check('no element has a gradient, but for the checkerboard behind the saved logo',
+  await check('no element has a gradient, but for the checkerboard behind the saved logo (an '
+    + 'agreed exception, ruling R43)',
     async () => {
       expect(gradients).toEqual([]);
     });

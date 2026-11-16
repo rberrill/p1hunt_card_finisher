@@ -56,6 +56,7 @@ const {
   viewNow,
   whitePicture,
   afterDraw,
+  labelSurround,
   badgeFadeSeries,
 } = require('./support/levels.js');
 
@@ -84,6 +85,11 @@ const WHITE_SPOT_COLOR = [225, 226, 217];
 const DARK_SPOT_COLOR = [67, 65, 68];
 // How close a swatch must be to a spot's measured color, per channel (0 to 255).
 const SPOT_TOLERANCE = 3;
+// An outline round a pick mark's 12 px letter darkens far more device pixels than this around
+// it; with no outline, the white letter on a white spot darkens none.
+const LABEL_OUTLINE_PIXELS = 20;
+// A 12 px bold letter covers far more device pixels than this.
+const LABEL_LETTER_PIXELS = 20;
 // Two drawings of the photo whose mean colors differ by less than this, per channel, are the
 // same picture (0 to 255).
 const SAME_COLOR_TOLERANCE = 1;
@@ -644,8 +650,9 @@ test('LEV-12.4 A black pick no darker than the white point warns and stays armed
     });
   });
 
-test('LEV-12.5 A tap on the empty area below the picture takes a color from the photo hidden '
-  + 'there [phone]', async ({ page, check }, testInfo) => {
+test('LEV-12.5 A tap on the empty area below the picture is ignored and the pick stays armed '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  test.fail(true, 'BUG-230');
   const hand = await startOnLevels(page, testInfo);
   const bottomLeft = await spotOnPage(page, [0, 1]);
   const topRight = await spotOnPage(page, [1, 0]);
@@ -660,14 +667,21 @@ test('LEV-12.5 A tap on the empty area below the picture takes a color from the 
       expect(hidden[1]).toBeLessThan(height);
     });
   await hand.tap(pickButton(page, 'white'));
-  await tapPoint(page, hand, below);
-  await check('no warning; the white point is set, from the photo hidden under the empty area, '
-    + 'and the picker is disarmed', async () => {
-    expect((await toastNow(page)).isShown).toBe(false);
-    const { draft } = await levelsNow(page);
-    expect(Math.abs(draft.whiteAt[1] - hidden[1])).toBeLessThanOrEqual(PICK_POINT_TOLERANCE_PX);
-    expect(await armedPick(page)).toBe('');
+  await check(`Pick white is selected and the line reads "${HINTS.white}"`, async () => {
+    expect(await armedPick(page)).toBe('white');
+    await expect(hintLine(page)).toHaveText(HINTS.white);
   });
+  await tapPoint(page, hand, below);
+  // Plain reads, not retrying expects: today the tap sets the point at once, so the known
+  // defect fails here without waiting out a timeout.
+  await check('the white swatch still reads "Not set"', async () => {
+    expect(await swatchColor(page, 'white')).toBeNull();
+  });
+  await check(`Pick white is still selected and the line still reads "${HINTS.white}"`,
+    async () => {
+      expect(await armedPick(page)).toBe('white');
+      expect(await hintLine(page).textContent()).toBe(HINTS.white);
+    });
 });
 
 test('LEV-13.1 The pick marks, for a person to judge [phone]', async ({
@@ -685,7 +699,8 @@ test('LEV-13.1 The pick marks, for a person to judge [phone]', async ({
   await waitForStill(page);
   await check.eye('a small black and white ring labelled W on the white background left of the '
     + 'slab, and one labelled B on the card\'s dark background up and to the left of the '
-    + 'driver\'s head');
+    + 'driver\'s head; each letter white with a dark outline round it, so the W reads easily on '
+    + 'the white background (ruling R39; until it is built this fails by eye, BUG-231)');
   const middle = await spotOnPage(page, [0.5, 0.5]);
   await holdPhoto(page, hand, middle);
   await check.eye('holding the photo: the picture without levels, the Before levels badge at '
@@ -699,6 +714,36 @@ test('LEV-13.1 The pick marks, for a person to judge [phone]', async ({
   });
   await afterDraw(page);
   await check.eye('after Auto: no W or B ring on the photo');
+});
+
+test('LEV-13.2 The W on a white spot has a dark outline [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  test.fail(true, 'BUG-231');
+  const hand = await startOnLevels(page, testInfo);
+  await pickSpot(page, hand, 'white', SPOTS.white);
+  await check('the white point is set, on the white background', async () => {
+    expectSameColor(await swatchColor(page, 'white'), WHITE_SPOT_COLOR, SPOT_TOLERANCE);
+  });
+  await pickSpot(page, hand, 'black', SPOTS.dark);
+  await check('the black point is set, on the card\'s dark background', async () => {
+    expectSameColor(await swatchColor(page, 'black'), DARK_SPOT_COLOR, SPOT_TOLERANCE);
+  });
+  await waitForStill(page);
+  await afterDraw(page);
+  // The B's white letter on the dark spot shows the box the script reads is where a mark's
+  // letter is drawn, so that no dark pixel around the W means no outline, not a missed letter.
+  const besideB = await labelSurround(page, 'black');
+  await check(`the B's white letter is in the box read beside its mark (at least `
+    + `${LABEL_LETTER_PIXELS} bright device pixels)`, async () => {
+    expect(besideB.brightPixels).toBeGreaterThanOrEqual(LABEL_LETTER_PIXELS);
+  });
+  const besideW = await labelSurround(page, 'white');
+  await check(`the W on the white spot has a dark outline (at least ${LABEL_OUTLINE_PIXELS} dark `
+    + 'device pixels around the letter)', async () => {
+    expect(besideW.darkPixels).toBeGreaterThanOrEqual(LABEL_OUTLINE_PIXELS);
+  });
 });
 
 test('LEV-14.1 Auto sets both points, says so, and removes the pick marks [phone]', async ({

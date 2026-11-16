@@ -1,9 +1,9 @@
 // The speed cases (tests/catalog/speed.md): how long a photo takes to appear, detection, a
 // pair's switch of sides, the export at each Size and an upscaled export.
 // Each test times one operation once, records the time (the run folder's timings.jsonl and a
-// note on the case's result) and holds it to a provisional limit: three times the median of
-// the times measured on the development PC over five runs. The limits are to be approved by
-// Rich. A slower machine may need them raised; a case that fails here is a slowdown to look at.
+// note on the case's result) and holds it to its limit, approved by Rich in ruling R44: three
+// times the median of the times measured on the development PC over five runs. A case that
+// fails here is a slowdown to look at.
 // Each test drives the app as a person would, through hand.tap (a finger on the phone
 // targets, the mouse on the wide ones), and reads the app's own timings only to check a
 // result. PERF-09 needs a real iPhone, so it has no test here.
@@ -29,8 +29,7 @@ const {
 const ENLARGE_FACTOR = 2.2;
 const LARGE_PHOTO = 'IMG_9136-15MP.JPEG';
 // The median of five runs of each operation on the development PC, in ms (Chromium, phone
-// size), and the provisional limit: three times it, rounded up to the next 50 ms.
-// Measured on 16 November 2026, one test at a time (Chromium 158, Windows 11).
+// size), measured on 16 November 2026, one test at a time (Chromium 158, Windows 11).
 const MEDIAN_MS = {
   preview: 407,
   detection: 2903,
@@ -41,10 +40,18 @@ const MEDIAN_MS = {
   exportOriginal: 548,
   upscaled: 1576,
 };
-const LIMIT_FACTOR = 3;
-const LIMIT_STEP_MS = 50;
-const limitFor = what => Math.ceil(MEDIAN_MS[what] * LIMIT_FACTOR / LIMIT_STEP_MS)
-  * LIMIT_STEP_MS;
+// Each operation's limit, in ms, as Rich approved them in ruling R44 (three times the median,
+// rounded up to the next 50 ms). Written out, not worked out, so they stay what was approved.
+const LIMIT_MS = {
+  preview: 1250,
+  detection: 8750,
+  switchSides: 500,
+  export1080: 500,
+  export2000: 950,
+  export3000: 1650,
+  exportOriginal: 1650,
+  upscaled: 4750,
+};
 
 // Opens the app and opens the enlarged case photo with Open photo. Returns the hand.
 async function openLargePhoto(page, testInfo) {
@@ -59,8 +66,9 @@ async function openLargePhoto(page, testInfo) {
 // Records `durationMs` for `what` and checks it against its limit.
 async function holdToLimit(check, testInfo, what, durationMs, description) {
   recordTiming(testInfo, what, durationMs);
-  const limitMs = limitFor(what);
-  await check(`${description} within ${limitMs} ms (3 × the median of ${MEDIAN_MS[what]} ms)`,
+  const limitMs = LIMIT_MS[what];
+  await check(`${description} within ${limitMs} ms (ruling R44: 3 × the median of `
+    + `${MEDIAN_MS[what]} ms)`,
     async () => {
       expect(Math.round(durationMs)).toBeLessThanOrEqual(limitMs);
     });

@@ -1401,7 +1401,7 @@ The saved photo is at most 12000 px on its long side and 16,777,216 px in area; 
 - Changed: none
 - Anchors: `CONFIG.maxOutputPx`, `CONFIG.maxOutputArea`
 - Source: `js/engine.js` (`outputSize`)
-- Ruling: R37. With upscaling switched on from a link, the Upscale question is not asked. The app differs today.
+- Ruling: R37, widened 16 November. The Upscale question is asked only when **Yes** would save a bigger file than **No**: with upscaling already switched on from a link, and the area cap holding the output, it is not asked. The app differs today.
 - Cases: 2
 
 The sample photos are too small to reach 12000 px on a side at their own resolution, and with upscaling on the area cap binds first, so EXP-34.2 lowers the side cap with a link to show the rule.

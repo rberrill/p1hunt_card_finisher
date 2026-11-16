@@ -187,6 +187,55 @@ function afterDraw(page) {
   }));
 }
 
+// The box around a pick mark's letter, in CSS px from the picked point: drawPickMarker in
+// js/app/levels.js writes the W or B in bold 12 px type, its left end 11 px right of the point
+// and its baseline 9 px above it. The box holds the letter with 3 px to spare on every side for
+// an outline, and stays clear of the mark's ring (radius 9, 2 px wide, so 10 px at most).
+const LABEL_BOX = { left: 11, top: -24, width: 18, height: 19 };
+// A pixel whose brightness (0 to 255) is under this counts as dark: an outline drawn in black
+// or a dark grey, never the white letter or the white background it sits on.
+const LABEL_DARK_MAX = 96;
+// A pixel brighter than this (0 to 255) counts as the white letter where it sits on a dark spot.
+const LABEL_BRIGHT_MIN = 200;
+
+// What surrounds a pick mark's letter on screen, in the box around it (LABEL_BOX):
+// { darkest, darkPixels, brightPixels }: the darkest brightness (0 to 255), and how many of its
+// device pixels are dark (under LABEL_DARK_MAX) and bright (over LABEL_BRIGHT_MIN). which:
+// 'white' or 'black', the mark's point in the draft. A white letter on a white spot with a dark
+// outline has dark pixels there; a white letter alone has none. On a dark spot the letter's own
+// bright pixels show that the box is where the letter is.
+function labelSurround(page, which) {
+  return page.evaluate(({ key, box, darkMax, brightMin }) => {
+    const app = window.__straightener.app;
+    const point = app.levelsDraft[key];
+    const rotated = window.CF.Mat3.apply(app.geometry.sourceToRotated, point[0], point[1]);
+    const [x, y] = window.CF.toScreen(window.CF.currentView(), rotated);
+    const canvas = document.getElementById('view');
+    const scale = canvas.width / canvas.getBoundingClientRect().width;
+    const pixels = canvas.getContext('2d').getImageData(
+      Math.round((x + box.left) * scale),
+      Math.round((y + box.top) * scale),
+      Math.round(box.width * scale),
+      Math.round(box.height * scale),
+    ).data;
+    let darkest = 255;
+    let darkPixels = 0;
+    let brightPixels = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      const brightness = 0.2126 * pixels[i] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i + 2];
+      darkest = Math.min(darkest, brightness);
+      if (brightness < darkMax) darkPixels += 1;
+      if (brightness > brightMin) brightPixels += 1;
+    }
+    return { darkest: Math.round(darkest), darkPixels, brightPixels };
+  }, {
+    key: which === 'white' ? 'whiteAt' : 'blackAt',
+    box: LABEL_BOX,
+    darkMax: LABEL_DARK_MAX,
+    brightMin: LABEL_BRIGHT_MIN,
+  });
+}
+
 // Starts watching the Before levels badge: once the comparison starts, records how bright the
 // badge's box is at each of the next FADE_FRAMES frames (its brightest pixel's brightness times
 // its opacity, 0 to 255: the white text as it fades in), leaving out frames with nothing drawn
@@ -395,6 +444,7 @@ module.exports = {
   holdPhoto,
   badgeShown,
   afterDraw,
+  labelSurround,
   badgeFadeSeries,
   pressThenTap,
   fileRegionColor,

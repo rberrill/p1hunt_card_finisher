@@ -413,6 +413,7 @@ The app looks like P1Hunt: matte black and white, red for main actions, a solid 
 - Changed: none
 - Anchors: `CONFIG.theme.accent`, `CONFIG.theme.warn`, `CONFIG.theme.ink`, `CONFIG.theme.page`
 - Source: `css/app.css` (`:root`), `js/config.js` (`CONFIG.theme`), `js/app/core.js` (the theme written to the page at load)
+- Ruling: R43. The checkerboard behind the saved logo's thumbnail on Overlay is drawn with a gradient function; it stands as an agreed exception to "no gradients". The brand lines are guidance for new design, and a design Rich has agreed stands. The app already does this.
 - Flag: to confirm. `CONFIG.theme` still holds six colors of the old layout whose page colors are no longer used, and some comments still say "one red" after the brand rule changed.
 - Cases: 2
 
@@ -441,7 +442,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look through every element's background | None is a gradient, but for the checkerboard behind the saved logo's thumbnail on Overlay (hard-edged squares that show see-through parts) |
+| 1 | Look through every element's background | None is a gradient, but for the checkerboard behind the saved logo's thumbnail on Overlay (hard-edged squares that show see-through parts), an agreed exception (ruling R43) |
 | 2 | Read **Download**'s background and the selected Size's | **Download** is the brand's red, #e5322d; **2000** is a solid white fill |
 
 Pass: every row's result is seen.

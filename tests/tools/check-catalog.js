@@ -44,8 +44,6 @@ const CASE_HEADING = /^### ([A-Z]+-\d+\.\d+) (.+?)\s+\[(auto: [a-z, ]+|eye|phone
 const FIELD_LINE = /^- ([A-Z][a-z]+): (.*)$/;
 // A test's title starts with its case ID: test('ROT-04.1 A typed angle…', …).
 const TEST_TITLE = /\btest\(\s*['"`]([A-Z]+-\d+(?:\.\d+)?[a-z]?)\b/g;
-// The trial cases that proved the tooling have no catalog entry; they go when real cases land.
-const TRIAL_PREFIX = 'SPK-';
 
 // Every file under a folder with one of the given extensions, as full paths.
 function filesUnder(folder, extensions) {
@@ -177,8 +175,7 @@ function anchorProblems(entry, code) {
 function testProblems(entries, root) {
   const titles = filesUnder(path.join(root, 'tests/automation'), ['.js'])
     .flatMap(file => [...fs.readFileSync(file, 'utf8').matchAll(TEST_TITLE)])
-    .map(match => match[1])
-    .filter(id => !id.startsWith(TRIAL_PREFIX));
+    .map(match => match[1]);
   const cases = entries.flatMap(entry => entry.cases);
   const automated = cases
     .filter(testCase => testCase.mark !== 'phone' && testCase.mark !== 'source')

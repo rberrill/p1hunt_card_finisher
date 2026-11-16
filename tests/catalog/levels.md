@@ -402,7 +402,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## LEV-12 A pick that can't work
 
-A pick that can't work shows a warning and leaves the color picker armed: a spot outside the photo; a white not at least 20 brighter than the black point; a black brighter than 100 (on a scale of 0 to 255); a black not at least 20 darker than the white point.
+A pick that can't work shows a warning and leaves the color picker armed: a spot outside the photo; a white not at least 20 brighter than the black point; a black brighter than 100 (on a scale of 0 to 255); a black not at least 20 darker than the white point. A tap on the dark area around the visible picture, where the step hides the rest of the photo, is ignored and leaves the picker armed.
 
 - Risk: medium
 - Check: script, touch
@@ -477,8 +477,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### LEV-12.5 A tap on the empty area below the picture takes a color from the photo hidden there   [auto: phone]
-Flag: to confirm. Written to today's behavior: on the Levels step the photo shows only inside the crop, but a pick on the dark area around it reads the part of the photo hidden there, with no warning.
+### LEV-12.5 A tap on the empty area below the picture is ignored and the pick stays armed   [auto: phone]
+Written to ruling R38; it fails until that is built (BUG-230). On the Levels step the photo shows only inside the crop; the dark area around it hides the rest of the photo, and a tap there must not take a color from it.
 
 Before you start:
 - Device and browser: any; a phone-width window
@@ -488,7 +488,9 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Pick white**, then the dark empty area 40 px below the middle of the picture's bottom edge | No warning; the white swatch is filled, with a color from the photo below the crop, which the screen doesn't show; neither pick is selected |
+| 1 | Tap **Pick white** | **Pick white** is selected and the line reads "Tap something white" |
+| 2 | Tap the dark empty area 40 px below the middle of the picture's bottom edge | The white swatch still reads "Not set" |
+| 3 | Look at the picks and the line | **Pick white** is still selected and the line still reads "Tap something white" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -498,16 +500,18 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 A ring labelled **W** or **B** marks where each point was picked (Auto's points have none). The marks hide while comparing.
 
 - Risk: low
-- Check: eye
+- Check: eye; script (whether the letter has a dark outline)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: "W", "B"
 - Source: `js/app/levels.js` (`drawPickMarker`, `drawLevelsOverlay`)
-- Ruling: R39. The W and B are white letters with a dark outline. The app differs today.
-- Cases: 1
+- Ruling: R39. The W and B are white letters with a dark outline, as the corner outline is drawn, so they can be read on a white spot. The app differs today.
+- Cases: 2
 
 ### LEV-13.1 The pick marks, for a person to judge   [eye]
+Written to ruling R39; until that is built, the judge fails row 2 by eye: the W is a plain white letter, hard to read on the white background (BUG-231). LEV-13.2 checks the outline by script.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -517,12 +521,31 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Pick white**, then the white background just left of the slab, halfway down | The white swatch is filled |
-| 2 | Tap **Pick black**, then the card's dark background, up and to the left of the driver's head | A small black and white ring labelled W sits on the white background left of the slab, and one labelled B on the card's dark background |
+| 2 | Tap **Pick black**, then the card's dark background, up and to the left of the driver's head | A small black and white ring labelled W sits on the white background left of the slab, and one labelled B on the card's dark background. Each letter is white with a dark outline round it, and the W can be read easily on the white background |
 | 3 | Press and hold the middle of the photo | The picture shows without levels, the **Before levels** badge at its top left, and no W or B ring |
 | 4 | Let go, then tap **Auto** in the row of tools | No W or B ring on the photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### LEV-13.2 The W on a white spot has a dark outline   [auto: phone]
+Written to ruling R39; it fails until that is built (BUG-231).
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px, with the developer tools open
+- Build: the build under test
+- Photo: IMG_9075.JPEG from samples/
+- Starting screen: the photo open, on the Levels step, no levels set
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Pick white**, then the white background just left of the slab, halfway down | The white swatch shows the background's white (within 3 of 225, 226, 217) |
+| 2 | Tap **Pick black**, then the card's dark background, up and to the left of the driver's head | The black swatch shows that dark grey (within 3 of 67, 65, 68) |
+| 3 | Zoom a screenshot in on the B, just above and to the right of its ring | The B's white letter is there |
+| 4 | Zoom the screenshot in on the W in the same place beside its ring | Dark pixels outline the white W: at least 20 device pixels around the letter are darker than a brightness of 96 (on 0 to 255) |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, the zoomed screenshot.
 
 ## LEV-14 Auto
 

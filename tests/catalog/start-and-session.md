@@ -742,6 +742,8 @@ The script times each save to the millisecond; by hand you can only see each cha
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
+When ruling R36 is built: the wait before a save becomes about 0.1 s. Rows 1 and 4 then expect the save about 0.1 s after the tap (0.10 to 0.25 s) instead of 0.40 to 0.55 s; in row 3 two taps 0.3 s apart are saved twice, so the second tap must come within 0.1 s of the first (the script's taps do) for a single save. Row 2 is unchanged. It passes today, written to the 0.4 s delay.
+
 ### STA-14.2 A link can lengthen the wait before a save   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
@@ -756,6 +758,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
+When ruling R36 is built: unchanged. A link still sets the wait, so 1.5 s still gives a save 1.50 to 1.65 s after the tap. It passes today.
+
 ## STA-15 Edits are saved at once when leaving
 
 The edits are saved straight away when the page is hidden or left (switching apps, closing the tab), and just before any download (the export, corner shots, a pair, **Save edits**).
@@ -768,7 +772,7 @@ The edits are saved straight away when the page is hidden or left (switching app
 - Anchors: `#btnDownload`, `#btnCornerDownload`, `#btnSaveEdits`, `CONFIG.session.enabled`
 - Source: `js/app/main.js` (`bindWindowEvents`); `js/app/export.js` (`deliverExport`, `saveEdits`); `js/app/corner-shots.js` (`deliverCornerShots`); `js/app/pair.js` (`deliverPair`)
 - Ruling: R36. Edits are saved sooner after each change (about 0.1 s), with the save on close kept as a backstop. The app differs today.
-- Cases: 5
+- Cases: 6
 
 ### STA-15.1 Hiding the page saves at once   [auto: desktop, webkit]
 Before you start:
@@ -786,6 +790,8 @@ The script hides the page by telling it so, as switching apps on a phone would; 
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+When ruling R36 is built: the usual save also comes within about 0.1 s of the tap, so this case no longer tells the save on hiding from the usual one; STA-15.6 proves the save on hiding with a long wait set by a link. Row 2's "well before the usual 0.4 s" becomes "well before the usual wait". It passes today, written to the 0.4 s delay.
 
 ### STA-15.2 A change survives switching apps on an iPhone   [phone]
 Before you start:
@@ -854,6 +860,27 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Export** in the step bar | The Export step shows **Together** and **Separately** |
 | 2 | Tap **Download**, then **No** if the Upscale question asks | The pair's file is saved; the edits were saved within 0.15 s of it, not 0.4 s later (the script times it) |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### STA-15.6 Hiding or leaving the page starts a save at once   [auto: phone, webkit]
+Ruling R36 keeps this save as a backstop to the sooner save after each change. The link makes the usual wait before a save 1.5 s, so only the backstop can save within 0.1 s.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window, in a private window
+- Build: the build under test, opened with ?session.saveDelayMs=1500 added to its address
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, a second after it opened
+
+The script tells the page it is hidden, then that it is being left, as switching apps and closing the tab would, but never closes it, so each save can be seen; it times the saves to the millisecond. By hand, row 2 is switching to another tab and back.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **90° right** in the row of tools | The photo lies on its side |
+| 2 | At once (within 0.1 s), switch to another tab | The edits, with the turn, are saved within 0.1 s of the switch, long before the 1.5 s wait |
+| 3 | Come back to the tab, wait 2 seconds, then tap **90° right** again | The photo is upside down |
+| 4 | At once, the page is told it is being left (the script fires the page's "pagehide" event; by hand, close the tab) | The edits, with the second turn, are saved within 0.1 s; by hand, reopen the app: **Resume** brings the photo back upside down |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

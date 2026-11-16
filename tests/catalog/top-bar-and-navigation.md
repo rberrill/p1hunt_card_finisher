@@ -947,9 +947,10 @@ Where a control in a step's top line (a button, a slider, **Size** and **Format*
 - Layout: phone
 - Added: 1.10 baseline
 - Changed: none
-- Anchors: `.grabber`, `#exportChoices`, `#rotateAngle`, `.label-row`
-- Source: `css/app.css` (the adjustment line, Export's phone block, the shell's phone block)
-- Cases: 2
+- Anchors: `.grabber`, `#exportChoices`, `#rotateAngle`, `.label-row`, `.is-arriving`
+- Source: `css/app.css` (the adjustment line, Export's phone block, the shell's phone block, the `area-in` fade); `js/app/parts/adjustment-line.js` (`fadeInControlArea`)
+- Ruling: R40. The controls under the tab take the tap from the moment they are drawn, including the 0.1 s after a step change while they fade in. The app differs today: during the fade the tab is on top of them and takes their taps.
+- Cases: 4
 
 ### TOP-22.1 Rotate's angle under the options tab takes the tap   [auto: phone, webkit]
 Before you start:
@@ -958,7 +959,7 @@ Before you start:
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
-The options tab's touch area is 88 px wide and 44 px tall, centered on the tab, so its foot reaches into the line under it, where the right end of the angle (**0.0°**) lies. Wait a moment after opening the step, until its controls have faded in.
+The options tab's touch area is 88 px wide and 44 px tall, centered on the tab, so its foot reaches into the line under it, where the right end of the angle (**0.0°**) lies. Wait a moment after opening the step, until its controls have faded in: for about 0.1 s after a step change the tab is on top of them and takes their taps, a defect of its own (ruling R40, TOP-22.3), so this case tests the tab's touch area once the step has settled.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -975,6 +976,8 @@ Before you start:
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Export step, **2000** selected
 
+Wait a moment after opening the step, until its controls have faded in: for about 0.1 s after a step change the tab is on top of them and takes their taps, a defect of its own (ruling R40, TOP-22.4), so this case tests the tab's touch area once the step has settled.
+
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Original** near its top, where it lies under the options tab's touch area | **Original** is selected; no sheet opens |
@@ -982,6 +985,44 @@ Before you start:
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### TOP-22.3 Straight after a step change to Rotate, the angle under the options tab takes the tap   [auto: phone, webkit]
+Written to ruling R40; it fails until that is built (BUG-232).
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo open, on the Crop step, which Rotate's step tab has just left (open Rotate, wait a moment, then tap **Crop** in the step bar)
+
+The right end of Rotate's angle (**0.0°**) lies under the foot of the options tab's touch area, as in TOP-22.1. Rotate's controls fade in over 0.12 s after its step tab is tapped; the script makes the second tap of row 2 during that fade, which a quick person can do too.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Rotate** in the step bar | Rotate's controls fade in |
+| 2 | At once, before they finish fading in (within 0.1 s), tap the right end of the angle where it lies under the options tab's touch area | A text box takes the angle's place; no sheet opens |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead (the sheet titled ROTATE OPTIONS rising is the defect), a screenshot.
+
+### TOP-22.4 Straight after a step change to Export, Size under the options tab takes the tap   [auto: phone, webkit]
+Written to ruling R40; it fails until that is built (BUG-232).
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo open, on the Crop step, which Export's step tab has just left (open Export, check **2000** is selected, wait a moment, then tap **Crop** in the step bar)
+
+The top of **Original**, under Size, lies under the foot of the options tab's touch area, as in TOP-22.2. Export's controls fade in over 0.12 s after its step tab is tapped; the script makes the second tap of row 2 during that fade.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Export** in the step bar | Export's controls fade in |
+| 2 | At once, before they finish fading in (within 0.1 s), tap **Original** near its top, where it lies under the options tab's touch area | **Original** is selected; no sheet opens |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead (the sheet titled EXPORT OPTIONS rising is the defect), a screenshot.
 
 ## TOP-23 The open sheet covers part of the photo
 

@@ -26,7 +26,7 @@ Each run writes a folder under `tests/runs/` (not committed), named for the time
 
 A case records each verdict with `check('what should be true', assertion)`; a case that records none fails. `check.eye('what to look for')` saves a screenshot for a person to judge. A test drives the app the way a person would (the real controls, the real file inputs, real downloads) and reads the app's own state only to check a result. A test for behavior the app doesn't have yet starts with `test.fail(true, 'BUG-0NN')` and has a row in `tests/bugs.md`: the run stays green while the defect is open, and fails the moment the app is fixed, which is the signal to remove the mark. WebKit here is Playwright's build of the engine, not Safari: a real iPhone still decides what only Safari shows.
 
-The cases themselves are written in `tests/catalog/`, one file per area; each automated case there has exactly one test here, whose title starts with the case's ID. `spike.spec.js` holds the trial cases that proved the tooling, until the catalog's cases replace them.
+The cases themselves are written in `tests/catalog/`, one file per area; each automated case there has exactly one test here, whose title starts with the case's ID.
 
 ## `node tests/selftest.js` (Node, no dependencies, under a second)
 
