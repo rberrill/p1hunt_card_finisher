@@ -16,6 +16,8 @@ const UAT_REPOSITORY = 'p1hunt_card_finisher_uat';
 const uatDir = path.resolve(root, '..', UAT_REPOSITORY);
 // What the app serves. Tests, samples, docs and Claude's files are not part of a test build.
 const APP_FILES = ['index.html', 'css', 'js', 'icons'];
+// The licence travels with every copy of the code.
+const LICENSE_FILE = 'LICENSE';
 // Files the UAT repository keeps between builds.
 const KEPT = new Set(['.git', 'README.md', '.nojekyll']);
 
@@ -59,6 +61,7 @@ function copyBuild() {
   for (const name of APP_FILES) {
     fs.cpSync(path.join(root, name), path.join(uatDir, name), { recursive: true });
   }
+  fs.copyFileSync(path.join(root, LICENSE_FILE), path.join(uatDir, LICENSE_FILE));
   fs.writeFileSync(path.join(uatDir, 'README.md'), README);
   // Tells GitHub Pages to serve the files as they are, without its site builder.
   fs.writeFileSync(path.join(uatDir, '.nojekyll'), '');
