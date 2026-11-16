@@ -2,6 +2,28 @@
 
 Two automated layers. Run both before treating any change as done. A failure is a regression unless the change deliberately moved that behavior; then update the test in the same change. Pass counts come from the test output; they aren't recorded here.
 
+A third layer is being built: automated cases that drive the app in real browsers (see below). Until it covers the app, the two layers here still apply.
+
+## Automated browser cases (`tests/automation/`, Playwright)
+
+The app itself needs no npm, Node or build step. Only this test tooling does, and it lives in `tests/`.
+
+1. Install once: `cd tests`, then `npm ci --ignore-scripts`, then `npm run browsers` (downloads Playwright's Chromium and WebKit builds to your user folder, outside the repository).
+2. Run: `cd tests`, then `npx playwright test`. It starts its own server on port 8770.
+
+| Target | Browser | Size | Runs the cases marked |
+|---|---|---|---|
+| `chromium-phone`, `webkit-phone` | Chromium, WebKit | 390 × 844, touch | `[all]`, `[phone]` |
+| `chromium-small-phone` | Chromium | 375 × 667, touch | `[small]` |
+| `chromium-desktop`, `webkit-desktop` | Chromium, WebKit | 1280 × 800 | `[all]`, `[desktop]` |
+| `chromium-disk` | Chromium, opened from `file://` | 1280 × 800 | `[disk]` |
+
+Each run writes a folder under `tests/runs/` (not committed), named for the time, the app's version and the commit: `summary.md`, `results.json`, a screenshot for every verdict under `evidence/<case>/<target>/`, and Playwright's recording of each failed case under `traces/`. The newest ten runs are kept.
+
+A case records each verdict with `check('what should be true', assertion)`; a case that records none fails. `check.eye('what to look for')` saves a screenshot for a person to judge. WebKit here is Playwright's build of the engine, not Safari: a real iPhone still decides what only Safari shows.
+
+For now the folder holds a small set of trial cases (`spike.spec.js`) that prove the tooling.
+
 ## `node tests/selftest.js` (Node, no dependencies, under a second)
 
 Exit code 0 means everything passed.

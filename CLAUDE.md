@@ -39,7 +39,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 ## Hard constraints (still binding)
 
-- **Plain static files:** no build step, no npm, no frameworks, zero runtime dependencies, nothing loaded from another site. Must work from `file://`, `localhost` and a Pages subfolder. Classic `<script src>` on relative paths, with `?v=<appVersion>` on every asset link.
+- **Plain static files:** the app needs no build step, no npm and no Node to run; no frameworks, zero runtime dependencies, nothing loaded from another site. Test tooling may use npm, in `tests/` only, and the app never loads anything from there (Rich, 2026-11-15). Must work from `file://`, `localhost` and a Pages subfolder. Classic `<script src>` on relative paths, with `?v=<appVersion>` on every asset link.
 - Everything stays in the browser; no image is ever uploaded.
 - **Non-destructive:** the original is never modified. All edits live in one serializable state object, and export is `render(source, state)` from full resolution. Edits files round-trip pixel-identically (R6).
 - **Engine / shell split:** `js/engine.js` is pure and runs in a Web Worker; the shell (`js/app/`) talks to adapters (`ImageSource`, `Detector`, `Exporter`, `Session`) so native versions can swap in. The rules in `.claude/rules/` load when you touch those files.
@@ -59,7 +59,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 - **The card is the only target.** No case or slab detection; the detector prefers the inner of nested quads. Flatten 0% replaced Square up.
 - **Default export:** 1:1 fit to card, 2000 px, JPEG 0.92. No HEIC decoder (Safari decodes natively).
-- **The 1.10 redesign** (Rich, 2026-11-14; the agreed build plan, its 41 answers and the approved wording are in the decision log). Built on `main` in six phases and released once as 1.10.0. No capability was added or removed. The stack stays plain static files, with the shell split into one file per part; no type checks, so npm stays out.
+- **The 1.10 redesign** (Rich, 2026-11-14; the agreed build plan, its 41 answers and the approved wording are in the decision log). Built on `main` in six phases and released once as 1.10.0. No capability was added or removed. The stack stays plain static files, with the shell split into one file per part; no type checks.
 - **Phone layout:**
   - Top bar, photo, a 200 px control area in three rows (label row, control row, tool row), then a six-step tab bar. The area is the same on every step, so the photo never changes size. No bars before a photo is open. The step menu, the "next step →" buttons and the More options bar are gone.
   - Top bar: Open (always an icon) on the left; Front | Back with Unpair beside it in the center while paired; Undo and Redo on the right; Fit only while the photo is zoomed or panned.

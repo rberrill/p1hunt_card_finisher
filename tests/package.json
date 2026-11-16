@@ -1,0 +1,12 @@
+{
+  "name": "card-finisher-tests",
+  "private": true,
+  "description": "Test tooling only. The app never reads this file and never needs npm, Node or a build step to run.",
+  "scripts": {
+    "test": "playwright test",
+    "browsers": "playwright install chromium webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0"
+  }
+}

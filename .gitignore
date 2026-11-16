@@ -6,6 +6,12 @@ tests/uat/edits-over-8mb.json
 .claude/settings.local.json
 .claude/worktrees/
 
+# Test tooling (npm lives in tests/ only; the app never needs it) and what a test run writes.
+tests/node_modules/
+tests/runs/
+tests/test-results/
+tests/playwright-report/
+
 # OS / editor clutter
 .DS_Store
 Thumbs.db

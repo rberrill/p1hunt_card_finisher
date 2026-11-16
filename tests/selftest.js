@@ -225,6 +225,8 @@ function report(pass, name, detail) {
   if (/\sstyle="/.test(body)) problems.push('style="" attribute');
   if (/\son[a-z]+="/i.test(body)) problems.push('on…="" handler attribute');
   if (/(?:src|href)="(?:https?:)?\/\//.test(body)) problems.push('off-site asset');
+  // The app never loads test tooling: nothing in tests/ may be linked from the page.
+  if (/(?:src|href)="(?:\.\/)?tests\//.test(body)) problems.push('a link into tests/');
   report(!problems.length, 'Security: index.html has a strict CSP and nothing inline or off-site',
     problems.length ? problems.join('; ') : csp.split(';').length + ' CSP directives');
 }
@@ -265,9 +267,12 @@ function hasGps(bytes) {
   report(photos.length && !located.length, 'Privacy: sample photos carry no GPS location',
     located.length ? located.join(', ') : `${photos.length} photos checked`);
 
+  // Other people's packages and a test run's output are gitignored, so they are never published.
+  const NOT_PUBLISHED = /^tests\/(?:node_modules|runs|test-results|playwright-report)$/;
   const walk = folder => {
     if (!fs.existsSync(path.join(root, folder))) return [];
     return fs.readdirSync(path.join(root, folder), { withFileTypes: true })
+      .filter(entry => !NOT_PUBLISHED.test(`${folder}/${entry.name}`))
       .flatMap(entry => {
         const file = `${folder}/${entry.name}`;
         return entry.isDirectory() ? walk(file) : [file];

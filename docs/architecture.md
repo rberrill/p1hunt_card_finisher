@@ -4,7 +4,7 @@ How P1Hunt Card Finisher is put together. For what it does and how to use it, se
 
 ## Principles
 
-- **Plain static files.** No build step, no npm, no frameworks, and nothing loaded from another site. It runs from `file://`, `localhost` or a static host in a subfolder.
+- **Plain static files.** The app needs no build step, no npm and no Node to run; it has no frameworks and loads nothing from another site. Only the test tooling in `tests/` uses npm. It runs from `file://`, `localhost` or a static host in a subfolder.
 - **Classic scripts on relative paths.** `<script src>` only (ES modules fail from `file://` in Chrome), and every asset link carries `?v=<appVersion>` for cache-busting.
 - **Everything stays in the browser.** No image is ever uploaded.
 - **Non-destructive.** The original photo is never modified. Every edit lives in one serializable state object, and the export is `render(source, state)` from full resolution.
