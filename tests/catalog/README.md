@@ -135,6 +135,7 @@ The mark after the title says who decides: `[auto: …]` (a script), `[eye]` (a 
 | `[auto: desktop]` | Chromium at desktop size only. For a keyboard, a mouse wheel, drop, paste, or a wide-only capability |
 | `, webkit` added to any of those | WebKit as well as Chromium. Only where the browser engine could change the answer: layout measurements, saved files and image encoding, storage and Resume, the file input, the engine worker, gestures |
 | `[auto: small]` | Chromium at 375 × 667, for the few cases about a narrow phone |
+| `[auto: disk]` | Chromium, with the app opened from the files on disk and not from a server |
 | `[auto: all]` | The same as `[auto: both, webkit]` |
 
 A plain-logic case (tap a control, the state changes) is `[auto: phone]`. Before a release, one switch runs every case in WebKit too.

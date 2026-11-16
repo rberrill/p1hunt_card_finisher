@@ -916,7 +916,9 @@ test('TOP-18.1 Each step\'s options tab opens that step\'s sheet [phone]', async
         const title = sheetOf(page, step).locator('.sheet-title');
         await expect(title).toHaveText(SHEET_TITLES[step]);
         await expect(title).toHaveCSS('text-transform', 'uppercase');
-        expect(await sheetTopPx(page, step)).toBeLessThan(await areaTopPx(page, step));
+        // The sheet reports open as its rise starts; its top is read until it has moved.
+        const areaTop = await areaTopPx(page, step);
+        await expect.poll(() => sheetTopPx(page, step)).toBeLessThan(areaTop);
       });
     await closeOptions(page, hand, step);
   }
