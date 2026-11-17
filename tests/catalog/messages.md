@@ -1690,10 +1690,10 @@ An information message after **Keep front** or **Keep back** in the Unpair quest
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Unpaired. The ", " is a single photo now.", `#btnUnpair`
 - Source: `js/app/pair.js` (`unpair`)
-- Ruling: R25. The kept side's photo is stored before the message shows, so a reload at that moment resumes the right photo. The app differs today.
+- Ruling: R25. The kept side's photo is stored before the message shows, so a reload at that moment resumes the right photo. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-45.1 Unpair says which side is kept   [auto: phone]

@@ -1072,7 +1072,6 @@ test('PAIR-12.2 A reload straight after Unpair resumes the kept side [phone] [we
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-032');
   const hand = await makePair(page, testInfo);
   await waitUntilPairStored(page);
   // Storage is slow on a busy phone. Each write is held a moment, so whether the message waits

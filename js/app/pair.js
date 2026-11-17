@@ -265,18 +265,22 @@
 
   // Ends the pair, keeping `side` as a single photo. Its crop stays 5:7 and the preset unlocks;
   // the remembered preset stays as it was until a preset is picked (app.isPairCrop).
+  // The screen changes at once; the message waits until storage matches it.
   async function unpair(side) {
     hidePrompt();
     if (!app.pair) return;
     if (side !== app.pair.current) await switchSide();
     if (!app.pair || app.pair.current !== side) return;
     app.pair = null;
-    clearPairSession();
+    const pairCleared = clearPairSession();
     // The stored photo is the side that was open when the pair was last saved, which is the
     // other one when Keep switched sides: store the kept side's photo, or Resume would bring
     // back the wrong picture under these edits.
-    CF.Session.savePhoto(app.file, app.loadId);
+    const photoStored = CF.Session.savePhoto(app.file, app.loadId);
     CF.stateChanged();
+    // The message says the unpairing is done, so it waits for the pair's records to go and the
+    // kept side to be stored: a reload the moment it shows resumes the kept side on its own.
+    await Promise.all([pairCleared, photoStored]);
     toast(`Unpaired. The ${side} is a single photo now.`);
   }
 
@@ -816,10 +820,14 @@
     }
   }
 
+  // Deletes the pair's stored records. Returns a Promise that settles once both deletes have
+  // finished; a delete that fails is ignored (the session is best-effort).
   function clearPairSession() {
     clearTimeout(pairSaveTimer);
-    CF.Session.del('pair').catch(() => {});
-    CF.Session.del('pairPhoto').catch(() => {});
+    return Promise.all([
+      CF.Session.del('pair').catch(() => {}),
+      CF.Session.del('pairPhoto').catch(() => {}),
+    ]);
   }
 
   // A stored pair record has the expected shape (it comes from storage, so it's untrusted; the

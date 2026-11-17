@@ -602,10 +602,10 @@ After **Unpair** the kept side is a single photo: its crop stays 5:7, the crop p
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnUnpair`, "Unpaired. The ", `#btnResume`
 - Source: `js/app/pair.js` (`unpair`, `clearPairSession`), `js/app/crop.js` (`pickCropPreset`, `syncCrop`)
-- Ruling: R25. Unpair waits until the kept side's photo is stored before saying "Unpaired", so a reload straight after resumes the kept side. The app differs today.
+- Ruling: R25. Unpair waits until the kept side's photo is stored before saying "Unpaired", so a reload straight after resumes the kept side. The app does this since 1.10.0.
 - Cases: 2
 
 ### PAIR-12.1 Unpair leaves a single photo, and Resume brings it back   [auto: phone, webkit]
@@ -637,7 +637,7 @@ Before you start:
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
-Written to ruling R25; it fails until R25 is built (BUG-032).
+Written to ruling R25.
 
 | # | Do this | You should see |
 | --- | --- | --- |
