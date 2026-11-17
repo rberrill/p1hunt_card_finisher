@@ -1,133 +1,67 @@
-// Helpers for the Overlay cases (tests/automation/overlay.spec.js): logo files made in the test
-// (PNG, WebP and JPEG drawn on a canvas, SVG written as text, a file over the size limit, a text
-// file named like a picture), choosing one in the logo picker, where the logo, its corner
-// handles and the snap rings are on the page, a real finger's slide on a slider, the photo area
-// as drawn, and the logo found in a saved file.
+// Helpers for the Overlay cases (tests/automation/overlay.spec.js): the logo files the cases
+// name (from tests/fixtures/, and a file over the size limit made here), choosing one in the
+// logo picker, where the logo, its corner handles and the snap rings are on the page, a real
+// finger's slide on a slider, the photo area as drawn, and the logo found in a saved file.
 // They drive the app as a person would and read its state only to find a place to press or to
 // check a result.
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { openApp, openPhoto, goToStep, handFor } = require('./app.js');
+const { root, openApp, openPhoto, goToStep, handFor } = require('./app.js');
 const { pickWith, waitUntil } = require('./start-and-session.js');
 
 // The photo most cases use: a PSA slab.
 const PHOTO = 'IMG_9136.JPEG';
 // How long a logo may take to be added (or refused) before a case gives up.
 const LOGO_TIMEOUT_MS = 10000;
-// The paints a drawn logo can have (drawnLogo):
-//   'disc'   a blue disc on a see-through square, filling it edge to edge
-//   'split'  the left half black, the right half white
-//   'green'  solid pure green
-//   'greys'  the left half gray 100, the right half gray 150 (0 to 255)
-const PAINTS = ['disc', 'split', 'green', 'greys'];
-// The green paint as [r, g, b] (the color readSavedLogo looks for), and the two grays (0 to
-// 255).
+// Where the logos the cases name are kept, and the picture type of each by its extension.
+const FIXTURES_DIR = path.join(root, 'tests', 'fixtures');
+const FIXTURE_TYPES = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.gif': 'image/gif',
+};
+// The green of green-logo.png as [r, g, b] (the color readSavedLogo looks for).
 const GREEN = [0, 255, 0];
-const DARK_GREY = 100;
-const LIGHT_GREY = 150;
 // The pointer id of the finger tapAndLookAtLogo dispatches: any number a real pointer is
 // unlikely to have.
 const TAP_FINGER_ID = 31;
 // How many moves a real finger's slide is split into.
 const SLIDE_MOVES = 10;
-// Bytes per chunk when a file made in the page crosses back as base64.
-const BASE64_CHUNK = 0x8000;
 // The image types a saved file can have, by its extension.
 const MIME_TYPES = { '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
+// How many rows of a saved file bandSpread reads across its middle.
+const BAND_ROWS = 20;
 // One MB in bytes, and a file of 6 MB: over the logo limit of 5 MB (CONFIG.overlay.maxBytes).
 const MEGABYTE = 1048576;
 const SIX_MB = 6 * MEGABYTE;
 
 // Opens the app (at `address`, which may carry settings from a link) with the case's photo and
-// goes to the Overlay step. Returns the hand for this target.
-async function startOnOverlay(page, testInfo, { photo = PHOTO, address } = {}) {
+// goes to the Overlay step (or to `step`, for a case that starts elsewhere). Returns the hand
+// for this target.
+async function startOnOverlay(page, testInfo, { photo = PHOTO, address, step = 'overlay' } = {}) {
   await openApp(page, address);
   await openPhoto(page, photo);
   const hand = handFor(page, testInfo);
-  await goToStep(page, 'overlay', hand);
+  await goToStep(page, step, hand);
   return hand;
 }
 
-// A logo drawn on a canvas in the page and saved as `type` ('image/png', 'image/webp' or
-// 'image/jpeg'), `width` × `height` px, with one of PAINTS. Returns a file payload for a
-// picker: { name, mimeType, buffer }.
-async function drawnLogo(page, { name, type = 'image/png', width = 400, height = 400,
-  paint = 'disc' }) {
-  if (!PAINTS.includes(paint)) throw new Error(`Unknown paint ${paint}`);
-  const base64 = await page.evaluate(async ({ mimeType, logoWidth, logoHeight, logoPaint,
-    chunk, darkGrey, lightGrey }) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = logoWidth;
-    canvas.height = logoHeight;
-    const ctx = canvas.getContext('2d');
-    const half = logoWidth / 2;
-    if (logoPaint === 'disc') {
-      ctx.fillStyle = 'rgb(0, 0, 255)';
-      ctx.beginPath();
-      ctx.ellipse(half, logoHeight / 2, half, logoHeight / 2, 0, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (logoPaint === 'green') {
-      ctx.fillStyle = 'rgb(0, 255, 0)';
-      ctx.fillRect(0, 0, logoWidth, logoHeight);
-    } else {
-      const left = logoPaint === 'split' ? 0 : darkGrey;
-      const right = logoPaint === 'split' ? 255 : lightGrey;
-      ctx.fillStyle = `rgb(${left}, ${left}, ${left})`;
-      ctx.fillRect(0, 0, half, logoHeight);
-      ctx.fillStyle = `rgb(${right}, ${right}, ${right})`;
-      ctx.fillRect(half, 0, half, logoHeight);
-    }
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, 1));
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    let binary = '';
-    for (let i = 0; i < bytes.length; i += chunk) {
-      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-    }
-    return btoa(binary);
-  }, {
-    mimeType: type,
-    logoWidth: width,
-    logoHeight: height,
-    logoPaint: paint,
-    chunk: BASE64_CHUNK,
-    darkGrey: DARK_GREY,
-    lightGrey: LIGHT_GREY,
-  });
-  return { name, mimeType: type, buffer: Buffer.from(base64, 'base64') };
-}
-
-// An SVG logo written as text: the left half black, the right half white, `width` × `height`
-// in its own units (a viewBox of the same size). Returns a file payload for a picker.
-function svgLogo(name = 'logo.svg', width = 200, height = 100) {
-  const half = width / 2;
-  const markup = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" `
-    + `viewBox="0 0 ${width} ${height}">`
-    + `<rect width="${half}" height="${height}" fill="#000"/>`
-    + `<rect x="${half}" width="${half}" height="${height}" fill="#fff"/></svg>`;
-  return { name, mimeType: 'image/svg+xml', buffer: Buffer.from(markup) };
-}
-
-// A file named like a PNG logo whose bytes are a line of text: no browser can read it.
-function textNamedPng() {
-  return {
-    name: 'not-a-logo.png',
-    mimeType: 'image/png',
-    buffer: Buffer.from('This is a line of text, not a picture.\n'),
-  };
+// A logo file from tests/fixtures/ (the files the cases name), as a file payload for a picker:
+// { name, mimeType, buffer }. `mimeType` overrides the type its extension gives.
+function fixtureLogo(name, mimeType = null) {
+  const buffer = fs.readFileSync(path.join(FIXTURES_DIR, name));
+  const type = mimeType || FIXTURE_TYPES[path.extname(name).toLowerCase()];
+  return { name, mimeType: type, buffer };
 }
 
 // A file named like a PNG logo, `bytes` long. Only its size matters: the app refuses a file
-// over the limit before reading it.
+// over the limit before reading it. It is too big to keep in tests/fixtures/, so it is made
+// here; a person makes one by renaming any file of that size.
 function oversizedPng(bytes = SIX_MB) {
   return { name: 'big-logo.png', mimeType: 'image/png', buffer: Buffer.alloc(bytes) };
-}
-
-// A GIF file, a picture type the logo picker doesn't take (the smallest valid GIF: one
-// see-through pixel).
-function gifLogo() {
-  const base64 = 'R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
-  return { name: 'logo.gif', mimeType: 'image/gif', buffer: Buffer.from(base64, 'base64') };
 }
 
 // The logo's id on the photo, or null.
@@ -337,9 +271,11 @@ async function colorOnPage(page, point, radiusPx = 2) {
 }
 
 // Taps a page point with one dispatched finger and, at the frame drawn next, reads the photo
-// area's color inside the logo where the tap has placed it: a quarter of the logo's width left
-// of its middle. Returns [r, g, b]. It all happens in one go in the page, so no round trip to
-// the test delays the look: what it sees is the first frame a person would see after the tap.
+// area's color inside the logo where the tap has placed it: a quarter of the logo's width right
+// of and above its middle, which is clear of a bottom-right ring (lit while the logo glides
+// there) and of the logo on its way from the middle. Returns [r, g, b]. It all happens in one
+// go in the page, so no round trip to the test delays the look: what it sees is the first frame
+// a person would see after the tap.
 function tapAndLookAtLogo(page, point) {
   return page.evaluate(async ({ x, y, fingerId }) => {
     const canvas = document.getElementById('view');
@@ -360,13 +296,34 @@ function tapAndLookAtLogo(page, point) {
     const crop = app.geometry.crop;
     const placed = window.CardEngine.clampOverlay(app.state.overlay, crop.width, crop.height);
     const rect = window.CardEngine.overlayRect(placed, crop.width, crop.height);
-    const lookAt = [crop.x + rect.x + rect.width / 4, crop.y + rect.y + rect.height / 2];
+    const lookAt = [crop.x + rect.x + rect.width * 3 / 4, crop.y + rect.y + rect.height / 4];
     const [screenX, screenY] = window.CF.toScreen(window.CF.currentView(), lookAt);
     const scale = canvas.width / canvas.getBoundingClientRect().width;
     const pixel = canvas.getContext('2d')
       .getImageData(Math.round(screenX * scale), Math.round(screenY * scale), 1, 1).data;
     return Array.from(pixel.slice(0, 3));
   }, { x: point.x, y: point.y, fingerId: TAP_FINGER_ID });
+}
+
+// The colors drawn at a ring's place on the page (CSS px): { dot, shadow }, each [r, g, b] of the
+// one device pixel there: `dot` at the point itself (where a ring's white dot is drawn) and
+// `shadow` `shadowPx` to its left (where a ring's dark outline is drawn, round the white
+// circle). It waits for the next frames first.
+async function ringMarksAt(page, point, shadowPx) {
+  await nextFrames(page);
+  return page.evaluate(({ x, y, offsetPx }) => {
+    const canvas = document.getElementById('view');
+    const box = canvas.getBoundingClientRect();
+    const scale = canvas.width / box.width;
+    const ctx = canvas.getContext('2d');
+    const read = (pageX, pageY) => Array.from(ctx.getImageData(
+      Math.floor((pageX - box.left) * scale),
+      Math.floor((pageY - box.top) * scale),
+      1,
+      1,
+    ).data.slice(0, 3));
+    return { dot: read(x, y), shadow: read(x - offsetPx, y) };
+  }, { x: point.x, y: point.y, offsetPx: shadowPx });
 }
 
 // Waits for the next two frames the page draws, so a redraw asked for now has happened.
@@ -420,6 +377,49 @@ async function readSavedLogo(page, file, { color = GREEN, rowFrac = null } = {})
   }, { data: base64, mimeType: type, target: color, rowFraction: rowFrac });
 }
 
+// The lowest and highest red value (0 to 255) of the saved file `file` in a band of rows across
+// its middle, between `fromFrac` and `toFrac` of its width: { saved: { min, max }, sharpened:
+// { min, max } }. `sharpened` is the same band after the engine's unsharp mask with `options`
+// ({ sigmaPx, amount, thresholdLevels }, as the upscale's Yes uses on the photo): what the band
+// would hold had the logo been sharpened with the photo, so a case can show it would tell.
+async function bandSpread(page, file, { fromFrac, toFrac, options }) {
+  const type = MIME_TYPES[path.extname(file).toLowerCase()] || 'image/jpeg';
+  const base64 = fs.readFileSync(file).toString('base64');
+  return page.evaluate(async ({ data, mimeType, startFrac, endFrac, sharpen, bandRows }) => {
+    const bytes = Uint8Array.from(atob(data), character => character.charCodeAt(0));
+    const bitmap = await createImageBitmap(new Blob([bytes], { type: mimeType }));
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bitmap, 0, 0);
+    const left = Math.round(startFrac * bitmap.width);
+    const width = Math.round(endFrac * bitmap.width) - left;
+    const top = Math.round(bitmap.height / 2 - bandRows / 2);
+    const band = ctx.getImageData(left, top, width, bandRows);
+    const spread = image => {
+      let min = 255;
+      let max = 0;
+      for (let i = 0; i < image.data.length; i += 4) {
+        min = Math.min(min, image.data[i]);
+        max = Math.max(max, image.data[i]);
+      }
+      return { min, max };
+    };
+    const saved = spread(band);
+    const copy = new ImageData(new Uint8ClampedArray(band.data), band.width, band.height);
+    const sharpened = spread(window.CardEngine.unsharpMask(copy, sharpen));
+    return { saved, sharpened };
+  }, {
+    data: base64,
+    mimeType: type,
+    startFrac: fromFrac,
+    endFrac: toFrac,
+    sharpen: options,
+    bandRows: BAND_ROWS,
+  });
+}
+
 // Waits until the logo saved in this browser has `settings` ({ cx, cy, w, opacity }, each
 // optional): the stored record's settings match within a millionth.
 async function waitForSavedSettings(page, settings, timeoutMs = LOGO_TIMEOUT_MS) {
@@ -434,16 +434,11 @@ async function waitForSavedSettings(page, settings, timeoutMs = LOGO_TIMEOUT_MS)
 module.exports = {
   PHOTO,
   GREEN,
-  DARK_GREY,
-  LIGHT_GREY,
   MEGABYTE,
   SIX_MB,
   startOnOverlay,
-  drawnLogo,
-  svgLogo,
-  textNamedPng,
+  fixtureLogo,
   oversizedPng,
-  gifLogo,
   logoId,
   chooseLogo,
   chooseBadLogo,
@@ -460,6 +455,8 @@ module.exports = {
   colorOnPage,
   nextFrames,
   tapAndLookAtLogo,
+  ringMarksAt,
   readSavedLogo,
+  bandSpread,
   waitForSavedSettings,
 };

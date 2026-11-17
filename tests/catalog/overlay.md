@@ -2,33 +2,36 @@
 
 Placing a logo or watermark on the framed photo: adding it, moving and sizing it, the saved logo, and how it goes into the saved file.
 
+The logos the cases use are in `tests/fixtures/`: blue-disc.png (400 × 400 px, see-through except for a pure blue disc that fills it edge to edge), green-logo.png (400 × 400 px, pure green), overlay-green-wide.jpg (300 × 100 px, pure green), overlay-blue-oval.webp (200 × 400 px, see-through except for a pure blue oval), overlay-tall-oval.png (100 × 400 px, see-through except for a pure blue oval), overlay-split.svg (width 200, height 100, viewBox 0 0 200 100, its left half black and its right half white), overlay-split-2048.png (2048 × 1024 px, its left half black and its right half white), overlay-greys.png (400 × 400 px, its left half gray 100 and its right half gray 150, on a scale of 0 to 255), overlay-dark-and-light-grays.png (400 × 400 px, its left half gray 30 and its right half gray 220), not-a-logo.png (a line of text, named like a PNG) and logo.gif (a GIF of one see-through pixel).
+
 ## OVL-01 Add a logo
 
 Tap **Add logo** (red) to pick a PNG, WebP, JPEG or SVG file to place on the photo as a logo.
 
 - Risk: high
-- Check: script
+- Check: script; phone (the iPhone's own file menu)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#btnOverlayAdd`, `#overlayInput`, "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB."
 - Source: `js/app/overlay.js` (`buildAddRow`, `bindOverlayControls`, `addOverlayFile`); `index.html` (the logo's file input)
 - Flag: to confirm. The hint above the button always says "up to 5 MB", while the error for a file that is too big uses the real limit, which a link can lower.
-- Cases: 2
+- Cases: 3
 
 ### OVL-01.1 Add logo picks a file and places it   [auto: phone, webkit]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, in a private window so that no logo is saved in this browser
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png, made for the case: a PNG of 400 × 400 px, see-through except for a pure blue disc that fills it edge to edge
+- Logo: blue-disc.png from tests/fixtures/ (a blue disc on a see-through square)
 - Starting screen: the photo open, on the Overlay step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the controls | The line above them reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB."; the red **Add logo** button shows; no logo is on the photo |
+| 1 | Look at the controls (the block of buttons and sliders under the photo) | The line above them (the one line of text at the top of the controls) reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB."; the red **Add logo** button shows; no logo is on the photo |
 | 2 | Tap **Add logo** | The system's file picker opens; it lets you pick one file only, and it offers PNG, WebP, JPG and SVG pictures |
-| 3 | Choose logo.png | The blue disc shows in the middle of the photo; the line above the controls now reads OPACITY with a slider and 100% |
+| 3 | Choose blue-disc.png | The blue disc shows in the middle of the photo; the line above the controls now reads OPACITY with a slider and 100% |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -40,16 +43,39 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test, opened from a link that ends `index.html?overlay.maxBytes=1048576` (a logo limit of 1 MB)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: big-logo.png, any file of exactly 2 MB (2,097,152 bytes) whose name ends .png
+- Logo: big-logo.png, a file of exactly 2 MB (2,097,152 bytes) whose name ends .png: make one by renaming any file of that size (it is too big to keep in tests/fixtures/; the script makes its own)
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." |
-| 2 | Tap **Add logo** and choose big-logo.png | A red message takes the line's place: "That file is 2.0 MB. The overlay limit is 1 MB."; no logo is on the photo |
+| 1 | Look at the line above the controls (the one line of text at the top of the block of buttons under the photo) | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." |
+| 2 | Tap **Add logo** | The file picker opens |
+| 3 | Choose big-logo.png | A red message takes the line's place: "That file is 2.0 MB. The overlay limit is 1 MB."; no logo is on the photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### OVL-01.3 On an iPhone a logo comes from Photos, and an SVG from Files   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from your photos (copied from samples/)
+- Logos: blue-disc.png from tests/fixtures/, saved to Photos; overlay-split.svg from tests/fixtures/, saved to Files (On My iPhone or iCloud Drive). An SVG can't be kept in Photos
+- Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add logo** (the red button under the photo) | A menu rises from the bottom of the screen; among its choices are Photo Library and Choose File |
+| 2 | Tap Photo Library | Your photos open |
+| 3 | Choose the picture of the blue disc | The photos close; the blue disc shows in the middle of the photo |
+| 4 | Tap **Replace logo** in the row of tools (the bottom row of buttons under the photo) | The same menu rises |
+| 5 | Tap Choose File | Files opens |
+| 6 | Choose overlay-split.svg | Files closes; a box twice as wide as it is high takes the disc's place, its left half black and its right half white |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screen recording.
 
 ## OVL-02 Which files can be a logo
 
@@ -62,37 +88,45 @@ A logo file is accepted by its file type, or else by its name's extension. A PNG
 - Changed: none
 - Anchors: `CONFIG.overlay.maxPx`, `CONFIG.overlay.svgPx`, "That file type isn’t supported. Use PNG, WebP, JPG or SVG."
 - Source: `js/app/overlay.js` (`imageTypeOf`, `decode`, `decodeSvg`, `svgSize`, `register`)
-- Cases: 6
+- Cases: 7
 
 ### OVL-02.1 PNG, JPEG, WebP and SVG logos are each placed   [auto: phone, webkit]
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logos, made for the case: logo.png (400 × 400 px, see-through except for a pure blue disc); logo.jpg (300 × 100 px, pure green); logo.webp (200 × 400 px, see-through except for a pure blue oval); logo.svg (width 200, height 100, its left half black and its right half white)
+- Logos, from tests/fixtures/: blue-disc.png; overlay-green-wide.jpg; overlay-blue-oval.webp; overlay-split.svg
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. "Replace with F": tap **Replace logo** in the row of tools (the bottom row of buttons under the photo), then choose F.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose logo.png | A blue disc shows on the photo, in a square box |
-| 2 | Tap **Replace logo** in the row of tools and choose logo.jpg | A green box takes its place, three times as wide as it is high |
-| 3 | Tap **Replace logo** and choose logo.webp | A blue oval takes its place, in a box half as wide as it is high |
-| 4 | Tap **Replace logo** and choose logo.svg | A black and white box takes its place, twice as wide as it is high |
+| 1 | Add blue-disc.png | A blue disc shows on the photo, in a square box |
+| 2 | Replace with overlay-green-wide.jpg | A green box takes its place, three times as wide as it is high |
+| 3 | Replace with overlay-blue-oval.webp | A blue oval takes its place, in a box half as wide as it is high |
+| 4 | Replace with overlay-split.svg | A black and white box takes its place, twice as wide as it is high |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-02.2 A logo file with no picture type is taken by its name   [auto: phone]
+Script only
+Stand-in: the script hands the app blue-disc.png as a plain file of bytes, with no picture type of its own, so that only its name says it is a PNG. Some systems hand files over this way, but a person can't choose to.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1, handed to the app with no picture type of its own (the script sends it as a plain file of bytes; only its name says it is a PNG)
+- Logo: blue-disc.png from tests/fixtures/, with no picture type
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose logo.png | The blue disc shows on the photo, with no message |
+| 1 | Tap **Add logo** (the red button under the photo) | The file picker opens |
+| 2 | Choose blue-disc.png | The blue disc shows on the photo, with no message |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -102,12 +136,14 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.gif, any GIF picture
+- Logo: logo.gif from tests/fixtures/
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose logo.gif | A red message takes the place of the hint: "That file type isn’t supported. Use PNG, WebP, JPG or SVG."; no logo is on the photo |
+| 1 | Tap **Add logo** (the red button under the photo) | The file picker opens |
+| 2 | Choose logo.gif | A red message takes the place of the hint in the line above the controls (the one line of text at the top of the block of buttons): "That file type isn’t supported. Use PNG, WebP, JPG or SVG."; no logo is on the photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -117,16 +153,22 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.svg, made for the case: width 200, height 100, viewBox 0 0 200 100, its left half black and its right half white
+- Logo: overlay-split.svg from tests/fixtures/ (its left half black, its right half white)
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose logo.svg | The logo shows in the middle of the photo: its left half black, its right half white |
+| 1 | Add overlay-split.svg | The logo shows in the middle of the photo: its left half black, its right half white |
 | 2 | Hold **Larger** (the **+** key, right of the arrows) for about 2.5 s | The logo grows to the photo's full width and stops |
-| 3 | Tap **Export** in the step bar, then **PNG**, then **3000** | The size line gives 3000 px |
-| 4 | Tap **Download**, and **Yes** to **Upscale to 3000 px?** | A PNG of 3000 × 3000 px is saved |
-| 5 | Open the file and zoom in on the middle of the logo, where black meets white | The edge is sharp: at most 2 px of gray between the black and the white |
+| 3 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Export step shows |
+| 4 | Tap **PNG** | PNG is selected |
+| 5 | Tap **3000** | 3000 is selected; the size line (the line that gives the saved picture's size in px and its format) reads "Output", the crop's own size, then "px · PNG · full crop, not upscaled" |
+| 6 | Tap **Download** | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 3000 px?" |
+| 7 | Tap **Yes** | A PNG of 3000 × 3000 px is saved |
+| 8 | Open the file and zoom in on the middle of the logo, where black meets white | The edge is sharp: at most 2 px of gray between the black and the white |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -136,35 +178,67 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1 (a blue disc on a see-through square)
+- Logo: blue-disc.png from tests/fixtures/ (a blue disc on a see-through square)
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Save the photo": tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom), then tap **Download**. "Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar, then **Download** (answer **No** if asked to upscale) | A first file is saved, with no logo |
-| 2 | Tap **Overlay**, then **Add logo**, and choose logo.png | The blue disc shows in the middle of the photo |
-| 3 | Tap **Export**, then **Download** (answer **No** if asked) | A second file is saved |
-| 4 | Compare the two files just inside the top-left corner of the logo's square, outside the disc | That corner shows the photo, the same as in the first file; inside the disc the second file is blue |
+| 1 | Save the photo | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | A first file is saved, with no logo |
+| 3 | Tap **Overlay** in the step tabs | The Overlay step shows, with no logo |
+| 4 | Add blue-disc.png | The blue disc shows in the middle of the photo |
+| 5 | Save the photo | The question box asks "Upscale to 2000 px?" |
+| 6 | Tap **No** | A second file is saved |
+| 7 | Compare the two files just inside the top-left corner of the logo's square, outside the disc | That corner shows the photo, the same as in the first file; inside the disc the second file is blue |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### OVL-02.6 A logo larger than the cap is scaled down to it   [auto: phone]
-The app scales a logo over 4096 px down to 4096 px, which the saved file can't show; a link lowers the cap to 256 px so that the scaling shows as a soft edge.
+### OVL-02.6 A large PNG logo stays sharp in a large export   [auto: phone, webkit]
+The twin of OVL-02.7: the same logo with no cap lowered, to show the edge the cap softens.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: split.png, made for the case: a PNG of 2048 × 1024 px, its left half black and its right half white
+- Logo: overlay-split-2048.png from tests/fixtures/ (2048 × 1024 px, its left half black and its right half white)
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. "Save a PNG at 3000": tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom), tap **PNG**, tap **3000**, then tap **Download**.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo**, choose split.png, then hold **Larger** (the **+** key, right of the arrows) for about 2.5 s | The logo grows to the photo's full width and stops |
-| 2 | Tap **Export**, **PNG**, **3000**, then **Download** and **Yes** to upscaling | In the saved file, across the logo's middle, the black turns white within 2 px |
-| 3 | Open the app from a link that ends `index.html?overlay.maxPx=256`, open IMG_9136.JPEG and go to Overlay | The photo is open on the Overlay step, with no logo |
-| 4 | Repeat rows 1 and 2 | In this file the same edge is soft: 5 px of gray or more |
+| 1 | Add overlay-split-2048.png | The logo shows in the middle of the photo: its left half black, its right half white |
+| 2 | Hold **Larger** (the **+** key, right of the arrows) for about 2.5 s | The logo grows to the photo's full width and stops |
+| 3 | Save a PNG at 3000 | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 3000 px?" |
+| 4 | Tap **Yes** | A PNG is saved; in it, across the logo's middle, the black turns white within 2 px |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### OVL-02.7 A logo larger than the cap is scaled down to it   [auto: phone, webkit]
+The app scales a logo over 4096 px down to 4096 px, which the saved file can't show; a link lowers the cap to 256 px so that the scaling shows as a soft edge. OVL-02.6 is the same case with no cap lowered.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test, opened from a link that ends `index.html?overlay.maxPx=256` (a cap of 256 px)
+- Photo: IMG_9136.JPEG from samples/
+- Logo: overlay-split-2048.png from tests/fixtures/ (2048 × 1024 px, its left half black and its right half white)
+- Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. "Save a PNG at 3000": tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom), tap **PNG**, tap **3000**, then tap **Download**.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Add overlay-split-2048.png | The logo shows in the middle of the photo: its left half black, its right half white |
+| 2 | Hold **Larger** (the **+** key, right of the arrows) for about 2.5 s | The logo grows to the photo's full width and stops |
+| 3 | Save a PNG at 3000 | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 3000 px?" |
+| 4 | Tap **Yes** | A PNG is saved; in it, across the logo's middle, the edge between black and white is soft: 5 px of gray or more |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -188,31 +262,39 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
+- Logo: blue-disc.png from tests/fixtures/
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose logo.png | The logo's middle is on the middle of the photo, its width a quarter of the photo's; the line above the controls reads OPACITY 100% |
-| 2 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is gone and **Add logo** shows again |
+| 1 | Tap **Add logo** (the red button under the photo) | The file picker opens |
+| 2 | Choose blue-disc.png | The logo's middle is on the middle of the photo, its width a quarter of the photo's; the line above the controls (the one line of text at the top of the block of buttons under the photo) reads OPACITY 100% |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is gone and **Add logo** shows again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-03.2 Two logos added within 0.9 s are two undo steps   [auto: phone]
+Script only
+Stand-in: the script adds the two logos through the file picker less than 0.9 s apart; a person can't open the picker and choose a file twice that fast.
+
 Written to ruling R19; it fails until that is built (BUG-080).
 
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px (only a script is quick enough to add two logos within 0.9 s)
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logos: logo.png as in OVL-01.1; green.png, made for the case: a PNG of 400 × 400 px, pure green
+- Logos: blue-disc.png and green-logo.png from tests/fixtures/
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add then replace, quickly": tap **Add logo** (the red button under the photo), choose blue-disc.png, tap **Replace logo** in the row of tools (the bottom row of buttons under the photo) and choose green-logo.png, all within 0.9 s.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo**, choose logo.png, then at once tap **Replace logo** and choose green.png, all within 0.9 s | The green square has taken the blue disc's place |
-| 2 | Tap **Undo** | The blue disc is back |
+| 1 | Add then replace, quickly | The green square has taken the blue disc's place |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) | The blue disc is back |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -232,20 +314,23 @@ While a logo is saved in this browser, its thumbnail and **Use saved overlay** s
 
 ### OVL-04.1 Use saved overlay places the saved logo where it was last   [auto: phone, webkit]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, in a private window so that no logo is saved in this browser yet
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
+- Logo: blue-disc.png from tests/fixtures/
 - Starting screen: IMG_9136.JPEG open, on the Overlay step, no logo placed
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding the logo in row 1 saves it in this browser as the saved logo, and the changes in row 2 are saved with it
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. "Move and grow": tap **Move right** (the right arrow in the left-hand pad) ten times, then **Larger** (**+** in the right-hand pad) three times. "Open F": tap **Open** (the folder at the top left), then choose the file F.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose logo.png | The blue disc shows in the middle of the photo |
-| 2 | Tap **Move right** (the right arrow in the left-hand pad) twice, then **Larger** (**+**) once | The logo moves a little right and grows a little |
-| 3 | Wait a second, tap **Open** (the folder at the top left) and choose IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
-| 4 | Tap **Overlay** in the step bar | No logo is on the photo; a thumbnail of the blue disc and **Use saved overlay** show beside **Add logo** |
+| 1 | Add blue-disc.png | The blue disc shows in the middle of the photo |
+| 2 | Move and grow | The logo has moved right by a fifth of its first width, and grown by about a sixth |
+| 3 | A second or more later, open IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
+| 4 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | No logo is on the photo; a thumbnail of the blue disc and **Use saved overlay** show beside **Add logo** |
 | 5 | Tap **Use saved overlay** | The blue disc shows as far right of the middle and as large as it was on the first photo; OPACITY reads 100% |
-| 6 | Tap **Undo** once | The logo is gone; **Use saved overlay** shows again |
+| 6 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is gone; **Use saved overlay** shows again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -268,14 +353,17 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
+- Logo: blue-disc.png from tests/fixtures/
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding the logo in the case saves it in this browser as the saved logo
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the row of controls | **Add logo** shows; no arrow pad |
-| 2 | Tap **Add logo** and choose logo.png | **Add logo** is gone; in its place a pad of four arrows on the left and a pad with **−** and **+** on the right |
-| 3 | Tap **Remove** in the row of tools | The pads are gone; **Add logo** shows again, with **Use saved overlay** beside it |
+| 1 | Look at the controls (the block of buttons and sliders under the photo) | **Add logo** shows; no arrow pad |
+| 2 | Add blue-disc.png | **Add logo** is gone; in its place a pad of four arrows on the left and a pad with **−** and **+** on the right |
+| 3 | Tap **Remove** in the row of tools (the bottom row of buttons under the photo) | The pads are gone; **Add logo** shows again, with **Use saved overlay** beside it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -298,14 +386,15 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (slide with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle, OPACITY 100%)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle, OPACITY 100%)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Put a finger on the OPACITY slider's knob, at the right end, and slide it to the middle without lifting | The value beside it reads about 50%, and already the photo shows through the disc |
 | 2 | Lift the finger | The value stays where it was |
-| 3 | Tap **Undo** once | OPACITY reads 100% and the disc is solid blue again |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) once | OPACITY reads 100% and the disc is solid blue again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -324,19 +413,22 @@ Each of the move pad's four arrow keys (**Move left**, **Move up**, **Move down*
 - Cases: 3
 
 ### OVL-07.1 Each arrow of the move pad moves the logo 0.5% of the photo's width   [auto: phone]
+A logo a quarter of the photo wide moves a fiftieth of its own width per tap, too little to see, so each row taps ten times: a fifth of the logo's width.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle, a quarter of the photo's width)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Move right** (the right arrow in the left-hand pad) | The logo moves right by 0.5% of the photo's width, its size kept |
-| 2 | Tap **Move left** | It moves back |
-| 3 | Tap **Move down** | It moves down by 0.5% of the photo's width |
-| 4 | Tap **Move up** | It moves back |
+| 1 | Tap **Move right** (the right arrow in the left-hand pad) ten times | The logo has moved right by a fifth of its own width (5% of the photo's width), its size kept |
+| 2 | Tap **Move left** ten times | It is back in the middle |
+| 3 | Tap **Move down** ten times | It has moved down by a fifth of its own width |
+| 4 | Tap **Move up** ten times | It is back in the middle |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -346,14 +438,19 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Ten quick taps": tap **Move right** (the right arrow in the left-hand pad) ten times, less than 0.9 s between one tap and the next.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Within 0.9 s, tap **Move right**, **Move right**, then **Move down** | The logo has moved right and down |
-| 2 | Tap **Undo** once | The logo is back in the middle |
-| 3 | Tap **Move right**, wait a second, tap **Move right** again, then tap **Undo** | Only the second move is taken back: the logo is one step right of the middle |
+| 1 | Ten quick taps | The logo has moved right by a fifth of its own width |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is back in the middle: all ten taps are taken back |
+| 3 | Ten quick taps | The logo has moved right by a fifth of its width again |
+| 4 | A second or more after the last tap, ten quick taps | It has moved right by two fifths of its width in all |
+| 5 | Tap **Undo** once | Only the second ten are taken back: the logo is a fifth of its width right of the middle |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -363,13 +460,14 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Hold **Move right** down for 1 s, then lift | The logo keeps moving while it is held: at least six steps right in all |
-| 2 | Tap **Undo** once | The logo is back in the middle |
+| 1 | Hold **Move right** (the right arrow in the left-hand pad) down for 1 s, then lift | The logo keeps moving while it is held, and ends at least an eighth of its own width right of the middle |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is back in the middle |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -392,8 +490,9 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -409,12 +508,13 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Hold **Larger** down for 1 s, then lift | The logo keeps growing while it is held: at least six steps of 1.05 in all |
+| 1 | Hold **Larger** (**+** in the right-hand pad) down for 1 s, then lift | The logo keeps growing while it is held: at least six steps of 1.05 in all, so about a third wider |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -424,20 +524,23 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Move then grow, quickly": tap **Move right** (the right arrow in the left-hand pad), then **Larger** (**+** in the right-hand pad), within 0.9 s.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Within 0.9 s, tap **Move right**, then **Larger** | The logo moves right and grows |
-| 2 | Tap **Undo** once | Both are taken back: the logo is in the middle, a quarter of the photo's width |
+| 1 | Move then grow, quickly | The logo moves right and grows |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) once | Both are taken back: the logo is in the middle, a quarter of the photo's width |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-09 Replace logo
 
-**Replace logo** opens the file picker; the new logo lands at the starting place (centered, a quarter of the width, 100%) and becomes the saved logo.
+**Replace logo** opens the file picker; the new logo takes the old one's position, width and opacity, and becomes the saved logo.
 
 - Risk: medium
 - Check: script
@@ -446,7 +549,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#toolOverlayReplace`, "Choose another logo"
 - Source: `js/app/overlay.js` (`bindOverlayControls`, `addOverlayFile`, `place`, `saveToBrowser`)
-- Ruling: R18. The replacement logo takes the old logo's position, width and opacity. The app differs today.
+- Ruling: R18. The replacement logo takes the old logo's position, width and opacity. The app differs today: the new logo lands at the starting place (centered, a quarter of the width, 100%).
 - Cases: 2
 
 ### OVL-09.1 A replacement logo takes the old one's place, width and opacity   [auto: phone]
@@ -456,30 +559,35 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logos: logo.png as in OVL-01.1; green.png, a PNG of 400 × 400 px, pure green
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logos: blue-disc.png and green-logo.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Change the logo": tap **Move right** (the right arrow in the left-hand pad) ten times, tap **Larger** (**+** in the right-hand pad) three times, then slide the OPACITY slider's knob from the right end to the middle. "Replace with F": tap **Replace logo** in the row of tools (the bottom row of buttons under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Move right** twice and **Larger** once, then slide OPACITY to the middle | The blue disc is right of the middle, larger, and OPACITY reads about 50% |
-| 2 | Wait a second, tap **Replace logo** and choose green.png | The green square takes the disc's place: as far right, as wide, and at the same opacity |
+| 1 | Change the logo | The blue disc is right of the middle, larger, and OPACITY reads about 50% |
+| 2 | A second or more later, replace with green-logo.png | The green square takes the disc's place: as far right, as wide, and at the same opacity |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-09.2 The replacement becomes the saved logo   [auto: phone, webkit]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, in a private window so that no logo is saved in this browser yet
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logos: logo.png as in OVL-01.1; green.png, a PNG of 400 × 400 px, pure green
-- Starting screen: the photo open, on the Overlay step, logo.png added
+- Logos: blue-disc.png and green-logo.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added a second or more ago
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding blue-disc.png in the starting screen saved it in this browser as the saved logo
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Wait a second, tap **Replace logo** and choose green.png | The file picker opens; the green square takes the blue disc's place |
-| 2 | Tap **Remove** | The logo is gone; the thumbnail beside **Use saved overlay** is the green square |
-| 3 | Tap **Use saved overlay** | The green square is placed on the photo |
+| 1 | Tap **Replace logo** in the row of tools (the bottom row of buttons under the photo) | The file picker opens |
+| 2 | Choose green-logo.png | The green square takes the blue disc's place |
+| 3 | Tap **Remove** | The logo is gone; the thumbnail beside **Use saved overlay** is the green square |
+| 4 | Tap **Use saved overlay** | The green square is placed on the photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -502,14 +610,17 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Change the logo": tap **Move right** (the right arrow in the left-hand pad) ten times, tap **Larger** (**+** in the right-hand pad) three times, then slide the OPACITY slider's knob from the right end to the middle.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Move right** twice and **Larger** once, then slide OPACITY to the middle | The logo is right of the middle, larger, and OPACITY reads about 50% |
-| 2 | Wait a second, then tap **Reset** in the row of tools | The logo is in the middle of the photo, a quarter of its width; OPACITY reads 100% |
-| 3 | Tap **Undo** once | The moved, larger, fainter logo is back |
+| 1 | Change the logo | The logo is right of the middle, larger, and OPACITY reads about 50% |
+| 2 | A second or more later, tap **Reset** in the row of tools (the bottom row of buttons under the photo) | The logo is in the middle of the photo, a quarter of its width; OPACITY reads 100% |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) once | The moved, larger, fainter logo is back |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -535,13 +646,14 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding blue-disc.png in the starting screen saved it in this browser as the saved logo
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Remove** in the row of tools | The disc is gone from the photo; **Add logo** shows, with the disc's thumbnail and **Use saved overlay** beside it |
-| 2 | Tap **Undo** once | The disc is back where it was |
+| 1 | Tap **Remove** in the row of tools (the bottom row of buttons under the photo) | The disc is gone from the photo; **Add logo** shows, with the disc's thumbnail and **Use saved overlay** beside it |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) once | The disc is back where it was |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -561,17 +673,23 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-12.1 Delete saved forgets the saved logo and leaves the one on the photo   [auto: phone, webkit]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, in a private window so that no logo is saved in this browser yet
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: IMG_9136.JPEG open, on the Overlay step, logo.png added a second ago
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: IMG_9136.JPEG open, on the Overlay step, blue-disc.png added a second or more ago
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding blue-disc.png in the starting screen saved it in this browser as the saved logo, and the open photo is kept for Resume
+
+"Open F": tap **Open photo**, then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Delete saved** in the row of tools | The disc stays on the photo; **Delete saved** is greyed out |
+| 1 | Tap **Delete saved** in the row of tools (the bottom row of buttons under the photo) | The disc stays on the photo; **Delete saved** is greyed out |
 | 2 | Tap **Remove** | **Add logo** shows alone: no thumbnail, no **Use saved overlay** |
-| 3 | Reload the page, open IMG_9075.JPEG and tap **Overlay** in the step bar | No saved logo is offered: **Add logo** alone, and no row of tools |
+| 3 | Reload the page | The start screen asks "Resume IMG_9136.JPEG?", with **Resume** and **Start fresh** |
+| 4 | Tap **Start fresh** | The question goes; **Open photo** shows |
+| 5 | Open IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
+| 6 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | No saved logo is offered: **Add logo** alone, and no row of tools |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -591,19 +709,23 @@ The bottom row of buttons is hidden with no logo placed and none saved. It holds
 
 ### OVL-13.1 The row of tools shows the tools that can act   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, in a private window so that no logo is saved in this browser
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
+- Logo: blue-disc.png from tests/fixtures/
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site at the start (a private window, or the site's data cleared), so no logo is saved; adding the logo in row 2 saves it in this browser
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. The row of tools is the bottom row of buttons under the photo.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look under **Add logo** | No row of tools |
-| 2 | Tap **Add logo** and choose logo.png | A row of tools: **Replace logo**, **Reset**, **Remove** and **Delete saved**, none greyed out |
+| 2 | Add blue-disc.png | A row of tools: **Replace logo**, **Reset**, **Remove** and **Delete saved**, none greyed out |
 | 3 | Tap **Remove** | **Delete saved** alone |
-| 4 | Tap **Use saved overlay**, then **Delete saved** | All four tools again, **Delete saved** greyed out |
-| 5 | Tap **Remove** | No row of tools |
+| 4 | Tap **Use saved overlay** | All four tools again, none greyed out |
+| 5 | Tap **Delete saved** | All four tools, **Delete saved** greyed out |
+| 6 | Tap **Remove** | No row of tools |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -626,13 +748,16 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logos: not-a-logo.png, a text file renamed to end in .png; logo.png as in OVL-01.1
+- Logos: not-a-logo.png (a text file named like a PNG) and blue-disc.png, from tests/fixtures/
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose not-a-logo.png | A red message takes the hint's place: "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file."; no logo |
-| 2 | Tap **Add logo** and choose logo.png | The message has gone; the disc shows, with OPACITY above the controls |
+| 1 | Add not-a-logo.png | A red message takes the hint's place in the line above the controls (the one line of text at the top of the block of buttons under the photo): "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file."; no logo |
+| 2 | Add blue-disc.png | The message has gone; the disc shows, with OPACITY in the line above the controls |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -642,13 +767,16 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logos: logo.png as in OVL-01.1; big-logo.png, any file of exactly 6 MB (6,291,456 bytes) whose name ends .png
-- Starting screen: the photo open, on the Overlay step, logo.png added
+- Logos: blue-disc.png from tests/fixtures/; big-logo.png, a file of exactly 6 MB (6,291,456 bytes) whose name ends .png: make one by renaming any file of that size (it is too big to keep in tests/fixtures/; the script makes its own)
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Replace with F": tap **Replace logo** in the row of tools (the bottom row of buttons under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Replace logo** and choose big-logo.png | A red message takes OPACITY's place: "That file is 6.0 MB. The overlay limit is 5 MB."; the disc stays as it was |
-| 2 | Tap **Move right** | The disc moves; the message has gone and OPACITY shows again |
+| 1 | Replace with big-logo.png | A red message takes OPACITY's place: "That file is 6.0 MB. The overlay limit is 5 MB."; the disc stays as it was |
+| 2 | Tap **Move right** (the right arrow in the left-hand pad) | The disc moves; the message has gone and OPACITY shows again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -658,15 +786,19 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logos: logo.png as in OVL-01.1; not-a-logo.png, a text file renamed to end in .png
-- Starting screen: the photo open, on the Overlay step, logo.png added
+- Logos: blue-disc.png and not-a-logo.png (a text file named like a PNG), from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. "Replace with F": tap **Replace logo** in the row of tools (the bottom row of buttons under the photo), then choose F.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Replace logo** and choose not-a-logo.png | A red message reads "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file." |
-| 2 | Tap **Remove** | The message has gone; the hint shows |
-| 3 | Tap **Add logo** and choose not-a-logo.png | The same red message shows |
-| 4 | Tap **Export** in the step bar, then **Overlay** | The message has gone; the hint shows |
+| 1 | Replace with not-a-logo.png | A red message reads "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file." |
+| 2 | Tap **Remove** in the row of tools | The message has gone; the hint shows |
+| 3 | Add not-a-logo.png | The same red message shows |
+| 4 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Export step shows |
+| 5 | Tap **Overlay** in the step tabs | The message has gone; the hint shows |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -676,13 +808,17 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Logo: not-a-logo.png, a text file renamed to end in .png
+- Logo: not-a-logo.png from tests/fixtures/ (a text file named like a PNG)
 - Starting screen: a pair: the front opened, then the back added with **Add back** on Export; the back is open
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Overlay** in the step bar, then **Add logo**, and choose not-a-logo.png | On the back's Overlay step a red message reads "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file." |
-| 2 | Tap **Front** in the top bar | The front's Overlay step shows the hint and no message |
+| 1 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | The back's Overlay step, with the hint |
+| 2 | Add not-a-logo.png | A red message reads "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file." |
+| 3 | Tap **Front** in the top bar | The front's Overlay step shows the hint and no message |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -706,12 +842,13 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag and pinch with fingers)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag a finger 60 px right and 40 px down, starting on the photo's lower left, away from the logo and the rings | The logo moves 60 px right; the photo doesn't move |
+| 1 | Drag a finger 60 px right and 40 px down, starting on the photo's lower left, away from the logo and the rings | The logo moves 60 px right and 40 px down; the photo doesn't move |
 | 2 | Pinch two fingers apart on the photo's lower left | The logo grows; the photo doesn't zoom |
 
 Pass: every row's result is seen.
@@ -724,12 +861,13 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag and pinch with fingers)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Overlay step, no logo placed
+- Starting screen: the photo open, on the Overlay step, no logo placed; **Undo** (the arrow curving left, at the top right) greyed out
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag a finger 60 px right and 40 px down on the photo | The photo doesn't move; nothing new to undo |
-| 2 | Pinch two fingers apart on the photo | The photo doesn't zoom; nothing new to undo |
+| 1 | Drag a finger 60 px right and 40 px down on the photo | The photo stays where it was, at the same size; **Undo** is still greyed out |
+| 2 | Pinch two fingers apart on the photo | The photo doesn't zoom: it stays at the same size; **Undo** is still greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -741,13 +879,17 @@ Before you start:
 - Device and browser: a computer with a mouse; a wide window, 1280 × 800 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
+- Logo: blue-disc.png from tests/fixtures/
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": click **Add logo** (the red button in the panel at the right), then choose the file F in the file dialog.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Point at the photo and roll the wheel away from you | Nothing changes: the photo doesn't zoom |
-| 2 | Click **Add logo**, choose logo.png, then roll the wheel over the photo again | The photo still doesn't zoom |
+| 2 | Add blue-disc.png | The blue disc shows in the middle of the photo |
+| 3 | Point at the photo's lower left and roll the wheel away from you again | The photo still doesn't zoom |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -770,13 +912,14 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Put a finger on the disc, left of its middle ring, drag 60 px right and 40 px down, and lift | The logo moves with the finger, 60 px right and 40 px down, its size kept |
-| 2 | Tap **Undo** once | The logo is back in the middle |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is back in the middle |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -786,8 +929,9 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -814,13 +958,14 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the logo's bottom-right handle (the white square on its corner) 40 px right and 20 px down | The logo is 40 px wider and 40 px higher, still square; its top-left corner hasn't moved |
-| 2 | Tap **Undo** once | The logo is its first size |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is its first size |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -830,8 +975,9 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -841,17 +987,20 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-17.3 A corner handle near a ring wins over the ring   [auto: phone]
+After a snap to the top-left ring, the logo's top-left handle (a white square) sits between the ring and the photo's corner, touching the ring: a press there is within reach of both.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (tap and drag with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the top-left ring | The logo snaps to the photo's top-left corner; its top-left handle is just inside the ring |
-| 2 | Put a finger halfway between that handle and the ring (within 24 px of both), drag 20 px right and 20 px down, and lift | The logo is resized, smaller, its bottom-right corner where it was: the handle took the press, not the ring |
+| 1 | Tap the top-left ring (a white circle with a dot in it, near the photo's top-left corner) | The logo snaps to the photo's top-left corner; its top-left handle sits between the ring and the photo's corner, touching the ring |
+| 2 | Put a finger where the handle touches the ring, drag 20 px right and 20 px down, and lift | The logo is resized, smaller, its bottom-right corner where it was: the handle took the press, not the ring |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -861,26 +1010,27 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 A two-finger pinch resizes and moves the logo; if one finger lifts, the other carries on moving it. The whole gesture is one undo step.
 
 - Risk: medium
-- Check: script, touch
+- Check: script, touch; phone (Safari's own page zoom)
 - Layout: both, on a touch screen.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: "drag a corner or pinch to resize."
 - Source: `js/app/overlay.js` (`overlayPointerDown`, `gesturePlacement`, `overlayPinchEnded`)
-- Cases: 2
+- Cases: 3
 
 ### OVL-18.1 A pinch resizes the logo, one undo step   [auto: phone, webkit]
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (pinch with two fingers)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Put two fingers 40 px apart on the logo's middle and spread them to 100 px apart | The logo is 2.5 times as wide, its middle where it was |
-| 2 | Tap **Undo** once | The logo is its first size |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is its first size |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -890,24 +1040,43 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (two fingers)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Put two fingers on the logo, spread them apart, and lift the right one | The logo is larger |
 | 2 | Without lifting the left finger, slide it 60 px right, then lift it | The logo moves 60 px right with the finger, its size kept |
-| 3 | Tap **Undo** once | The whole gesture is taken back: the logo is its first size, in the middle |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) once | The whole gesture is taken back: the logo is its first size, in the middle |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### OVL-18.3 On an iPhone a pinch on the logo never zooms the page   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from your photos (copied from samples/)
+- Logo: blue-disc.png from tests/fixtures/, saved to Photos
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Put two fingers close together on the logo and spread them apart | The logo grows; the page itself (the top bar, the buttons under the photo and the step tabs along the bottom) stays the same size |
+| 2 | Put two fingers apart on the logo and pinch them together | The logo shrinks; the page doesn't zoom out |
+| 3 | Pinch two fingers apart on the photo's lower left, away from the logo | The logo grows; the page doesn't zoom |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screen recording.
 
 ## OVL-19 Nine snap rings
 
 Nine rings sit on the photo, at the four corners, the four side middles and the center, 28 px in from the frame's edges.
 
 - Risk: low
-- Check: eye
+- Check: eye; script (the rings' places)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -916,23 +1085,27 @@ Nine rings sit on the photo, at the four corners, the four side middles and the 
 - Cases: 1
 
 ### OVL-19.1 Nine rings on the photo, for a person to judge   [eye]
+The places in row 2 are measured by the script, on the screen in CSS px: at each place 28 px in, it finds a ring's white dot, with the ring's dark outline 12.5 px to its left. A person can measure them on the screenshot.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the framed photo | Nine white rings, each with a dot in it: at the four corners, the middles of the four sides and the center, each the same small distance in from the edges; the center ring sits on the middle of the logo |
+| 2 | Measure from each ring's dot to the framed photo's edges | Each corner ring's dot is 28 px in from both edges by its corner; each side ring's dot is 28 px in from its edge and midway along it; the center ring's dot is on the frame's middle |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-20 Tap a ring to snap
 
-A still tap on a ring snaps the logo there, 3% of the frame's width in from the edges (the center ring centers it), as one undo step; the edits hold the snapped place at once.
+A still tap on a ring snaps the logo there, 3% of the frame's width in from the edges (the center ring centers it), as one undo step. The logo glides there on screen (OVL-22); **Undo** and a file saved straight after the tap already have the new place.
 
 - Risk: high
 - Check: script, touch
@@ -943,18 +1116,19 @@ A still tap on a ring snaps the logo there, 3% of the frame's width in from the 
 - Source: `js/app/overlay.js` (`hitSpot`, `overlaySpotTap`); `js/engine.js` (`snapOverlay`)
 - Cases: 2
 
-### OVL-20.1 Tapping a corner ring snaps the logo there at once, one undo step   [auto: phone, webkit]
+### OVL-20.1 Tapping a corner ring snaps the logo there, one undo step   [auto: phone, webkit]
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (tap with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the top-right ring | The logo glides to the top-right corner; its top and right edges end 3% of the photo's width in from the top and right (the edits hold that place at once, before the glide ends) |
-| 2 | Tap **Undo** once | The logo is back in the middle |
+| 1 | Tap the top-right ring (a white circle with a dot in it, near the photo's top-right corner) | The logo goes to the top-right corner; its top and right edges end 3% of the photo's width in from the top and right |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is back in the middle |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -964,12 +1138,13 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (tap with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the ring at the middle of the bottom edge | The logo is centered across the photo, its bottom edge 3% of the photo's width up from the bottom |
+| 1 | Tap the ring at the middle of the bottom edge (a white circle with a dot in it) | The logo is centered across the photo, its bottom edge 3% of the photo's width up from the bottom |
 | 2 | Tap the center ring | The logo is in the middle of the photo again |
 
 Pass: every row's result is seen.
@@ -993,12 +1168,13 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Put a finger on the ring at the middle of the left edge, drag 60 px right, and lift | The logo moves 60 px right; it doesn't snap to the left |
+| 1 | Put a finger on the ring at the middle of the left edge (a white circle with a dot in it), drag 60 px right, and lift | The logo moves 60 px right; it doesn't snap to the left |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1008,24 +1184,25 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 The rings fade out while a gesture runs and back in after it; a tapped ring lights for 180 ms while the logo glides to its snapped place. Under reduced motion the logo jumps there.
 
 - Risk: low
-- Check: eye
+- Check: eye; script (the glide); phone (the lit ring)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: none
 - Source: `js/app/overlay.js` (`aimRings`, `ringAlphaAt`, `areRingsWanted`, `drawnPlacement`, `litSpotAt`)
 - Flag: to confirm. Under reduced motion the rings appear and go with no fade, while the Levels compare badge keeps its short fade.
-- Cases: 2
+- Cases: 4
 
 ### OVL-22.1 The rings fade during a drag, for a person to judge   [eye]
-The ring lit by a tap lasts 180 ms, too short for a screenshot; it is left to a person on a phone.
+The ring lit by a tap lasts 180 ms, too short for a screenshot; it is checked on an iPhone in OVL-22.3.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -1036,18 +1213,61 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-22.2 Under reduced motion a tapped ring moves the logo at once   [auto: phone]
+Script only
+Stand-in: the script sets the browser to reduce motion and reads the picture the app draws in the frame right after the tap; a person can't see a single frame (about a sixtieth of a second).
+
 Flag: to confirm. Written to today's behavior: the logo jumps, and the rings appear and go with no fade (not checked here), while the Levels compare badge keeps its short fade.
 
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, with the device set to reduce motion
+- Device and browser: a phone-width window, 390 × 844 px, with the browser set to reduce motion
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the bottom-right ring | In the very next frame the logo is already in the bottom-right corner, with no glide |
+| 1 | Tap the bottom-right ring (a white circle with a dot in it, near the photo's bottom-right corner) | In the very next frame the logo is already in the bottom-right corner, with no glide |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### OVL-22.3 On an iPhone a tapped ring lights up as the logo glides to it   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari, with Reduce Motion off (Settings, Accessibility, Motion)
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Photo: IMG_9136.JPEG from your photos (copied from samples/)
+- Logo: blue-disc.png from tests/fixtures/, saved to Photos
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap the top-right ring (a white circle with a dot in it, near the photo's top-right corner) | The ring flashes brighter, filled with white, and the logo glides to the top-right corner in about a fifth of a second; it doesn't jump |
+| 2 | Tap the center ring | The center ring flashes the same way, and the logo glides back to the middle |
+| 3 | Put a finger on the logo and drag it slowly to the left without lifting | The nine rings fade out as the finger moves |
+| 4 | Lift the finger | The rings fade back in |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screen recording.
+
+### OVL-22.4 A tapped ring glides the logo there, not at once   [auto: phone]
+Script only
+Stand-in: the script reads the picture the app draws in the frame right after the tap; a person can't see a single frame (about a sixtieth of a second).
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px, with motion not reduced
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap the bottom-right ring (a white circle with a dot in it, near the photo's bottom-right corner) | In the very next frame the logo is still on its way: the place where it will sit doesn't show the blue disc yet |
+| 2 | Wait half a second | The blue disc sits in the bottom-right corner |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1070,13 +1290,14 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the logo | A dashed white box around the blue disc, and a small white square handle on each of its four corners |
-| 2 | Tap **Export** in the step bar | The blue disc alone: no box, no handles and no rings |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | The blue disc alone: no box, no handles and no rings |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1099,13 +1320,14 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the photo | The blue disc shows |
-| 2 | Tap **Perspective** in the step bar | No logo shows |
+| 2 | Tap **Perspective** in the step tabs (the six tabs Perspective to Export, along the bottom) | No logo shows |
 | 3 | Tap **Rotate** | No logo shows |
 | 4 | Tap **Crop** | No logo shows |
 | 5 | Tap **Levels** | No logo shows |
@@ -1119,14 +1341,17 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (slide with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Slide OPACITY all the way left | It reads 0% |
-| 2 | Tap **Export** in the step bar | No logo shows on the photo |
-| 3 | Tap **Overlay**, slide OPACITY to the middle (about 50%), then tap **Export** | The disc shows as the photo and blue mixed in that proportion |
+| 1 | Slide the OPACITY slider's knob all the way left | It reads 0% |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | No logo shows on the photo |
+| 3 | Tap **Overlay** in the step tabs | The Overlay step shows; OPACITY reads 0% |
+| 4 | Slide the knob to the middle | OPACITY reads about 50% |
+| 5 | Tap **Export** | The disc shows half see-through: the photo shows through it, tinted blue, neither solid blue nor the photo alone |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1149,8 +1374,9 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -1164,14 +1390,21 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: tall.png, made for the case: a PNG of 100 × 400 px, see-through except for a blue oval
+- Logo: overlay-tall-oval.png from tests/fixtures/ (100 × 400 px, see-through except for a blue oval)
 - Starting screen: the photo open, on the Crop step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **5:7 card**, then **Overlay** in the step bar | The photo is framed taller than wide, with no logo |
-| 2 | Tap **Add logo**, choose tall.png, then hold **Larger** for 1 s | The logo grows until it is as high as the framed photo, then stops |
-| 3 | Tap **Crop**, then **1:1**, then **Overlay** | The logo is smaller: still as high as the framed photo, and wholly inside it |
+| 1 | Tap **5:7 card** | The crop box is taller than wide |
+| 2 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | The photo is framed taller than wide, with no logo |
+| 3 | Add overlay-tall-oval.png | The tall oval shows in the middle |
+| 4 | Hold **Larger** (**+** in the right-hand pad) for 1 s | The logo grows until it is as high as the framed photo, then stops |
+| 5 | Tap **Crop** in the step tabs | The Crop step shows |
+| 6 | Tap **1:1** | 1:1 is selected; the crop box is square |
+| 7 | Tap **Overlay** in the step tabs | The logo is smaller: still as high as the framed photo, and wholly inside it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1194,14 +1427,15 @@ Before you start:
 - Device and browser: a computer with a mouse; a wide window, 1280 × 800 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Point at the photo's lower left and roll the wheel one notch away from you | The logo grows |
 | 2 | At once, roll it two notches toward you | The logo is a little smaller than at first |
-| 3 | Wait a second, then click **Undo** once | The logo is its first size: the three rolls were one undo step |
+| 3 | A second or more later, click **Undo** (the arrow curving left, at the top right) once | The logo is its first size: the three rolls were one undo step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1224,16 +1458,18 @@ Before you start:
 - Device and browser: a computer with a mouse; a wide window, 1280 × 800 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Point at the logo's bottom-right handle | A diagonal resize arrow, top-left to bottom-right |
+| 1 | Point at the logo's bottom-right handle (the white square on its corner) | A diagonal resize arrow, top-left to bottom-right |
 | 2 | Point at its top-right handle | The other diagonal resize arrow |
-| 3 | Point at the top-left ring | A pointing hand |
+| 3 | Point at the top-left ring (a white circle with a dot in it) | A pointing hand |
 | 4 | Point at the photo's lower left, away from the logo and the rings | The move cursor (four arrows) |
-| 5 | Click **Remove**, then point at the photo again | The plain arrow |
+| 5 | Click **Remove** (in the bottom row of buttons in the panel at the right) | The logo is gone from the photo |
+| 6 | Point at the photo's lower left again | The plain arrow |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1250,53 +1486,101 @@ Adding a logo by the button, a drop or a paste makes it the saved logo. While th
 - Anchors: `CONFIG.session.saveDelayMs`, "This overlay works on this photo, but it can’t be saved in this browser."
 - Source: `js/app/overlay.js` (`addOverlayFile`, `saveToBrowser`, `overlayStateChanged`)
 - Flag: to confirm. When the logo can't be stored, the message says so but gives no next step.
-- Cases: 3
+- Cases: 4
 
-### OVL-28.1 A change to the saved logo's place is saved 0.4 s later   [auto: phone, webkit]
+### OVL-28.1 A change to the saved logo's place is kept in the browser   [auto: phone, webkit]
+The page is reloaded so that what **Use saved overlay** places comes from what the browser stored, not from what the open page remembers.
+
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, in a private window so that no logo is saved in this browser yet; the script watches what the app stores
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
-- Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, no logo placed
+- Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: IMG_9136.JPEG open, on the Overlay step, no logo placed
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding the logo in row 1 saves it in this browser as the saved logo, and the move in row 2 is saved with it
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. "Open F": tap **Open photo**, then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose logo.png | The logo is saved in the browser as the saved logo, in the middle |
-| 2 | Wait a second, then tap **Move right** | The new place is saved as the saved logo's 0.4 s after the tap, once, and not before |
+| 1 | Add blue-disc.png | The blue disc shows in the middle of the photo |
+| 2 | A second or more later, tap **Move right** (the right arrow in the left-hand pad) ten times | The logo has moved right by a fifth of its own width |
+| 3 | A second or more later, reload the page | The start screen asks "Resume IMG_9136.JPEG?", with **Resume** and **Start fresh** |
+| 4 | Tap **Start fresh** | The question goes; **Open photo** shows |
+| 5 | Open IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
+| 6 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | No logo is on the photo; the disc's thumbnail and **Use saved overlay** show beside **Add logo** |
+| 7 | Tap **Use saved overlay** | The blue disc shows a fifth of its width right of the middle, where it was moved to on the first photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-28.2 A logo the browser won't keep still goes on the photo   [auto: phone]
+Script only
+Stand-in: the script makes the browser refuse to store the saved logo, as a full storage would; a person can't make a browser's storage refuse on demand.
+
 Flag: to confirm. Written to today's behavior: the warning says the logo can't be saved but gives no next step.
 
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, with the browser refusing to store the saved logo (the script stands in a full storage; on a phone, nearly full storage)
+- Device and browser: a phone-width window, 390 × 844 px, with the browser refusing to store the saved logo
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
+- Logo: blue-disc.png from tests/fixtures/
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site, and none can be stored as the saved logo
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose logo.png | The disc shows on the photo; an amber warning reads "This overlay works on this photo, but it can’t be saved in this browser." |
-| 2 | Tap **Remove** | **Add logo** shows, with no **Use saved overlay** |
+| 1 | Add blue-disc.png | The disc shows on the photo; an amber warning reads "This overlay works on this photo, but it can’t be saved in this browser." |
+| 2 | Tap **Remove** in the row of tools (the bottom row of buttons under the photo) | **Add logo** shows, with no **Use saved overlay** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-28.3 After Delete saved, moving the logo saves nothing   [auto: phone]
+The page is reloaded so that what is offered comes from what the browser stored, not from what the open page remembers.
+
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px; the script watches what the app stores
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
-- Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added a second ago
+- Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: IMG_9136.JPEG open, on the Overlay step, blue-disc.png added a second or more ago
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding blue-disc.png in the starting screen saved it in this browser as the saved logo
+
+"Open F": tap **Open photo**, then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Delete saved**, then **Move right**, and wait a second | The logo has moved; nothing has been saved as the saved logo since **Delete saved**, and none is stored |
+| 1 | Tap **Delete saved** in the row of tools (the bottom row of buttons under the photo) | The disc stays on the photo; **Delete saved** is greyed out |
+| 2 | Tap **Move right** (the right arrow in the left-hand pad) ten times | The logo has moved right by a fifth of its own width |
+| 3 | A second or more later, reload the page | The start screen asks "Resume IMG_9136.JPEG?", with **Resume** and **Start fresh** |
+| 4 | Tap **Start fresh** | The question goes; **Open photo** shows |
+| 5 | Open IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
+| 6 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | No saved logo is offered: **Add logo** alone, with no thumbnail and no **Use saved overlay** |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### OVL-28.4 A change to the saved logo's place is stored 0.4 s later, once   [auto: phone, webkit]
+Script only
+Stand-in: the script records each time the app stores the saved logo in the browser, and when; a person can't see a save, or time one to a tenth of a second. What the save brings back after a reload is OVL-28.1.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding the logo in row 1 stores it in this browser as the saved logo
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Add blue-disc.png | The logo is stored in the browser as the saved logo, in the middle |
+| 2 | A second or more later, tap **Move right** (the right arrow in the left-hand pad) | The new place is stored as the saved logo's once, 0.4 s after the tap and not before |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1315,54 +1599,73 @@ In the saved file the logo is drawn last: Levels and the upscale sharpening neve
 - Cases: 3
 
 ### OVL-29.1 Levels never change the logo in the saved file   [auto: phone, webkit]
+The logo is a dark gray and a light gray, which the levels Auto sets on this photo would change (gray 30 to black, gray 220 lighter); a pure color such as pure green comes through any levels unchanged, so it could not show the difference. This case is also where Levels' own check that levels never reach the logo lives (LEV-21.2 was retired into it).
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green.png, made for the case: a PNG of 400 × 400 px, pure green
+- Logo: overlay-dark-and-light-grays.png from tests/fixtures/ (400 × 400 px, its left half gray 30 and its right half gray 220, on a scale of 0 to 255)
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. "Save a PNG at 2000": tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom), tap **PNG**, tap **2000**, then tap **Download**.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose green.png | The green square shows in the middle |
-| 2 | Tap **Export**, **PNG**, **2000**, then **Download** (answer **No** if asked to upscale) | A first PNG is saved |
-| 3 | Tap **Levels**, then **Auto**, then **Apply** | Levels are applied; **Apply** is greyed out again |
-| 4 | Tap **Export**, then **Download** (answer **No** if asked) | In the second PNG the photo beside the logo is lighter or darker than in the first; the logo is the same pure green (0, 255, 0) in both |
+| 1 | Add overlay-dark-and-light-grays.png | The two-gray square shows in the middle |
+| 2 | Save a PNG at 2000 | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 3 | Tap **No** | A first PNG is saved |
+| 4 | Tap **Levels** in the step tabs | The Levels step shows |
+| 5 | Tap **Auto** | A white dot shows on the **Levels** tab: levels are set but not applied |
+| 6 | Tap **Apply** | The dot on the **Levels** tab has gone; **Apply** is greyed out |
+| 7 | Save a PNG at 2000 | The question box asks "Upscale to 2000 px?" |
+| 8 | Tap **No** | A second PNG is saved |
+| 9 | Compare the two PNGs at the photo just left of the logo, and in the middle of each half of the logo | Beside the logo the second PNG is lighter than the first; the logo's halves are gray 30 and gray 220 in both, to within 1 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### OVL-29.2 The upscale's sharpening never touches the logo   [auto: phone]
+### OVL-29.2 The upscale's sharpening never touches the logo   [auto: phone, webkit]
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: greys.png, made for the case: a PNG of 400 × 400 px, its left half gray 100 and its right half gray 150 (0 to 255)
+- Logo: overlay-greys.png from tests/fixtures/ (400 × 400 px, its left half gray 100 and its right half gray 150, on a scale of 0 to 255)
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. "Save a PNG at 3000": tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom), tap **PNG**, tap **3000**, then tap **Download**.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose greys.png | The two-gray square shows in the middle |
-| 2 | Tap **Export**, **PNG**, **3000**, then **Download** and **Yes** to **Upscale to 3000 px?** | A PNG of 3000 × 3000 px is saved |
-| 3 | Look across the logo's middle in the file | No px is darker than gray 100 or lighter than gray 150: no sharpening halo along the edge between the two grays |
+| 1 | Add overlay-greys.png | The two-gray square shows in the middle |
+| 2 | Save a PNG at 3000 | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 3000 px?" |
+| 3 | Tap **Yes** | A PNG of 3000 × 3000 px is saved |
+| 4 | Look across the logo's middle in the file | No px is more than 6 darker than gray 100 or more than 6 lighter than gray 150: no sharpening halo along the edge between the two grays (the browser's own enlarging of the logo strays up to 4; the photo's sharpening, put on the logo, would stray 11 or more) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### OVL-29.3 The logo keeps its place in the photo at every Size   [auto: phone]
+### OVL-29.3 The logo keeps its place in the photo at every Size   [auto: phone, webkit]
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green.png as in OVL-29.1
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, pure green)
 - Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker. "Save a PNG at 1080": tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom), tap **PNG**, tap **1080**, then tap **Download**.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo**, choose green.png, then tap the bottom-right ring | The green square sits in the bottom-right corner |
-| 2 | Tap **Export**, **PNG**, **1080**, then **Download** | A PNG 1080 px wide is saved |
-| 3 | Tap **Original**, then **Download** | A larger PNG is saved |
-| 4 | Compare where the green square is in the two files | It takes the same share of the image, in the same place, within a pixel |
+| 1 | Add green-logo.png | The green square shows in the middle |
+| 2 | Tap the bottom-right ring (a white circle with a dot in it, near the photo's bottom-right corner) | The green square sits in the bottom-right corner |
+| 3 | Save a PNG at 1080 | A PNG 1080 px wide is saved, with no question asked |
+| 4 | Tap **Original** | Original is selected |
+| 5 | Tap **Download** | A larger PNG is saved, with no question asked |
+| 6 | Compare where the green square is in the two files | It takes the same share of the image, in the same place, within a pixel |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1387,14 +1690,19 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: IMG_9136.JPEG open, on the Overlay step, logo.png added (in the middle)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: IMG_9136.JPEG open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding blue-disc.png in the starting screen saved it in this browser as the saved logo
+
+"Open F": tap **Open** (the folder at the top left), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Move right**, wait a second, then tap **Undo** | The logo is back in the middle |
-| 2 | Tap **Redo** (the arrow curving right) | It moves right again |
-| 3 | Tap **Open**, choose IMG_9075.JPEG, then tap **Overlay** | No logo is placed on this photo; **Use saved overlay** is offered |
+| 1 | Tap **Move right** (the right arrow in the left-hand pad) ten times | The logo has moved right by a fifth of its own width |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) | The logo is back in the middle |
+| 3 | Tap **Redo** (the arrow curving right) | It has moved right by a fifth of its width again |
+| 4 | Open IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
+| 5 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | No logo is placed on this photo; **Use saved overlay** is offered |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1404,23 +1712,29 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
+- Logo: blue-disc.png from tests/fixtures/
 - Starting screen: a pair: the front opened, then the back added with **Add back** on Export; the back is open
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding the logo on the back in row 2 saves it in this browser as the saved logo, which the front then uses
+
+"Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Overlay**, **Add logo**, choose logo.png, then tap the top-left ring | The logo sits top-left on the back |
-| 2 | Tap **Front** in the top bar | The front's Overlay step, with no logo placed |
-| 3 | Tap **Use saved overlay**, wait a second, then tap the bottom-right ring | The logo sits bottom-right on the front |
-| 4 | Tap **Back** | The back's logo is still top-left |
-| 5 | Tap **Front** | The front's logo is still bottom-right |
+| 1 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | The back's Overlay step, with no logo |
+| 2 | Add blue-disc.png | The logo shows in the middle of the back |
+| 3 | Tap the top-left ring (a white circle with a dot in it, near the photo's top-left corner) | The logo sits top-left on the back |
+| 4 | Tap **Front** in the top bar | The front's Overlay step, with no logo placed |
+| 5 | Tap **Use saved overlay** | The logo shows on the front |
+| 6 | Tap the bottom-right ring | The logo sits bottom-right on the front |
+| 7 | Tap **Back** in the top bar | The back's logo is still top-left |
+| 8 | Tap **Front** | The front's logo is still bottom-right |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-31 With invalid corners
 
-With invalid corners, picking a file with **Add logo** or **Replace logo** does nothing and says nothing. **Use saved overlay** still places the saved logo in the edits, as one undo step, though nothing is drawn: the pads and tools appear and the pads do nothing.
+With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are greyed out, and the line above the controls reads "Fix the corners in Perspective first."
 
 - Risk: low
 - Check: script
@@ -1429,7 +1743,7 @@ With invalid corners, picking a file with **Add logo** or **Replace logo** does 
 - Changed: none
 - Anchors: `#btnOverlayAdd`, `#btnUseSaved`, `#toolOverlayReplace`
 - Source: `js/app/overlay.js` (`addOverlayFile`, `useSaved`, `place`, `setPlacement`, `syncOverlay`)
-- Ruling: R11. With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are dimmed and the line above the controls reads "Fix the corners in Perspective first." The app differs today.
+- Ruling: R11. With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are dimmed and the line above the controls reads "Fix the corners in Perspective first." The app differs today: the three buttons stay live, a file picked with **Add logo** or **Replace logo** does nothing and says nothing, and **Use saved overlay** places the saved logo in the edits, as one undo step, though nothing is drawn.
 - Cases: 2
 
 ### OVL-31.1 With crossed corners Add logo and Use saved overlay are greyed out   [auto: phone]
@@ -1439,13 +1753,15 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added, then taken off with **Remove** (so it is saved and offered)
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added, then taken off with **Remove** (so it is saved and offered)
+- Browser data: the saved logo only, blue-disc.png, saved by adding it in the starting screen (start from a private window, or with the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Perspective**, and drag the top-left corner ring past the bottom-right one | The outline crosses itself and turns red |
-| 2 | Tap **Overlay** | **Add logo** and **Use saved overlay** are greyed out; the line above the controls reads "Fix the corners in Perspective first." |
+| 1 | Tap **Perspective** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Perspective step shows the card's outline, with a ring on each corner |
+| 2 | Drag the top-left corner ring past the bottom-right one | The outline crosses itself and turns red |
+| 3 | Tap **Overlay** in the step tabs | **Add logo** and **Use saved overlay** are greyed out; the line above the controls (the one line of text at the top of the block of buttons under the photo) reads "Fix the corners in Perspective first." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1457,13 +1773,15 @@ Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
-- Logo: logo.png as in OVL-01.1
-- Starting screen: the photo open, on the Overlay step, logo.png added
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Perspective**, and drag the top-left corner ring past the bottom-right one | The outline crosses itself and turns red |
-| 2 | Tap **Overlay** | **Replace logo** is greyed out; the line above the controls reads "Fix the corners in Perspective first." |
+| 1 | Tap **Perspective** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Perspective step shows the card's outline, with a ring on each corner |
+| 2 | Drag the top-left corner ring past the bottom-right one | The outline crosses itself and turns red |
+| 3 | Tap **Overlay** in the step tabs | **Replace logo** is greyed out; the line above the controls (the one line of text at the top of the block of buttons under the photo) reads "Fix the corners in Perspective first." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1487,10 +1805,11 @@ Before you start:
 - Build: the build under test
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Overlay step
+- Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | On a phone, tap the tab with the up arrow on the top edge of the controls | The sheet **Overlay options** rises, holding one row, **Tips** |
+| 1 | On a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | The sheet **Overlay options** rises, holding one row, **Tips** |
 | 2 | On a phone, tap **Tips** | It opens in place: "Tap a ring to snap the logo to that corner, side or the center. Drag to move it; drag a corner or pinch to resize.", "On this step the photo stays framed as set in Crop.", "Your last logo is kept in this browser for the next photo." and "Delete saved leaves the logo on this photo." |
 | 3 | On a wide screen, look under the controls in the side panel | The heading TIPS AND KEYS, with no **Overlay options** title and no **Tips** row; under it the last three tips of row 2 (not the one about rings) and "Arrows move the logo (Shift for bigger steps); + and − resize it; the wheel resizes too." |
 
