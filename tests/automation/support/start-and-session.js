@@ -79,16 +79,24 @@ async function waitForPhoto(page, name) {
 }
 
 // Waits until the edits saved on the device match `expected`: any of the record's own fields
-// ({ name, tab, exported, width }) and { quarter, hasDraft, corners, overlayId } (the quarter
-// turns, whether a Levels change waits, the corners and the logo's id in the saved edits).
+// ({ name, tab, exported, width }) and { quarter, hasDraft, draft, isDraftCurrent, corners,
+// overlayId }: the quarter turns; whether any Levels change waits; the exact Levels change that
+// waits (null for none); with isDraftCurrent true, that the Levels change saved is the one the
+// app holds now (null when none waits), so a reload can't restore an earlier draft; the corners;
+// and the logo's id in the saved edits.
 async function waitForSaved(page, expected) {
   await waitUntil(page, async wanted => {
     const record = await window.__straightener.Session.peek();
     if (!record || !record.state) return false;
     const overlay = record.state.overlay;
+    const app = window.__straightener.app;
+    const savedDraft = JSON.stringify(record.draft || null);
+    const draftNow = JSON.stringify(app.levelsPending ? app.levelsDraft : null);
     const checks = {
       quarter: () => record.state.rotation.quarter === wanted.quarter,
       hasDraft: () => !!record.draft === wanted.hasDraft,
+      draft: () => savedDraft === JSON.stringify(wanted.draft),
+      isDraftCurrent: () => (savedDraft === draftNow) === wanted.isDraftCurrent,
       corners: () => JSON.stringify(record.state.corners) === JSON.stringify(wanted.corners),
       overlayId: () => (overlay ? overlay.id : null) === wanted.overlayId,
     };
@@ -183,14 +191,18 @@ function storedRecord(page, key) {
 
 // Records every write to the device's session store, every file download and every click in
 // the page, from before the app loads: window.storageWrites gets { key, atMs, name, tab,
-// quarter, exported, format }, window.downloadsAtMs the time of each download and
-// window.clicksAtMs the time of each click (a tap ends in a click), all in performance.now() ms.
-// They only watch; the writes, downloads and clicks go ahead unchanged.
+// quarter, exported, format, downloadCount, isInDownloadTask }, window.downloadsAtMs the time of
+// each download and window.clicksAtMs the time of each click (a tap ends in a click), all in
+// performance.now() ms. downloadCount is how many downloads had started when the write was made;
+// isInDownloadTask is true when the write was made in the same turn of the page's work as the
+// last download, before the page could do anything else (a timer, an event). They only watch;
+// the writes, downloads and clicks go ahead unchanged.
 async function watchStorageAndDownloads(page) {
   await page.addInitScript(() => {
     window.storageWrites = [];
     window.downloadsAtMs = [];
     window.clicksAtMs = [];
+    window.isDownloadTaskOpen = false;
     document.addEventListener('click', () => window.clicksAtMs.push(performance.now()), true);
     const put = IDBObjectStore.prototype.put;
     IDBObjectStore.prototype.put = function watchedPut(value, key) {
@@ -203,15 +215,38 @@ async function watchStorageAndDownloads(page) {
         quarter: state ? state.rotation.quarter : null,
         exported: value && value.exported,
         format: state ? state.export.format : null,
+        downloadCount: window.downloadsAtMs.length,
+        isInDownloadTask: window.isDownloadTaskOpen,
       });
       return put.call(this, value, key);
     };
     const click = HTMLAnchorElement.prototype.click;
     HTMLAnchorElement.prototype.click = function watchedClick() {
-      if (this.download) window.downloadsAtMs.push(performance.now());
+      if (this.download) {
+        window.downloadsAtMs.push(performance.now());
+        // A zero timer runs only after the work under way (and its promise steps) is done, so
+        // it closes the download's turn.
+        window.isDownloadTaskOpen = true;
+        setTimeout(() => {
+          window.isDownloadTaskOpen = false;
+        }, 0);
+      }
       return click.call(this);
     };
   });
+}
+
+// The writes of `key` made with the last download: in the same turn of the page's work as it
+// started, before the page could do anything else (see watchStorageAndDownloads). The app
+// starts its save just before the download, and the write itself follows a moment later in that
+// same turn; a write the page made in any later turn (a timer's, say) is not among them.
+function writesWithLastDownload(page, key) {
+  return page.evaluate(recordKey => {
+    const downloads = window.downloadsAtMs.length;
+    return window.storageWrites.filter(write => write.key === recordKey
+      && write.downloadCount === downloads
+      && write.isInDownloadTask);
+  }, key);
 }
 
 // Makes the device refuse to store the session records named in `keys` (such as 'photo' or
@@ -349,18 +384,20 @@ async function slowDecodeOf(page, fileName, delayMs) {
   }, { name: fileName, waitMs: delayMs });
 }
 
-// A file that is not an image: a line of text named not-a-photo.JPEG, as a file payload for the
-// picker. It stands in for a broken or wrongly named file.
+// A file that is not an image: tests/fixtures/not-a-photo.JPEG, a line of text named like a
+// photo, as a file payload for the picker. It stands in for a broken or wrongly named file.
 function notAPhoto() {
   return {
     name: 'not-a-photo.JPEG',
     mimeType: 'image/jpeg',
-    buffer: Buffer.from('This is a line of text, not a photo.\n'),
+    buffer: fs.readFileSync(path.join(root, 'tests', 'fixtures', 'not-a-photo.JPEG')),
   };
 }
 
 // A stand-in for a HEIC photo in a browser that can't decode HEIC: a file named card.HEIC, of
-// the HEIC type, whose bytes no browser decodes. Returns a file payload for the picker.
+// the HEIC type, whose bytes no browser decodes (the same bytes as tests/fixtures/card.HEIC,
+// made here so the case doesn't depend on that file being present). Returns a file payload for
+// the picker.
 function heicStandIn() {
   return {
     name: 'card.HEIC',
@@ -432,6 +469,7 @@ module.exports = {
   toastNow,
   storedRecord,
   watchStorageAndDownloads,
+  writesWithLastDownload,
   storageWritesSince,
   refuseStorage,
   refuseStorageNow,

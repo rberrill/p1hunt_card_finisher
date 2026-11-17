@@ -19,6 +19,7 @@ Until a photo is open, the photo area shows the app icon, **P1Hunt Card Finisher
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window so that no photo is saved on this device
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the app just opened
 
@@ -47,6 +48,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window so that no photo is saved on this device
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen, with no photo open
 
@@ -62,12 +64,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open, on the Perspective step, nothing changed yet (**Undo** at the top right is greyed out)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Rotate** in the step bar | The Rotate step shows |
+| 1 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
 | 2 | Tap **90° right** in the row of tools | The photo lies on its side; **Undo** is no longer greyed out |
 | 3 | Tap **Open** (the folder at the top left; on a phone it has no label) | The system's file picker opens |
 | 4 | Choose IMG_9136.JPEG again | The photo opens again from the start: upright, on the Perspective step, **Undo** greyed out |
@@ -86,20 +89,21 @@ Before a photo is open, nothing that needs a photo is offered.
 - Changed: none
 - Anchors: `#topBarHost`, `#tabBarHost`, `#panel`, `#btnFit`
 - Source: `css/app.css` (the shell's phone and wide blocks); `js/app/shell.js` (`syncUI`, `syncFitButton`)
-- Flag: to confirm. On a phone with no photo open, the backtick key still opens the detection tuning panel, which floats over the start screen.
+- Flag: to confirm. With no photo open, the backtick key still opens the detection tuning panel, which floats over the start screen.
 - Cases: 3
 
 ### STA-03.1 On a phone, nothing but the start screen shows   [auto: phone]
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: none
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the top of the screen | No top bar: no **Open**, **Undo** or **Redo** |
-| 2 | Look at the bottom of the screen | No controls and no step bar: the start screen fills the screen |
+| 2 | Look at the bottom of the screen | No controls (the block of buttons under the photo) and no step tabs (the six tabs Perspective to Export): the start screen fills the screen |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -108,6 +112,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer; a wide window, 1280 × 800 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: none
 - Starting screen: the start screen, with no photo open
 
@@ -120,12 +125,13 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### STA-03.3 The backtick key opens the tuning panel over the start screen   [auto: phone]
+### STA-03.3 The backtick key opens the tuning panel over the start screen   [auto: desktop]
 Flag: to confirm. Written to today's behavior: the tuning panel opens with no photo open.
 
 Before you start:
-- Device and browser: a computer with a keyboard; a phone-width window, 390 × 844 px
+- Device and browser: a computer with a keyboard; a wide window, 1280 × 800 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: none
 - Starting screen: the start screen, with no photo open
 
@@ -148,13 +154,14 @@ When the page loads and a whole saved session (the photo and its edits) is on th
 - Changed: none
 - Anchors: `#resume`, `#btnResume`, `#btnFresh`
 - Source: `js/app/start-screen.js` (`offerResume`, `hideResume`); `js/app/adapters.js` (`Session.peek`); `js/app/main.js` (`init`); `js/app/state.js` (`openFile`)
-- Ruling: R27. The Resume card is not a question card: it has no fade, does not keep Tab inside it and does not return focus. The app already does this.
+- Ruling: R27. The Resume card is not a question box: it has no fade, does not keep Tab inside it and does not return focus. The app already does this.
 - Cases: 3
 
 ### STA-04.1 After a reload the card offers Resume and never resumes by itself   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window so that no photo is saved on this device
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the app just opened
 
@@ -172,6 +179,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: the start screen offering to resume IMG_9136.JPEG (open IMG_9136.JPEG, wait two seconds, reload the page)
 
@@ -184,11 +192,12 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-04.3 The Tab key moves on out of the card   [auto: desktop, webkit]
-Ruling R27: the card is not a question card, so it does not keep the Tab key inside it. The app already does this.
+Ruling R27: the card is not a question box, so it does not keep the Tab key inside it. The app already does this.
 
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen offering to resume IMG_9136.JPEG (open it, wait two seconds, reload the page)
 
@@ -218,6 +227,7 @@ The card reads "Last photo · " with how long ago (just now, n min ago, n h ago 
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen, with no photo open
 
@@ -234,6 +244,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: a copy of IMG_9136.JPEG from samples/, renamed A-card-photo-whose-name-is-much-longer-than-the-resume-card-shows.JPEG (70 characters)
 - Starting screen: the start screen, with no photo open
 
@@ -249,12 +260,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: 14_front_portrait_raw_white.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | The Export step shows **Add back** |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Add back** |
 | 2 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** and **Back** show in the top bar |
 | 3 | Wait two seconds, then reload the page | The card reads "Resume 14_front_portrait_raw_white.JPEG + 14_back_portrait_raw_white.JPEG?" |
 | 4 | Look at the small picture at the card's left | Two drawn card outlines, not the photos |
@@ -266,33 +278,38 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer whose clock you may change; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen offering to resume IMG_9136.JPEG (open it, wait two seconds, reload the page), its top line reading LAST PHOTO · JUST NOW
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Set the computer's clock 5 minutes ahead, then reload the page | The card's top line reads LAST PHOTO · 5 MIN AGO |
-| 2 | Set the clock 3 hours ahead of the real time, then reload the page | It reads LAST PHOTO · 3 H AGO |
-| 3 | Set the clock 2 days ahead of the real time, then reload the page | It reads LAST PHOTO · 2 D AGO |
+| 1 | Set the computer's clock 5 minutes ahead | The computer's clock shows 5 minutes past the real time; the card still reads LAST PHOTO · JUST NOW |
+| 2 | Reload the page | The card's top line reads LAST PHOTO · 5 MIN AGO |
+| 3 | Set the clock 3 hours ahead of the real time | The computer's clock shows 3 hours past the real time |
+| 4 | Reload the page | It reads LAST PHOTO · 3 H AGO |
+| 5 | Set the clock 2 days ahead of the real time | The computer's clock shows 2 days past the real time |
+| 6 | Reload the page | It reads LAST PHOTO · 2 D AGO |
 
 Set the clock back to the real time when you finish.
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### STA-05.5 An unreadable saved time and name   [auto: desktop]
+### STA-05.5 An unreadable saved time and name   [auto: phone]
+Script only
+Stand-in: no control changes the edits the app has saved on the device, so the script rewrites two of their values, as a saved record the app can no longer read as it wrote it would be. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
 Before you start:
-- Device and browser: a computer, Chrome or Edge; a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the start screen offering to resume IMG_9136.JPEG (open it, wait two seconds, reload the page), with the developer tools open at Application, IndexedDB, p1hunt-finisher, session
-
-The saved record cannot be changed from the app's screen; this case stands in for a record the app can no longer read as it wrote it.
+- Starting screen: the start screen offering to resume IMG_9136.JPEG (open it with **Open photo**, wait two seconds, reload the page)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | In the record "edits", change savedAt to the text "soon" | The record shows savedAt "soon" |
-| 2 | In the same record, change name to the number 42 | The record shows name 42 |
+| 1 | The script changes the time saved with the edits to the text "soon" | The saved edits hold the time "soon" |
+| 2 | The script changes the photo name saved with the edits to the number 42 | The saved edits hold the name 42 |
 | 3 | Reload the page | The card has no LAST PHOTO line, and reads "Resume your last photo?" |
 
 Pass: every row's result is seen.
@@ -315,6 +332,7 @@ While the Resume card shows, **Resume** is the red button and **Open photo** is 
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the app just opened, with no card
 
@@ -345,14 +363,15 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Rotate** in the step bar | The Rotate step shows |
+| 1 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
 | 2 | Tap **90° right** in the row of tools | The photo lies on its side |
-| 3 | Tap **Crop** in the step bar | The Crop step shows |
+| 3 | Tap **Crop** in the step tabs | The Crop step shows |
 | 4 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
 | 5 | Tap **Resume** | The photo opens on the Crop step, lying on its side, and the message "Resumed where you left off." shows |
 
@@ -363,13 +382,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Levels** in the step bar | The Levels step shows |
-| 2 | Tap **Auto** in the row of tools | **Discard** and **Apply**, above the tools, are no longer greyed out, and a white dot sits on the **Levels** tab |
+| 1 | Tap **Levels** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Levels step shows |
+| 2 | Tap **Auto** in the row of tools | **Discard** and **Apply**, at the two ends of the line at the top of the controls (the block of buttons under the photo), are no longer greyed out, and a white dot sits on the **Levels** tab |
 | 3 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
 | 4 | Tap **Resume** | The photo opens on the Levels step with **Discard** and **Apply** not greyed out and the white dot on the **Levels** tab: the change is still waiting to be applied |
 
@@ -380,13 +400,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | The Export step shows **Download**, and no **Next card** |
-| 2 | Tap **Download** | A question card asks "Upscale to 2000 px?" |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Download**, and no **Next card** |
+| 2 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | A file is saved, and **Next card** shows |
 | 4 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
 | 5 | Tap **Resume** | The photo opens on the Export step, with **Next card** showing |
@@ -398,6 +419,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: 14_front_portrait_raw_white.JPEG open (with **Open photo**), on the Export step
 
@@ -413,7 +435,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## STA-08 Resume when the saved size doesn't match
 
-Resume applies the saved edits only if the saved width and height match the photo as decoded. Otherwise the photo opens with fresh edits, with no message, and the fresh edits replace the saved ones.
+Resume applies the saved edits only if the saved width and height match the photo as decoded. Otherwise the photo opens with fresh edits, with no message today (ruling R23 adds one), and the fresh edits replace the saved ones.
 
 - Risk: low
 - Check: script
@@ -422,39 +444,45 @@ Resume applies the saved edits only if the saved width and height match the phot
 - Changed: none
 - Anchors: `#btnResume`, "Resumed where you left off."
 - Source: `js/app/state.js` (`openFile`)
-- Ruling: R23. A size mismatch shows an amber message, "Couldn’t restore your edits, so the photo was opened fresh." The app differs today. New wording, to be approved by Rich.
+- Ruling: R23. A size mismatch shows the amber message "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, 16 November 2026). The app differs today.
 - Cases: 2
 
-### STA-08.1 A size mismatch says the photo was opened fresh   [auto: desktop]
+### STA-08.1 A size mismatch says the photo was opened fresh   [auto: phone]
+Script only
+Stand-in: no control changes the size saved with the edits, and no sample photo decodes at a size other than its own, so the script changes the saved width by one pixel, as a photo that no longer decodes at the size it was saved with would be. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+
 Written to ruling R23; it fails until that is built (BUG-050).
 
 Before you start:
-- Device and browser: a computer, Chrome or Edge; a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/ (1498 × 2098 px)
-- Starting screen: IMG_9136.JPEG opened, turned with **90° right** on the Rotate step, two seconds waited and the page reloaded: the start screen offers to resume it. The developer tools are open at Application, IndexedDB, p1hunt-finisher, session
-
-The saved size cannot be changed from the app's screen; this case stands in for a photo that no longer decodes at the size it was saved with.
+- Starting screen: IMG_9136.JPEG opened with **Open photo**, turned with **90° right** on the Rotate step, two seconds waited and the page reloaded: the start screen offers to resume it
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | In the record "edits", change width to 1499 | The record shows width 1499 |
+| 1 | The script changes the width saved with the edits to 1499 | The saved edits hold the width 1499 |
 | 2 | Tap **Resume** | The photo opens upright, on the Perspective step: the saved turn was not applied |
-| 3 | Look at the message over the photo | An amber warning that says the edits couldn't be restored, so the photo was opened fresh |
+| 3 | Look at the message over the photo | An amber message reads "Full edit history could not be restored, your photo has been opened fresh." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### STA-08.2 After a size mismatch the fresh edits replace the saved ones   [auto: desktop, webkit]
+### STA-08.2 After a size mismatch the fresh edits replace the saved ones   [auto: phone, webkit]
+Script only
+Stand-in: as for STA-08.1, the script changes the width saved with the edits by one pixel; no control can, and whether Chrome's developer tools can is find-out item Q-07.
+
 Before you start:
-- Device and browser: a computer, Chrome or Edge; a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/ (1498 × 2098 px)
-- Starting screen: as in STA-08.1: the start screen offering to resume IMG_9136.JPEG, turned with **90° right**, the developer tools open at its saved records
+- Starting screen: as in STA-08.1: the start screen offering to resume IMG_9136.JPEG, turned with **90° right**
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | In the record "edits", change width to 1499 | The record shows width 1499 |
+| 1 | The script changes the width saved with the edits to 1499 | The saved edits hold the width 1499 |
 | 2 | Tap **Resume** | The photo opens upright on the Perspective step, **Undo** greyed out |
 | 3 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" again |
 | 4 | Tap **Resume** | The photo opens upright, with "Resumed where you left off.": the fresh edits replaced the saved turn |
@@ -479,6 +507,7 @@ After a resume, card detection still runs, but only to fill the **Candidate** ch
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse), in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step, its four corner handles on the card
 
@@ -512,17 +541,21 @@ To add a logo: on the Overlay step, tap **Add logo** (or **Replace logo** when a
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/; logo: icons/icon.svg
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Overlay** in the step bar, then add the logo icon.svg | The logo shows on the photo |
-| 2 | Tap **Export** in the step bar, then **Download** | A question card asks "Upscale to 2000 px?" |
-| 3 | Tap **No** | A file named IMG_9136-straight.jpg is saved, with the logo in it |
-| 4 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
-| 5 | Tap **Resume** | The photo opens on the Export step |
-| 6 | Tap **Download**, then **No** | A second file is saved, with no message about the logo; it is the same picture as the first, logo and all |
+| 1 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Overlay step shows **Add logo** |
+| 2 | Add the logo icon.svg | The logo shows on the photo |
+| 3 | Tap **Export** in the step tabs | The Export step shows **Download** |
+| 4 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 5 | Tap **No** | A file named IMG_9136-straight.jpg is saved, with the logo in it |
+| 6 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
+| 7 | Tap **Resume** | The photo opens on the Export step |
+| 8 | Tap **Download** | The question box asks "Upscale to 2000 px?" |
+| 9 | Tap **No** | A second file is saved, with no message about the logo; it is the same picture as the first, logo and all |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -533,18 +566,21 @@ Ruling R22: **Remove** leaves the photo's logo stored, so Undo after a resume ca
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/; logo: icons/icon.svg
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Overlay** in the step bar, then add the logo icon.svg | The logo shows on the photo |
-| 2 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
-| 3 | Tap **Resume** | The photo opens on the Overlay step, with the logo |
-| 4 | Tap **Remove** in the row of tools | The logo goes; **Add logo** shows |
-| 5 | Tap **Undo** (the arrow curving left, at the top right) | The logo is back |
-| 6 | Tap **Export** in the step bar, then **Download** | A question card asks "Upscale to 2000 px?" |
-| 7 | Tap **No** | A file is saved, with no message about the logo |
+| 1 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Overlay step shows **Add logo** |
+| 2 | Add the logo icon.svg | The logo shows on the photo |
+| 3 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
+| 4 | Tap **Resume** | The photo opens on the Overlay step, with the logo |
+| 5 | Tap **Remove** in the row of tools | The logo goes; **Add logo** shows |
+| 6 | Tap **Undo** (the arrow curving left, at the top right) | The logo is back |
+| 7 | Tap **Export** in the step tabs | The Export step shows **Download** |
+| 8 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 9 | Tap **No** | A file named IMG_9136-straight.jpg is saved, with no message about the logo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -555,6 +591,7 @@ Written to ruling R35; it fails until R35 is built (BUG-140).
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/; logos: icons/icon.svg and icons/apple-touch-icon.png
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Overlay step
 
@@ -563,10 +600,13 @@ Before you start:
 | 1 | Add the logo icon.svg | The app icon shows on the photo as the logo |
 | 2 | Wait two seconds, then tap **Replace logo** and choose apple-touch-icon.png | The logo changes to the other picture |
 | 3 | Tap **Undo** (the arrow curving left, at the top right) | The app icon is the logo again |
-| 4 | Tap **Export** in the step bar, then **Download**, then **No** | A file named IMG_9136-straight.jpg is saved, with the app icon as its logo |
-| 5 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
-| 6 | Tap **Resume** | The photo opens on the Export step |
-| 7 | Tap **Download**, then **No** | A second file is saved, with no message about the logo; it is the same picture as the first, logo and all |
+| 4 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Download** |
+| 5 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 6 | Tap **No** | A file named IMG_9136-straight.jpg is saved, with the app icon as its logo |
+| 7 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
+| 8 | Tap **Resume** | The photo opens on the Export step |
+| 9 | Tap **Download** | The question box asks "Upscale to 2000 px?" |
+| 10 | Tap **No** | A second file is saved, with no message about the logo; it is the same picture as the first, logo and all |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the two files.
@@ -575,26 +615,30 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the t
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/; logos: icons/apple-touch-icon.png and icons/icon.svg
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Overlay step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls, the block of buttons under the photo); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
+- Save the edits: tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen), open Export options, tap **Save edits**, then close Export options.
+- Load the edits: tap **Export** in the step tabs, open Export options, tap **Load edits** and choose the IMG_9136-edits.json you saved, then close Export options.
 
 This order leaves the photo's own stored logo different from the one on the photo, which is then the logo saved in the browser.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Add the logo apple-touch-icon.png | It shows on the photo |
-| 2 | Tap **Export** in the step bar, open Export options, and tap **Save edits** | A file named IMG_9136-edits.json is saved |
-| 3 | Close Export options, then tap **Overlay** in the step bar | The Overlay step shows, with the logo |
+| 2 | Save the edits | A file named IMG_9136-edits.json is saved; the Export step shows |
+| 3 | Tap **Overlay** in the step tabs | The Overlay step shows, with the logo |
 | 4 | Wait two seconds, then tap **Replace logo** and choose icon.svg | The app icon is the logo now |
-| 5 | Tap **Export** in the step bar, open Export options, tap **Load edits** and choose IMG_9136-edits.json | The logo is apple-touch-icon.png again |
-| 6 | Close Export options, then tap **Undo** (the arrow curving left, at the top right) | The app icon is the logo again |
+| 5 | Load the edits | The logo is apple-touch-icon.png again |
+| 6 | Tap **Undo** (the arrow curving left, at the top right) | The app icon is the logo again |
 | 7 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
 | 8 | Tap **Resume** | The photo opens on the Export step |
-| 9 | Tap **Download**, then **No** | A file is saved, with no message about the logo |
+| 9 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 10 | Tap **No** | A file named IMG_9136-straight.jpg is saved, with no message about the logo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -616,13 +660,15 @@ If the saved photo is gone when **Resume** is tapped, an amber message says "The
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: two tabs of the app in the same window, both on the start screen offering to resume IMG_9136.JPEG (open it in one, wait two seconds, reload it, then open the app in a second tab)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | In the second tab, tap **Start fresh** | Its card goes |
-| 2 | Go back to the first tab and tap **Resume** | An amber message says "The saved photo is gone. Open it again."; the start screen stays, its card hidden, and no photo opens |
+| 2 | Go back to the first tab | Its start screen still offers "Resume IMG_9136.JPEG?" |
+| 3 | Tap **Resume** | An amber message says "The saved photo is gone. Open it again."; the start screen stays, its card hidden, and no photo opens |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -638,7 +684,7 @@ If Resume fails for any other reason, a red message shows "Couldn’t resume: " 
 - Changed: none
 - Anchors: `#btnResume`, "Couldn’t resume: "
 - Source: `js/app/start-screen.js` (`resumeSession`)
-- Ruling: R24. The message is a fixed sentence with a next step, and the error's detail always goes to the console. The app differs today. New wording, to be approved by Rich.
+- Ruling: R24. The message is the fixed "Couldn’t resume." (wording approved by Rich, 16 November 2026: the short form, with no advice), and the error's detail always goes to the console. The app differs today.
 - Cases: 1
 
 ### STA-12.1 Resume that fails names no browser error   [auto: desktop]
@@ -647,13 +693,14 @@ Written to ruling R24; it fails until that is built (BUG-051).
 Before you start:
 - Device and browser: a computer, Chrome or Edge; a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen offering to resume IMG_9136.JPEG (open it, wait two seconds, reload the page), with the developer tools open at Application, Storage, and their Console showing
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | In the developer tools, click **Clear site data** | The site's stored data is cleared; the card still shows |
-| 2 | Tap **Resume** | A message says that Resume failed and what to do next, in a fixed sentence: it does not quote the browser's error ("Failed to execute 'transaction' …") |
+| 2 | Click **Resume** | A red message reads "Couldn’t resume." and nothing more: it does not quote the browser's error ("Failed to execute 'transaction' …") |
 | 3 | Look at the Console | The browser's error is logged there |
 
 Pass: every row's result is seen.
@@ -676,16 +723,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/; logo: icons/icon.svg
 - Starting screen: 14_front_portrait_raw_white.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Overlay** in the step bar, then **Add logo**, and choose icon.svg | The logo shows on the front |
-| 2 | Tap **Export** in the step bar, then **Add back**, and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** and **Back** show in the top bar |
-| 3 | Wait two seconds, then reload the page | The card offers the front + the back |
-| 4 | Tap **Start fresh** | The card goes; nothing of the session is left on the device (in the developer tools: no photo, edits, photoOverlay, pair or pairPhoto record) |
-| 5 | Reload the page | No card: nothing is offered to resume |
+| 1 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Overlay step shows **Add logo** |
+| 2 | Tap **Add logo** and choose icon.svg | The logo shows on the front |
+| 3 | Tap **Export** in the step tabs | The Export step shows **Add back** |
+| 4 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** and **Back** show in the top bar |
+| 5 | Wait two seconds, then reload the page | The card offers the front + the back |
+| 6 | Tap **Start fresh** | The card goes. The script also reads the browser's storage: the front's photo and its edits, its logo, and the back with its photo are all gone from it |
+| 7 | Reload the page | No card: nothing is offered to resume |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -694,18 +744,21 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/; logo: icons/icon.svg
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Overlay** in the step bar, then **Add logo**, and choose icon.svg | The logo shows on the photo |
-| 2 | Tap **Crop** in the step bar, then **3:4** in the row of sizes | **3:4** is selected (solid white) |
-| 3 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
-| 4 | Tap **Start fresh** | The card goes |
-| 5 | Tap **Open photo** and choose IMG_9075.JPEG | IMG_9075.JPEG opens |
-| 6 | Tap **Crop** in the step bar | **3:4** is selected: the remembered size stayed |
-| 7 | Tap **Overlay** in the step bar | **Use saved overlay** is offered, beside the saved logo's small picture |
+| 1 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Overlay step shows **Add logo** |
+| 2 | Tap **Add logo** and choose icon.svg | The logo shows on the photo |
+| 3 | Tap **Crop** in the step tabs | The Crop step shows its row of sizes |
+| 4 | Tap **3:4** in the row of sizes | **3:4** is selected (solid white) |
+| 5 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
+| 6 | Tap **Start fresh** | The card goes |
+| 7 | Tap **Open photo** and choose IMG_9075.JPEG | IMG_9075.JPEG opens |
+| 8 | Tap **Crop** in the step tabs | **3:4** is selected: the remembered size stayed |
+| 9 | Tap **Overlay** in the step tabs | **Use saved overlay** is offered, beside the saved logo's small picture |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -724,36 +777,40 @@ The edits (the photo's name and size, the edits, any unapplied Levels change, th
 - Cases: 2
 
 ### STA-14.1 A change is saved 0.4 s after the last one   [auto: desktop, webkit]
+Script only
+Stand-in: nothing is replaced, but no person can time a save to a hundredth of a second, nor see the edits the app keeps in the browser's storage without developer tools; the script notes the moment of each click and of each save of the edits, and reads what was saved.
 Before you start:
-- Device and browser: a computer, Chrome or Edge; a wide window, in a private window
+- Device and browser: a computer; a wide window
 - Build: the build under test
-- Photo: IMG_9136.JPEG from samples/
-- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, a second after it opened, with the developer tools open at Application, IndexedDB, p1hunt-finisher, session
-
-The script times each save to the millisecond; by hand you can only see each change arrive in the record "edits" (refresh the view to read it again).
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **90° right** in the row of tools | The photo lies on its side; the edits are saved once, 0.40 to 0.55 s after the tap, not sooner |
-| 2 | Refresh the record "edits" | It holds the photo's name and size (IMG_9136.JPEG, 1498 × 2098), the turn, the step (rotate), exported false and the time it was saved |
-| 3 | Tap **90° right** twice, quickly (the second tap within 0.3 s of the first) | The edits are saved once, 0.40 to 0.55 s after the second tap: nothing was saved after the first |
-| 4 | Tap **Crop** in the step bar | The edits are saved once, 0.40 to 0.55 s after the tap, with the step crop |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-When ruling R36 is built: the wait before a save becomes about 0.1 s. Rows 1 and 4 then expect the save about 0.1 s after the tap (0.10 to 0.25 s) instead of 0.40 to 0.55 s; in row 3 two taps 0.3 s apart are saved twice, so the second tap must come within 0.1 s of the first (the script's taps do) for a single save. Row 2 is unchanged. It passes today, written to the 0.4 s delay.
-
-### STA-14.2 A link can lengthen the wait before a save   [auto: phone]
-Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window
-- Build: the build under test, opened with ?session.saveDelayMs=1500 added to its address
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, a second after it opened
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **90° right** in the row of tools | The photo lies on its side; the edits are saved once, 1.50 to 1.65 s after the tap, not sooner (the script times it) |
+| 1 | Click **90° right** in the row of tools | The photo lies on its side; the edits are saved once, 0.40 to 0.55 s after the click, not sooner |
+| 2 | The script reads the saved edits | They hold the photo's name and size (IMG_9136.JPEG, 1498 × 2098), the quarter turn to the right, the open step (Rotate), the mark that says the photo has not been exported, and the time of the save, within 5 s of the clock |
+| 3 | Click **90° right** twice, quickly (the second click within 0.3 s of the first) | The edits are saved once, 0.40 to 0.55 s after the second click: nothing was saved after the first |
+| 4 | Click **Crop** in the step tabs (the six tabs Perspective to Export, in the top bar on a wide screen) | The edits are saved once, 0.40 to 0.55 s after the click, with Crop as the open step |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+When ruling R36 is built: the wait before a save becomes about 0.1 s. Rows 1 and 4 then expect the save about 0.1 s after the click (0.10 to 0.25 s) instead of 0.40 to 0.55 s; in row 3 two clicks 0.3 s apart are saved twice, so the second click must come within 0.1 s of the first (the script's clicks do) for a single save. Row 2 is unchanged. It passes today, written to the 0.4 s delay.
+
+### STA-14.2 A link can lengthen the wait before a save   [auto: phone]
+Script only
+Stand-in: nothing is replaced, but no person can time a save to a hundredth of a second; the script notes the moment of the tap and of each save of the edits.
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test, opened with ?session.saveDelayMs=1500 added to its address
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, a second after it opened
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **90° right** in the row of tools | The photo lies on its side; the edits are saved once, 1.50 to 1.65 s after the tap, not sooner |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -762,10 +819,10 @@ When ruling R36 is built: unchanged. A link still sets the wait, so 1.5 s still 
 
 ## STA-15 Edits are saved at once when leaving
 
-The edits are saved straight away when the page is hidden or left (switching apps, closing the tab), and just before any download (the export, corner shots, a pair, **Save edits**).
+The edits are saved straight away when the page is hidden or left (switching apps, closing the tab), and as any download starts, before the page does anything else (the export, corner shots, a pair, **Save edits**).
 
 - Risk: high
-- Check: script
+- Check: script; phone (switching apps on an iPhone)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -775,51 +832,62 @@ The edits are saved straight away when the page is hidden or left (switching app
 - Cases: 6
 
 ### STA-15.1 Hiding the page saves at once   [auto: desktop, webkit]
+Script only
+Stand-in: the script tells the page it is hidden, as switching to another tab or app does, a few hundredths of a second after the click, and notes the moment of each save; no person can switch that quickly, nor time a save to a hundredth of a second. STA-15.2 is the same on a real iPhone.
 Before you start:
-- Device and browser: a computer, Chrome or Edge; a wide window, in a private window
+- Device and browser: a computer; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, a second after it opened
 
-The script hides the page by telling it so, as switching apps on a phone would; it times the save to the millisecond.
-
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **90° right** in the row of tools | The photo lies on its side |
-| 2 | At once (within 0.1 s), switch to another tab | The edits, with the turn, are saved within 0.1 s of the switch, well before the usual 0.4 s |
+| 1 | Click **90° right** in the row of tools | The photo lies on its side |
+| 2 | At once (within 0.1 s), the script tells the page it is hidden | The edits, with the turn, are saved within 0.1 s of it, well before the usual 0.4 s |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-When ruling R36 is built: the usual save also comes within about 0.1 s of the tap, so this case no longer tells the save on hiding from the usual one; STA-15.6 proves the save on hiding with a long wait set by a link. Row 2's "well before the usual 0.4 s" becomes "well before the usual wait". It passes today, written to the 0.4 s delay.
+When ruling R36 is built: the usual save also comes within about 0.1 s of the click, so this case no longer tells the save on hiding from the usual one; STA-15.6 proves the save on hiding with a long wait set by a link. Row 2's "well before the usual 0.4 s" becomes "well before the usual wait". It passes today, written to the 0.4 s delay.
 
 ### STA-15.2 A change survives switching apps on an iPhone   [phone]
 Before you start:
 - Device and browser: an iPhone, Safari
-- Build: the build under test
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (the site's data cleared in Settings › Safari). Use an ordinary tab, not a private one: this case closes Safari
 - Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
 - Starting screen: IMG_9136.JPEG open, on the Rotate step
 
+Open the app in a new tab (a named action): in Safari, open a new tab and go to the build's address.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **90° right** and at once swipe up from the bottom edge to go to the Home Screen | The Home Screen shows |
-| 2 | Open the app switcher (swipe up from the bottom edge and hold), and swipe Safari away | Safari is closed |
-| 3 | Open Safari again; if the app's tab does not show the start screen, reload it | The start screen offers "Resume IMG_9136.JPEG?" |
-| 4 | Tap **Resume** | The photo opens on the Rotate step, lying on its side: the turn was kept |
+| 1 | Tap **90° right** | The photo lies on its side |
+| 2 | At once, swipe up from the bottom edge of the screen | The Home Screen shows |
+| 3 | Swipe up from the bottom edge and hold, to open the app switcher | The app switcher shows Safari among the open apps |
+| 4 | Swipe Safari up and off the screen | Safari is gone from the app switcher |
+| 5 | Tap Safari on the Home Screen | Safari opens |
+| 6 | Open the app in a new tab | The start screen offers "Resume IMG_9136.JPEG?" |
+| 7 | Tap **Resume** | The photo opens on the Rotate step, lying on its side: the turn was kept |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ### STA-15.3 A change is saved within 0.2 s, before the tab can be closed   [auto: phone, webkit]
+Script only
+Stand-in: nothing is replaced, but no person can time a save to a tenth of a second; the script notes the moment of the tap and the moment the app hands the edits to the browser's storage.
+
 Written to ruling R36; it fails until R36 is built (BUG-141).
 
 Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, a second after it opened
 
-A save started as a tab closes isn't sure to reach the device, so a change must already be saved by the time a person could close the tab. The page is left open; the script times the save to the millisecond.
+A save started as a tab closes isn't sure to reach the device, so a change must already be saved by the time a person could close the tab. The page is left open.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -829,58 +897,73 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-15.4 Every download saves the edits first   [auto: phone, webkit]
+Script only
+Stand-in: nothing is replaced, but the save and the download are a few thousandths of a second apart, so no person can see which came first; the script notes the moment each download starts and each save of the edits, and checks the save was made as the download started, before the page did anything else. A save that comes any later (the usual one, 0.4 s after a change, say) fails the case.
 Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder
+- Device and browser: any; a phone-width or a wide window, with downloads saved to a folder
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Export step, a second after it opened
 
-Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-Close a sheet: on a phone, tap the **×** at its top right; on a wide screen there is nothing to close.
-The script times each save against its download; by hand you see only the files.
+Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls, the block of buttons under the photo); on a wide screen they are always shown under the controls.
+Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** | A file is saved; the edits, marked exported, were saved within 0.15 s of it, not 0.4 s later |
-| 2 | Open Export options and tap **Save edits** | A file named IMG_9136-edits.json is saved; the edits were saved within 0.15 s of it |
-| 3 | Close Export options, then tap **Corner shots** | The Corner shots sheet rises |
-| 4 | Tap **Download corners**, then **No** | The corner sheet is saved; the edits were saved within 0.15 s of it |
+| 1 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | A file named IMG_9136-straight.jpg is saved; the edits, marked as exported, were saved as its download started |
+| 3 | Open Export options | **Save edits** shows in them |
+| 4 | Tap **Save edits** | A file named IMG_9136-edits.json is saved; the edits were saved as its download started |
+| 5 | Close Export options | **Corner shots** shows in the bottom row of the controls |
+| 6 | Tap **Corner shots** | The Corner shots sheet rises, with **Download corners** |
+| 7 | Tap **Download corners** | The question box asks "Upscale to 2000 px?" |
+| 8 | Tap **No** | The corner sheet is saved; the edits were saved as its download started |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-15.5 A pair's download saves the edits first   [auto: phone, webkit]
+Script only
+Stand-in: as for STA-15.4, the script notes the moment the download starts and each save of the edits, and checks the save was made as the download started, before the page did anything else.
 Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder
+- Device and browser: any; a phone-width or a wide window, with downloads saved to a folder
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the two made a pair: the front opened with **Open photo**, then **Add back** on the Export step with the back; a second after the back opened
 
+With these two photos the pair's joined picture is under 2000 px on its long side, so the question box always asks to upscale.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | The Export step shows **Together** and **Separately** |
-| 2 | Tap **Download**, then **No** if the Upscale question asks | The pair's file is saved; the edits were saved within 0.15 s of it, not 0.4 s later (the script times it) |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Together** and **Separately** |
+| 2 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 3 | Tap **No** | The pair's file is saved; the edits were saved as its download started, not 0.4 s later |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-15.6 Hiding or leaving the page starts a save at once   [auto: phone, webkit]
+Script only
+Stand-in: the script tells the page it is hidden, then that it is being left, as switching apps and closing the tab would, but never closes it, so each save can be seen; it notes the moment of each save. No person can hide a page within a tenth of a second of a tap, nor see a save made as a tab closes.
+
 Ruling R36 keeps this save as a backstop to the sooner save after each change. The link makes the usual wait before a save 1.5 s, so only the backstop can save within 0.1 s.
 
 Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test, opened with ?session.saveDelayMs=1500 added to its address
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, a second after it opened
-
-The script tells the page it is hidden, then that it is being left, as switching apps and closing the tab would, but never closes it, so each save can be seen; it times the saves to the millisecond. By hand, row 2 is switching to another tab and back.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **90° right** in the row of tools | The photo lies on its side |
-| 2 | At once (within 0.1 s), switch to another tab | The edits, with the turn, are saved within 0.1 s of the switch, long before the 1.5 s wait |
-| 3 | Come back to the tab, wait 2 seconds, then tap **90° right** again | The photo is upside down |
-| 4 | At once, the page is told it is being left (the script fires the page's "pagehide" event; by hand, close the tab) | The edits, with the second turn, are saved within 0.1 s; by hand, reopen the app: **Resume** brings the photo back upside down |
+| 2 | At once (within 0.1 s), the script tells the page it is hidden, as switching to another tab does | The edits, with the turn, are saved within 0.1 s of it, long before the 1.5 s wait |
+| 3 | The script tells the page it is shown again, then waits two seconds | The photo still lies on its side |
+| 4 | Tap **90° right** again | The photo is upside down |
+| 5 | At once, the script tells the page it is being left, as closing the tab does | The edits, with the second turn, are saved within 0.1 s of it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -899,44 +982,49 @@ The original file (its bytes, type and name) is saved once for each newly opened
 - Cases: 2
 
 ### STA-16.1 The photo itself is saved once   [auto: desktop, webkit]
+Script only
+Stand-in: nothing is replaced, but no person can count the writes to the browser's storage or see their order; the script notes each write as it is made and reads what was written.
 Before you start:
-- Device and browser: a computer, Chrome or Edge; a wide window, in a private window
+- Device and browser: a computer; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
-- Starting screen: the start screen, with the developer tools open at Application, IndexedDB, p1hunt-finisher, session
-
-The script counts the writes; by hand you see the records.
+- Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo** and choose IMG_9136.JPEG | The record "photo" holds the file: its bytes (918,290), type image/jpeg and name IMG_9136.JPEG; it was written once, before any edits were |
-| 2 | Tap **Rotate** in the step bar, then **90° right**, then **90° left** | The edits are saved after each change; the record "photo" is not written again |
-| 3 | Tap **Open** and choose IMG_9075.JPEG | The record "photo" now holds IMG_9075.JPEG, written once more |
+| 1 | Click **Open photo** and choose IMG_9136.JPEG | The photo opens. The browser's storage holds the file: its 918,290 bytes, its type (image/jpeg) and its name, IMG_9136.JPEG; it was written once, before any edits were |
+| 2 | Click **Rotate** in the step tabs (the six tabs Perspective to Export, in the top bar on a wide screen) | The Rotate step shows |
+| 3 | Click **90° right** in the row of tools | The photo lies on its side; the edits are saved with the turn; the file is not written again |
+| 4 | Click **90° left** | The photo is upright again; the edits are saved again; the file is still not written again |
+| 5 | Click **Open** (the folder at the top left) and choose IMG_9075.JPEG | IMG_9075.JPEG opens; the stored file is now IMG_9075.JPEG, written once more |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-16.2 No edits are saved until the photo is   [auto: phone]
+Script only
+Stand-in: no person can make a browser refuse to store one file; the script makes the browser's storage refuse the photo, as a full disk would.
 Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen
 
-The script makes the device refuse to store the photo, as a full disk would; this case cannot be run by hand.
-
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo** and choose IMG_9136.JPEG | The photo opens; the photo is not stored |
-| 2 | Tap **Rotate** in the step bar, then **90° right**, and wait a second | The photo lies on its side; no edits were saved |
-| 3 | Reload the page | No card: nothing is offered to resume |
+| 1 | Tap **Open photo** and choose IMG_9136.JPEG | The photo opens; the browser's storage holds no photo |
+| 2 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
+| 3 | Tap **90° right** in the row of tools, then wait a second | The photo lies on its side; no edits were saved |
+| 4 | Reload the page | No card: nothing is offered to resume |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## STA-17 Saving is best-effort
 
-Where the browser has no on-device database, or `session.enabled` is turned off by a link, nothing is saved and no Resume card ever shows. A failed save is only logged to the console; the user sees nothing.
+Where the browser has no on-device database, or saving is turned off by a link (`?session.enabled=0`), nothing is saved and no Resume card ever shows. A failed save is only logged to the console; the user sees nothing.
 
 - Risk: low
 - Check: script
@@ -951,49 +1039,54 @@ Where the browser has no on-device database, or `session.enabled` is turned off 
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test, opened with ?session.enabled=0 added to its address
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Open photo** and choose IMG_9136.JPEG | The photo opens |
-| 2 | Tap **Rotate** in the step bar, then **90° right**, and wait two seconds | The photo lies on its side |
-| 3 | Reload the page (the address still has ?session.enabled=0) | No card: nothing is offered to resume |
-| 4 | Open the build without ?session.enabled=0 | No card either: nothing was saved |
+| 2 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
+| 3 | Tap **90° right** in the row of tools, then wait two seconds | The photo lies on its side |
+| 4 | Reload the page (the address still has ?session.enabled=0) | No card: nothing is offered to resume |
+| 5 | Open the build without ?session.enabled=0 | No card either: nothing was saved |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-17.2 Without an on-device database nothing is saved   [auto: phone, webkit]
+Script only
+Stand-in: no person can take a browser's on-device database (IndexedDB) away from one site, so the script removes it from the page before the app loads, as a browser without one would be.
 Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen
-
-The script takes the browser's on-device database (IndexedDB) away from the page before it loads; this case cannot be run by hand.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Open photo** and choose IMG_9136.JPEG | The photo opens as usual, with no message |
-| 2 | Tap **Rotate** in the step bar, then **90° right**, and wait two seconds | The photo lies on its side; no error in the console |
-| 3 | Reload the page | No card: nothing is offered to resume |
+| 2 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
+| 3 | Tap **90° right** in the row of tools, then wait two seconds | The photo lies on its side; no error in the console |
+| 4 | Reload the page | No card: nothing is offered to resume |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-17.3 A failed save shows the user nothing   [auto: phone]
+Script only
+Stand-in: no person can make a browser refuse to store one record; once the photo is stored, the script makes the browser's storage refuse every save of the edits, as a full disk would.
 Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, its photo stored
 
-The script then makes the device refuse every save of the edits, as a full disk would; this case cannot be run by hand.
-
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **90° right** in the row of tools, and wait a second | The photo lies on its side; no message shows over the photo |
+| 1 | Tap **90° right** in the row of tools, then wait a second | The photo lies on its side; no message shows over the photo |
 | 2 | Look at the console | A warning starting "[card-finisher] session edits not saved:" |
 
 Pass: every row's result is seen.
@@ -1001,28 +1094,29 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## STA-18 A new photo starts clean
 
-A newly opened photo starts on Perspective with fresh edits. The undo history, every view's zoom, the detection results, Levels' unapplied change, the picker for Levels, the before-and-after compare, Preview, Tap to find card and the exported mark are all cleared, and the first corner handle is selected.
+A newly opened photo starts on Perspective with fresh edits. The undo history, every view's zoom, the detection results, Levels' unapplied change, the picker for Levels, the before-and-after compare, Preview, Tap to find card and the exported mark are all cleared, and the first corner handle is selected. The compare has no case of its own: it lasts only while the photo or the C key is held, and the code also ends it whenever the step changes, so no person can carry one into a new photo.
 
 - Risk: high
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
-- Anchors: `#btnUndo`, `#btnFindCard`, `#toolCandidate`
+- Anchors: `#btnUndo`, `#btnFindCard`, `#toolCandidate`, `#levelsPicks`
 - Source: `js/app/state.js` (`openFile`, `resetPhotoState`); `js/app/shell.js` (`setTab`)
 - Flag: to confirm. **Snap**, **Grid**, **Debug overlay** and the chosen mode on Perspective (Nudge or Flatten) and Rotate (Straighten or Flip) carry over to a new photo, but not over a reload.
-- Cases: 9
+- Cases: 11
 
 ### STA-18.1 A new photo opens on Perspective with nothing to undo   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Rotate** in the step bar | The Rotate step shows |
+| 1 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
 | 2 | Tap **90° right** in the row of tools | The photo lies on its side |
 | 3 | Tap **90° right** again | The photo is upside down |
 | 4 | Tap **Undo** (the arrow curving left, at the top right) | The photo lies on its side again; **Redo** (the arrow curving right) is no longer greyed out |
@@ -1035,15 +1129,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Levels** in the step bar | The Levels step shows |
-| 2 | Tap **Auto** in the row of tools | **Discard** and **Apply**, above the tools, are no longer greyed out, and a white dot sits on the **Levels** tab |
+| 1 | Tap **Levels** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Levels step shows |
+| 2 | Tap **Auto** in the row of tools | **Discard** and **Apply**, at the two ends of the line at the top of the controls (the block of buttons under the photo), are no longer greyed out, and a white dot sits on the **Levels** tab |
 | 3 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step; no white dot on the **Levels** tab |
-| 4 | Tap **Levels** in the step bar | **Discard** and **Apply** are greyed out: nothing waits to be applied |
+| 4 | Tap **Levels** in the step tabs | **Discard** and **Apply** are greyed out: nothing waits to be applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1052,16 +1147,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | The Export step shows **Download**, and no **Next card** |
-| 2 | Tap **Download** | A question card asks "Upscale to 2000 px?" |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Download**, and no **Next card** |
+| 2 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | A file is saved, and **Next card** shows |
 | 4 | Tap **Next card** and choose IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
-| 5 | Tap **Export** in the step bar | No **Next card**: the new photo has not been exported |
+| 5 | Tap **Export** in the step tabs | No **Next card**: the new photo has not been exported |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1070,6 +1166,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone, or a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step; no **Fit to screen** in the top bar
 
@@ -1085,12 +1182,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Preview** in the row of tools | **Preview** is On; the line above the tools reads PREVIEW and the corner handles are hidden |
+| 1 | Tap **Preview** in the row of tools | **Preview** is On; the line above the controls (the one line of text at the top of the controls, the block of buttons under the photo) reads PREVIEW and the corner handles are hidden |
 | 2 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | IMG_9075.JPEG opens with **Preview** Off, its corner handles showing and the line reading NUDGE |
 
 Pass: every row's result is seen.
@@ -1100,8 +1198,9 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
-- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step; the line above the tools reads NUDGE CORNER 1 OF 4
+- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step; the line above the controls (the one line of text at the top of the controls, the block of buttons under the photo) reads NUDGE CORNER 1 OF 4
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -1116,15 +1215,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
-Open Perspective options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+Open Perspective options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Open Perspective options | **Tap to find card** shows in them |
-| 2 | Tap **Tap to find card** | On a phone the options close; the line above the tools reads "Tap the card in the photo." with **Cancel** |
+| 2 | Tap **Tap to find card** | On a phone the options close; the line above the controls (the one line of text at the top of the controls, the block of buttons under the photo) reads "Tap the card in the photo." with **Cancel** |
 | 3 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | IMG_9075.JPEG opens; the line reads NUDGE CORNER 1 OF 4, with no "Tap the card in the photo." and no **Cancel** |
 
 Pass: every row's result is seen.
@@ -1136,13 +1236,14 @@ Flag: to confirm. Written to today's behavior: the tools' settings carry over to
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step, for the first time since the page was loaded: **Nudge** selected (solid white) and **Snap** Off
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Snap** in the row of tools | **Snap** is On |
-| 2 | Tap **Flatten** in the row of tools | **Flatten** is selected; the line above the tools reads FLATTEN |
+| 2 | Tap **Flatten** in the row of tools | **Flatten** is selected; the line above the controls (the one line of text at the top of the controls, the block of buttons under the photo) reads FLATTEN |
 | 3 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | IMG_9075.JPEG opens with **Flatten** still selected, the line reading FLATTEN, and **Snap** still On |
 
 Pass: every row's result is seen.
@@ -1154,15 +1255,53 @@ Flag: to confirm. Written to today's behavior: the tools' settings are not saved
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step, for the first time since the page was loaded: **Nudge** selected (solid white) and **Snap** Off
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Snap** in the row of tools | **Snap** is On |
-| 2 | Tap **Flatten** in the row of tools | **Flatten** is selected; the line above the tools reads FLATTEN |
+| 2 | Tap **Flatten** in the row of tools | **Flatten** is selected; the line above the controls (the one line of text at the top of the controls, the block of buttons under the photo) reads FLATTEN |
 | 3 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
 | 4 | Tap **Resume** | The photo opens on the Perspective step with **Nudge** selected, the line reading NUDGE, and **Snap** Off |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### STA-18.10 The card outlines found are those of the new photo   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
+- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
+
+**Candidate**, in the row of tools, shows which of the card outlines found in the photo the corner handles sit on, and how many were found.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at **Candidate** in the row of tools | It reads 1/3 |
+| 2 | Tap **Candidate** | It reads 2/3; the corner handles move to the second outline |
+| 3 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | IMG_9075.JPEG opens; **Candidate** reads 1/3, with the corner handles on the first outline found in this photo |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### STA-18.11 Pick white is not left armed for a new photo   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
+- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Levels** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Levels step shows **Pick white** |
+| 2 | Tap **Pick white** | **Pick white** is selected (solid white); the line between **Discard** and **Apply** reads "Tap something white" |
+| 3 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
+| 4 | Tap **Levels** in the step tabs | **Pick white** is not selected; the line reads "Pick white, or try Auto" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1178,45 +1317,69 @@ A new photo's crop preset and export settings start from the ones last used (rem
 - Changed: none
 - Anchors: `CONFIG.crop.defaultPreset`, `CONFIG.export.format`, `CONFIG.export.longEdge`, `CONFIG.storageKey`
 - Source: `js/app/state.js` (`newState`, `defaultState`, `cropDefaults`, `exportDefaults`); `js/app/adapters.js` (`Prefs.load`)
-- Cases: 2
+- Cases: 3
 
-Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls. Close them: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
+Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls. Close them: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 
 ### STA-19.1 With nothing remembered, a photo starts at 1:1, 2000 px, JPEG   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window so that nothing is remembered on this device
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Crop** in the step bar | **1:1** is selected (solid white) in the row of sizes |
-| 2 | Tap **Export** in the step bar | **2000** and **JPEG** are selected |
+| 1 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | **1:1** is selected (solid white) in the row of sizes |
+| 2 | Tap **Export** in the step tabs | **2000** and **JPEG** are selected |
 | 3 | Open Export options | **Quality** reads 92%, **Interpolation** reads Bilinear and **Fill outside photo** reads White |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### STA-19.2 The next photo starts from the settings used last, after a reload too   [auto: phone, webkit]
+### STA-19.2 The next photo starts from the crop size used last, after a reload too   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window so that nothing is remembered on this device
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
+Start over with IMG_9075.JPEG (a named action): wait two seconds, reload the page, tap **Start fresh** on the start screen, then tap **Open photo** and choose IMG_9075.JPEG.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Crop** in the step bar, then **4:5** in the row of sizes | **4:5** is selected |
-| 2 | Tap **Export** in the step bar, then **1080** and **WebP** | **1080** and **WebP** are selected |
-| 3 | Open Export options and set **Quality** to 80% | **Quality** reads 80% |
-| 4 | Tap **Interpolation** and choose **Bicubic (sharper, slower)** | **Interpolation** reads Bicubic |
-| 5 | Tap **Fill outside photo** and choose **Black** | **Fill outside photo** reads Black |
-| 6 | Close Export options, wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
-| 7 | Tap **Start fresh** | The card goes |
-| 8 | Tap **Open photo** and choose IMG_9075.JPEG | IMG_9075.JPEG opens |
-| 9 | Tap **Crop** in the step bar | **4:5** is selected |
-| 10 | Tap **Export** in the step bar, then open Export options | **1080** and **WebP** are selected; **Quality** reads 80%, **Interpolation** Bicubic and **Fill outside photo** Black |
+| 1 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | **1:1** is selected (solid white) in the row of sizes |
+| 2 | Tap **4:5** in the row of sizes | **4:5** is selected |
+| 3 | Start over with IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
+| 4 | Tap **Crop** in the step tabs | **4:5** is selected |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### STA-19.3 The next photo starts from the export settings used last, after a reload too   [auto: phone, webkit]
+Before you start:
+- Device and browser: any; a phone-width or a wide window, in a private window so that nothing is remembered on this device
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
+- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
+
+Start over with IMG_9075.JPEG (a named action): close Export options, wait two seconds, reload the page, tap **Start fresh** on the start screen, then tap **Open photo** and choose IMG_9075.JPEG.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | **2000** and **JPEG** are selected |
+| 2 | Tap **1080** | **1080** is selected |
+| 3 | Tap **WebP** | **WebP** is selected |
+| 4 | Open Export options | **Quality** reads 92% |
+| 5 | Drag the **Quality** slider until it reads 80% | **Quality** reads 80% |
+| 6 | Tap **Interpolation** and choose **Bicubic (sharper, slower)** | **Interpolation** reads Bicubic |
+| 7 | Tap **Fill outside photo** and choose **Black** | **Fill outside photo** reads Black |
+| 8 | Start over with IMG_9075.JPEG | IMG_9075.JPEG opens on the Perspective step |
+| 9 | Tap **Export** in the step tabs | **1080** and **WebP** are selected |
+| 10 | Open Export options | **Quality** reads 80%, **Interpolation** Bicubic and **Fill outside photo** Black |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1238,10 +1401,11 @@ A photo opens the right way up, following the orientation the camera recorded in
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG from samples/, and IMG_9136-sideways.JPEG: a copy of it whose orientation tag (the note a camera writes for how it was held) says "turned a quarter clockwise" (EXIF orientation 6). The script makes the copy; by hand, make it with exiftool: `exiftool -Orientation#=6 IMG_9136-sideways.JPEG`
 - Starting screen: the start screen, with no photo open
 
-Open Export options: tap **Export** in the step bar, then, on a phone, the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls. Close them: on a phone, tap the **×** at their top right.
+Open Export options: tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen), then, on a phone, the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls. Close them: on a phone, tap the **×** at their top right.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -1270,29 +1434,33 @@ A HEIC photo opens where the browser can decode it (Safari). Where it can't, a r
 ### STA-21.1 Safari on an iPhone opens a HEIC file   [phone]
 Before you start:
 - Device and browser: an iPhone, Safari
-- Build: the build under test
-- Photo: a photo of a card saved in the Files app as a HEIC file (its name ends in .HEIC; check the name in Files first)
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
+- Photo: a photo of a card saved in the Files app as a HEIC file: its name in Files ends in .HEIC. Whether Photos' Save to Files keeps that ending is find-out item Q-06; until it is answered, look at the name in Files before you start
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Open photo** | A menu offers Photo Library, Take Photo and Choose File |
-| 2 | Tap **Choose File** and pick the HEIC file in Files | The photo opens on the Perspective step, with its corner handles on the card |
-| 3 | Tap **Export** in the step bar, then the **Options** tab (the tab with an up arrow on the top edge of the controls) | The line near the foot of Export options names the file's type as image/heic |
+| 2 | Tap **Choose File** | The Files app's picker opens |
+| 3 | Tap the HEIC file | The photo opens on the Perspective step, with its corner handles on the card |
+| 4 | Tap **Export** in the step tabs (the six tabs along the bottom, Perspective to Export) | The Export step shows **Download** |
+| 5 | Tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Export options rise; the line near their foot names the file's type as image/heic |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ### STA-21.2 A browser that can't open HEIC says so   [auto: phone]
 Before you start:
-- Device and browser: a computer, Chrome or Edge (neither opens HEIC); a phone-width or a wide window
+- Device and browser: a computer, Chrome or Edge; a phone-width or a wide window
 - Build: the build under test
-- Photo: any HEIC photo (its name ends in .HEIC). The script stands in a file named card.HEIC, of the HEIC type, that the browser can't decode
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: card.HEIC from tests/fixtures/ (a line of text named like a HEIC photo: no browser decodes it, so the app takes it for a HEIC photo it can't open)
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo** and choose the HEIC photo | A red message says "This browser can’t open HEIC. Save the photo as JPEG first (Safari opens HEIC directly)."; the start screen stays and no photo opens |
+| 1 | Tap **Open photo** and choose card.HEIC | A red message says "This browser can’t open HEIC. Save the photo as JPEG first (Safari opens HEIC directly)."; the start screen stays and no photo opens |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1311,13 +1479,14 @@ Opening a file that can't be read as an image shows the red message "Couldn’t 
 - Ruling: R31. A failed open changes nothing: the photo that was open goes on being saved for Resume. The app differs today (BUG-001: its edits stop being saved).
 - Cases: 3
 
-The file that isn't an image: not-a-photo.JPEG, a short text file renamed to end in .JPEG (the script makes it; by hand, save a line of text in a text editor and rename the file).
+The file that isn't an image: not-a-photo.JPEG from tests/fixtures/ (a line of text, named like a photo).
 
 ### STA-22.1 A file that isn't an image opens nothing   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- File: not-a-photo.JPEG
+- Browser data: none for this site (a private window, or the site's data cleared)
+- File: not-a-photo.JPEG from tests/fixtures/
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
@@ -1331,12 +1500,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photo: IMG_9136.JPEG from samples/; file: not-a-photo.JPEG
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/; file: not-a-photo.JPEG from tests/fixtures/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Rotate** in the step bar | The Rotate step shows |
+| 1 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
 | 2 | Tap **90° right** in the row of tools | The photo lies on its side; **Undo** is no longer greyed out |
 | 3 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose not-a-photo.JPEG | A red message says "Couldn’t read that file as an image."; IMG_9136.JPEG stays on the Rotate step, lying on its side, with **Undo** still not greyed out |
 
@@ -1349,7 +1519,8 @@ Written to ruling R31; it fails until that is built (BUG-001).
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
 - Build: the build under test
-- Photo: IMG_9136.JPEG from samples/; file: not-a-photo.JPEG
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/; file: not-a-photo.JPEG from tests/fixtures/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step
 
 | # | Do this | You should see |
@@ -1376,10 +1547,13 @@ If a second photo is opened before the first has finished loading, only the last
 - Cases: 1
 
 ### STA-23.1 A photo chosen while another is loading is the one that opens   [auto: phone]
+Script only
+Stand-in: a sample photo opens in a fraction of a second, too quickly for a person to choose another while it loads, so the script holds back the first photo's loading by two seconds, as a large photo takes on a phone.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/. The first must take a moment to load: the script holds its loading back two seconds, as a large photo takes on a phone; by hand, use a 48 MP photo in its place (IMG_9136.JPEG enlarged to 5842 × 8182 px in any image editor), on a phone
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: IMG_9136.JPEG and IMG_9075.JPEG from samples/
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
@@ -1406,35 +1580,49 @@ A 48 MP iPhone photo opens and stays usable: the screen works from smaller copie
 
 ### STA-24.1 A 48 MP photo from the camera stays usable on an iPhone   [phone]
 Before you start:
-- Device and browser: an iPhone that takes 48 MP photos, Safari
-- Build: the build under test
-- Photo: a 48 MP photo of a card, taken with the camera's 48 MP setting (Photos shows its size as 48 MP when you swipe up on it)
+- Device and browser: an iPhone whose main camera takes 48 MP photos, Safari. Which iPhones do, and at which camera setting, is find-out item Q-02; until it is answered, row 6 confirms the photo is 48 MP
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
+- Photo: a photo of a card taken with the main camera at its highest resolution setting, held upright, with the card filling at least half the photo's height, in Photos
 - Starting screen: the start screen, with no photo open
+
+Accept Safari's downloads (a named action): each time Safari asks whether to download a file, tap **Download**, until it asks no more.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo**, then **Photo Library**, and choose the 48 MP photo | The photo opens on the Perspective step, with its corner handles on the card, and the page does not reload |
-| 2 | Drag a corner handle a short way | The handle follows the finger without stalling |
-| 3 | Tap **Export** in the step bar, then **Download** | A file is saved, and the page does not reload |
+| 1 | Tap **Open photo** | A menu offers Photo Library, Take Photo and Choose File |
+| 2 | Tap **Photo Library** | Your photos show |
+| 3 | Choose the photo | The photo opens on the Perspective step, with its corner handles on the card; the page did not reload or go blank |
+| 4 | Drag a corner handle about a finger's width toward the middle of the card, and lift your finger | The handle moves with the finger and stays where you lifted it; the page did not reload or go blank |
+| 5 | Tap **Export** in the step tabs (the six tabs along the bottom, Perspective to Export) | The Export step shows **Download** |
+| 6 | Tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Export options rise; the line near their foot starts "Source" and gives between 47 and 49 MP |
+| 7 | Tap the **×** at the top right of Export options | They close; **Download** shows |
+| 8 | Tap **Download** | No question box; a message over the photo begins "Exported 2000 × 2000 px" |
+| 9 | Accept Safari's downloads | Safari asks nothing more; the photo is still on screen, on Export; the page did not reload or go blank |
 
 Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
+On a fail, record: the row number, what you saw instead, the iPhone model, a screenshot (press the side button and volume up together).
 
 ### STA-24.2 A 48 MP photo is worked on from smaller copies   [auto: phone, webkit]
+Script only
+Stand-in: no person can see the size of the copies the app works from, so the script reads them. No 48 MP photo is in samples/, so the script enlarges IMG_9136.JPEG to about 48 MP (5842 × 8182 px) as the photo.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photo: IMG_9136-48MP.JPEG: IMG_9136.JPEG enlarged to about 48 MP (5842 × 8182 px; the script makes it; by hand, enlarge it in any image editor)
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136-48MP.JPEG: IMG_9136.JPEG enlarged to 5842 × 8182 px (the script makes it)
 - Starting screen: the start screen, with no photo open
 
-The script reads the sizes of the copies the app works from; by hand you can see only that the photo opens and works.
+Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls, the block of buttons under the photo); on a wide screen they are always shown under the controls.
+Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Open photo** and choose IMG_9136-48MP.JPEG | The photo opens on the Perspective step, with its corner handles on the card; the copy on screen is 2048 px on its long side, the one for the live preview 720 px and the one for card detection 1000 px |
-| 2 | Tap **Export** in the step bar, then open Export options (on a phone, the **Options** tab, the tab with an up arrow on the top edge of the controls) | The line near their foot starts "Source 5842 × 8182 px (47.8 MP)" |
-| 3 | Close Export options (on a phone, the **×** at their top right) | **Download** shows in the controls |
-| 4 | Tap **Download** | A file 2000 px on its long side is saved, with no question first |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Download** |
+| 3 | Open Export options | The line near their foot starts "Source 5842 × 8182 px (47.8 MP)" |
+| 4 | Close Export options | **Download** shows in the controls |
+| 5 | Tap **Download** | A file 2000 px on its long side is saved, with no question first |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1456,12 +1644,13 @@ Closing the file picker without choosing a file changes nothing, whichever butto
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Rotate** in the step bar | The Rotate step shows |
+| 1 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
 | 2 | Tap **90° right** in the row of tools | The photo lies on its side; **Undo** is no longer greyed out |
 | 3 | Tap **Open** (the folder at the top left; on a phone it has no label) | The system's file picker opens |
 | 4 | Close the picker without choosing a file (**Cancel**) | IMG_9136.JPEG is still open on the Rotate step, lying on its side, with **Undo** not greyed out; no message shows |
@@ -1473,12 +1662,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** | A question card asks "Upscale to 2000 px?" |
+| 1 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **No** | A file is saved, and **Next card** shows |
 | 3 | Tap **Next card** | The system's file picker opens |
 | 4 | Close the picker without choosing a file (**Cancel**) | IMG_9136.JPEG is still open on the Export step, with **Next card** showing |
@@ -1490,6 +1680,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG from samples/
 - Starting screen: 14_front_portrait_raw_white.JPEG open (with **Open photo**), on the Export step
 
@@ -1518,7 +1709,8 @@ On an iPhone, **Open photo** offers Photo Library, Take Photo and Choose File, a
 ### STA-26.1 Open photo offers the photo library, the camera and files   [phone]
 Before you start:
 - Device and browser: an iPhone, Safari
-- Build: the build under test
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
 - Photo: none needed
 - Starting screen: the start screen, with no photo open
 
@@ -1534,14 +1726,18 @@ On a fail, record: the row number, what you saw instead, a screenshot (press the
 ### STA-26.2 A photo from the library arrives whole, as a JPEG   [phone]
 Before you start:
 - Device and browser: an iPhone, Safari
-- Build: the build under test
-- Photo: a 12 MP photo of a card in the Photo Library, taken with the camera's usual setting (HEIC, the iPhone's default format). Swipe up on it in Photos first and note its size in pixels, such as 3024 × 4032
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
+- Photo: a 12 MP photo of a card in the Photo Library, taken with the camera's usual setting (HEIC, the iPhone's default format). Note its size in pixels, such as 3024 × 4032, before you start; where Photos shows it is find-out item Q-03
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo**, then **Photo Library**, and choose the photo | The photo opens on the Perspective step |
-| 2 | Tap **Export** in the step bar, then the **Options** tab (the tab with an up arrow on the top edge of the controls) | The line near the foot of Export options reads "Source", the size you noted (such as 3024 × 4032 px, 12.2 MP), then image/jpeg |
+| 1 | Tap **Open photo** | A menu offers Photo Library, Take Photo and Choose File |
+| 2 | Tap **Photo Library** | Your photos show |
+| 3 | Choose the photo | The photo opens on the Perspective step |
+| 4 | Tap **Export** in the step tabs (the six tabs along the bottom, Perspective to Export) | The Export step shows **Download** |
+| 5 | Tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Export options rise; the line near their foot reads "Source", the size you noted (such as 3024 × 4032 px, 12.2 MP), then image/jpeg |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).

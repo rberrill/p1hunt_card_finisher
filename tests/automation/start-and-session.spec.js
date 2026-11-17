@@ -14,9 +14,7 @@ const {
   handFor,
   middleOf,
   samplePath,
-  saveByDownload,
   cornerOnPage,
-  answerQuestion,
   openOptions,
   closeOptions,
   readSavedImage,
@@ -35,11 +33,11 @@ const {
   storedRecord,
   changeSavedEdits,
   watchStorageAndDownloads,
+  writesWithLastDownload,
   storageWritesSince,
   refuseStorage,
   refuseStorageNow,
   lastClickMs,
-  lastDownloadMs,
   notAPhoto,
   heicStandIn,
   sourceLine,
@@ -48,6 +46,7 @@ const {
   sampleWithOrientation,
   enlargedSample,
   slowDecodeOf,
+  pageNowMs,
 } = require('./support/start-and-session.js');
 
 const PHOTO = 'IMG_9136.JPEG';
@@ -88,9 +87,8 @@ const QUIET_MS = 700;
 // The longest gap between two quick taps, in ms: well inside the save delay, so the first
 // tap's save is still waiting when the second comes.
 const QUICK_TAP_GAP_MS = 300;
-// A save made at once lands within this many ms; a download's save within this many ms of it.
+// A save made at once lands within this many ms.
 const QUICK_SAVE_MS = 100;
-const DOWNLOAD_SAVE_MS = 150;
 // The longest a change may wait before it is saved, in ms (ruling R36: about 0.1 s, so a
 // change is saved before a person could close the tab).
 const SOON_SAVE_MS = 200;
@@ -109,6 +107,13 @@ const COMPARE_GRID = 16;
 const NOT_AN_IMAGE_MESSAGE = 'Couldn’t read that file as an image.';
 const HEIC_MESSAGE = 'This browser can’t open HEIC. Save the photo as JPEG first '
   + '(Safari opens HEIC directly).';
+// The approved wording (tests/catalog/wording.md) for a resume whose saved size doesn't match
+// (ruling R23) and for a resume that fails (ruling R24).
+const SIZE_MISMATCH_MESSAGE = 'Full edit history could not be restored, your photo has been '
+  + 'opened fresh.';
+const RESUME_FAILED_MESSAGE = 'Couldn’t resume.';
+// The Upscale question a sample photo's export at 2000 px asks.
+const UPSCALE_TITLE = 'Upscale to 2000 px?';
 // The EXIF orientation that says the picture is shown turned a quarter clockwise.
 const ORIENTATION_QUARTER_CLOCKWISE = 6;
 const SIDEWAYS_PHOTO = 'IMG_9136-sideways.JPEG';
@@ -138,6 +143,10 @@ const STILL_OPEN_WAIT_MS = 3000;
 // goes each way, in CSS px: away from every handle.
 const PAN_INSET_PX = 40;
 const PAN_DRAG_PX = 60;
+// How many card outlines detection finds in IMG_9136.JPEG and in IMG_9075.JPEG (measured in
+// Chromium at phone size).
+const FIRST_PHOTO_OUTLINES = 3;
+const SECOND_PHOTO_OUTLINES = 3;
 
 // Opens the app on the start screen and waits until it has decided whether to offer Resume.
 // Returns the hand for this target.
@@ -291,7 +300,7 @@ test('STA-03.2 On a wide screen, the steps and Fit are greyed out [desktop]', as
   });
 });
 
-test('STA-03.3 The backtick key opens the tuning panel over the start screen [phone]', async ({
+test('STA-03.3 The backtick key opens the tuning panel over the start screen [desktop]', async ({
   page,
   check,
 }, testInfo) => {
@@ -467,35 +476,49 @@ test('STA-05.4 The card says how long ago the photo was saved [phone]', async ({
   const when = page.locator('#resumeWhen');
   // The start screen saves nothing, so moving the page's clock there leaves the record's time
   // as it was saved. The page's clock stands in for the computer's.
-  await page.clock.setFixedTime(savedAt + 5 * MINUTE_MS + CLOCK_MARGIN_MS);
+  const fiveMinutesAhead = savedAt + 5 * MINUTE_MS + CLOCK_MARGIN_MS;
+  await page.clock.setFixedTime(fiveMinutesAhead);
+  await check('the clock shows 5 minutes past the real time; the card still reads LAST PHOTO · '
+    + 'JUST NOW', async () => {
+    expect(await page.evaluate(() => Date.now())).toBe(fiveMinutesAhead);
+    await expect(when).toHaveText('Last photo · just now');
+  });
   await reloadToStart(page);
-  await check('5 minutes later it reads LAST PHOTO · 5 MIN AGO', async () => {
+  await check('after a reload it reads LAST PHOTO · 5 MIN AGO', async () => {
     await expect(when).toHaveText('Last photo · 5 min ago');
   });
-  await page.clock.setFixedTime(savedAt + 3 * HOUR_MS + CLOCK_MARGIN_MS);
+  const threeHoursAhead = savedAt + 3 * HOUR_MS + CLOCK_MARGIN_MS;
+  await page.clock.setFixedTime(threeHoursAhead);
+  await check('the clock shows 3 hours past the real time', async () => {
+    expect(await page.evaluate(() => Date.now())).toBe(threeHoursAhead);
+  });
   await reloadToStart(page);
-  await check('3 hours later it reads LAST PHOTO · 3 H AGO', async () => {
+  await check('after a reload it reads LAST PHOTO · 3 H AGO', async () => {
     await expect(when).toHaveText('Last photo · 3 h ago');
   });
-  await page.clock.setFixedTime(savedAt + 2 * DAY_MS + CLOCK_MARGIN_MS);
+  const twoDaysAhead = savedAt + 2 * DAY_MS + CLOCK_MARGIN_MS;
+  await page.clock.setFixedTime(twoDaysAhead);
+  await check('the clock shows 2 days past the real time', async () => {
+    expect(await page.evaluate(() => Date.now())).toBe(twoDaysAhead);
+  });
   await reloadToStart(page);
-  await check('2 days later it reads LAST PHOTO · 2 D AGO', async () => {
+  await check('after a reload it reads LAST PHOTO · 2 D AGO', async () => {
     await expect(when).toHaveText('Last photo · 2 d ago');
   });
 });
 
-test('STA-05.5 An unreadable saved time and name [desktop]', async ({
+test('STA-05.5 An unreadable saved time and name [phone]', async ({
   page,
   check,
 }, testInfo) => {
   await startWithSavedPhoto(page, testInfo);
-  // No path on the screen changes a saved record: these stand in for the developer tools.
+  // Script only: no control changes a saved record (whether the developer tools can is Q-07).
   await changeSavedEdits(page, 'savedAt', 'soon');
-  await check('the record shows savedAt "soon"', async () => {
+  await check('the saved edits hold the time "soon"', async () => {
     expect((await storedRecord(page, 'edits')).savedAt).toBe('soon');
   });
   await changeSavedEdits(page, 'name', 42);
-  await check('the record shows name 42', async () => {
+  await check('the saved edits hold the name 42', async () => {
     expect((await storedRecord(page, 'edits')).name).toBe(42);
   });
   await reloadToStart(page);
@@ -576,7 +599,8 @@ test('STA-07.2 Resume brings back an unapplied Levels change [phone] [webkit]', 
       await expect(levelsMark(page)).toBeVisible();
     });
   const draft = await page.evaluate(() => window.__straightener.app.levelsDraft);
-  await waitForSaved(page, { tab: 'levels', hasDraft: true });
+  // The exact draft on screen, not any draft: an earlier save could hold another one.
+  await waitForSaved(page, { tab: 'levels', draft });
   await reloadToStart(page);
   await check('the card offers "Resume IMG_9136.JPEG?"', async () => {
     await expect(page.locator('#resumeName')).toHaveText(PHOTO);
@@ -608,7 +632,9 @@ test('STA-07.3 Resume brings back Next card after an export [phone] [webkit]', a
     await expect(page.locator('#btnDownload')).toBeVisible();
     await expect(nextCard).toBeHidden();
   });
-  const saved = await saveByDownload(page, hand, 'No');
+  await tapAndSeeQuestion(page, hand, check, page.locator('#btnDownload'),
+    'a question box asks "Upscale to 2000 px?"');
+  const saved = await answerAndSave(page, hand);
   await check('a file is saved and Next card shows', async () => {
     expect(saved.name).toBe('IMG_9136-straight.jpg');
     await expect(nextCard).toBeVisible();
@@ -670,15 +696,15 @@ async function startWithSavedTurn(page, testInfo) {
   return hand;
 }
 
-test('STA-08.1 A size mismatch says the photo was opened fresh [desktop]', async ({
+test('STA-08.1 A size mismatch says the photo was opened fresh [phone]', async ({
   page,
   check,
 }, testInfo) => {
   test.fail(true, 'BUG-050');
   const hand = await startWithSavedTurn(page, testInfo);
-  // No path on the screen changes a saved record: this stands in for the developer tools.
+  // Script only: no control changes a saved record (whether the developer tools can is Q-07).
   await changeSavedEdits(page, 'width', PHOTO_WIDTH + 1);
-  await check('the record shows width 1499', async () => {
+  await check('the saved edits hold the width 1499', async () => {
     expect((await storedRecord(page, 'edits')).width).toBe(PHOTO_WIDTH + 1);
   });
   await resumeAs(page, hand, PHOTO);
@@ -689,17 +715,18 @@ test('STA-08.1 A size mismatch says the photo was opened fresh [desktop]', async
     });
   // A plain reading, not a retrying one: the message comes with the photo or not at all.
   const toast = await toastNow(page);
-  await check('an amber warning says the edits could not be restored', async () => {
+  await check(`an amber message reads "${SIZE_MISMATCH_MESSAGE}"`, async () => {
     expect(toast.isShown).toBe(true);
     expect(toast.kind).toBe('warn');
+    expect(toast.text).toBe(SIZE_MISMATCH_MESSAGE);
   });
 });
 
-test('STA-08.2 After a size mismatch the fresh edits replace the saved ones [desktop] '
+test('STA-08.2 After a size mismatch the fresh edits replace the saved ones [phone] '
   + '[webkit]', async ({ page, check }, testInfo) => {
   const hand = await startWithSavedTurn(page, testInfo);
   await changeSavedEdits(page, 'width', PHOTO_WIDTH + 1);
-  await check('the record shows width 1499', async () => {
+  await check('the saved edits hold the width 1499', async () => {
     expect((await storedRecord(page, 'edits')).width).toBe(PHOTO_WIDTH + 1);
   });
   await resumeAs(page, hand, PHOTO);
@@ -759,20 +786,71 @@ function expectSamePicture(first, second) {
   });
 }
 
+// The question box's layer: the box over the dimmed photo with a question and buttons.
+function questionBox(page) {
+  return page.locator('#pairPrompt');
+}
+
+// Taps `control` and records the row's verdict: the question box asks `title`. `description`
+// is the row's result in its own words.
+async function tapAndSeeQuestion(page, hand, check, control, description, title = UPSCALE_TITLE) {
+  await hand.tap(control);
+  await check(description, async () => {
+    await expect(questionBox(page)).toBeVisible();
+    await expect(questionBox(page).locator('.alert-title')).toHaveText(title);
+  });
+}
+
+// Taps `answer` in the question box and waits for the file it saves. Returns { name, file }:
+// the name the app gave the file and the path of the saved copy.
+async function answerAndSave(page, hand, answer = 'No') {
+  const downloading = page.waitForEvent('download');
+  await hand.tap(questionBox(page).getByRole('button', { name: answer, exact: true }));
+  const download = await downloading;
+  return { name: download.suggestedFilename(), file: await download.path() };
+}
+
+// Taps `answer` in the question box. Returns the saved file's path, or null when the export
+// fails instead (a red message, and no file), so a failed export is seen at once rather than
+// after a download's timeout.
+async function answerAndSaveOrFail(page, hand, answer = 'No') {
+  const downloading = page.waitForEvent('download')
+    .then(download => download.path(), () => null);
+  await hand.tap(questionBox(page).getByRole('button', { name: answer, exact: true }));
+  const failing = page.locator('#toast.is-error').waitFor({ state: 'visible' })
+    .then(() => null, () => null);
+  return Promise.race([downloading, failing]);
+}
+
+// Goes to `step` with its tab and records the row's verdict: `control` shows. `description`
+// is the row's result in its own words.
+async function goToStepAndSee(page, hand, check, step, control, description) {
+  await goToStep(page, step, hand);
+  await check(description, async () => {
+    expect(await openStep(page)).toBe(step);
+    await expect(control).toBeVisible();
+  });
+}
+
 test('STA-10.1 Resume brings the logo back [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
   const hand = await startWithPhoto(page, testInfo);
-  await goToStep(page, 'overlay', hand);
+  const download = page.locator('#btnDownload');
+  await goToStepAndSee(page, hand, check, 'overlay', page.locator('#btnOverlayAdd'),
+    'the Overlay step shows Add logo');
   const logo = await addLogo(page, hand, page.locator('#btnOverlayAdd'), LOGO);
   await check('the logo shows on the photo', async () => {
     expect((await editState(page)).overlay.id).toBe(logo);
   });
-  await goToStep(page, 'export', hand);
-  const first = await saveByDownload(page, hand, 'No');
-  await check('a file named IMG_9136-straight.jpg is saved', async () => {
+  await goToStepAndSee(page, hand, check, 'export', download, 'the Export step shows Download');
+  await tapAndSeeQuestion(page, hand, check, download,
+    'a question box asks "Upscale to 2000 px?"');
+  const first = await answerAndSave(page, hand);
+  await check('a file named IMG_9136-straight.jpg is saved, with the logo in it', async () => {
     expect(first.name).toBe('IMG_9136-straight.jpg');
+    expect((await editState(page)).overlay.id).toBe(logo);
   });
   await waitForSaved(page, { overlayId: logo, exported: true });
   await reloadToStart(page);
@@ -783,7 +861,9 @@ test('STA-10.1 Resume brings the logo back [phone] [webkit]', async ({
   await check('the photo opens on the Export step', async () => {
     expect(await openStep(page)).toBe('export');
   });
-  const second = await saveByDownload(page, hand, 'No');
+  await tapAndSeeQuestion(page, hand, check, download,
+    'the question box asks "Upscale to 2000 px?"');
+  const second = await answerAndSave(page, hand);
   const firstImage = await readSavedImage(page, first.file, COMPARE_GRID);
   const secondImage = await readSavedImage(page, second.file, COMPARE_GRID);
   await check('a second file is saved, with no message about the logo: the same picture, logo '
@@ -798,7 +878,9 @@ test('STA-10.2 Remove and Undo after a resume bring the logo back [phone] [webki
   check,
 }, testInfo) => {
   const hand = await startWithPhoto(page, testInfo);
-  await goToStep(page, 'overlay', hand);
+  const download = page.locator('#btnDownload');
+  await goToStepAndSee(page, hand, check, 'overlay', page.locator('#btnOverlayAdd'),
+    'the Overlay step shows Add logo');
   const logo = await addLogo(page, hand, page.locator('#btnOverlayAdd'), LOGO);
   await check('the logo shows on the photo', async () => {
     expect((await editState(page)).overlay.id).toBe(logo);
@@ -822,26 +904,16 @@ test('STA-10.2 Remove and Undo after a resume bring the logo back [phone] [webki
   await check('Undo brings the logo back', async () => {
     expect((await editState(page)).overlay.id).toBe(logo);
   });
-  await goToStep(page, 'export', hand);
-  const saved = await saveByDownload(page, hand, 'No');
-  await check('a file is saved, with no message about the logo', async () => {
-    expect(saved.name).toBe('IMG_9136-straight.jpg');
-    expect((await toastNow(page)).kind).toBe('');
-  });
+  await goToStepAndSee(page, hand, check, 'export', download, 'the Export step shows Download');
+  await tapAndSeeQuestion(page, hand, check, download,
+    'a question box asks "Upscale to 2000 px?"');
+  const saved = await answerAndSave(page, hand);
+  await check('a file named IMG_9136-straight.jpg is saved, with no message about the logo',
+    async () => {
+      expect(saved.name).toBe('IMG_9136-straight.jpg');
+      expect((await toastNow(page)).kind).toBe('');
+    });
 });
-
-// Taps Download and answers No to the Upscale question. Returns the saved file's path, or null
-// when the export fails instead (a red message, and no file), so a failed export is seen at
-// once rather than after a download's timeout.
-async function downloadOrFailure(page, hand) {
-  const downloading = page.waitForEvent('download')
-    .then(download => download.path(), () => null);
-  await hand.tap(page.locator('#btnDownload'));
-  await answerQuestion(page, 'No');
-  const failing = page.locator('#toast.is-error').waitFor({ state: 'visible' })
-    .then(() => null, () => null);
-  return Promise.race([downloading, failing]);
-}
 
 test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [webkit]', async ({
   page,
@@ -849,6 +921,7 @@ test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [w
 }, testInfo) => {
   test.fail(true, 'BUG-140');
   const hand = await startWithPhoto(page, testInfo);
+  const download = page.locator('#btnDownload');
   await goToStep(page, 'overlay', hand);
   const first = await addLogo(page, hand, page.locator('#btnOverlayAdd'), LOGO);
   await check('the app icon shows on the photo as the logo', async () => {
@@ -864,8 +937,10 @@ test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [w
   await check('Undo makes the app icon the logo again', async () => {
     expect((await editState(page)).overlay.id).toBe(first);
   });
-  await goToStep(page, 'export', hand);
-  const before = await saveByDownload(page, hand, 'No');
+  await goToStepAndSee(page, hand, check, 'export', download, 'the Export step shows Download');
+  await tapAndSeeQuestion(page, hand, check, download,
+    'a question box asks "Upscale to 2000 px?"');
+  const before = await answerAndSave(page, hand);
   await check('a file named IMG_9136-straight.jpg is saved, with the app icon as its logo',
     async () => {
       expect(before.name).toBe('IMG_9136-straight.jpg');
@@ -880,7 +955,9 @@ test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [w
   await check('the photo opens on the Export step', async () => {
     expect(await openStep(page)).toBe('export');
   });
-  const after = await downloadOrFailure(page, hand);
+  await tapAndSeeQuestion(page, hand, check, download,
+    'the question box asks "Upscale to 2000 px?"');
+  const after = await answerAndSaveOrFail(page, hand);
   const toast = await toastNow(page);
   await check('a second file is saved, with no message about the logo: the same picture as the '
     + 'first, logo and all', async () => {
@@ -892,6 +969,33 @@ test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [w
   });
 });
 
+// STA-10.4's named action "Save the edits": on Export, opens its options, taps Save edits and
+// closes them. Returns the saved edits file's download.
+async function saveTheEdits(page, hand) {
+  await goToStep(page, 'export', hand);
+  await openOptions(page, hand, 'export');
+  const saving = page.waitForEvent('download');
+  await hand.tap(page.locator('#btnSaveEdits'));
+  const editsFile = await saving;
+  await closeOptions(page, hand, 'export');
+  return editsFile;
+}
+
+// STA-10.4's named action "Load the edits": on Export, opens its options, loads the edits file
+// `editsFile` (a download) and closes them once its logo is back on the photo.
+async function loadTheEdits(page, hand, editsFile, logo) {
+  await goToStep(page, 'export', hand);
+  await openOptions(page, hand, 'export');
+  const edits = {
+    name: editsFile.suggestedFilename(),
+    mimeType: 'application/json',
+    buffer: fs.readFileSync(await editsFile.path()),
+  };
+  await pickWith(page, hand, page.locator('#btnLoadEdits'), edits);
+  await expect.poll(async () => (await editState(page)).overlay.id).toBe(logo);
+  await closeOptions(page, hand, 'export');
+}
+
 test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webkit]', async ({
   page,
   check,
@@ -902,15 +1006,11 @@ test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webki
   await check('apple-touch-icon.png shows on the photo', async () => {
     expect((await editState(page)).overlay.id).toBe(pngLogo);
   });
-  await goToStep(page, 'export', hand);
-  await openOptions(page, hand, 'export');
-  const saving = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnSaveEdits'));
-  const editsFile = await saving;
-  await check('a file named IMG_9136-edits.json is saved', async () => {
+  const editsFile = await saveTheEdits(page, hand);
+  await check('a file named IMG_9136-edits.json is saved; the Export step shows', async () => {
     expect(editsFile.suggestedFilename()).toBe('IMG_9136-edits.json');
+    expect(await openStep(page)).toBe('export');
   });
-  await closeOptions(page, hand, 'export');
   await goToStep(page, 'overlay', hand);
   await check('the Overlay step shows, with the logo', async () => {
     expect(await openStep(page)).toBe('overlay');
@@ -921,19 +1021,10 @@ test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webki
   await check('the app icon is the logo now', async () => {
     expect(svgLogo).not.toBe(pngLogo);
   });
-  await goToStep(page, 'export', hand);
-  await openOptions(page, hand, 'export');
-  const edits = {
-    name: editsFile.suggestedFilename(),
-    mimeType: 'application/json',
-    buffer: fs.readFileSync(await editsFile.path()),
-  };
-  await pickWith(page, hand, page.locator('#btnLoadEdits'), edits);
-  await expect.poll(async () => (await editState(page)).overlay.id).toBe(pngLogo);
-  await check('Load edits makes apple-touch-icon.png the logo again', async () => {
+  await loadTheEdits(page, hand, editsFile, pngLogo);
+  await check('Load the edits makes apple-touch-icon.png the logo again', async () => {
     expect((await editState(page)).overlay.id).toBe(pngLogo);
   });
-  await closeOptions(page, hand, 'export');
   await hand.tap(page.locator('#btnUndo'));
   await check('Undo makes the app icon the logo again', async () => {
     expect((await editState(page)).overlay.id).toBe(svgLogo);
@@ -950,11 +1041,14 @@ test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webki
   await check('the photo opens on the Export step', async () => {
     expect(await openStep(page)).toBe('export');
   });
-  const saved = await saveByDownload(page, hand, 'No');
-  await check('a file is saved, with no message about the logo', async () => {
-    expect(saved.name).toBe('IMG_9136-straight.jpg');
-    expect((await toastNow(page)).kind).toBe('');
-  });
+  await tapAndSeeQuestion(page, hand, check, page.locator('#btnDownload'),
+    'a question box asks "Upscale to 2000 px?"');
+  const saved = await answerAndSave(page, hand);
+  await check('a file named IMG_9136-straight.jpg is saved, with no message about the logo',
+    async () => {
+      expect(saved.name).toBe('IMG_9136-straight.jpg');
+      expect((await toastNow(page)).kind).toBe('');
+    });
 });
 
 test('STA-11.1 Resume after the saved photo has gone [phone] [webkit]', async ({
@@ -971,6 +1065,11 @@ test('STA-11.1 Resume after the saved photo has gone [phone] [webkit]', async ({
     await expect(secondTab.locator('#resume')).toBeHidden();
   });
   await page.bringToFront();
+  await check('back in the first tab, its start screen still offers "Resume IMG_9136.JPEG?"',
+    async () => {
+      await expect(page.locator('#resume')).toBeVisible();
+      await expect(page.locator('#resumeName')).toHaveText(PHOTO);
+    });
   await hand.tap(page.locator('#btnResume'));
   await check('"The saved photo is gone. Open it again." in amber; the start screen stays, '
     + 'its card hidden, no photo', async () => {
@@ -1001,10 +1100,11 @@ test('STA-12.1 Resume that fails names no browser error [desktop]', async ({
   await expect.poll(async () => (await toastNow(page)).isShown).toBe(true);
   // A plain reading: the message is up, and its words are what they are.
   const toast = await toastNow(page);
-  await check('a fixed sentence says Resume failed, without the browser\'s error', async () => {
-    expect(toast.text).not.toContain('Failed to execute');
-    expect(toast.text).not.toContain('database connection');
-  });
+  await check(`a red message reads "${RESUME_FAILED_MESSAGE}" and nothing more: no browser error`,
+    async () => {
+      expect(toast.kind).toBe('error');
+      expect(toast.text).toBe(RESUME_FAILED_MESSAGE);
+    });
   await check('the browser\'s error is logged in the console', async () => {
     const errors = check.consoleErrors().join('\n');
     expect(errors).toContain('database connection is closing');
@@ -1025,11 +1125,14 @@ test('STA-13.1 Start fresh forgets the photo, its logo and a pair [phone] [webki
   check,
 }, testInfo) => {
   const hand = await startWithPhoto(page, testInfo, FRONT);
-  await goToStep(page, 'overlay', hand);
+  await goToStepAndSee(page, hand, check, 'overlay', page.locator('#btnOverlayAdd'),
+    'the Overlay step shows Add logo');
   const logo = await addLogo(page, hand, page.locator('#btnOverlayAdd'), LOGO);
   await check('the logo shows on the front', async () => {
     expect((await editState(page)).overlay.id).toBe(logo);
   });
+  await goToStepAndSee(page, hand, check, 'export', page.locator('#btnAddBack'),
+    'the Export step shows Add back');
   await addBack(page, hand, BACK);
   await check('the back opens; Front and Back show in the top bar', async () => {
     await expect(page.locator('#sideSwitch')).toBeVisible();
@@ -1041,7 +1144,8 @@ test('STA-13.1 Start fresh forgets the photo, its logo and a pair [phone] [webki
     expect(Object.values(records).every(record => record !== null)).toBe(true);
   });
   await hand.tap(page.locator('#btnFresh'));
-  await check('Start fresh: the card goes, and no record of the session is left', async () => {
+  await check('Start fresh: the card goes; the front\'s photo and edits, its logo, and the back '
+    + 'with its photo are all gone from storage', async () => {
     await expect(page.locator('#resume')).toBeHidden();
     await expect.poll(() => sessionRecords(page)).toEqual({
       photo: null,
@@ -1060,14 +1164,16 @@ test('STA-13.1 Start fresh forgets the photo, its logo and a pair [phone] [webki
 test('STA-13.2 Start fresh keeps the saved logo and the remembered settings [phone] [webkit]',
   async ({ page, check }, testInfo) => {
     const hand = await startWithPhoto(page, testInfo);
-    await goToStep(page, 'overlay', hand);
+    await goToStepAndSee(page, hand, check, 'overlay', page.locator('#btnOverlayAdd'),
+      'the Overlay step shows Add logo');
     const logo = await addLogo(page, hand, page.locator('#btnOverlayAdd'), LOGO);
     await check('the logo shows on the photo', async () => {
       expect((await editState(page)).overlay.id).toBe(logo);
     });
-    await goToStep(page, 'crop', hand);
     // The 4:3 preset reads 3:4 for an upright card.
     const threeByFour = page.locator('.preset-chip[data-value="4:3"]:visible');
+    await goToStepAndSee(page, hand, check, 'crop', threeByFour,
+      'the Crop step shows its row of sizes');
     await hand.tap(threeByFour);
     await check('3:4 is selected', async () => {
       await expect(threeByFour).toHaveAttribute('aria-pressed', 'true');
@@ -1287,6 +1393,9 @@ test('STA-15.6 Hiding or leaving the page starts a save at once [phone] [webkit]
   const hand = await startWatched(page, testInfo, 'rotate', address);
   const turn = page.locator('#toolRotateRight');
   await hand.tap(turn);
+  await check('the photo lies on its side', async () => {
+    expect((await editState(page)).rotation.quarter).toBe(1);
+  });
   const hiddenAtMs = await signalLeaving(page, 'visibilitychange');
   await page.waitForTimeout(QUICK_SAVE_MS);
   await check('the page told it is hidden: the edits, with the turn, are saved within 0.1 s',
@@ -1298,7 +1407,13 @@ test('STA-15.6 Hiding or leaving the page starts a save at once [phone] [webkit]
     });
   await signalShown(page);
   await page.waitForTimeout(LONG_SAVE_DELAY_MS + SETTLE_AFTER_SAVE_MS);
+  await check('shown again and two seconds later, the photo still lies on its side', async () => {
+    expect((await editState(page)).rotation.quarter).toBe(1);
+  });
   await hand.tap(turn);
+  await check('the photo is upside down', async () => {
+    expect((await editState(page)).rotation.quarter).toBe(2);
+  });
   const leftAtMs = await signalLeaving(page, 'pagehide');
   await page.waitForTimeout(QUICK_SAVE_MS);
   await check('the page told it is being left: the edits, with the second turn, are saved within '
@@ -1310,12 +1425,12 @@ test('STA-15.6 Hiding or leaving the page starts a save at once [phone] [webkit]
   });
 });
 
-// Expects an edits write within DOWNLOAD_SAVE_MS of the last download.
-async function expectSaveAtDownload(page) {
-  const downloadMs = await lastDownloadMs(page);
-  const writes = await editsWritesAfter(page, downloadMs - DOWNLOAD_SAVE_MS);
-  const gaps = writes.map(write => Math.abs(write.atMs - downloadMs));
-  expect(Math.min(...gaps)).toBeLessThan(DOWNLOAD_SAVE_MS);
+// Expects the edits to have been saved as the last download started, in the same turn of the
+// page's work, before the page could do anything else; a save in any later turn (the usual one,
+// 0.4 s after a change) doesn't count. Returns those saves.
+async function expectSaveWithDownload(page) {
+  const writes = await writesWithLastDownload(page, 'edits');
+  expect(writes.length).toBeGreaterThan(0);
   return writes;
 }
 
@@ -1324,35 +1439,49 @@ test('STA-15.4 Every download saves the edits first [phone] [webkit]', async ({
   check,
 }, testInfo) => {
   const hand = await startWatched(page, testInfo, 'export');
-  await saveByDownload(page, hand, 'No');
-  await check('Download saves a file; the edits, marked exported, were saved within 0.15 s of '
-    + 'it', async () => {
-    const writes = await expectSaveAtDownload(page);
+  await tapAndSeeQuestion(page, hand, check, page.locator('#btnDownload'),
+    'a question box asks "Upscale to 2000 px?"');
+  const saved = await answerAndSave(page, hand);
+  await check('IMG_9136-straight.jpg is saved; the edits, marked as exported, were saved as its '
+    + 'download started', async () => {
+    expect(saved.name).toBe('IMG_9136-straight.jpg');
+    const writes = await expectSaveWithDownload(page);
     expect(writes.some(write => write.exported === true)).toBe(true);
   });
   await page.waitForTimeout(QUIET_MS);
   await openOptions(page, hand, 'export');
+  const saveEdits = page.locator('#btnSaveEdits');
+  await check('Save edits shows in Export options', async () => {
+    await expect(saveEdits).toBeVisible();
+  });
   const savingEdits = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnSaveEdits'));
+  await hand.tap(saveEdits);
   const editsFile = await savingEdits;
-  await check('Save edits saves IMG_9136-edits.json; the edits were saved within 0.15 s of it',
+  await check('IMG_9136-edits.json is saved; the edits were saved as its download started',
     async () => {
       expect(editsFile.suggestedFilename()).toBe('IMG_9136-edits.json');
-      await expectSaveAtDownload(page);
+      await expectSaveWithDownload(page);
     });
   await closeOptions(page, hand, 'export');
-  await hand.tap(page.locator('#btnCornerShots'));
-  await check('the Corner shots sheet rises', async () => {
-    await expect(page.locator('#btnCornerDownload')).toBeVisible();
+  const cornerShots = page.locator('#btnCornerShots');
+  await check('Corner shots shows in the bottom row of the controls', async () => {
+    await expect(cornerShots).toBeVisible();
+  });
+  await hand.tap(cornerShots);
+  const cornerDownload = page.locator('#btnCornerDownload');
+  await check('the Corner shots sheet rises, with Download corners', async () => {
+    await expect(cornerDownload).toBeVisible();
+    await expect(cornerDownload).toContainText('Download corners');
   });
   await page.waitForTimeout(QUIET_MS);
-  const savingCorners = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnCornerDownload'));
-  await answerQuestion(page, 'No');
-  await savingCorners;
-  await check('the corner sheet is saved; the edits were saved within 0.15 s of it', async () => {
-    await expectSaveAtDownload(page);
-  });
+  await tapAndSeeQuestion(page, hand, check, cornerDownload,
+    'the question box asks "Upscale to 2000 px?"');
+  const corners = await answerAndSave(page, hand);
+  await check('the corner sheet is saved; the edits were saved as its download started',
+    async () => {
+      expect(corners.name).toMatch(/^IMG_9136-corners/);
+      await expectSaveWithDownload(page);
+    });
 });
 
 test('STA-15.5 A pair\'s download saves the edits first [phone] [webkit]', async ({
@@ -1367,9 +1496,12 @@ test('STA-15.5 A pair\'s download saves the edits first [phone] [webkit]', async
     await expect(page.locator('#pairOutput')).toBeVisible();
   });
   await page.waitForTimeout(QUIET_MS);
-  await saveByDownload(page, hand, 'No');
-  await check('the pair\'s file is saved; the edits were saved within 0.15 s of it', async () => {
-    await expectSaveAtDownload(page);
+  await tapAndSeeQuestion(page, hand, check, page.locator('#btnDownload'),
+    'a question box asks "Upscale to 2000 px?"');
+  await answerAndSave(page, hand);
+  await check('the pair\'s file is saved; the edits were saved as its download started, not 0.4 s '
+    + 'later', async () => {
+    await expectSaveWithDownload(page);
   });
 });
 
@@ -1378,8 +1510,9 @@ test('STA-16.1 The photo itself is saved once [desktop] [webkit]', async ({
   check,
 }, testInfo) => {
   const hand = await startWatched(page, testInfo, 'perspective');
-  await check('the photo record holds the file\'s bytes, type and name, written once, before '
-    + 'any edits', async () => {
+  await check('the photo opens; storage holds the file\'s bytes, type and name, written once, '
+    + 'before any edits', async () => {
+    expect((await editState(page)).source.name).toBe(PHOTO);
     const photo = await storedRecord(page, 'photo');
     expect(photo).toEqual({
       buf: { bytes: fs.statSync(samplePath(PHOTO)).size },
@@ -1390,24 +1523,35 @@ test('STA-16.1 The photo itself is saved once [desktop] [webkit]', async ({
     expect(writes.filter(key => key === 'photo')).toHaveLength(1);
     expect(writes.indexOf('photo')).toBeLessThan(writes.indexOf('edits'));
   });
-  await goToStep(page, 'rotate', hand);
+  await goToStepAndSee(page, hand, check, 'rotate', page.locator('#toolRotateRight'),
+    'the Rotate step shows');
   await hand.tap(page.locator('#toolRotateRight'));
   await waitForSaved(page, { quarter: 1 });
+  await check('the photo lies on its side; the edits are saved with the turn; the file is not '
+    + 'written again', async () => {
+    expect((await editState(page)).rotation.quarter).toBe(1);
+    expect(await storageWritesSince(page, 'photo')).toHaveLength(1);
+  });
+  const leftTapMs = await pageNowMs(page);
   await hand.tap(page.locator('#toolRotateLeft'));
   await waitForSaved(page, { quarter: 0 });
-  await check('the edits are saved after each change; the photo is not written again',
+  await check('upright again; the edits are saved again; the file is still not written again',
     async () => {
+      expect((await editState(page)).rotation.quarter).toBe(0);
+      const quarters = (await storageWritesSince(page, 'edits', leftTapMs))
+        .map(write => write.quarter);
+      expect(quarters).toContain(0);
       expect(await storageWritesSince(page, 'photo')).toHaveLength(1);
-      const quarters = (await storageWritesSince(page, 'edits')).map(write => write.quarter);
-      expect(quarters).toEqual(expect.arrayContaining([1, 0]));
     });
   await pickWith(page, hand, page.locator('#btnOpen'), SECOND_PHOTO);
   await waitForPhoto(page, SECOND_PHOTO);
   await waitForSaved(page, { name: SECOND_PHOTO });
-  await check('the photo record holds IMG_9075.JPEG, written once more', async () => {
-    expect((await storedRecord(page, 'photo')).name).toBe(SECOND_PHOTO);
-    expect(await storageWritesSince(page, 'photo')).toHaveLength(2);
-  });
+  await check('IMG_9075.JPEG opens; the stored file is IMG_9075.JPEG, written once more',
+    async () => {
+      expect((await editState(page)).source.name).toBe(SECOND_PHOTO);
+      expect((await storedRecord(page, 'photo')).name).toBe(SECOND_PHOTO);
+      expect(await storageWritesSince(page, 'photo')).toHaveLength(2);
+    });
 });
 
 test('STA-16.2 No edits are saved until the photo is [phone]', async ({
@@ -1420,7 +1564,8 @@ test('STA-16.2 No edits are saved until the photo is [phone]', async ({
     await expect(page.locator('#empty')).toBeHidden();
     expect(await storedRecord(page, 'photo')).toBeNull();
   });
-  await goToStep(page, 'rotate', hand);
+  await goToStepAndSee(page, hand, check, 'rotate', page.locator('#toolRotateRight'),
+    'the Rotate step shows');
   await hand.tap(page.locator('#toolRotateRight'));
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS + SAVE_DELAY_MS);
   await check('the photo lies on its side; no edits were saved', async () => {
@@ -1443,7 +1588,8 @@ test('STA-17.1 A link can turn saving off [phone]', async ({ page, check }, test
   await check('the photo opens', async () => {
     await expect(page.locator('#empty')).toBeHidden();
   });
-  await goToStep(page, 'rotate', hand);
+  await goToStepAndSee(page, hand, check, 'rotate', page.locator('#toolRotateRight'),
+    'the Rotate step shows');
   await hand.tap(page.locator('#toolRotateRight'));
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS + SAVE_DELAY_MS);
   await check('the photo lies on its side', async () => {
@@ -1475,7 +1621,8 @@ test('STA-17.2 Without an on-device database nothing is saved [phone] [webkit]',
     const toast = await toastNow(page);
     expect(toast.isShown && toast.kind !== '').toBe(false);
   });
-  await goToStep(page, 'rotate', hand);
+  await goToStepAndSee(page, hand, check, 'rotate', page.locator('#toolRotateRight'),
+    'the Rotate step shows');
   await hand.tap(page.locator('#toolRotateRight'));
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS + SAVE_DELAY_MS);
   await check('the photo lies on its side; no error in the console', async () => {
@@ -1592,7 +1739,9 @@ test('STA-18.3 A new photo is not marked as exported [phone]', async ({
     await expect(page.locator('#btnDownload')).toBeVisible();
     await expect(nextCard).toBeHidden();
   });
-  const saved = await saveByDownload(page, hand, 'No');
+  await tapAndSeeQuestion(page, hand, check, page.locator('#btnDownload'),
+    'a question box asks "Upscale to 2000 px?"');
+  const saved = await answerAndSave(page, hand);
   await check('a file is saved, and Next card shows', async () => {
     expect(saved.name).toBe('IMG_9136-straight.jpg');
     await expect(nextCard).toBeVisible();
@@ -1754,6 +1903,62 @@ test('STA-18.9 Snap and Flatten go back to their start after a reload [phone]', 
     });
 });
 
+test('STA-18.10 The card outlines found are those of the new photo [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startWithPhoto(page, testInfo);
+  const candidate = page.locator('#toolCandidate');
+  await check(`Candidate reads 1/${FIRST_PHOTO_OUTLINES}`, async () => {
+    await expect(candidate.locator('.tool-value')).toHaveText(`1/${FIRST_PHOTO_OUTLINES}`);
+  });
+  const cornersBefore = (await editState(page)).corners;
+  await hand.tap(candidate);
+  await check(`Candidate reads 2/${FIRST_PHOTO_OUTLINES}; the handles move to the second outline`,
+    async () => {
+      await expect(candidate.locator('.tool-value')).toHaveText(`2/${FIRST_PHOTO_OUTLINES}`);
+      expect((await editState(page)).corners).not.toEqual(cornersBefore);
+    });
+  await openSecondPhoto(page, hand);
+  const found = await page.evaluate(() => {
+    const app = window.__straightener.app;
+    const best = app.detection.candidates[0];
+    return { corners: app.state.corners, best: best ? best.corners : null };
+  });
+  await check(`IMG_9075.JPEG opens; Candidate reads 1/${SECOND_PHOTO_OUTLINES}, its handles on `
+    + 'its own first outline', async () => {
+    await expect(candidate.locator('.tool-value')).toHaveText(`1/${SECOND_PHOTO_OUTLINES}`);
+    expect(found.best).not.toBeNull();
+    expect(found.corners).toEqual(found.best);
+  });
+});
+
+test('STA-18.11 Pick white is not left armed for a new photo [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startWithPhoto(page, testInfo);
+  const pickWhite = page.locator('#levelsPicks .segment[data-value="white"]');
+  const hint = page.locator('#levelsHint');
+  await goToStepAndSee(page, hand, check, 'levels', pickWhite, 'the Levels step shows Pick white');
+  await hand.tap(pickWhite);
+  await check('Pick white is selected (solid white); the line reads "Tap something white"',
+    async () => {
+      await expect(pickWhite).toHaveAttribute('aria-pressed', 'true');
+      await expect(hint).toHaveText('Tap something white');
+    });
+  await openSecondPhoto(page, hand);
+  await check('IMG_9075.JPEG opens on the Perspective step', async () => {
+    expect(await openStep(page)).toBe('perspective');
+  });
+  await goToStep(page, 'levels', hand);
+  await check('on Levels, Pick white is not selected; the line reads "Pick white, or try Auto"',
+    async () => {
+      await expect(pickWhite).toHaveAttribute('aria-pressed', 'false');
+      await expect(hint).toHaveText('Pick white, or try Auto');
+    });
+});
+
 // A segment of one of Export's two-part controls (Size, Format) by its value.
 function exportSegment(page, control, value) {
   return page.locator(`#${control} .segment[data-value="${value}"]`);
@@ -1792,16 +1997,63 @@ test('STA-19.1 With nothing remembered, a photo starts at 1:1, 2000 px, JPEG [ph
   });
 });
 
-// Chooses Export's settings as STA-19.2 sets them (1080, WebP, 80%, Bicubic, Black), checking
-// each. Starts on the Export step and leaves its options closed.
-async function chooseExportSettings(page, hand, check) {
+// The named action "Start over with IMG_9075.JPEG" of STA-19.2 and 19.3: waits until the edits
+// are saved (a person waits two seconds), reloads, taps Start fresh and opens the second photo
+// with Open photo. Export options, if open, are closed first.
+async function startOverWithSecondPhoto(page, hand, step) {
+  if (step === 'export') await closeOptions(page, hand, 'export');
+  await waitForSaved(page, { tab: step });
+  await reloadToStart(page);
+  await hand.tap(page.locator('#btnFresh'));
+  await expect(page.locator('#resume')).toBeHidden();
+  await pickWith(page, hand, page.locator('#btnOpenEmpty'), SECOND_PHOTO);
+  await waitForPhoto(page, SECOND_PHOTO);
+}
+
+test('STA-19.2 The next photo starts from the crop size used last, after a reload too [phone] '
+  + '[webkit]', async ({ page, check }, testInfo) => {
+  const hand = await startWithPhoto(page, testInfo);
+  await goToStep(page, 'crop', hand);
+  await check('1:1 is selected (solid white) in the row of sizes', async () => {
+    await expectSelected(cropPreset(page, '1:1'));
+  });
+  await hand.tap(cropPreset(page, '5:4'));
+  await check('4:5 is selected', async () => {
+    await expectSelected(cropPreset(page, '5:4'));
+    await expect(cropPreset(page, '5:4')).toContainText('4:5');
+  });
+  await startOverWithSecondPhoto(page, hand, 'crop');
+  await check('IMG_9075.JPEG opens on the Perspective step', async () => {
+    expect((await editState(page)).source.name).toBe(SECOND_PHOTO);
+    expect(await openStep(page)).toBe('perspective');
+  });
+  await goToStep(page, 'crop', hand);
+  await check('on Crop, 4:5 is selected', async () => {
+    await expectSelected(cropPreset(page, '5:4'));
+    expect((await editState(page)).crop.preset).toBe('5:4');
+  });
+});
+
+test('STA-19.3 The next photo starts from the export settings used last, after a reload too '
+  + '[phone] [webkit]', async ({ page, check }, testInfo) => {
+  const hand = await startWithPhoto(page, testInfo);
+  await goToStep(page, 'export', hand);
+  await check('2000 and JPEG are selected', async () => {
+    await expectSelected(exportSegment(page, 'exportSize', String(EXPORT_LONG_EDGE_PX)));
+    await expectSelected(exportSegment(page, 'exportFormat', 'jpeg'));
+  });
   await hand.tap(exportSegment(page, 'exportSize', '1080'));
-  await hand.tap(exportSegment(page, 'exportFormat', 'webp'));
-  await check('1080 and WebP are selected', async () => {
+  await check('1080 is selected', async () => {
     await expectSelected(exportSegment(page, 'exportSize', '1080'));
+  });
+  await hand.tap(exportSegment(page, 'exportFormat', 'webp'));
+  await check('WebP is selected', async () => {
     await expectSelected(exportSegment(page, 'exportFormat', 'webp'));
   });
   await openOptions(page, hand, 'export');
+  await check('Quality reads 92%', async () => {
+    await expect(page.locator('#qualityValue')).toHaveText('92%');
+  });
   // The slider is set as a finger leaves it: its value, with the events a drag sends.
   await page.locator('#quality').fill('0.8');
   await check('Quality reads 80%', async () => {
@@ -1816,48 +2068,22 @@ async function chooseExportSettings(page, hand, check) {
   await check('Fill outside photo reads Black', async () => {
     await expect(page.locator('#fillValue')).toHaveText('Black');
   });
-  await closeOptions(page, hand, 'export');
-}
-
-test('STA-19.2 The next photo starts from the settings used last, after a reload too [phone] '
-  + '[webkit]', async ({ page, check }, testInfo) => {
-  const hand = await startWithPhoto(page, testInfo);
-  await goToStep(page, 'crop', hand);
-  await hand.tap(cropPreset(page, '5:4'));
-  await check('4:5 is selected', async () => {
-    await expectSelected(cropPreset(page, '5:4'));
-    await expect(cropPreset(page, '5:4')).toContainText('4:5');
+  await startOverWithSecondPhoto(page, hand, 'export');
+  await check('IMG_9075.JPEG opens on the Perspective step', async () => {
+    expect((await editState(page)).source.name).toBe(SECOND_PHOTO);
+    expect(await openStep(page)).toBe('perspective');
   });
   await goToStep(page, 'export', hand);
-  await chooseExportSettings(page, hand, check);
-  await waitForSaved(page, { tab: 'export' });
-  await reloadToStart(page);
-  await check('the card offers "Resume IMG_9136.JPEG?"', async () => {
-    await expect(page.locator('#resumeName')).toHaveText(PHOTO);
+  await check('on Export, 1080 and WebP are selected', async () => {
+    await expectSelected(exportSegment(page, 'exportSize', '1080'));
+    await expectSelected(exportSegment(page, 'exportFormat', 'webp'));
   });
-  await hand.tap(page.locator('#btnFresh'));
-  await check('Start fresh: the card goes', async () => {
-    await expect(page.locator('#resume')).toBeHidden();
-  });
-  await pickWith(page, hand, page.locator('#btnOpenEmpty'), SECOND_PHOTO);
-  await waitForPhoto(page, SECOND_PHOTO);
-  await check('IMG_9075.JPEG opens', async () => {
-    await expect(page.locator('#empty')).toBeHidden();
-  });
-  await goToStep(page, 'crop', hand);
-  await check('on Crop, 4:5 is selected', async () => {
-    await expectSelected(cropPreset(page, '5:4'));
-  });
-  await goToStep(page, 'export', hand);
   await openOptions(page, hand, 'export');
-  await check('1080 and WebP are selected; Quality 80%, Interpolation Bicubic, Fill Black',
-    async () => {
-      await expectSelected(exportSegment(page, 'exportSize', '1080'));
-      await expectSelected(exportSegment(page, 'exportFormat', 'webp'));
-      await expect(page.locator('#qualityValue')).toHaveText('80%');
-      await expect(page.locator('#interpValue')).toHaveText('Bicubic');
-      await expect(page.locator('#fillValue')).toHaveText('Black');
-    });
+  await check('Quality reads 80%, Interpolation Bicubic and Fill outside photo Black', async () => {
+    await expect(page.locator('#qualityValue')).toHaveText('80%');
+    await expect(page.locator('#interpValue')).toHaveText('Bicubic');
+    await expect(page.locator('#fillValue')).toHaveText('Black');
+  });
 });
 
 // The mean difference (0 to 255) between two grids of cells, comparing each cell of `turned`
@@ -2075,7 +2301,8 @@ test('STA-24.2 A 48 MP photo is worked on from smaller copies [phone] [webkit]',
         work: DETECTION_COPY_PX,
       });
     });
-  await goToStep(page, 'export', hand);
+  await goToStepAndSee(page, hand, check, 'export', page.locator('#btnDownload'),
+    'the Export step shows Download');
   await openOptions(page, hand, 'export');
   await check('the source line starts "Source 5842 × 8182 px (47.8 MP)"', async () => {
     const expected = `Source ${BIG_PHOTO_WIDTH} × ${BIG_PHOTO_HEIGHT} px (47.8 MP)`;
@@ -2137,7 +2364,9 @@ test('STA-25.2 Cancelling Next card keeps the exported photo [phone]', async ({
   const hand = await startWithPhoto(page, testInfo);
   await goToStep(page, 'export', hand);
   const nextCard = page.locator('#btnNextCard');
-  const saved = await saveByDownload(page, hand, 'No');
+  await tapAndSeeQuestion(page, hand, check, page.locator('#btnDownload'),
+    'a question box asks "Upscale to 2000 px?"');
+  const saved = await answerAndSave(page, hand);
   await check('a file is saved, and Next card shows', async () => {
     expect(saved.name).toBe('IMG_9136-straight.jpg');
     await expect(nextCard).toBeVisible();
