@@ -37,9 +37,10 @@ Rules:
   `tests/bugs.md` (its Status, with the version that fixed it), update the catalog entry's `Changed` field and any case
   that said "fails until", and add the user-visible change to `CHANGELOG.md` under
   Unreleased.
-- Run `node tests/selftest.js`, the specs of every area the change touches, then the complete
-  run (from `tests/`, on the port you were given, default reporter). Nothing else may break:
-  a test that now fails is yours to explain.
+- Run `node tests/selftest.js` and the specs of every area the change touches, with the
+  cases related to it in other areas (from `tests/`, on the port you were given, default
+  reporter). Do not run the complete run: in a fix cycle it is run once, when every fix is
+  in (Rich, 2026-11-17). Nothing else may break: a test that now fails is yours to explain.
 - Do not commit, push or publish.
 
 Report: the cause, the change (files and why), the test that failed before and passes now,
