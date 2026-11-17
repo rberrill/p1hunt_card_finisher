@@ -39,8 +39,8 @@ Rules:
   Unreleased.
 - Run `node tests/selftest.js` and the specs of every area the change touches, with the
   cases related to it in other areas (from `tests/`, on the port you were given, default
-  reporter). Do not run the complete run: in a fix cycle it is run once, when every fix is
-  in (Rich, 2026-11-17). Nothing else may break: a test that now fails is yours to explain.
+  reporter). Never run the complete run: a fixer never does (Rich, 2026-11-17). The main
+  session runs it, once every fix of a cycle is in. Nothing else may break: a test that now fails is yours to explain.
 - Do not commit, push or publish.
 
 Report: the cause, the change (files and why), the test that failed before and passes now,

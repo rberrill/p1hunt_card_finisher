@@ -81,9 +81,9 @@ How many at once: one `case-writer` or `fixer` at a time (Rich, 2026-11-16: seve
 at once hit his usage limit and collided; Rich, 2026-11-17: five fixers at once, each in
 its own worktree, loaded the machine until WebKit cases timed out and one run hung, so
 fixers went back to one at a time). The fixer works in the main checkout under its standing
-rules; the next one starts only when this one is reviewed and committed. In a fix cycle a
-fixer runs its areas' specs and the related cases only; the complete run is run once, when
-every fix is in, to find what isn't fixed and any regression (Rich, 2026-11-17: a complete
+rules; the next one starts only when this one is reviewed and committed. A fixer
+never runs the complete run: it runs its areas' specs and the related cases only. The main
+session runs the complete run once, when every fix of a cycle is in, to find what isn't fixed and any regression (Rich, 2026-11-17: a complete
 run per fix repeats nine minutes of tests each time). Several
 `triage-tester` or `reviewer` runs in parallel are fine where it helps; say what it will
 cost first. The usual chain for a bug: `case-writer` (if no test fails for it yet), `fixer`,
