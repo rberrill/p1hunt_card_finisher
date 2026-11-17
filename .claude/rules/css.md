@@ -15,4 +15,4 @@ paths:
 - Nothing blocks the photo, except a temporary flyout the user opens or an alert they must answer before they can go on (the rule in CLAUDE.md).
 - A part's rules sit under its own banner comment, named as in the plan's component inventory (top bar, tab bar, adjustment line, status, ruler, slider, tool, action button, chip, segmented control, nudge pad, sheet, alert card, toast, progress line). A step's own rules sit under that step's banner. Edit only your own banner's block.
 - Tap targets are ≥ 44 px; respect the safe-area padding (`viewport-fit=cover`).
-- After any layout change, check 390×844, 375×667 and 1280×800 (the `verify` skill). Claude's verification practice since 1.3, not a rule Rich set; the sizes are his iPhone, the smallest common iPhone and a laptop.
+- After any layout change, check 390×844, 375×667 and 1280×800 (the layout cases run at those sizes; the `test` skill). Claude's verification practice since 1.3, not a rule Rich set; the sizes are his iPhone, the smallest common iPhone and a laptop.

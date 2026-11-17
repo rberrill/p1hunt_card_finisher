@@ -7,7 +7,7 @@ For whoever adds cases to the catalog and the Playwright tests that run them. Re
 - `tests/README.md`, "Automated browser cases".
 - `tests/catalog/rotate.md` and `tests/automation/rotate.spec.js`: the finished pilot. Copy its conventions: a start-up function per area, small step functions, a shared body for twin cases, each `check` description equal to the row's expected result.
 - `tests/automation/support/app.js` and `case.js`: the shared helpers and the `check` fixture.
-- `.claude/rules/code-style.md`: the test code must pass it.
+- `.claude/rules/code-style.md` is for the app's own files. Test code is not held to it (Rich, 2026-11-17): write it so the next person can read it.
 
 ## For every capability entry in your area
 

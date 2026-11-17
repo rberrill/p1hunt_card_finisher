@@ -1,8 +1,8 @@
 # Tests
 
-Two automated layers. Run both before treating any change as done. A failure is a regression unless the change deliberately moved that behavior; then update the test in the same change. Pass counts come from the test output; they aren't recorded here.
+Two automated layers: a fast selftest in Node, and the catalog's cases driven in real browsers. A failure is a regression unless the change deliberately moved that behavior; then update the case and its test in the same change. Pass counts come from the test output; they aren't recorded here.
 
-A third layer is being built: automated cases that drive the app in real browsers (see below). Until it covers the app, the two layers here still apply.
+Every capability of the app is listed in `tests/catalog/`, one file per area, with its test cases written so a stranger can run them. What only a real iPhone can judge is run by hand from a generated checklist (`tests/checklists/`); open defects are in `tests/bugs.md`.
 
 ## Automated browser cases (`tests/automation/`, Playwright)
 
@@ -45,32 +45,11 @@ Exit code 0 means everything passed.
 
 The engine self-tests also run in the app with `?selftest=1`, on the main thread and inside the worker; the toast reads `main n/n, worker n/n`.
 
-## `tests/sample-regression.js` (browser, about 20 s)
-
-1. Serve this folder: `python -m http.server 8765`, then open `http://localhost:8765/index.html` and keep the tab visible (hidden tabs pause rendering).
-2. Paste the file into the DevTools console, or load it as a script (the page's CSP blocks `eval` but allows its own files):
-   `document.head.append(Object.assign(document.createElement('script'), { src: 'tests/sample-regression.js' }))`, then `await window.__regression`.
-3. It prints a PASS/FAIL table. It leaves a session and remembered settings behind; clear them afterwards.
-
-| ID | Check |
-|---|---|
-| R1 | Detection on each sample is held to its own baseline (below): no photo that works today may break |
-| R2 | Flatten 100% on exported pixels: corners 90° ± 0.5°, aspect 5:7 ± 0.5% |
-| R3 | Flatten 0%: top and bottom level within 0.3°, sides mirror within 0.5° |
-| R4 | Export is full resolution with no resize; JPEG quality is respected; resize sets the long edge |
-| R5 | A Levels white pick on the PSA label exports neutral at 245 ± 2 |
-| R6 | Save → reload → load edits exports pixel-identical |
-| R7 | Ctrl+Z / Shift+Ctrl+Z work while a slider has focus |
-| R8 | Engine self-tests pass inside the Web Worker |
-| R9–R13 | Overlay: alpha compositing, 50% opacity, same relative place at every export size, edits file with an embedded logo rebuilds exactly, no overlay leaves the export unchanged |
-| R14 | Real edits pass the edits-file check unchanged, and every state field has a rule in `sanitizeState` |
-| R15 | Auto levels at the default framing: the white point matches 1.7 on every sample, and the black point is near-neutral or absent |
-
-### Detection (R1)
+## Detection
 
 The sample photos are test fixtures: phone photos of real trading cards, whose artwork and marks belong to their owners. They're here only so detection can be tested on real shots, and they aren't covered by the repository's licence.
 
-Error = worst corner distance ÷ image diagonal. A pick is **found** when its error is under 1%. The hand-placed corners and each photo's baseline (`GROUND_TRUTH`, `BASELINE`) are in the script.
+Error = worst corner distance ÷ image diagonal. A pick is **found** when its error is under 1%. The hand-placed corners and each photo's baseline (`GROUND_TRUTH`, `BASELINE`) are in `tests/automation/support/detection-baselines.js`; the catalog's PER-39 holds detection to them.
 
 Each photo is in a group, set by its top pick's baseline:
 
@@ -115,13 +94,13 @@ The run also prints a **scoreboard** that never fails: how many photos are found
 
 | Bug | Guard |
 |---|---|
-| Keyboard undo ignored while a slider had focus | R7 |
+| Keyboard undo ignored while a slider had focus | The catalog's keyboard cases |
 | The dropper averaged label text into the white pick, so the true white clipped | Engine self-test "Dropper ignores text inside a white patch" |
 | A module lost a `const` during the 1.4 split and only failed when that path ran | "No undeclared names" check |
-| Auto levels stores fractions; a whole-number rule would have reset it on load | R14 |
+| Auto levels stores fractions; a whole-number rule would have reset it on load | The catalog's edits-file cases |
 
 ## Adding a sample photo
 
-Strip location data first. The privacy check fails on any JPEG in `samples/` with a GPS block. Put the photo in `samples/` itself, not a subfolder (the privacy check only looks there), with an uppercase `.JPEG` extension; the script assumes it. Keep it full frame, as the phone took it. Name it `NN_<card>_<pose>_<background>`; a card's front and back share a number, as `13_front_…` and `13_back_…` do, and the back is shot in the front's orientation, as a pair needs.
+Strip location data first. The privacy check fails on any JPEG in `samples/` with a GPS block. Put the photo in `samples/` itself, not a subfolder (the privacy check only looks there), with an uppercase `.JPEG` extension; the tests assume it. Keep it full frame, as the phone took it. Name it `NN_<card>_<pose>_<background>`; a card's front and back share a number, as `13_front_…` and `13_back_…` do, and the back is shot in the front's orientation, as a pair needs.
 
-To place its corners, open it in the app, drag the four corners onto the card's outer corners (the card, not its holder) and use **Save edits**; the file's `corners` go into `GROUND_TRUTH`. Run the regression once, put the measured top-pick and best-of-3 errors into `BASELINE`, and add a row to the table above. A new photo comes in at its measured baseline, so it never changes the rule for the others.
+To place its corners, open it in the app, drag the four corners onto the card's outer corners (the card, not its holder) and use **Save edits**; the file's `corners` go into `GROUND_TRUTH`. Run PER-39 once (from `tests/`: `npx playwright test -g "PER-39"`), put the measured top-pick and best-of-3 errors into `BASELINE`, and add a row to the table above. A new photo comes in at its measured baseline, so it never changes the rule for the others.

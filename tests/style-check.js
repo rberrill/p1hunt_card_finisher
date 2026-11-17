@@ -19,28 +19,18 @@ const SHORT_NAMES_ALLOWED = new Set([
 // lists them in a line like "Formula names: m1 m2 k2 n3", and only those are allowed in that file.
 const FORMULA_NAMES_PATTERN = /Formula names:\s*([\w ]+)/g;
 
-// Every file the rules cover, relative to the repository root.
+// Every file the rules cover, relative to the repository root: the app's own files, which
+// are what ships. Test tooling, hooks and skill scripts are not held to them (Rich, 2026-11-17).
 function styledFiles(root) {
   const listJs = folder => fs.readdirSync(path.join(root, folder))
     .filter(name => name.endsWith('.js'))
     .map(name => `${folder}/${name}`);
-  const claudeScripts = [
-    '.claude/hooks',
-    '.claude/skills/feature-request',
-    '.claude/skills/release',
-    '.claude/skills/verify',
-  ].flatMap(listJs);
   return {
     scripts: [
       'js/config.js',
       'js/engine.js',
       ...listJs('js/app'),
       ...listJs('js/app/parts'),
-      ...listJs('tests'),
-      ...listJs('tests/automation'),
-      ...listJs('tests/automation/support'),
-      ...listJs('tests/tools'),
-      ...claudeScripts,
     ],
     other: ['css/app.css', 'index.html'],
   };

@@ -9,22 +9,26 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 1. **Agree before building.** When Rich describes a feature or a batch of changes, reply with a proposal:
    - what changes, how, open questions and gaps in the ACs;
-   - its new UAT cases, the connected catalog cases it could affect, and whether a full UAT run is triggered (the `uat` skill).
+   - the catalog entries it adds, changes or retires (`tests/catalog/`), and what the phone checklist gains (the `test` skill).
 
    When he asks for it as a document, the `feature-request` skill writes it: a Markdown file in `../../feature-requests/` and a request page in Claude, with a description, purpose, impact, drawn wireframes and acceptance criteria (Rich, 2026-11-10).
 
    Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away (Claude's working habit, not a rule Rich set).
-2. **Write for the reviewer.** Code is read more than it's run: whole-word names, one statement per line, lines of 100 characters at most, a comment on every function. The detail is in `.claude/rules/code-style.md` (it loads with any code file). Apply it to everything you touch, and don't add to the debt.
-3. **Build, then verify yourself** with the `verify` skill. Report measured results, not assumptions. The only thing a browser can't check is the real iOS share sheet.
-4. **UAT** (the `uat` skill) has three files, all in the repo (Rich, 2026-11-13):
-   - **the catalog** of every case, by feature: each behavior has one row, on one device (the phone for touch, iOS and Safari; desktop for keyboard, DevTools and opened files; the rest shared out), and nothing the automated tests already prove (Rich, 2026-11-10);
-   - **the release smoke test:** each device finishes a real listing down a different path;
-   - **each version's script:** its new and connected cases plus the smoke test.
+2. **Write for the reviewer.** Code is read more than it's run: whole-word names, one statement per line, lines of 100 characters at most, a comment on every function. The detail is in `.claude/rules/code-style.md` (it loads with any code file). It covers the files that ship (`js/`, `css/`, `index.html`), not test tooling, hooks or work files (Rich, 2026-11-17). Apply it to everything you touch there, and don't add to the debt.
+3. **Build with its catalog** (the `test` skill; Rich, 2026-11-17). A feature, an enhancement or a bug fix is finished only when the catalog matches it, in the same change: entries and cases first, each automated case's test seen to fail, then the code. A bug is a row in `tests/bugs.md` and a failing test before it is a fix. Report measured results from the run, not assumptions.
+4. **Testing** is one process (Rich approved it on 2026-11-15; everything before it is void):
+   - **the catalog** (`tests/catalog/`): every capability of the app with its test cases, written so a stranger can run any of them. The selftest checks it both ways against the code;
+   - **the automated cases** (`tests/automation/`, Playwright; npm in `tests/` only): they drive the app as a person would and save a screenshot for every verdict. A case runs only in the browsers where its verdict could differ;
+   - **the phone checklist** (`tests/checklists/`), generated, never written from memory: the phone cases of what changed, the main flow, and the find-out items only a real iPhone can settle. Rich runs it on the UAT site (https://rberrill.github.io/p1hunt_card_finisher_uat/), which serves unreleased builds over HTTPS;
+   - **rulings and wording:** a behavior nobody has ruled on, and any new words on screen, go to Rich before they are built (`rulings.md`, `wording.md` in the catalog).
 
-   Rich runs the version script on the dev build before release: desktop on `localhost`, iPhone over the LAN on plain HTTP. Pages only serves the `release` branch, so the smoke test and any (HTTPS) rows (the phone's Share and Copy) run again on the live site right after deploy.
-5. **Release only on Rich's go-ahead.** He runs `/release X.Y.Z`, which tags `main` and moves the `release` branch (the live site) to the tag.
+   Delegated work goes to the agents in `.claude/agents/` (Rich, 2026-11-17).
+
+   `/test uat` starts a UAT round (complete run, build to the UAT site, checklist); `/test refresh` only puts the current build there.
+5. **Release only on Rich's go-ahead**, after the checklist has passed on the UAT site. He runs `/release X.Y.Z`, which tags `main` and moves the `release` branch (the live site) to the tag.
 6. **Record as you go:**
    - user-visible changes in `CHANGELOG.md` under `## [X.Y.0] - Unreleased`;
+   - what changed in the catalog, on a `Catalog:` line in the commit message of any change to the app (a hook checks it);
    - decisions, and files changed in the background, in `../../decision-log.md` (dated, newest first, with the *why*);
    - the "Waiting on" line in `CLAUDE.local.md`.
 
@@ -103,11 +107,12 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 | `icons/` | The app icon: `icon.svg` is the source of the `.ico` and the touch icon (see the `index.html` rule) |
 | `docs/architecture.md` | Engine, shell, adapters, coordinate frames, memory budget, edits-file format |
 | `tests/README.md` | How to run the tests, what each guards, the detection baseline |
-| `.claude/skills/` | `verify` (end-to-end checks), `uat` (Rich's acceptance script), `release` (Rich-triggered), `feature-request` (a request's Markdown file and its page) |
-| `.claude/hooks/` | SessionStart: project state. Stop: runs selftest when app code changed |
+| `.claude/skills/` | `test` (the catalog, the runs, UAT rounds), `release` (Rich-triggered), `feature-request` (a request's Markdown file and its page) |
+| `.claude/agents/` | `case-writer`, `fixer`, `reviewer`, `triage-tester`: the roles delegated work goes to (the `test` skill says when) |
+| `.claude/hooks/` | SessionStart: project state. Stop: runs selftest when app code changed. Before a commit: the message's `Catalog:` line. `guard-paths.js` keeps an agent to its own files |
 | `CHANGELOG.md`, `README.md`, `SECURITY.md` | Public docs (see `.claude/rules/public-docs.md`) |
-| `tests/uat/` (catalog, smoke), `tests/UAT-X.Y.md` | Rich's manual acceptance tests (the `uat` skill) |
-| `archive/`, `CLAUDE.local.md`, `tests/uat/edits-over-8mb.json` | Local only (gitignored) |
+| `tests/catalog/`, `tests/automation/`, `tests/bugs.md`, `tests/checklists/` | The test cases, their automated tests, open defects, and Rich's phone checklists (the `test` skill) |
+| `archive/`, `CLAUDE.local.md`, `tests/runs/`, `tests/node_modules/` | Local only (gitignored) |
 
 **Branches:**
 - `main` holds all work. Commit and push it as you go; that never changes the live site.

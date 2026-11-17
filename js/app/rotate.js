@@ -118,7 +118,7 @@
     return line;
   }
 
-  // The ruler. Its range input keeps the id `fine`: tests/sample-regression.js reads it.
+  // The ruler. Its range input keeps the id `fine`: the tests read it.
   function buildFineRuler() {
     const range = CONFIG.rotate.fineRangeDeg;
     return CF.buildRuler({

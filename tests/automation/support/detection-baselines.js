@@ -1,7 +1,6 @@
 // Detection's measured accuracy on the sample photos, and the rules it is held to (the catalog's
-// PER-39; tests/README.md, "Detection (R1)"). The data is copied unchanged from
-// tests/sample-regression.js, which still carries its own copy: a baseline that moves must move
-// in both until the regression script is retired.
+// PER-39; tests/README.md, "Detection"). This file is the one home of the hand-placed corners
+// and the baselines.
 'use strict';
 
 // Hand-placed card corners, in source px, top-left first, clockwise. The IMG_ photos were

@@ -1,8 +1,6 @@
 ---
 paths:
   - "js/**/*.js"
-  - "tests/**/*.js"
-  - ".claude/**/*.js"
   - "css/**/*.css"
   - "index.html"
 ---
@@ -11,7 +9,9 @@ paths:
 
 The test for every line is whether someone new to the codebase could review it without first
 decoding it. Short code that needs decoding fails that test. These rules apply to new code and to
-any code you touch.
+any code you touch in the app: `js/`, `css/` and `index.html`, the files that ship. Test
+tooling, hooks, skill scripts and work files are not held to them (Rich, 2026-11-17); keep
+those readable, but the selftest doesn't check them.
 
 `node tests/selftest.js` enforces the parts a tokenizer can see (`tests/style-check.js`): line
 length, short names, one statement per line and one declaration per `const` / `let` / `var`. The

@@ -280,7 +280,7 @@ function hasGps(bytes) {
       });
   };
   // Gitignored, local-only files are left out.
-  const LOCAL_ONLY = /^tests\/uat\/edits-over-8mb\.json$|^\.claude\/settings\.local\.json$/;
+  const LOCAL_ONLY = /^\.claude\/settings\.local\.json$/;
   const isLocalOnly = file => LOCAL_ONLY.test(file);
   const published = [
     'README.md',

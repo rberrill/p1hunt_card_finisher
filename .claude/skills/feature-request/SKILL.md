@@ -36,8 +36,8 @@ engine, the structure or the tooling. They share one format.
   platform behavior: measure it, look it up and cite it, or say it isn't known and make it an
   open question.
 - **Check the settled decisions** in `CLAUDE.md`. A request that reopens one says so.
-- **Load the `uat` skill** for the UAT impact section: new cases on their one device, connected
-  catalog rows by ID, and whether a full run is triggered.
+- **Load the `test` skill** for the UAT impact section: the catalog entries the request adds,
+  changes or retires, by ID, and what the phone checklist gains.
 - **Say what it costs.** Every request has a Code row, a Risk row and a limit or weakness stated
   plainly, including "this may not earn its place".
 
@@ -56,9 +56,9 @@ once it has been, `Area: …` and `Target: …`.
 | 05 | Acceptance criteria | Numbered, each with a bold two-or-three-word lead and one testable statement. |
 | 06 | Decisions | Topic, decision, why. Appears once Rich has answered anything. |
 | 07 | Open questions | Each with what the request proposes, so a "yes" is enough. |
-| 08 | UAT impact | New cases (device, test, expected), connected cases (ID, test, why), the full-run call. |
+| 08 | UAT impact | Catalog entries added, changed and retired (ID, what, why), and the phone cases the checklist gains. |
 
-- **AC numbers are permanent** once Rich has seen them, because UAT rows cite them. A dropped
+- **AC numbers are permanent** once Rich has seen them, because catalog entries cite them. A dropped
   criterion stays as a row saying it was removed and why; a reworded one gets the `Changed` tag.
 - **Mark whose call a number is.** A threshold or a cap Claude chose reads "proposed" or
   "Claude's number" until Rich agrees it (`CLAUDE.md`: a rule needs a source).
@@ -111,8 +111,8 @@ Every request has drawings, including one that changes no screen.
 
 When Rich answers a question or changes his mind: move the answer into Decisions, update the
 criteria it touches (tag them `Changed`), add or update the `Refined` chip and the status, then
-rebuild and republish to the same link. Once a request is built, its UAT rows live in the
-catalog (the `uat` skill), and the page's UAT section says where they went.
+rebuild and republish to the same link. Once a request is built, its cases live in the
+catalog (the `test` skill), and the page's UAT section says where they went.
 
 ## The kit (`page-kit.js`, `page.css`)
 

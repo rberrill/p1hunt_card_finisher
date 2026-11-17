@@ -99,7 +99,7 @@ Pinch or scroll to zoom; drag empty space to pan.
 | Command or file | What it checks |
 |---|---|
 | `node tests/selftest.js` | Engine self-tests (geometry, detection on a synthetic card, levels math, overlay placement, checks on links and edits files) plus structural checks: the engine never touches the page, asset links carry the current version, the interface modules only reach each other through their shared namespace, no code builds HTML from text, and the page keeps its Content Security Policy |
-| `tests/sample-regression.js` | Corner detection and export checks against the photos in `samples/`. Serve the folder locally, open the app, paste the file into the browser console, and it prints a pass/fail table |
+| `tests/automation/` (from `tests/`: `npx playwright test`) | Every capability in the catalog (`tests/catalog/`), driven in real browsers at phone and desktop sizes, with corner detection held to a baseline on each photo in `samples/`. Needs Node and npm for the test tooling only; `tests/README.md` has the setup |
 
 ## Known limitations
 
