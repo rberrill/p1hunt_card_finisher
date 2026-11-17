@@ -59,3 +59,9 @@ To add one: give it the next number, say exactly what to do and what to record, 
 - Waiting: EXP-15.3, MSG-28.2, PERF-09.2
 - Do: open the largest photo you have (a 48 MP one, from an iPhone that takes them) in the app on the UAT site, tap **Export**, **Original**, then **Share**. Do it three times, with a reload between.
 - Write down: the photo (its name, and the size the source line in **Export options** gives); each time, whether the share sheet rose by itself or the red button changed to **Share now** with a message ending "Tap Share now to open the share sheet."; and the seconds the message gives.
+
+## Q-10 A tap on Flip, Straighten or a step tab while the angle is typed
+
+- Waiting: ROT-07.3, ROT-07.4
+- Do: on the UAT site, open IMG_9136.JPEG and tap **Rotate**. Tap the angle (**0.0°**), type 9 on the keypad, then tap **Flip** in the row of tools; tap **Straighten** and read the angle. Tap the angle again, type 3, tap **Straighten** and read the angle. Tap the angle again, type 5, tap **Crop** in the step tabs, then **Rotate**, and read the angle.
+- Write down: for each of the three taps (**Flip**, **Straighten**, **Crop**), whether the button could be tapped at all with the keypad up, or the keypad covers it; and where it could, whether the box closed and the angle read afterward (9.0°, 3.0° and 5.0° mean the typed angle was saved; the angle from before means it was thrown away).

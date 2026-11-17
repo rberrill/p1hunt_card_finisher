@@ -330,17 +330,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## ROT-07 Close the box
 
-Escape closes the text box without saving. A tap anywhere else, choosing **Straighten** or **Flip**, or leaving the step closes it and, by ruling R92, saves the typed angle as **Done** does (today these throw it away).
+Escape closes the text box without saving. A tap anywhere else, choosing **Straighten** or **Flip**, or leaving the step closes it and saves the typed angle, as **Done** does. The angle is saved only to the photo it was typed for: when another photo, or the other side of a pair, opens while the box is open, the box closes without saving.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `key:Escape`, `#rotateAngleField`
-- Source: `js/app/rotate.js` (`bindTyping`, `setRotateMode`, `syncRotate`, `stopTyping`)
-- Ruling: R92. A tap away from a typed angle saves it, as **Done** and Enter do; Escape still closes the box without saving. The app differs today.
-- Cases: 4
+- Source: `js/app/rotate.js` (`bindTyping`, `setRotateMode`, `syncRotate`, `startTyping`, `stopTyping`)
+- Ruling: R92. A tap away from a typed angle saves it, as **Done** and Enter do; Escape still closes the box without saving. Built in 1.10.0.
+- Cases: 6
 
 ### ROT-07.1 Escape closes the box without saving   [auto: desktop]
 
@@ -361,8 +361,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-07.2 A tap on the photo closes the box and saves the angle   [auto: phone, webkit]
-Written to ruling R92; it fails until that is built (BUG-296).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -380,7 +378,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-07.3 Choosing Flip or Straighten closes the box and saves the angle   [auto: phone]
-Written to ruling R92; it fails until that is built (BUG-296).
+Waiting on find-out Q-10: whether a tap on **Flip** or **Straighten** with the box open saves the typed angle on an iPhone. In the browsers the script runs in, the tap takes the cursor out of the box first, and that is what saves it. A phone case is added here once Rich has seen it on the phone.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -403,7 +401,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-07.4 Leaving the step closes the box and saves the angle   [auto: phone]
-Written to ruling R92; it fails until that is built (BUG-296).
+Waiting on find-out Q-10: whether a tap on a step tab with the box open saves the typed angle on an iPhone. In the browsers the script runs in, the tap takes the cursor out of the box first, and that is what saves it. A phone case is added here once Rich has seen it on the phone.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -418,6 +416,46 @@ Before you start:
 | 2 | Type 9 | The box shows 9 |
 | 3 | Tap **Crop** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Crop step shows |
 | 4 | Tap **Rotate** in the step tabs | The box is closed; the angle reads 9.0°; **Undo** is lit |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### ROT-07.5 A picture pasted while the box is open opens with no angle saved to it   [auto: desktop]
+Before you start:
+- Device and browser: a computer with a keyboard and a mouse; a wide window, in a browser that can paste images (the automated case runs in Chromium only)
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/. IMG_9075.JPEG from samples/, opened in an image viewer and copied with its Copy, so the picture is on the clipboard
+- Starting screen: IMG_9136.JPEG open, on the Rotate step, the angle at 0.0°, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Click the angle (**0.0°**) | A text box takes the angle's place, with 0.0 in it, selected |
+| 2 | Type 9 | The box shows 9 |
+| 3 | Press Ctrl+V (Cmd+V on a Mac) | The pasted photo opens on the Perspective step |
+| 4 | Click **Rotate** in the step tabs (the six tabs Perspective to Export, in the top bar) | The box is closed; the angle reads 0.0°; **Undo** is greyed out: the 9 typed for the first photo was not saved to this one |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### ROT-07.6 A side that opens while the box is open closes it without saving   [auto: phone]
+Script only
+Stand-in: a side opens in well under a second, too short for a person to open the box and type while it does, so the script holds the front's opening until 9 is typed, then lets it finish.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open, with the back added by **Add back**; the back is open, on the Rotate step, the angle at 0.0°
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Front** in the top bar | The front starts to open: **Front** / **Back** is greyed out while it does |
+| 2 | While it opens, tap the angle (**0.0°**) | A text box takes the angle's place, with 0.0 in it, selected |
+| 3 | Type 9 | The box shows 9 |
+| 4 | Wait for the front to open | The front is open, on the Rotate step; the box is closed; the angle reads 0.0°; **Undo** is greyed out |
+| 5 | Tap **Back** in the top bar | The back opens; the angle reads 0.0°: the 9 was saved to neither side |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

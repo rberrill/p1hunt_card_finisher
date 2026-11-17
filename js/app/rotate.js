@@ -30,12 +30,13 @@
 
   // What the control area shows, kept in this module only: the mode ('straighten' or 'flip'),
   // the mode whose rows are on screen (it trails `mode` for the 60 ms the old line takes to
-  // fade after a mode tap, CF.swapLine) and whether the angle is being typed. None is edit
-  // state, so none is undone or saved.
+  // fade after a mode tap, CF.swapLine), whether the angle is being typed and, while it is, the
+  // file of the photo it is typed for. None is edit state, so none is undone or saved.
   const rotateView = {
     mode: 'straighten',
     shownMode: 'straighten',
     isTyping: false,
+    typedFile: null,
     isPressingTypingKey: false,
   };
 
@@ -241,6 +242,7 @@
   function startTyping() {
     if (rotateView.isTyping || !app.state) return;
     rotateView.isTyping = true;
+    rotateView.typedFile = app.file;
     const field = byId('rotateAngleField');
     field.value = angleText(app.state.rotation.fine).replace('°', '');
     showTypingControls(true);
@@ -249,16 +251,25 @@
     placeTypingRow();
   }
 
+  // Whether the open photo is the one the angle is being typed for. A photo is known by its
+  // file: a new photo, and the other side of a pair, each have their own.
+  function isTypedPhotoOpen() {
+    return app.file === rotateView.typedFile;
+  }
+
   // Closes the typed angle; commits it when `shouldCommit`, through the same clamp and rounding
-  // as the ruler.
+  // as the ruler. An angle typed for one photo is never committed to another: when a new photo
+  // or a pair's other side has opened since the box did, it closes unsaved.
   function stopTyping(shouldCommit) {
     if (!rotateView.isTyping) return;
     rotateView.isTyping = false;
+    const isSamePhoto = isTypedPhotoOpen();
+    rotateView.typedFile = null;
     const field = byId('rotateAngleField');
     const degrees = readTypedAngle(field.value);
     showTypingControls(false);
     placeTypingRow();
-    if (shouldCommit) setFine(degrees);
+    if (shouldCommit && isSamePhoto) setFine(degrees);
     if (document.activeElement === field) field.blur();
     if (app.state) syncRotate(app.state);
   }
@@ -305,8 +316,9 @@
     row.style.top = `${viewport.offsetTop + viewport.height - rowHeightPx}px`;
   }
 
-  // The typed angle's events: Enter or Done commits; Escape or a tap anywhere else cancels.
-  // A press on ± or Done would take the focus from the field first, so it is held there.
+  // The typed angle's events: Enter, Done or a tap anywhere else commits (ruling R92); only
+  // Escape cancels. A press on ± or Done would take the focus from the field first, so it is
+  // held there.
   function bindTyping() {
     const field = byId('rotateAngleField');
     byId('rotateAngle').addEventListener('click', startTyping);
@@ -324,7 +336,7 @@
         field.focus({ preventScroll: true });
         return;
       }
-      stopTyping(false);
+      stopTyping(true);
     });
     for (const key of [byId('btnAngleSign'), byId('btnAngleDone')]) {
       key.addEventListener('pointerdown', event => {
@@ -347,9 +359,10 @@
   }
 
   /* ---------- binding and syncing ---------- */
-  // Lights the tapped mode's tool at once, then swaps in its label and control rows (M3).
+  // Lights the tapped mode's tool at once, then swaps in its label and control rows (M3). A
+  // typed angle still open is saved first.
   function setRotateMode(mode) {
-    if (rotateView.isTyping) stopTyping(false);
+    if (rotateView.isTyping) stopTyping(true);
     if (mode === rotateView.mode) return;
     rotateView.mode = mode;
     if (app.state) syncRotate(app.state);
@@ -389,9 +402,11 @@
   }
 
   // Writes the state into the controls: the angle and the ruler, both flips, Fill frame, the
-  // grid, and which mode is showing. Leaving the step closes the typed angle unsaved.
+  // grid, and which mode is showing. Leaving the step closes the typed angle and saves it;
+  // another photo opening closes it unsaved (stopTyping).
   function syncRotate(state) {
-    if (rotateView.isTyping && app.tab !== 'rotate') stopTyping(false);
+    const isTypingOver = rotateView.isTyping && (app.tab !== 'rotate' || !isTypedPhotoOpen());
+    if (isTypingOver) stopTyping(true);
     const fine = state.rotation.fine;
     const isFlipMode = rotateView.mode === 'flip';
     const isFlipShown = rotateView.shownMode === 'flip';

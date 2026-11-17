@@ -21,7 +21,19 @@ const {
   waitForStill,
   hasWhiteFill,
   waitInPage,
+  stepNow,
 } = require('./support/app.js');
+const { copyImage, allowClipboard, sampleFile } = require('./support/edits-drop-keys.js');
+const {
+  makePair,
+  switchTo,
+  waitForPhoto,
+  waitForSide,
+  holdNextOpening,
+  releaseOpening,
+  waitForOpening,
+  PORTRAIT_PAIR,
+} = require('./support/front-and-back.js');
 const {
   pressFinger,
   moveFinger,
@@ -74,6 +86,10 @@ async function startOnRotate(page, testInfo) {
 }
 // The text box that takes the angle's place while it is typed.
 const angleField = page => page.locator('#rotateAngleField');
+// The name the app gives a pasted photo.
+const PASTED_NAME = 'pasted-photo';
+// Front or Back in the top bar of a pair: the switch's choice for `side`.
+const sideSegment = (page, side) => page.locator(`#sideSwitch .segment[data-value="${side}"]`);
 
 // The [start, end] of a text box's selection, in characters.
 function selectionOf(field) {
@@ -550,8 +566,7 @@ async function checkClosedUnsaved(page, check, description) {
 }
 
 // Checks a ROT-07 row written to ruling R92: the box has closed and the typed angle is saved,
-// so the angle reads `angle` ('9.0°') and, when isUndoChecked, Undo is lit. Plain readings, so
-// the known defect fails at once.
+// so the angle reads `angle` ('9.0°') and, when isUndoChecked, Undo is lit.
 async function checkClosedSaved(page, check, description, angle, isUndoChecked = true) {
   const isOpen = await angleField(page).isVisible();
   const shown = await angleText(page).textContent();
@@ -579,7 +594,6 @@ test('ROT-07.2 A tap on the photo closes the box and saves the angle [phone] [we
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-296');
   const hand = await startOnRotate(page, testInfo);
   await tapAngleStep(page, hand, check, '0.0');
   await typeStep(page, check, '9');
@@ -592,7 +606,6 @@ test('ROT-07.3 Choosing Flip or Straighten closes the box and saves the angle [p
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-296');
   const hand = await startOnRotate(page, testInfo);
   await tapAngleStep(page, hand, check, '0.0');
   await typeStep(page, check, '9');
@@ -617,7 +630,6 @@ test('ROT-07.4 Leaving the step closes the box and saves the angle [phone]', asy
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-296');
   const hand = await startOnRotate(page, testInfo);
   await tapAngleStep(page, hand, check, '0.0');
   await typeStep(page, check, '9');
@@ -628,6 +640,56 @@ test('ROT-07.4 Leaving the step closes the box and saves the angle [phone]', asy
   await goToStep(page, 'rotate', hand);
   await checkClosedSaved(page, check, 'the box is closed; the angle reads 9.0°; Undo is lit',
     '9.0°');
+});
+
+test('ROT-07.5 A picture pasted while the box is open opens with no angle saved to it '
+  + '[desktop]', async ({ page, context, browserName, check }, testInfo) => {
+  await allowClipboard(context, browserName, test);
+  const hand = await startOnRotate(page, testInfo);
+  // Before the case: the second photo is copied as a picture, as an image viewer's Copy does.
+  await copyImage(page, sampleFile(SECOND_PHOTO));
+  await tapAngleStep(page, hand, check, '0.0');
+  await typeStep(page, check, '9');
+  await page.keyboard.press('Control+V');
+  await check('the pasted photo opens on the Perspective step', async () => {
+    await waitForPhoto(page, PASTED_NAME);
+    expect(await stepNow(page)).toBe('perspective');
+  });
+  await goToStep(page, 'rotate', hand);
+  await checkClosedUnsaved(page, check, 'the box is closed; the angle reads 0.0°; Undo is greyed '
+    + 'out: the 9 typed for the first photo was not saved to this one');
+});
+
+test('ROT-07.6 A side that opens while the box is open closes it without saving [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await makePair(page, testInfo);
+  await goToStep(page, 'rotate', hand);
+  // The stand-in: the front's opening is held until 9 is typed.
+  await holdNextOpening(page);
+  await hand.tap(sideSegment(page, 'front'));
+  await check('the front starts to open: Front / Back is greyed out while it does', async () => {
+    await waitForOpening(page);
+    await expect(sideSegment(page, 'front')).toBeDisabled();
+    await expect(sideSegment(page, 'back')).toBeDisabled();
+  });
+  await tapAngleStep(page, hand, check, '0.0');
+  await typeStep(page, check, '9');
+  await releaseOpening(page);
+  await waitForSide(page, 'front', PORTRAIT_PAIR.front);
+  await check('the front is open, on the Rotate step; the box is closed; the angle reads 0.0°; '
+    + 'Undo is greyed out', async () => {
+    expect(await stepNow(page)).toBe('rotate');
+    await expect(angleField(page)).toBeHidden();
+    await expect(angleText(page)).toHaveText('0.0°');
+    await expect(page.locator('#btnUndo')).toBeDisabled();
+  });
+  await switchTo(page, hand, 'back');
+  await check('the back opens; the angle reads 0.0°: the 9 was saved to neither side', async () => {
+    await expect(angleField(page)).toBeHidden();
+    await expect(angleText(page)).toHaveText('0.0°');
+  });
 });
 
 test('ROT-08.1 The box accepts a hyphen or a true minus sign [desktop]', async ({
