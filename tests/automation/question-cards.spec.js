@@ -1,9 +1,11 @@
-// The Question card cases (tests/catalog/question-cards.md): the one card for the Upscale,
-// Unpair and New photo questions, how it closes, its red choice, keyboard focus, what it blocks,
-// the dim, an open sheet under it, when it is taken down, its fade, and a change of layout.
+// The Question card cases (tests/catalog/question-cards.md): the one question box for the
+// Upscale, Unpair and New photo questions, how it closes, its red choice, keyboard focus, what it
+// blocks, the dim, an open sheet under it, when it is taken down, its fade, and a change of
+// layout.
 // Each test drives the app as a person would, through hand.tap (a finger on the phone targets,
 // the mouse on the wide ones), the keyboard and the clipboard, and reads the app's state only to
 // check a result.
+// Every row of a case has its own check, in order, described in the row's own words.
 'use strict';
 const { test, expect } = require('./support/case.js');
 const { samplePath, waitForStill } = require('./support/app.js');
@@ -23,8 +25,6 @@ const {
 const {
   CORNER_PHOTO,
   startOnExport,
-  openCornerSheet,
-  isCornerSheetOpen,
   questionCard,
   questionButton,
   expectQuestion,
@@ -35,6 +35,12 @@ const {
   downloadsArrived,
   boxOf,
 } = require('./support/corner-shots.js');
+const {
+  QUESTION_BOX,
+  askAndCheck,
+  answerAndCheckClosed,
+  openCornerSheetAndCheck,
+} = require('./support/questions.js');
 
 const ASK_2000 = 'Upscale to 2000 px?';
 const CROP_TEXT = 'The crop is 1074 × 1074 px at the photo’s resolution.';
@@ -49,33 +55,40 @@ const PASTED_NAME = 'pasted-photo';
 const P1HUNT_RED = 'rgb(229, 50, 45)';
 // How long a case waits to be sure a tap saved nothing, in ms.
 const NOTHING_SAVED_WAIT_MS = 1500;
-// How far down the page a tap on the dimmed screen above the card lands, in CSS px.
-const ABOVE_CARD_Y_PX = 150;
+// How far down the page a tap on the dimmed screen above the question box lands, in CSS px.
+const ABOVE_BOX_Y_PX = 150;
 // How close two page positions must be, in CSS px.
 const PLACE_TOLERANCE_PX = 2;
-// The card's fade in, normal and under reduced motion, in seconds as the browser writes it;
-// and the moment of the fade in, in ms, at which QCD-09.2 stops it for its picture.
+// The question box's fade in and out, and the fade in under reduced motion, in seconds as the
+// browser writes them; and the moment of the fade in, in ms, at which QCD-09.2 stops it for its
+// picture.
 const FADE_IN = '0.18s';
+const FADE_OUT = '0.12s';
 const REDUCED_FADE = '0.1s';
 const HALF_FADE_MS = 90;
 // The window sizes QCD-10.1 turns to and back from, in CSS px: a phone turned to landscape (over
 // 760 px wide, so the wide layout), and a wide window narrowed to a phone's layout.
 const PHONE_LANDSCAPE = { width: 844, height: 390 };
 const NARROW_DESKTOP = { width: 700, height: 800 };
+// The first row's words for the question box, with its definition.
+const FIRST_ASK = `${QUESTION_BOX} asks "${ASK_2000}"`;
 
-// The card's title, its line and its three buttons' labels, as the screen shows them.
-async function cardWords(page) {
-  const card = questionCard(page);
+// The Download button on Export.
+const downloadButton = page => page.locator('#btnDownload');
+
+// The question box's title, its line and its three buttons' labels, as the screen shows them.
+async function boxWords(page) {
+  const box = questionCard(page);
   return {
-    title: (await card.locator('.alert-title').textContent()).trim(),
-    text: (await card.locator('.alert-text').textContent()).trim(),
-    buttons: (await card.locator('button').allTextContents()).map(label => label.trim()),
+    title: (await box.locator('.alert-title').textContent()).trim(),
+    text: (await box.locator('.alert-text').textContent()).trim(),
+    buttons: (await box.locator('button').allTextContents()).map(label => label.trim()),
   };
 }
 
-// Where the card's three buttons are: { first, second, cancel } as page boxes, once the card
-// has finished growing in.
-async function cardButtonPlaces(page) {
+// Where the question box's three buttons are: { first, second, cancel } as page boxes, once the
+// box has finished growing in.
+async function buttonPlaces(page) {
   await waitForStill(page);
   return {
     first: await boxOf(page.locator('#btnPromptFirst')),
@@ -97,20 +110,21 @@ function expectChoicesLaidOut(places) {
   expect(Math.abs(cancel.x + cancel.width - choicesRight)).toBeLessThan(PLACE_TOLERANCE_PX);
 }
 
-// The background color of one of the card's buttons, as the browser writes it.
+// The background color of one of the question box's buttons, as the browser writes it.
 const backgroundOf = locator => locator.evaluate(el => getComputedStyle(el).backgroundColor);
 
-// True when one of the card's buttons has the red main look.
+// True when one of the question box's buttons has the red main look.
 const isRed = async locator => (await backgroundOf(locator)) === P1HUNT_RED;
 
 // Taps Download on Export and waits for the Upscale question.
 async function askToUpscale(page, hand) {
   await waitForQuestion(page, false);
-  await hand.tap(page.locator('#btnDownload'));
+  await hand.tap(downloadButton(page));
   await waitForQuestion(page, true);
 }
 
-// Chooses a photo with Open while paired, which asks the New photo question.
+// Open 01_chrome_flat_black.JPEG, the cases' named action, while paired: Open, then the photo
+// in the picker, which asks the New photo question.
 async function openWhilePaired(page, hand) {
   await chooseInPicker(page, hand, page.locator('#btnOpen'), CORNER_PHOTO);
   await waitForQuestion(page, true);
@@ -124,7 +138,13 @@ async function onScreen(page) {
   };
 }
 
-// Records, from before the app loads, the order in which a question card closes and a file
+// The verdict that the pair is still open, the back on screen and Back in white.
+async function expectBackStillOpen(page) {
+  expect(await onScreen(page)).toEqual({ name: PORTRAIT_PAIR.back, side: 'back' });
+  await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
+}
+
+// Records, from before the app loads, the order in which a question box closes and a file
 // download starts, in window.testOrder ('closed' and 'saved').
 async function recordCloseAndSave(page) {
   await page.addInitScript(() => {
@@ -142,50 +162,46 @@ test('QCD-01.1 The Upscale question: a title, a line, two choices side by side a
   + 'beneath [phone]', async ({ page, check }, testInfo) => {
   const hand = await startOnExport(page, testInfo);
   await askToUpscale(page, hand);
-  await check(`a card over the photo, titled "${ASK_2000}", with one line, "${CROP_TEXT}"`,
+  await check(`${QUESTION_BOX} shows, titled "${ASK_2000}", with one line, "${CROP_TEXT}"`,
     async () => {
-      expect(await cardWords(page)).toEqual({
+      expect(await boxWords(page)).toEqual({
         title: ASK_2000,
         text: CROP_TEXT,
         buttons: ['Yes', 'No', 'Cancel'],
       });
     });
-  await check('Yes and No side by side, the same height; Cancel beneath, as wide as both',
-    async () => {
-      expectChoicesLaidOut(await cardButtonPlaces(page));
-    });
+  await check('Yes and No side by side, the same height, Yes on the left; Cancel beneath, as wide '
+    + 'as both', async () => {
+    expectChoicesLaidOut(await buttonPlaces(page));
+  });
 });
 
-test('QCD-01.2 The pair\'s questions come on the same card [phone]', async ({
+test('QCD-01.2 The pair\'s questions come in the same question box [phone]', async ({
   page,
   check,
 }, testInfo) => {
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR);
   await hand.tap(page.locator('#btnUnpair'));
   await waitForQuestion(page, true);
-  await check(`the card, titled "Unpair", reads "${UNPAIR_TEXT}"; Keep front, Keep back side by `
-    + 'side, Cancel beneath', async () => {
-    expect(await cardWords(page)).toEqual({
+  await check(`${QUESTION_BOX} shows, titled "Unpair", with one line, "${UNPAIR_TEXT}"; Keep `
+    + 'front and Keep back side by side, Cancel beneath them', async () => {
+    expect(await boxWords(page)).toEqual({
       title: 'Unpair',
       text: UNPAIR_TEXT,
       buttons: ['Keep front', 'Keep back', 'Cancel'],
     });
-    expectChoicesLaidOut(await cardButtonPlaces(page));
+    expectChoicesLaidOut(await buttonPlaces(page));
   });
-  await hand.tap(questionButton(page, 'Cancel'));
-  await waitForQuestion(page, false);
-  await check('Cancel closes the card', async () => {
-    expect(await isQuestionUp(page)).toBe(false);
-  });
+  await answerAndCheckClosed(page, hand, check, 'Cancel', 'the question box closes');
   await openWhilePaired(page, hand);
-  await check(`the card, titled "New photo", reads "${NEW_PHOTO_TEXT}"; New photo, Replace back `
-    + 'side by side, Cancel beneath', async () => {
-    expect(await cardWords(page)).toEqual({
+  await check(`the question box shows, titled "New photo", with one line, "${NEW_PHOTO_TEXT}"; `
+    + 'New photo and Replace back side by side, Cancel beneath them', async () => {
+    expect(await boxWords(page)).toEqual({
       title: 'New photo',
       text: NEW_PHOTO_TEXT,
       buttons: ['New photo', 'Replace back', 'Cancel'],
     });
-    expectChoicesLaidOut(await cardButtonPlaces(page));
+    expectChoicesLaidOut(await buttonPlaces(page));
   });
 });
 
@@ -195,66 +211,62 @@ test('QCD-02.1 Cancel and a tap outside leave the pair and open nothing [phone]'
 }, testInfo) => {
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR);
   await openWhilePaired(page, hand);
-  await check('the card asks "New photo"', async () => {
+  await check(`${QUESTION_BOX} asks "New photo"`, async () => {
     await expectQuestion(page, 'New photo', NEW_PHOTO_TEXT);
   });
-  await hand.tap(questionButton(page, 'Cancel'));
-  await waitForQuestion(page, false);
-  await check('Cancel closes the card; still paired, Back in white, the back on screen',
-    async () => {
-      expect(await onScreen(page)).toEqual({ name: PORTRAIT_PAIR.back, side: 'back' });
-      await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
-    });
+  await answerAndCheckClosed(page, hand, check, 'Cancel', 'the question box closes; Front / Back '
+    + 'is still in the top bar, Back in white, and the back is on screen', async () => {
+    await expectBackStillOpen(page);
+  });
   await openWhilePaired(page, hand);
-  await check('Open asks "New photo" again', async () => {
+  await check('the question box asks "New photo" again', async () => {
     await expectQuestion(page, 'New photo');
   });
-  await page.touchscreen.tap(page.viewportSize().width / 2, ABOVE_CARD_Y_PX);
+  await page.touchscreen.tap(page.viewportSize().width / 2, ABOVE_BOX_Y_PX);
   await waitForQuestion(page, false);
   // A moment for anything the tap might have started.
   await page.waitForTimeout(NOTHING_SAVED_WAIT_MS);
-  await check('a tap on the dim closes the card; still paired, and the chosen photo isn\'t open',
-    async () => {
-      expect(await onScreen(page)).toEqual({ name: PORTRAIT_PAIR.back, side: 'back' });
-    });
+  await check('the question box closes; the pair is still open, the back on screen, and '
+    + '01_chrome_flat_black.JPEG was not opened', async () => {
+    expect(await isQuestionUp(page)).toBe(false);
+    await expectBackStillOpen(page);
+  });
 });
 
-test('QCD-02.2 Escape closes the card and keeps the pair [desktop]', async ({
+test('QCD-02.2 Escape closes the question box and keeps the pair [desktop]', async ({
   page,
   check,
 }, testInfo) => {
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR);
-  await hand.tap(page.locator('#btnUnpair'));
-  await check('the card asks "Unpair"', async () => {
-    await expectQuestion(page, 'Unpair', UNPAIR_TEXT);
-  });
+  await askAndCheck(page, hand, check, page.locator('#btnUnpair'),
+    `${QUESTION_BOX} asks "Unpair"`, 'Unpair', UNPAIR_TEXT);
   await page.keyboard.press('Escape');
   await waitForQuestion(page, false);
-  await check('Escape closes the card; Front / Back is still there, Back in white', async () => {
-    expect(await onScreen(page)).toEqual({ name: PORTRAIT_PAIR.back, side: 'back' });
-    await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
-  });
+  await check('the question box closes; Front / Back is still in the top bar, Back in white',
+    async () => {
+      expect(await isQuestionUp(page)).toBe(false);
+      await expectBackStillOpen(page);
+    });
 });
 
-test('QCD-03.1 Yes is red, and closes the card before the file is saved [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  await recordCloseAndSave(page);
-  const hand = await startOnExport(page, testInfo);
-  await askToUpscale(page, hand);
-  await check(`the card asks "${ASK_2000}"; Yes is P1Hunt red, No is not`, async () => {
-    expect(await isRed(page.locator('#btnPromptFirst'))).toBe(true);
-    expect(await isRed(page.locator('#btnPromptSecond'))).toBe(false);
+test('QCD-03.1 Yes is red, and closes the question box before the file is saved [phone]',
+  async ({ page, check }, testInfo) => {
+    await recordCloseAndSave(page);
+    const hand = await startOnExport(page, testInfo);
+    await askToUpscale(page, hand);
+    await check(`${FIRST_ASK}; Yes is red (P1Hunt red, #e5322d), No is not`, async () => {
+      await expectQuestion(page, ASK_2000);
+      expect(await isRed(page.locator('#btnPromptFirst'))).toBe(true);
+      expect(await isRed(page.locator('#btnPromptSecond'))).toBe(false);
+    });
+    const collector = collectDownloads(page);
+    await hand.tap(questionButton(page, 'Yes'));
+    await downloadsArrived(page, collector, 1);
+    collector.stop();
+    await check('the question box closes first; then the file is saved', async () => {
+      expect(await page.evaluate(() => window.testOrder)).toEqual(['closed', 'saved']);
+    });
   });
-  const collector = collectDownloads(page);
-  await hand.tap(questionButton(page, 'Yes'));
-  await downloadsArrived(page, collector, 1);
-  collector.stop();
-  await check('the card closes first, then the file is saved', async () => {
-    expect(await page.evaluate(() => window.testOrder)).toEqual(['closed', 'saved']);
-  });
-});
 
 test('QCD-03.2 The pair\'s questions have no red choice [phone]', async ({
   page,
@@ -263,49 +275,52 @@ test('QCD-03.2 The pair\'s questions have no red choice [phone]', async ({
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR);
   await hand.tap(page.locator('#btnUnpair'));
   await waitForQuestion(page, true);
-  await check('Unpair: neither Keep front nor Keep back is red', async () => {
-    expect(await isRed(page.locator('#btnPromptFirst'))).toBe(false);
-    expect(await isRed(page.locator('#btnPromptSecond'))).toBe(false);
-  });
-  await hand.tap(questionButton(page, 'Cancel'));
-  await waitForQuestion(page, false);
+  await check(`${QUESTION_BOX} asks "Unpair"; neither Keep front nor Keep back is red`,
+    async () => {
+      await expectQuestion(page, 'Unpair');
+      expect(await isRed(page.locator('#btnPromptFirst'))).toBe(false);
+      expect(await isRed(page.locator('#btnPromptSecond'))).toBe(false);
+    });
+  await answerAndCheckClosed(page, hand, check, 'Cancel', 'the question box closes');
   await openWhilePaired(page, hand);
-  await check('New photo: neither New photo nor Replace back is red', async () => {
-    await expectQuestion(page, 'New photo');
-    expect(await isRed(page.locator('#btnPromptFirst'))).toBe(false);
-    expect(await isRed(page.locator('#btnPromptSecond'))).toBe(false);
-  });
+  await check('the question box asks "New photo"; neither New photo nor Replace back is red',
+    async () => {
+      await expectQuestion(page, 'New photo');
+      expect(await isRed(page.locator('#btnPromptFirst'))).toBe(false);
+      expect(await isRed(page.locator('#btnPromptSecond'))).toBe(false);
+    });
 });
 
 // The id of the element that has the keyboard focus.
 const focusedId = page => page.evaluate(() => document.activeElement.id);
 
-test('QCD-04.1 The focus starts on the first choice, stays in the card, and goes back to '
-  + 'Download [desktop]', async ({ page, check }, testInfo) => {
+test('QCD-04.1 The focus starts on the first choice, stays in the question box, and goes back '
+  + 'to Download [desktop]', async ({ page, check }, testInfo) => {
   const hand = await startOnExport(page, testInfo);
   await askToUpscale(page, hand);
-  await check(`the card asks "${ASK_2000}"; the focus is on Yes`, async () => {
+  await check(`${FIRST_ASK}; the focus is on Yes`, async () => {
+    await expectQuestion(page, ASK_2000);
     expect(await focusedId(page)).toBe('btnPromptFirst');
   });
   await page.keyboard.press('Tab');
-  await check('Tab moves the focus to No', async () => {
+  await check('the focus moves to No', async () => {
     expect(await focusedId(page)).toBe('btnPromptSecond');
   });
   await page.keyboard.press('Tab');
-  await check('Tab moves the focus to Cancel', async () => {
+  await check('the focus moves to Cancel', async () => {
     expect(await focusedId(page)).toBe('btnPromptCancel');
   });
   await page.keyboard.press('Tab');
-  await check('Tab takes the focus back to Yes, not behind the card', async () => {
+  await check('the focus goes back to Yes, not to anything behind the question box', async () => {
     expect(await focusedId(page)).toBe('btnPromptFirst');
   });
   await page.keyboard.press('Shift+Tab');
-  await check('Shift+Tab takes the focus to Cancel', async () => {
+  await check('the focus goes to Cancel', async () => {
     expect(await focusedId(page)).toBe('btnPromptCancel');
   });
   await page.keyboard.press('Escape');
   await waitForQuestion(page, false);
-  await check('Escape closes the card, and the focus is back on Download', async () => {
+  await check('the question box closes, and the focus is back on Download', async () => {
     expect(await focusedId(page)).toBe('btnDownload');
   });
 });
@@ -327,45 +342,46 @@ async function tapAt(page, locator) {
 // The step the app is on.
 const stepNow = page => page.evaluate(() => window.__straightener.app.tab);
 
-test('QCD-05.1 On a wide screen, shortcuts, the top bar and the panel do nothing while the card '
-  + 'is up [desktop]', async ({ page, check }, testInfo) => {
+test('QCD-05.1 On a wide screen, shortcuts, the top bar and the panel do nothing while the '
+  + 'question box is up [desktop]', async ({ page, check }, testInfo) => {
   const hand = await startOnExport(page, testInfo);
   await hand.tap(choiceButton(page, 'exportFormat', 'PNG'));
   await check('PNG is selected', async () => {
     expect(await selectedChoices(page, 'exportFormat')).toEqual(['PNG']);
   });
   await askToUpscale(page, hand);
-  await check(`the card asks "${ASK_2000}" over the photo; the panel isn't covered`, async () => {
+  await check(`${FIRST_ASK} over the photo; the panel at the right stays uncovered`, async () => {
     await expectQuestion(page, ASK_2000);
     const layer = await boxOf(questionCard(page));
     const panel = await boxOf(page.locator('#panel'));
     expect(layer.x + layer.width).toBeLessThanOrEqual(panel.x + PLACE_TOLERANCE_PX);
   });
   await page.keyboard.press('Control+z');
-  await check('Ctrl+Z changes nothing: PNG is still selected and the card is up', async () => {
-    expect(await selectedChoices(page, 'exportFormat')).toEqual(['PNG']);
-    expect(await isQuestionUp(page)).toBe(true);
-  });
-  await page.keyboard.press('2');
-  await check('2 changes nothing: still on Export, the card up', async () => {
-    expect(await stepNow(page)).toBe('export');
-    expect(await isQuestionUp(page)).toBe(true);
-  });
-  await clickAt(page, page.locator('#topBarHost [data-step="rotate"]'));
-  await check('a click on Rotate in the top bar changes nothing: still on Export, the card up',
-    async () => {
-      expect(await stepNow(page)).toBe('export');
-      expect(await isQuestionUp(page)).toBe(true);
-    });
-  await clickAt(page, choiceButton(page, 'exportFormat', 'JPEG'));
-  await check('a click on JPEG in the panel changes nothing: PNG is still selected, the card up',
+  await check('nothing changes: PNG is still selected, and the question box is still up',
     async () => {
       expect(await selectedChoices(page, 'exportFormat')).toEqual(['PNG']);
       expect(await isQuestionUp(page)).toBe(true);
     });
+  await page.keyboard.press('2');
+  await check('still on Export, and the question box is still up', async () => {
+    expect(await stepNow(page)).toBe('export');
+    expect(await isQuestionUp(page)).toBe(true);
+  });
+  await clickAt(page, page.locator('#topBarHost [data-step="rotate"]'));
+  await check('a click on Rotate in the top bar: still on Export, and the question box is still '
+    + 'up', async () => {
+    expect(await stepNow(page)).toBe('export');
+    expect(await isQuestionUp(page)).toBe(true);
+  });
+  await clickAt(page, choiceButton(page, 'exportFormat', 'JPEG'));
+  await check('a click on JPEG in the panel: PNG is still selected, and the question box is '
+    + 'still up', async () => {
+    expect(await selectedChoices(page, 'exportFormat')).toEqual(['PNG']);
+    expect(await isQuestionUp(page)).toBe(true);
+  });
   await page.keyboard.press('Escape');
   await waitForQuestion(page, false);
-  await check('Escape closes the card', async () => {
+  await check('the question box closes', async () => {
     expect(await isQuestionUp(page)).toBe(false);
   });
 });
@@ -379,81 +395,84 @@ test('QCD-05.2 On a phone, a tap on the top bar or the step tabs only reaches th
       await expect(page.locator('#btnUndo')).toBeEnabled();
     });
     await askToUpscale(page, hand);
-    await check(`the card asks "${ASK_2000}"; the dim covers the whole screen`, async () => {
+    await check(`${FIRST_ASK}; the whole screen behind it is dimmed`, async () => {
+      await expectQuestion(page, ASK_2000);
       const layer = await boxOf(questionCard(page));
       expect(layer).toEqual({ x: 0, y: 0, ...page.viewportSize() });
     });
     await tapAt(page, page.locator('#btnUndo'));
     await waitForQuestion(page, false);
-    await check('a tap where Undo shows closes the card; PNG is still selected', async () => {
-      expect(await selectedChoices(page, 'exportFormat')).toEqual(['PNG']);
-    });
-    await askToUpscale(page, hand);
+    await check('the question box closes, as for any tap outside it; PNG is still selected',
+      async () => {
+        expect(await isQuestionUp(page)).toBe(false);
+        expect(await selectedChoices(page, 'exportFormat')).toEqual(['PNG']);
+      });
+    await askAndCheck(page, hand, check, downloadButton(page),
+      `the question box asks "${ASK_2000}" again`, ASK_2000);
     await tapAt(page, page.locator('#tabBarHost [data-step="rotate"]'));
     await waitForQuestion(page, false);
-    await check('a tap where Rotate shows closes the card; still on the Export step', async () => {
+    await check('the question box closes; the app is still on the Export step', async () => {
+      expect(await isQuestionUp(page)).toBe(false);
       expect(await stepNow(page)).toBe('export');
     });
   });
 
-test('QCD-06.1 The dim and the card\'s place, for a person to judge [both]', async ({
+test('QCD-06.1 The dim and the question box\'s place, for a person to judge [both]', async ({
   page,
   check,
 }, testInfo) => {
   const hand = await startOnExport(page, testInfo);
   await askToUpscale(page, hand);
   await waitForStill(page);
-  const card = await boxOf(page.locator('#pairPrompt .alert-card'));
+  const box = await boxOf(page.locator('#pairPrompt .alert-card'));
   const layer = await boxOf(questionCard(page));
-  const cardMiddleY = card.y + card.height / 2;
+  const boxMiddleY = box.y + box.height / 2;
   if (hand.isTouch) {
     const topBar = await boxOf(page.locator('#topBarHost'));
     const controls = await boxOf(page.locator('#exportArea'));
-    await check('the dim covers the whole window; the card is halfway between the top bar and '
-      + 'the controls', async () => {
+    await check(`${QUESTION_BOX} shows; the dim covers the whole window, top bar and step tabs `
+      + 'included; the box\'s middle is halfway between the top bar and the controls',
+    async () => {
       expect(layer).toEqual({ x: 0, y: 0, ...page.viewportSize() });
       const halfway = (topBar.y + topBar.height + controls.y) / 2;
-      expect(Math.abs(cardMiddleY - halfway)).toBeLessThan(PLACE_TOLERANCE_PX);
+      expect(Math.abs(boxMiddleY - halfway)).toBeLessThan(PLACE_TOLERANCE_PX);
     });
-    await check.eye('everything behind the card evenly darker; the card light enough to read');
+    await check.eye('everything behind the question box evenly darker; the box light enough to '
+      + 'read at once');
     return;
   }
   const stage = await boxOf(page.locator('#stage'));
   const panel = await boxOf(page.locator('#panel'));
-  await check('the dim covers only the photo, the card centered on it; the panel not covered',
-    async () => {
-      expect(layer).toEqual(stage);
-      expect(Math.abs(cardMiddleY - (stage.y + stage.height / 2))).toBeLessThan(PLACE_TOLERANCE_PX);
-      expect(layer.x + layer.width).toBeLessThanOrEqual(panel.x + PLACE_TOLERANCE_PX);
-    });
-  await check.eye('the photo darker behind the card; the top bar and the side panel as bright '
-    + 'as before and readable');
+  await check('the dim covers only the photo; the question box is centered on the photo; the '
+    + 'side panel is not covered', async () => {
+    expect(layer).toEqual(stage);
+    expect(Math.abs(boxMiddleY - (stage.y + stage.height / 2))).toBeLessThan(PLACE_TOLERANCE_PX);
+    expect(layer.x + layer.width).toBeLessThanOrEqual(panel.x + PLACE_TOLERANCE_PX);
+  });
+  await check.eye('the photo darker behind the question box; the top bar and the side panel as '
+    + 'bright as before and readable');
 });
 
-test('QCD-07.1 Cancel on a card over an open sheet leaves the sheet open [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startOnExport(page, testInfo);
-  await openCornerSheet(page, hand);
-  await check('the Corner shots sheet rises', async () => {
-    expect(await isCornerSheetOpen(page)).toBe(true);
+test('QCD-07.1 Cancel in a question box over an open sheet leaves the sheet open [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startOnExport(page, testInfo);
+    await openCornerSheetAndCheck(page, hand, check);
+    const collector = collectDownloads(page);
+    await askAndCheck(page, hand, check, page.locator('#btnCornerDownload'),
+      `${FIRST_ASK} in front of the sheet`, ASK_2000);
+    await hand.tap(questionButton(page, 'Cancel'));
+    await waitForQuestion(page, false);
+    const count = await downloadsAfterWait(page, collector, NOTHING_SAVED_WAIT_MS);
+    collector.stop();
+    await check('the question box closes; the Corner shots sheet is still open, and nothing is '
+      + 'saved', async () => {
+      expect(await isQuestionUp(page)).toBe(false);
+      expect(await page.evaluate(() => window.CF.isSheetOpen(
+        document.getElementById('cornerShotsSheet'),
+      ))).toBe(true);
+      expect(count).toBe(0);
+    });
   });
-  const collector = collectDownloads(page);
-  await hand.tap(page.locator('#btnCornerDownload'));
-  await waitForQuestion(page, true);
-  await check(`the card asks "${ASK_2000}" in front of the sheet`, async () => {
-    await expectQuestion(page, ASK_2000);
-  });
-  await hand.tap(questionButton(page, 'Cancel'));
-  await waitForQuestion(page, false);
-  const count = await downloadsAfterWait(page, collector, NOTHING_SAVED_WAIT_MS);
-  collector.stop();
-  await check('Cancel closes the card; the sheet is still open, and nothing is saved', async () => {
-    expect(await isCornerSheetOpen(page)).toBe(true);
-    expect(count).toBe(0);
-  });
-});
 
 // Lets the case read and write the clipboard (Chromium only), and copies a sample photo to it
 // as an image viewer's Copy does.
@@ -468,7 +487,7 @@ test('QCD-08.1 A photo pasted while the Upscale question is up takes it down and
   const hand = await startOnExport(page, testInfo);
   await copyPhotoFirst(page, context, browserName);
   await askToUpscale(page, hand);
-  await check(`the card asks "${ASK_2000}"`, async () => {
+  await check(FIRST_ASK, async () => {
     await expectQuestion(page, ASK_2000);
   });
   const collector = collectDownloads(page);
@@ -479,40 +498,39 @@ test('QCD-08.1 A photo pasted while the Upscale question is up takes it down and
   }, PASTED_NAME);
   const count = await downloadsAfterWait(page, collector, NOTHING_SAVED_WAIT_MS);
   collector.stop();
-  await check('the card goes, nothing is saved, and the pasted photo opens on Perspective',
-    async () => {
-      expect(await isQuestionUp(page)).toBe(false);
-      expect(count).toBe(0);
-      expect(await stepNow(page)).toBe('perspective');
-    });
+  await check('the question box goes, nothing is saved, and the pasted photo opens on the '
+    + 'Perspective step', async () => {
+    expect(await isQuestionUp(page)).toBe(false);
+    expect(count).toBe(0);
+    expect(await stepNow(page)).toBe('perspective');
+  });
 });
 
 test('QCD-08.2 A photo pasted while Unpair is asked replaces it with the New photo question '
   + '[desktop]', async ({ page, context, browserName, check }, testInfo) => {
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR);
   await copyPhotoFirst(page, context, browserName);
-  await hand.tap(page.locator('#btnUnpair'));
-  await check('the card asks "Unpair"', async () => {
-    await expectQuestion(page, 'Unpair', UNPAIR_TEXT);
-  });
+  await askAndCheck(page, hand, check, page.locator('#btnUnpair'),
+    `${QUESTION_BOX} asks "Unpair"`, 'Unpair', UNPAIR_TEXT);
   await page.keyboard.press('Control+v');
-  await check(`the card now asks "New photo": "${NEW_PHOTO_TEXT}"`, async () => {
+  await check(`the Unpair question goes, and the question box asks "New photo": `
+    + `"${NEW_PHOTO_TEXT}"`, async () => {
     await expect(questionCard(page).locator('.alert-title')).toHaveText('New photo');
     await expectQuestion(page, 'New photo', NEW_PHOTO_TEXT);
   });
 });
 
-// The card's look as the browser computes it now: its transition's properties and durations,
-// its transform, the layer's pointer events and whether it is hidden or open.
-function cardLook(page) {
+// The question box's look as the browser computes it now: its transition's properties and
+// durations, its transform, the layer's pointer events and whether it is hidden or open.
+function boxLook(page) {
   return page.evaluate(() => {
     const layer = document.getElementById('pairPrompt');
-    const card = layer.querySelector('.alert-card');
-    const cardStyle = getComputedStyle(card);
+    const box = layer.querySelector('.alert-card');
+    const boxStyle = getComputedStyle(box);
     return {
-      properties: cardStyle.transitionProperty,
-      durations: cardStyle.transitionDuration,
-      transform: cardStyle.transform,
+      properties: boxStyle.transitionProperty,
+      durations: boxStyle.transitionDuration,
+      transform: boxStyle.transform,
       pointerEvents: getComputedStyle(layer).pointerEvents,
       isHidden: layer.hidden,
       isOpen: window.CF.isAlertOpen(layer),
@@ -520,36 +538,56 @@ function cardLook(page) {
   });
 }
 
-test('QCD-09.1 A closing card takes no touch, and reduced motion only fades it [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
+// Records, at each touch from now on, whether the question box's layer was still shown (fading
+// out) at that moment, in window.testTouchesWhileShown.
+function recordTouchesWhileShown(page) {
+  return page.evaluate(() => {
+    window.testTouchesWhileShown = [];
+    window.addEventListener('pointerdown', () => {
+      const layer = document.getElementById('pairPrompt');
+      window.testTouchesWhileShown.push(!layer.hidden);
+    }, true);
+  });
+}
+
+test('QCD-09.1 A closing question box takes no touch, and reduced motion only fades it '
+  + '[phone]', async ({ page, check }, testInfo) => {
   const hand = await startOnExport(page, testInfo);
-  await askToUpscale(page, hand);
-  const opening = await cardLook(page);
-  await check('the card fades in over 180 ms, growing as it comes', async () => {
+  await hand.tap(downloadButton(page));
+  const opening = await boxLook(page);
+  await waitForQuestion(page, true);
+  await check(`${QUESTION_BOX} fades in over 180 ms, growing slightly as it comes`, async () => {
     expect(opening.properties).toBe('opacity, transform');
     expect(opening.durations).toBe(`${FADE_IN}, ${FADE_IN}`);
+    expect(opening.transform).not.toBe('none');
   });
   const yesPlace = await boxOf(page.locator('#btnPromptFirst'));
   const collector = collectDownloads(page);
+  await recordTouchesWhileShown(page);
   await hand.tap(questionButton(page, 'Cancel'));
-  const closing = await cardLook(page);
+  const closing = await boxLook(page);
   await page.touchscreen.tap(yesPlace.x + yesPlace.width / 2, yesPlace.y + yesPlace.height / 2);
+  await check('the question box starts to fade out, over 120 ms, and takes no more touches',
+    async () => {
+      expect(closing).toMatchObject({ isOpen: false, isHidden: false, pointerEvents: 'none' });
+      expect(closing.durations.split(', ')).toContain(FADE_OUT);
+    });
   const count = await downloadsAfterWait(page, collector, NOTHING_SAVED_WAIT_MS);
   collector.stop();
-  await check('while it fades out the card takes no touch: the tap on Yes saves nothing',
+  await check('the tap within the fade out reaches nothing in the question box: no file is saved',
     async () => {
-      expect(closing).toMatchObject({ isOpen: false, pointerEvents: 'none' });
+      const touches = await page.evaluate(() => window.testTouchesWhileShown);
+      expect(touches).toEqual([true, true]);
       expect(count).toBe(0);
     });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await check('with reduced motion on, nothing changes on screen', async () => {
     expect(await isQuestionUp(page)).toBe(false);
+    await expect(page.locator('#pairPrompt')).toBeHidden();
   });
   await askToUpscale(page, hand);
-  const reduced = await cardLook(page);
-  await check('under reduced motion the card only fades in, over 100 ms, at full size',
+  const reduced = await boxLook(page);
+  await check('the question box only fades in, over 100 ms, at its full size from the start',
     async () => {
       expect(reduced.durations.split(', ').every(duration => duration === REDUCED_FADE))
         .toBe(true);
@@ -557,12 +595,12 @@ test('QCD-09.1 A closing card takes no touch, and reduced motion only fades it [
     });
 });
 
-test('QCD-09.2 The card fading in, for a person to judge [phone]', async ({
+test('QCD-09.2 The question box fading in, for a person to judge [phone]', async ({
   page,
   check,
 }, testInfo) => {
   const hand = await startOnExport(page, testInfo);
-  await hand.tap(page.locator('#btnDownload'));
+  await hand.tap(downloadButton(page));
   // The fade is stopped half way so the picture shows it; a person sees it pass in 180 ms.
   await page.evaluate(stopAtMs => {
     for (const animation of document.getAnimations()) {
@@ -570,41 +608,78 @@ test('QCD-09.2 The card fading in, for a person to judge [phone]', async ({
       animation.currentTime = stopAtMs;
     }
   }, HALF_FADE_MS);
-  await check.eye('the card and its words partly see-through and slightly smaller than at rest, '
-    + 'centered where it will settle; the dim partly in');
+  await check.eye('in the picture, the question box and its words partly see-through and '
+    + 'slightly smaller than at rest, centered where it will settle; the dim partly in');
   await page.evaluate(() => {
     for (const animation of document.getAnimations()) animation.play();
   });
-  await check.eye('the card solid, at full size; the dim even');
+  await check.eye('the question box solid, at full size; the dim even');
 });
 
-test('QCD-10.1 The card stays up through a change of layout and back, and still answers [both]',
-  async ({ page, check }, testInfo) => {
-    const hand = await startOnExport(page, testInfo);
-    const startSize = page.viewportSize();
-    await askToUpscale(page, hand);
-    await check(`the card asks "${ASK_2000}"`, async () => {
-      await expectQuestion(page, ASK_2000);
-    });
-    await page.setViewportSize(hand.isTouch ? PHONE_LANDSCAPE : NARROW_DESKTOP);
-    await check('after the layout changes the card is still up, with the same question',
-      async () => {
-        expect(await isQuestionUp(page)).toBe(true);
-        expect((await cardWords(page)).buttons).toEqual(['Yes', 'No', 'Cancel']);
-        await expect(questionCard(page).locator('.alert-title')).toHaveText(ASK_2000);
-      });
-    await page.setViewportSize(startSize);
-    await check('back in the first layout the card is still up, with the same question',
-      async () => {
-        expect(await isQuestionUp(page)).toBe(true);
-        await expect(questionCard(page).locator('.alert-title')).toHaveText(ASK_2000);
-      });
-    const collector = collectDownloads(page);
-    await hand.tap(questionButton(page, 'No'));
-    const [saved] = await downloadsArrived(page, collector, 1);
-    collector.stop();
-    await check(`No closes the card and a ${CROP_PX} × ${CROP_PX} px file is saved`, async () => {
+// The verdict on the layout as it is now, for QCD-10.1. In the wide layout the controls are in
+// the panel at the right of the photo and the dim covers only the photo; in the phone layout the
+// step tabs are along the bottom and the dim covers the whole window.
+async function expectLayout(page, isWide) {
+  const layer = await boxOf(questionCard(page));
+  if (isWide) {
+    const stage = await boxOf(page.locator('#stage'));
+    const panel = await boxOf(page.locator('#panel'));
+    expect(layer).toEqual(stage);
+    expect(panel.x).toBeGreaterThanOrEqual(stage.x + stage.width - PLACE_TOLERANCE_PX);
+    return;
+  }
+  const size = page.viewportSize();
+  expect(layer).toEqual({ x: 0, y: 0, ...size });
+  const tabs = page.locator('#tabBarHost');
+  await expect(tabs).toBeVisible();
+  const tabsBox = await boxOf(tabs);
+  expect(tabsBox.y + tabsBox.height).toBeGreaterThan(size.height - PLACE_TOLERANCE_PX);
+}
+
+// The verdict that the question box is still up, asking the Upscale question with its three
+// buttons.
+async function expectStillAsking(page) {
+  expect(await isQuestionUp(page)).toBe(true);
+  expect(await boxWords(page)).toEqual({
+    title: ASK_2000,
+    text: CROP_TEXT,
+    buttons: ['Yes', 'No', 'Cancel'],
+  });
+}
+
+test('QCD-10.1 The question box stays up through a change of layout and back, and still '
+  + 'answers [both]', async ({ page, check }, testInfo) => {
+  const hand = await startOnExport(page, testInfo);
+  const startSize = page.viewportSize();
+  const isWideAtStart = !hand.isTouch;
+  await askToUpscale(page, hand);
+  await check(`${FIRST_ASK}; on the phone-width window the dim covers the whole window, on the `
+    + 'wide one only the photo', async () => {
+    await expectQuestion(page, ASK_2000);
+    await expectLayout(page, isWideAtStart);
+  });
+  await page.setViewportSize(hand.isTouch ? PHONE_LANDSCAPE : NARROW_DESKTOP);
+  await waitForStill(page);
+  await check('the layout changes (at 844 px the controls in a panel at the right and the dim '
+    + 'over the photo only; at 700 px the step tabs at the bottom and the dim over the whole '
+    + 'window); the question box is still up, with Yes, No and Cancel', async () => {
+    await expectLayout(page, !isWideAtStart);
+    await expectStillAsking(page);
+  });
+  await page.setViewportSize(startSize);
+  await waitForStill(page);
+  await check('the layout changes back, and the dim with it; the question box is still up, with '
+    + 'the same question', async () => {
+    await expectLayout(page, isWideAtStart);
+    await expectStillAsking(page);
+  });
+  const collector = collectDownloads(page);
+  await hand.tap(questionButton(page, 'No'));
+  const [saved] = await downloadsArrived(page, collector, 1);
+  collector.stop();
+  await check(`the question box closes, and a file of ${CROP_PX} × ${CROP_PX} px is saved`,
+    async () => {
       expect(await isQuestionUp(page)).toBe(false);
       expect(await imageSize(page, saved.file)).toEqual([CROP_PX, CROP_PX]);
     });
-  });
+});

@@ -21,8 +21,8 @@ To add one: give it the next number, say exactly what to do and what to record, 
 ## Q-03 Where iOS shows a picture's pixel size
 
 - Waiting: UPS-10.1, STA-26.2
-- Do: save a picture from the app to Photos. In Photos, open it and swipe up (or tap the ⓘ button).
-- Write down: whether the pixel size (for example 2000 × 2000) is shown there, and its exact place.
+- Do: save a picture from the app to Photos. In Photos, open it and swipe up (or tap the ⓘ button). Then, on the UAT site, open 01_chrome_flat_black.JPEG, tap **Export**, **Copy** and **No** in the question box, open Notes, start a new note and paste; touch and hold the pasted picture, and look through what Notes offers (UPS-10.1 needs to read the size of a picture copied from the app).
+- Write down: whether the pixel size (for example 2000 × 2000) is shown in Photos, and its exact place; and whether Notes shows a pasted picture's pixel size anywhere, and the steps that reach it (or that it doesn't, so UPS-10.1 saves the pasted picture to Photos and reads it there).
 
 ## Q-04 Making Safari's bars show and hide
 
