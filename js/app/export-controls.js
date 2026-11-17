@@ -466,15 +466,21 @@
   // the readout row's second line, and stays beside Next card after an export. (On the phone,
   // css/app.css shows one note at a time, and beside a pair's Together | Separately gives the
   // note the readout's place until it is dealt with.)
+  // A pair whose waiting side has invalid corners can't be saved either: the readout names the
+  // side to fix, in place of a size it doesn't have, and the save row is off (ruling R26).
   function syncExportReadouts() {
     const state = app.state;
     const geometry = app.geometry;
-    const isValid = !!geometry && geometry.ok;
+    const isOpenValid = !!geometry && geometry.ok;
+    const sideToFix = isOpenValid ? CF.waitingSideToFix() : null;
+    const isValid = isOpenValid && !sideToFix;
     syncSaveButtons(isValid);
     byId('btnAddBack').hidden = !!app.pair;
     const noteList = byId('exportMessage');
     if (!isValid) {
-      byId('exportReadout').textContent = '';
+      byId('exportReadout').textContent = sideToFix
+        ? `Fix the ${sideToFix}’s corners in Perspective first.`
+        : '';
       noteList.replaceChildren();
       noteList.hidden = true;
       return;

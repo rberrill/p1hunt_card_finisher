@@ -1668,10 +1668,10 @@ On Export the size line reads **W × H px · FORMAT** for Together, and **front 
 - Check: script
 - Layout: both. On a phone, while a note shows, the note takes the size line's place; on a wide screen the size line stays.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#exportReadout`, `#exportMessage`, `#pairOutput`
-- Source: `js/app/export-controls.js` (`syncExportReadout`, `exportNotes`), `js/app/pair.js` (`pairReadout`, `togetherLayout`)
-- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen: "The back is scaled down to fit the 16.7 MP limit." (or "The front…"; "Both sides are scaled down to fit the 16.7 MP limit." when both are; approved wording). R26. When the waiting side's corners are invalid, the line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"; approved wording) and Share, Download and Copy are dimmed. The app differs today. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
+- Changed: 1.10.0
+- Anchors: `#exportReadout`, `#exportMessage`, `#pairOutput`, "’s corners in Perspective first."
+- Source: `js/app/export-controls.js` (`syncExportReadouts`, `syncExportReadout`, `exportNotes`), `js/app/pair.js` (`pairReadout`, `togetherLayout`, `waitingSideToFix`)
+- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen: "The back is scaled down to fit the 16.7 MP limit." (or "The front…"; "Both sides are scaled down to fit the 16.7 MP limit." when both are; approved wording). The app differs today. R26. When the waiting side's corners are invalid, the line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"; approved wording) and Share, Download and Copy are dimmed. The app does this since 1.10.0. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
 - Cases: 3
 
 ### PAIR-37.1 The size line gives the joined size, or the front's and the back's   [auto: phone]
@@ -1724,9 +1724,7 @@ Before you start:
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
-Written to ruling R26, in the words Rich approved; it fails until R26 is built (BUG-034).
-
-Today the switch in row 2 doesn't finish: the app stops part-way with a script error (see BUG-034), so rows 2 to 4 fail. A corner's handle is the round handle on that corner of the outline; the line above the controls is the one line of text at the top of the controls (the block of buttons under the photo).
+A corner's handle is the round handle on that corner of the outline; the line above the controls is the one line of text at the top of the controls (the block of buttons under the photo).
 
 | # | Do this | You should see |
 | --- | --- | --- |

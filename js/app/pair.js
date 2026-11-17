@@ -443,7 +443,18 @@
     });
   }
 
+  // The waiting side ('front' or 'back') when its corners are invalid, so it has no export size
+  // and the pair can't be saved until it is fixed; else null. Null too with no pair. (The open
+  // side's own corners are app.geometry's.)
+  function waitingSideToFix() {
+    const pair = app.pair;
+    if (!pair) return null;
+    const geometry = CardEngine.computeGeometry(pair.other.state, geometryConfig());
+    return geometry.ok ? null : otherSide(pair.current);
+  }
+
   // The export's readout for a pair: the choice and its size, e.g. "Together · 2881 × 2000 px".
+  // Only for a pair whose sides both have valid corners (waitingSideToFix says when not).
   function pairReadout() {
     const sides = sideStates();
     if (isTogether()) {
@@ -975,6 +986,7 @@
     showPrompt,
     hidePrompt,
     isPairExported,
+    waitingSideToFix,
     pairReadout,
     exportPair,
     togetherPreview,

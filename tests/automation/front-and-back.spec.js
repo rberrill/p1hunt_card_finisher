@@ -2298,7 +2298,6 @@ test('PAIR-37.2 Separately warns when the side not on screen is scaled down [pho
 
 test('PAIR-37.3 When the other side\'s corners are crossed, the line says which side to fix '
   + '[phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-034');
   // A browser that can share files and copy images, so Share and Copy show.
   await standInShareSheet(page);
   await standInClipboard(page);
@@ -2308,13 +2307,13 @@ test('PAIR-37.3 When the other side\'s corners are crossed, the line says which 
     await expect(page.getByText(CROSSED_MESSAGE)).toBeVisible();
     expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(false);
   });
-  // Not switchTo: today the switch stops part-way, and its detection wait would time out.
+  // Not switchTo: a switch that stops part-way (BUG-034) would time out in its detection wait.
   await hand.tap(sideButton(page, 'front'));
   await page.waitForFunction(() => {
     const app = window.__straightener.app;
     return app.pair.current === 'front' && !app.isSwitching;
   });
-  // A known defect: plain value comparisons, so the case fails at once rather than waiting.
+  // Plain value comparisons, so a switch that stops part-way fails at once rather than waiting.
   const afterSwitch = {
     step: await stepNow(page),
     photo: (await editState(page)).source.name,

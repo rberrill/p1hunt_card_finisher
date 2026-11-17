@@ -2383,7 +2383,6 @@ test('MSG-82.1 "Fix the corners of both sides in Perspective first." on the join
 
 test('MSG-82.2 With the waiting side\'s corners crossed, Export names the side to fix [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-034');
     // Stand-in: a share sheet, so Share shows as on an iPhone.
     await installShareStandIn(page, 'share');
     const hand = await makePair(page, testInfo);
@@ -2391,10 +2390,10 @@ test('MSG-82.2 With the waiting side\'s corners crossed, Export names the side t
     await check('The corner lines cross', async () => {
       await expectStatus(page, PERSPECTIVE_STATUS, CROSSED, 'error');
     });
-    // Not switchTo: today the switch stops part-way, and its detection wait would time out.
+    // Not switchTo: a switch that stops part-way (BUG-034) would time out in its detection wait.
     await hand.tap(sideButton(page, 'front'));
     await page.waitForFunction(() => !window.__straightener.app.isSwitching);
-    // Plain readings: the known defect fails at once rather than waiting.
+    // Plain readings: a switch that stops part-way fails at once rather than waiting.
     const afterSwitch = await page.evaluate(() => {
       const app = window.__straightener.app;
       return { side: app.pair.current, photo: app.state.source.name, step: app.tab };

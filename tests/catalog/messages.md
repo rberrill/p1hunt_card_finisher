@@ -2863,10 +2863,10 @@ On Export for a pair with **Together** chosen, when either side's corners are in
 - Check: eye
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Fix the corners of both sides in Perspective first."
-- Source: `js/app/view.js` (`drawTogether`, `drawMessage`)
-- Ruling: R26. With the waiting side's corners invalid, Export's size line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…") and **Share**, **Download** and **Copy** are dimmed (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Changed: 1.10.0
+- Anchors: "Fix the corners of both sides in Perspective first.", "’s corners in Perspective first."
+- Source: `js/app/view.js` (`drawTogether`, `drawMessage`); `js/app/export-controls.js` (`syncExportReadouts`); `js/app/pair.js` (`waitingSideToFix`)
+- Ruling: R26. With the waiting side's corners invalid, Export's size line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…") and **Share**, **Download** and **Copy** are dimmed (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-82.1 "Fix the corners of both sides in Perspective first." on the joined image, for a person to judge   [eye]
@@ -2886,7 +2886,6 @@ Pass: every row's result is seen.
 On a fail, record: what differs from the description, the screenshot.
 
 ### MSG-82.2 With the waiting side's corners crossed, Export names the side to fix   [auto: phone]
-Written to ruling R26, in the wording Rich approved; it fails until that is built (BUG-034).
 Script only
 Stand-in: no case uses a desktop browser's own share sheet, so the page gets a stand-in share sheet, which shows **Share**.
 
