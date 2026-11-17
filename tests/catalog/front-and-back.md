@@ -20,6 +20,7 @@ On Export, **Add back** keeps the open photo as the front, with its edits and un
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open on its own, on the Rotate step, the angle at 0.0°
 
@@ -28,10 +29,10 @@ Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Type the angle 2 | The angle reads 2.0° |
-| 2 | Tap **Export** in the step bar | The Export step shows **Add back** in its bottom row |
+| 2 | Tap **Export** in the step tabs | The Export step shows **Add back** in its bottom row |
 | 3 | Tap **Add back** | The photo picker opens |
 | 4 | Choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step; **Front** / **Back** shows in the middle of the top bar with **Back** in white; **Undo** (the arrow curving left, at the top right) is greyed out |
-| 5 | Tap **Rotate** in the step bar | The back's angle reads 0.0°: it starts like any new photo |
+| 5 | Tap **Rotate** in the step tabs | The back's angle reads 0.0°: it starts like any new photo |
 | 6 | Tap **Front** in the top bar | The front opens on Rotate; its angle reads 2.0° |
 | 7 | Tap **Undo** | The angle reads 0.0°: the front kept its undo history |
 
@@ -42,6 +43,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG from samples/
 - Starting screen: the photo open on its own, on the Export step, Size **Original** selected
 
@@ -75,15 +77,17 @@ The pair's orientation is the front's crop orientation at the moment **Add back*
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open on its own, on the Crop step, with the **1:1** preset selected (white) and the crop box square
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | The Export step shows **Add back** |
-| 2 | Tap **Add back**, and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
-| 3 | Tap **Crop** in the step bar | The back's crop box is upright (taller than wide), 5 wide to 7 high; **5:7 card** is selected |
-| 4 | Tap **Front** in the top bar | The front opens on Crop: its preset is now **5:7 card**, the box upright, 5 wide to 7 high, and fitted around the card |
+| 1 | Tap **Export** in the step tabs | The Export step shows **Add back** |
+| 2 | Tap **Add back** | The photo picker opens |
+| 3 | Choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
+| 4 | Tap **Crop** in the step tabs | The back's crop box is upright (taller than wide), 5 wide to 7 high; **5:7 card** is selected |
+| 5 | Tap **Front** in the top bar | The front opens on Crop: its preset is now **5:7 card**, the box upright, 5 wide to 7 high, and fitted around the card |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -92,14 +96,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 13_front_landscape_onetouch_labeled_white.JPEG and 13_back_landscape_onetouch_labeled_white.JPEG from samples/
 - Starting screen: the front open on its own, on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add back**, and choose 13_back_landscape_onetouch_labeled_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
-| 2 | Tap **Crop** in the step bar | The back's crop box is wider than tall, 7 wide to 5 high; the selected preset reads **7:5 card** |
-| 3 | Tap **Front** in the top bar | The front's crop box is also 7 wide to 5 high, under **7:5 card** |
+| 1 | Tap **Add back** | The photo picker opens |
+| 2 | Choose 13_back_landscape_onetouch_labeled_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
+| 3 | Tap **Crop** in the step tabs | The back's crop box is wider than tall, 7 wide to 5 high; the selected preset reads **7:5 card** |
+| 4 | Tap **Front** in the top bar | The front's crop box is also 7 wide to 5 high, under **7:5 card** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -121,16 +127,18 @@ If the photo picked for the back can't be opened, nothing changes: the front sta
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photo: 14_front_portrait_raw_white.JPEG from samples/, and a text file renamed to not-a-photo.jpg
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG from samples/
+- File: not-a-photo.JPEG from tests/fixtures/ (a line of text, named like a photo)
 - Starting screen: the photo open on its own, its crop preset **1:1** (the first-time choice), on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Add back** | The photo picker opens |
-| 2 | Choose not-a-photo.jpg | A message reads "Couldn’t read that file as an image."; the front stays on screen |
+| 2 | Choose not-a-photo.JPEG | A message reads "Couldn’t read that file as an image."; the front stays on screen |
 | 3 | Look at the top bar | There is no **Front** / **Back** and no **Unpair** |
 | 4 | Look at the bottom row of Export | **Add back** is still there |
-| 5 | Tap **Crop** in the step bar | The preset is still **1:1**: the front's crop was not changed to 5:7 |
+| 5 | Tap **Crop** in the step tabs | The preset is still **1:1**: the front's crop was not changed to 5:7 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -152,6 +160,7 @@ While paired, a **Front** / **Back** switch sits in the center of the top bar on
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
@@ -160,7 +169,7 @@ A side opens in a fraction of a second, so for row 7 watch the switch closely, o
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the middle of the top bar | **Front** / **Back**, with a white fill behind **Back** |
-| 2 | Tap **Rotate** in the step bar | **Front** / **Back** is still in the middle of the top bar, **Back** in white |
+| 2 | Tap **Rotate** in the step tabs | **Front** / **Back** is still in the middle of the top bar, **Back** in white |
 | 3 | Tap **Crop** | The same |
 | 4 | Tap **Levels** | The same |
 | 5 | Tap **Overlay** | The same |
@@ -188,14 +197,15 @@ Switching sides keeps the step you are on: Crop on the back opens Crop on the fr
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Crop** in the step bar | The back's Crop step |
+| 1 | Tap **Crop** in the step tabs | The back's Crop step |
 | 2 | Tap **Front** in the top bar | The front opens on the Crop step |
-| 3 | Tap **Levels** in the step bar | The front's Levels step |
+| 3 | Tap **Levels** in the step tabs | The front's Levels step |
 | 4 | Tap **Back** in the top bar | The back opens on the Levels step |
 
 Pass: every row's result is seen.
@@ -215,12 +225,14 @@ The other side's photo is read before the open one is let go, so if it can't be 
 - Cases: 1
 
 ### PAIR-06.1 A side that can't be read leaves the open side as it was   [auto: phone]
+Script only
+Stand-in: no control spoils a side's kept photo, so the script replaces the front's kept copy of its photo with bytes that aren't an image, as a photo deleted or damaged on the device would be.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open, on the Rotate step, its angle at 0.0°
-- The front's photo can no longer be read. A person can't arrange this by hand; the automated test replaces the front's kept copy of the photo with bytes that aren't an image
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open, on the Rotate step, its angle at 0.0°; the front's kept photo can't be read
 
 Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap **Done**.
 
@@ -245,30 +257,72 @@ Each side keeps its own edits, undo history, unapplied Levels changes and the do
 - Changed: none
 - Anchors: `#sideSwitch`, `#btnUndo`, `#btnRedo`
 - Source: `js/app/pair.js` (`captureSide`, `applySide`, `switchSide`)
-- Cases: 1
+- Cases: 3
 
 ### PAIR-07.1 Each side keeps its own edits, Levels changes and selected corner   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap **Done**. The selected corner is the one whose round handle has a red ring.
 
-This case covers the edits, the undo history, the unapplied Levels changes with the dot on the Levels tab, and the selected corner; the zoom, the exported mark (PAIR-34.1) and the detection results (PAIR-43.1) are covered elsewhere or not yet.
+This case covers the edits, the undo history, the unapplied Levels changes with the dot on the Levels tab, and the selected corner; the zoom and the detection results are PAIR-07.2 and PAIR-07.3, and the exported mark is PAIR-34.1.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Front** in the top bar | The front opens on Perspective; the top-left corner is selected |
 | 2 | Tap **Next handle** (under the nudge pad) | The top-right corner is selected |
-| 3 | Tap **Rotate** in the step bar, then type the angle 2 | The angle reads 2.0° |
-| 4 | Tap **Levels** in the step bar | The Levels step, with no dot on its tab |
-| 5 | Tap **Auto** | **Discard** and **Apply** show, and a white dot appears on the **Levels** tab |
-| 6 | Tap **Back** in the top bar | The back opens on Levels with no dot on the tab; **Undo** (the arrow curving left, at the top right) is greyed out |
-| 7 | Tap **Front** | The front opens on Levels: **Discard** and **Apply** show and the dot is back |
-| 8 | Tap **Perspective** in the step bar | The top-right corner is still the selected one |
-| 9 | Tap **Rotate** in the step bar | The angle reads 2.0° |
+| 3 | Tap **Rotate** in the step tabs | The front's Rotate step; the angle reads 0.0° |
+| 4 | Type the angle 2 | The angle reads 2.0° |
+| 5 | Tap **Levels** in the step tabs | The Levels step, with no dot on its tab; **Discard** and **Apply** are greyed out |
+| 6 | Tap **Auto** | **Discard** and **Apply** are no longer greyed out, and a white dot appears on the **Levels** tab |
+| 7 | Tap **Back** in the top bar | The back opens on Levels with no dot on the tab; **Discard** and **Apply** are greyed out; **Undo** (the arrow curving left, at the top right) is greyed out |
+| 8 | Tap **Front** | The front opens on Levels: **Discard** and **Apply** are no longer greyed out, and the dot is back |
+| 9 | Tap **Perspective** in the step tabs | The top-right corner is still the selected one |
+| 10 | Tap **Rotate** in the step tabs | The angle reads 2.0° |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-07.2 Each side keeps its own zoom   [auto: phone]
+Before you start:
+- Device and browser: a phone, or a phone-width window with touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step, fitted to the photo area
+
+Zoom in: put two fingers on the photo and spread them apart. **Fit** is the icon button in the top bar whose tooltip reads "Fit to screen (F)"; on a phone it shows only while the photo is zoomed or panned.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the top bar | There is no **Fit** |
+| 2 | Zoom in on the photo | The back's photo grows; **Fit** appears in the top bar |
+| 3 | Tap **Front** in the top bar | The front opens fitted to the photo area; **Fit** has gone |
+| 4 | Tap **Back** in the top bar | The back opens as large as it was left; **Fit** is back in the top bar |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-07.3 Each side keeps its own detection results   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
+
+**Candidate** is the tool in Perspective's tool row that steps through the shapes detection found; it shows which one is in use, such as 1/3. The confidence is at the right of the line above the controls (the one line of text at the top of the controls), such as Confidence 97%.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at **Candidate** and the line above the controls | **Candidate** reads 1/3; the line reads Confidence 97% |
+| 2 | Tap **Candidate** | The corners move to another shape; **Candidate** reads 2/3 and the line gives a lower confidence: Confidence 87% (88% in some browsers, which shrink the photo slightly differently) |
+| 3 | Tap **Front** in the top bar | The front opens on Perspective: **Candidate** reads 1/3 and the line Confidence 99%, the front's own |
+| 4 | Tap **Back** in the top bar | The back opens with **Candidate** at 2/3 and the confidence row 2 gave; its corners are on the second shape, as row 2 left them |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -284,27 +338,87 @@ A switch turns off Tap to find card, an armed white or black pick, the before-le
 - Changed: none
 - Anchors: `#btnFindCard`, `#toolPreview`, "Share now"
 - Source: `js/app/pair.js` (`applySide`)
-- Cases: 1
+- Cases: 4
 
 ### PAIR-08.1 A switch turns off Tap to find card, Preview and an armed pick   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
-This case covers Tap to find card, Preview and an armed pick; the before-levels comparison, Overlay's file error and a share waiting for **Share now** are not covered by a case yet.
+This case covers Tap to find card, Preview and an armed pick; the before-levels comparison is PAIR-08.2, Overlay's file error PAIR-08.3 and a share waiting for **Share now** PAIR-08.4.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options**: on a phone, tap the tab with an up arrow on the top edge of the controls; on a wide screen they are always shown under the controls | **Tap to find card** is listed |
-| 2 | Tap **Tap to find card** | The line above the controls reads "Tap the card in the photo." with **Cancel** |
+| 1 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** is listed |
+| 2 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls) reads "Tap the card in the photo." with **Cancel** |
 | 3 | Tap **Front** in the top bar | The front opens on Perspective; "Tap the card in the photo." has gone |
 | 4 | Tap **Preview** in the tool row | **Preview** reads On; the photo shows the straightened card, with no corner handles |
 | 5 | Tap **Back** | The back opens with **Preview** off and its corner handles showing |
-| 6 | Tap **Levels** in the step bar | The back's Levels step |
+| 6 | Tap **Levels** in the step tabs | The back's Levels step |
 | 7 | Tap **Pick white** | **Pick white** is selected (white) |
 | 8 | Tap **Front** | The front opens on Levels with neither **Pick white** nor **Pick black** selected |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-08.2 A switch ends the before-levels comparison   [auto: desktop]
+Before you start:
+- Device and browser: a wide window with a keyboard and a mouse
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, click **Export**, click **Add back** and choose the back. The back is open on the Levels step
+
+Holding the C key on Levels shows the photo without its Levels changes, with a **Before levels** badge on it, until the key is let go.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Click **Auto** | The back's whites turn brighter; a white dot appears on the **Levels** tab |
+| 2 | Press and hold C | The photo goes back to how it was before **Auto**, with a **Before levels** badge on it |
+| 3 | Still holding C, click **Front** in the top bar | The front opens on Levels with no **Before levels** badge |
+| 4 | Let go of C | The front is unchanged |
+| 5 | Click **Back** in the top bar | The back opens with its brighter whites from **Auto** and no **Before levels** badge |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-08.3 A switch clears Overlay's file message   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- File: notes.txt from tests/fixtures/ (a line of text)
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Overlay step, with no logo
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add logo** | The file picker opens |
+| 2 | Choose notes.txt | The line above the controls (the one line of text at the top of the controls) reads "That file type isn’t supported. Use PNG, WebP, JPG or SVG." |
+| 3 | Tap **Front** in the top bar | The front opens on Overlay; the message has gone |
+| 4 | Tap **Back** in the top bar | The back opens on Overlay; the message is not back |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-08.4 A switch drops a share waiting for Share now   [auto: phone]
+Script only
+Stand-in: a script stands in for the share sheet and refuses the first share, as Safari does when the export took too long after the tap; no person can make a browser refuse on cue, and no case uses a desktop browser's own share sheet.
+Before you start:
+- Device and browser: a phone-width window, in a browser that can share files on a secure page
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**. **Together** is selected
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Share** | No share sheet; a message ends "Tap Share now to open the share sheet."; **Share** reads **Share now** |
+| 2 | Tap **Front** in the top bar | The front opens on Export; the button reads **Share** again |
+| 3 | Tap **Share** | The progress line runs again (a new export), and the share sheet is handed one file: 14_front_portrait_raw_white-pair.jpg |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -315,26 +429,27 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 - Risk: medium
 - Check: script
-- Layout: both. No difference.
+- Layout: both. On a phone the Corner shots sheet covers the top bar while it is open, so its save buttons can be seen greyed out during a switch only on a wide screen, where Corner shots is listed in the side panel.
 - Added: 1.10 baseline
 - Changed: none
-- Anchors: `#sideSwitch`, `#btnUnpair`, `#btnDownload`, "Wait for the export to finish, then open the photo."
+- Anchors: `#sideSwitch`, `#btnUnpair`, `#btnDownload`, `#btnShare`, `#btnCornerDownload`, "Wait for the export to finish, then open the photo."
 - Source: `js/app/pair.js` (`setSwitching`, `startPair`, `switchSide`, `syncPair`, `receivePhoto`), `js/app/export-controls.js` (`syncSaveButtons`), `js/app/corner-shots.js` (`syncCornerShots`), `js/app/export.js` (`doExport`)
-- Ruling: R13. A photo opened while a side is opening says "Wait for the other side to open, then open the photo."; the export wording stays for a running export. The app differs today. New wording, to be approved by Rich.
-- Cases: 3
+- Ruling: R13. A photo opened while a side is opening says "Wait for the other side to open, then open the photo." (approved wording); the export wording stays for a running export. The app differs today.
+- Cases: 4
 
 ### PAIR-09.1 While a side opens, the switch and save controls are greyed out   [auto: phone]
 Before you start:
-- Device and browser: any; a phone-width or a wide window
+- Device and browser: a phone-width window, in a browser that can share files and copy images on a secure page (an iPhone's Safari on the UAT site; the automated test puts a stand-in for the share sheet in the page)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
-A side opens in a fraction of a second, so for row 2 watch closely, or record the screen and step through it.
+A side opens in a fraction of a second, so for row 2 watch closely, or record the screen and step through it. The corner shots' save buttons are PAIR-09.4.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | **Front** / **Back**, **Unpair**, **Download**, **Copy**, **Together** / **Separately** and the corner shots' save button can all be tapped |
+| 1 | Tap **Export** in the step tabs | **Front** / **Back**, **Unpair**, **Share**, **Download**, **Copy** and **Together** / **Separately** can all be tapped |
 | 2 | Tap **Front** in the top bar | While "Opening the front…" shows, all of them are greyed out |
 | 3 | Wait for the front to open | All of them can be tapped again |
 
@@ -345,6 +460,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
 
@@ -360,21 +476,42 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PAIR-09.3 A photo opened while a side opens is refused with its own message   [auto: phone]
+Script only
+Stand-in: the front opens in tens of milliseconds, too fast for a person to choose a photo in between, so the script holds the front's opening until row 3 is done.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
-- The automated test holds the front's opening until row 3 is done; by hand, rows 1 and 2 must follow each other within the moment the front takes to open
 
-Written to ruling R13; it fails until R13 is built (BUG-031). The ruling's wording waits for Rich's approval, so the test checks the meaning, not the words.
+Written to ruling R13, in the words Rich approved; it fails until R13 is built (BUG-031).
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Front** in the top bar | "Opening the front…" shows |
 | 2 | Tap **Open** (the folder at the top left) | The photo picker opens |
-| 3 | Choose IMG_9136.JPEG | A warning says to wait for the other side to open, then open the photo; it does not talk about an export |
+| 3 | Choose IMG_9136.JPEG | An amber warning reads "Wait for the other side to open, then open the photo." |
 | 4 | Wait for the front to open | The front is open; **Front** / **Back** is still in the top bar; IMG_9136.JPEG was not opened |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-09.4 On a wide screen, a switch greys out the corner shots' save buttons   [auto: desktop]
+Before you start:
+- Device and browser: a wide window with a mouse, in a browser that can share files on a secure page (the automated test puts a stand-in for the share sheet in the page)
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, click **Export**, click **Add back** and choose the back. The back is open on the Export step
+
+A side opens in a fraction of a second, so for row 2 watch closely, or record the screen and step through it.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Click **Corner shots** in the side panel | The side panel shows the Corner shots part, with **Share corners** and **Download corners**; both can be clicked |
+| 2 | Click **Front** in the top bar | While "Opening the front…" shows, **Share corners** and **Download corners** are greyed out |
+| 3 | Wait for the front to open | **Share corners** and **Download corners** can be clicked again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -396,26 +533,28 @@ An **Unpair** button (an icon, tooltip "Unpair (keep one side)") sits beside **F
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open on its own, on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the middle of the top bar | There is no **Front** / **Back** and no **Unpair** |
-| 2 | Tap **Add back**, and choose 14_back_portrait_raw_white.JPEG | **Unpair** (an icon of a link broken in two) sits beside **Front** / **Back**; its tooltip (or its name to a screen reader) reads "Unpair (keep one side)" |
-| 3 | Tap **Unpair** | A card asks which side to keep |
-| 4 | Tap **Keep back** | The card closes; **Unpair** and **Front** / **Back** have gone |
+| 2 | Tap **Add back** | The photo picker opens |
+| 3 | Choose 14_back_portrait_raw_white.JPEG | **Unpair** (an icon of a link broken in two) sits beside **Front** / **Back**; its tooltip (or its name to a screen reader) reads "Unpair (keep one side)" |
+| 4 | Tap **Unpair** | The question box (the box over the dimmed photo with a question and its buttons) asks which side to keep |
+| 5 | Tap **Keep back** | The question box closes; **Unpair** and **Front** / **Back** have gone |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PAIR-11 Unpair asks which side to keep
 
-**Unpair** asks on a card over the photo: **Keep front**, **Keep back** or **Cancel**. Keeping the side that isn't open switches to it first.
+**Unpair** asks in a question box over the photo: **Keep front**, **Keep back** or **Cancel**. Keeping the side that isn't open switches to it first.
 
 - Risk: high
 - Check: script
-- Layout: both. On a phone the card's backdrop covers the bars; on a wide screen only the photo is dimmed and the bars stay readable but take no input.
+- Layout: both. On a phone the question box's backdrop covers the bars; on a wide screen only the photo is dimmed and the bars stay readable but take no input.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#pairPrompt`, "Keep one side as a single photo.", "Keep front", "Keep back"
@@ -426,13 +565,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Unpair** (beside **Front** / **Back**) | A card over the dimmed photo, titled "Unpair", reads "Keep one side as a single photo." with **Keep front**, **Keep back** and **Cancel** |
-| 2 | Tap **Cancel** | The card closes; **Front** / **Back** is still in the top bar, **Back** in white, and the back is on screen |
+| 1 | Tap **Unpair** (beside **Front** / **Back**) | A question box over the dimmed photo, titled "Unpair", reads "Keep one side as a single photo." with **Keep front**, **Keep back** and **Cancel** |
+| 2 | Tap **Cancel** | The question box closes; **Front** / **Back** is still in the top bar, **Back** in white, and the back is on screen |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -441,12 +581,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Unpair** | The card asks: **Keep front**, **Keep back**, **Cancel** |
+| 1 | Tap **Unpair** | The question box asks: **Keep front**, **Keep back**, **Cancel** |
 | 2 | Tap **Keep front** | The front's picture replaces the back's (the colorful front of the card); a message reads "Unpaired. The front is a single photo now." |
 | 3 | Look at the top bar | **Front** / **Back** and **Unpair** have gone |
 
@@ -471,59 +612,64 @@ After **Unpair** the kept side is a single photo: its crop stays 5:7, the crop p
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Unpair**, then **Keep back** | A message reads "Unpaired. The back is a single photo now."; **Front** / **Back** has gone |
-| 2 | Tap **Crop** in the step bar | **5:7 card** is still selected, every other preset can be tapped, and the line above the presets no longer reads "Pair: 5:7 only" |
-| 3 | Wait two seconds, then reload the page | The start screen offers **Resume**, naming only 14_back_portrait_raw_white.JPEG (no "+") |
-| 4 | Tap **Resume** | The back opens on its own, on Crop, under **5:7 card**; there is no **Front** / **Back** |
+| 1 | Tap **Unpair** | The question box asks: **Keep front**, **Keep back**, **Cancel** |
+| 2 | Tap **Keep back** | A message reads "Unpaired. The back is a single photo now."; **Front** / **Back** has gone |
+| 3 | Tap **Crop** in the step tabs | **5:7 card** is still selected, every other preset can be tapped, and the line above the presets no longer reads "Pair: 5:7 only" |
+| 4 | Wait two seconds, then reload the page | The start screen offers **Resume**, naming only 14_back_portrait_raw_white.JPEG, with no second photo's name after it |
+| 5 | Tap **Resume** | The back opens on its own, on Crop, under **5:7 card**; there is no **Front** / **Back** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PAIR-12.2 A reload straight after Unpair resumes the kept side   [auto: phone, webkit]
+Script only
+Stand-in: the script holds every write to the browser's storage half a second, as on a busy phone, and reloads the page the moment the message shows; a person can't slow storage, and the result of a reload by hand depends on how quickly the browser stores the photo.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 Written to ruling R25; it fails until R25 is built (BUG-032).
 
-By hand the result depends on how quickly the browser stores the photo. The automated test makes every write to the browser's storage wait half a second, as on a busy phone, so the result is the same every run.
-
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Unpair**, then **Keep front** | A message reads "Unpaired. The front is a single photo now." |
-| 2 | Reload the page the moment that message shows | The start screen offers **Resume**, naming 14_front_portrait_raw_white.JPEG |
-| 3 | Tap **Resume** | The front opens on its own (the colorful front of the card), with no **Front** / **Back** |
+| 1 | Tap **Unpair** | The question box asks: **Keep front**, **Keep back**, **Cancel** |
+| 2 | Tap **Keep front** | A message reads "Unpaired. The front is a single photo now." |
+| 3 | Reload the page the moment that message shows | The start screen offers **Resume**, naming 14_front_portrait_raw_white.JPEG |
+| 4 | Tap **Resume** | The front opens on its own (the colorful front of the card), with no **Front** / **Back** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PAIR-13 Opening a photo while paired asks first
 
-**Open**, a dropped photo or a pasted photo while paired asks on a card: **New photo**, **Replace front** or **Replace back** (the side you are on), or **Cancel**.
+**Open**, a dropped photo or a pasted photo while paired asks in a question box: **New photo**, **Replace front** or **Replace back** (the side you are on), or **Cancel**.
 
 - Risk: high
 - Check: script
-- Layout: both. On a phone the card's backdrop covers the bars; on a wide screen only the photo is dimmed.
+- Layout: both. On a phone the question box's backdrop covers the bars; on a wide screen only the photo is dimmed.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#pairPrompt`, "End the pair, or replace the side you’re on?", `#btnPromptFirst`, `#btnPromptSecond`
 - Source: `js/app/pair.js` (`receivePhoto`, `showPrompt`), `js/app/main.js` (`bindPhotoInput`)
-- Flag: to confirm. The card's title and its first button both read **New photo**.
+- Flag: to confirm. The question box's title and its first button both read **New photo**.
 - Cases: 1
 
 ### PAIR-13.1 Open while paired asks: New photo, or replace the side you are on   [auto: phone]
-Flag: to confirm. Written to today's behavior: the card's title and its first button both read New photo.
+Flag: to confirm. Written to today's behavior: the question box's title and its first button both read New photo.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
@@ -532,11 +678,12 @@ Dropping or pasting a photo asks the same question; those are covered under Drop
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Open** (the folder at the top left) | The photo picker opens |
-| 2 | Choose IMG_9136.JPEG | A card titled "New photo" reads "End the pair, or replace the side you’re on?" with **New photo**, **Replace back** and **Cancel** |
-| 3 | Tap **Cancel** | The card closes; the back is still on screen with **Front** / **Back** in the top bar |
+| 2 | Choose IMG_9136.JPEG | A question box over the dimmed photo, titled "New photo", reads "End the pair, or replace the side you’re on?" with **New photo**, **Replace back** and **Cancel** |
+| 3 | Tap **Cancel** | The question box closes; the back is still on screen with **Front** / **Back** in the top bar |
 | 4 | Tap **Front** in the top bar | The front opens |
-| 5 | Tap **Open**, and choose IMG_9136.JPEG | The same card, its middle button now reading **Replace front** |
-| 6 | Tap **Cancel** | The card closes; the front is still on screen, still paired |
+| 5 | Tap **Open** | The photo picker opens |
+| 6 | Choose IMG_9136.JPEG | The same question box, its middle button now reading **Replace front** |
+| 7 | Tap **Cancel** | The question box closes; the front is still on screen, still paired |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -558,14 +705,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open**, and choose IMG_9136.JPEG | The card asks: **New photo**, **Replace back**, **Cancel** |
-| 2 | Tap **New photo** | IMG_9136.JPEG opens on Perspective; **Front** / **Back** and **Unpair** have gone |
-| 3 | Tap **Export** in the step bar | **Add back** is in the bottom row: this is a single photo |
+| 1 | Tap **Open** (the folder at the top left) | The photo picker opens |
+| 2 | Choose IMG_9136.JPEG | A question box over the dimmed photo asks: **New photo**, **Replace back**, **Cancel** |
+| 3 | Tap **New photo** | IMG_9136.JPEG opens on Perspective; **Front** / **Back** and **Unpair** have gone |
+| 4 | Tap **Export** in the step tabs | **Add back** is in the bottom row: this is a single photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -574,15 +723,18 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/, and a text file renamed to not-a-photo.jpg
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- File: not-a-photo.JPEG from tests/fixtures/ (a line of text, named like a photo)
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open**, and choose not-a-photo.jpg | The card asks: **New photo**, **Replace back**, **Cancel** |
-| 2 | Tap **New photo** | A message reads "Couldn’t read that file as an image." |
-| 3 | Look at the top bar | **Front** / **Back** is still there, **Back** in white; the back is on screen |
-| 4 | Tap **Front** | The front opens: the pair is whole |
+| 1 | Tap **Open** (the folder at the top left) | The photo picker opens |
+| 2 | Choose not-a-photo.JPEG | A question box over the dimmed photo asks: **New photo**, **Replace back**, **Cancel** |
+| 3 | Tap **New photo** | A message reads "Couldn’t read that file as an image." |
+| 4 | Look at the top bar | **Front** / **Back** is still there, **Back** in white; the back is on screen |
+| 5 | Tap **Front** | The front opens: the pair is whole |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -604,6 +756,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open, on the Rotate step, its angle at 0.0°
 
@@ -612,11 +765,12 @@ Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Type the angle 2 | The angle reads 2.0° |
-| 2 | Tap **Open**, and choose IMG_9136.JPEG | The card asks: **New photo**, **Replace back**, **Cancel** |
-| 3 | Tap **Replace back** | IMG_9136.JPEG opens on Perspective as the back: **Front** / **Back** is still in the top bar with **Back** in white; **Undo** is greyed out |
-| 4 | Tap **Rotate** in the step bar | The angle reads 0.0°: the new back starts fresh |
-| 5 | Tap **Crop** in the step bar | **5:7 card** is selected and the line reads "Pair: 5:7 only" |
-| 6 | Tap **Front** in the top bar | The front opens as it was |
+| 2 | Tap **Open** (the folder at the top left) | The photo picker opens |
+| 3 | Choose IMG_9136.JPEG | A question box over the dimmed photo asks: **New photo**, **Replace back**, **Cancel** |
+| 4 | Tap **Replace back** | IMG_9136.JPEG opens on Perspective as the back: **Front** / **Back** is still in the top bar with **Back** in white; **Undo** is greyed out |
+| 5 | Tap **Rotate** in the step tabs | The angle reads 0.0°: the new back starts fresh |
+| 6 | Tap **Crop** in the step tabs | **5:7 card** is selected and the line reads "Pair: 5:7 only" |
+| 7 | Tap **Front** in the top bar | The front opens as it was |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -638,6 +792,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
 
@@ -667,14 +822,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | The bottom row holds **Corner shots** but no **Add back** |
+| 1 | Tap **Export** in the step tabs | The bottom row holds **Corner shots** but no **Add back** |
 | 2 | Tap **Front** in the top bar | The front's Export: still no **Add back** |
-| 3 | Tap **Unpair**, then **Keep front** | **Add back** is back in the bottom row |
+| 3 | Tap **Unpair** | The question box asks: **Keep front**, **Keep back**, **Cancel** |
+| 4 | Tap **Keep front** | **Add back** is back in the bottom row |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -696,16 +853,19 @@ Both sides are locked to the 5:7 crop in the pair's one orientation. The lock is
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open on its own, on the Crop step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap the **3:4** preset | **3:4** is selected; the crop box is 3 wide to 4 high |
-| 2 | Tap **Export** in the step bar, tap **Add back**, and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
-| 3 | Tap **Front** in the top bar | The front opens on Perspective, the step the back was on |
-| 4 | Tap **Crop** in the step bar | **5:7 card** is selected |
-| 5 | Tap **Undo** (the arrow curving left, at the top right) | **5:7 card** is still selected and the box is still 5 wide to 7 high: undoing the 3:4 pick did not undo the lock |
+| 2 | Tap **Export** in the step tabs | The Export step shows **Add back** |
+| 3 | Tap **Add back** | The photo picker opens |
+| 4 | Choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
+| 5 | Tap **Front** in the top bar | The front opens on Perspective, the step the back was on |
+| 6 | Tap **Crop** in the step tabs | **5:7 card** is selected |
+| 7 | Tap **Undo** (the arrow curving left, at the top right) | **5:7 card** is still selected and the box is still 5 wide to 7 high: undoing the 3:4 pick did not undo the lock |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -714,22 +874,21 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: the front open on its own, on the Rotate step, its angle at 0.0° and its crop preset **1:1** (the first-time choice)
+- Edits file: pair-front-square-crop-edits.json from tests/fixtures/: edits saved with **Save edits** from 14_front_portrait_raw_white.JPEG on its own, turned 3.0° on Rotate, with its square **1:1** crop box dragged 30 px down by hand (in the file: `"fine": 3` and `"mode": "manual"`, `"preset": "1:1"`)
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back, then tap **Front** in the top bar and **Export** in the step tabs. The front is open on Export, its angle at 0.0°
 
-Type the angle N: tap the angle (with a pencil after it), type N, tap **Done**. Open **Export options**: on a phone, tap the tab with an up arrow on the top edge of the controls; on a wide screen they are always shown under the controls.
+Open **Export options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls. Close them: on a phone, tap the × at the top right of the sheet; on a wide screen they stay shown.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Type the angle 3 | The angle reads 3.0° |
-| 2 | Tap **Crop** in the step bar, drag the middle of the square crop box 30 px down, and let go | The box has moved: it is now drawn by hand |
-| 3 | Tap **Export**, open **Export options**, and tap **Save edits** | An edits file, 14_front_portrait_raw_white-edits.json, is saved |
-| 4 | Tap **Add back** (on a phone, close the options first), and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
-| 5 | Tap **Front** in the top bar | The front opens on Perspective, the step the back was on |
-| 6 | Tap **Rotate** in the step bar, and type the angle 0 | The angle reads 0.0° |
-| 7 | Tap **Export**, open **Export options**, tap **Load edits**, and choose the edits file from row 3 | The options stay open, with no error message |
-| 8 | Tap **Rotate** in the step bar (on a phone, close the options first) | The angle reads 3.0°: the file's edits were loaded |
-| 9 | Tap **Crop** in the step bar | **5:7 card** is selected and the box is 5 wide to 7 high, fitted around the card: the file's square box was dropped |
+| 1 | Open **Export options** | **Save edits** and **Load edits** show |
+| 2 | Tap **Load edits** | The file picker opens |
+| 3 | Choose pair-front-square-crop-edits.json | The options stay open, with no red message |
+| 4 | Close **Export options** | The options are closed on a phone; on a wide screen, nothing changes |
+| 5 | Tap **Rotate** in the step tabs | The angle reads 3.0°: the file's edits were loaded |
+| 6 | Tap **Crop** in the step tabs | **5:7 card** is selected and the box is 5 wide to 7 high, fitted around the card: the file's square box was dropped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -751,6 +910,7 @@ On Crop while paired only the selected **5:7 card** preset is enabled (it reads 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
@@ -758,7 +918,7 @@ The landscape label, **7:5 card**, is checked in PAIR-02.2.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Crop** in the step bar | **5:7 card** is selected; every other preset (Free, Original, 1:1, 3:4, 4:5, 2:3, 9:16) is greyed out; the line above the presets reads "Pair: 5:7 only" at its right |
+| 1 | Tap **Crop** in the step tabs | **5:7 card** is selected; every other preset (Free, Original, 1:1, 3:4, 4:5, 2:3, 9:16) is greyed out; the line above the presets reads "Pair: 5:7 only" at its right |
 | 2 | Tap **1:1** | Nothing changes: **5:7 card** stays selected |
 | 3 | Tap **Front** in the top bar | The front's Crop step shows the same: only **5:7 card**, and "Pair: 5:7 only" |
 
@@ -785,6 +945,7 @@ Flag: to confirm. Written to today's behavior: Undo after a pair's Swap undoes t
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open, on the Rotate step, its angle at 0.0°
 
@@ -793,13 +954,14 @@ Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Type the angle 2 | The angle reads 2.0° |
-| 2 | Tap **Crop** in the step bar | **5:7 card**; the box is upright |
+| 2 | Tap **Crop** in the step tabs | **5:7 card**; the box is upright |
 | 3 | Tap **Swap** | The box lies down, 7 wide to 5 high; the preset reads **7:5 card** |
 | 4 | Tap **Undo** (the arrow curving left, at the top right) | The box is still 7 wide to 5 high |
-| 5 | Tap **Rotate** in the step bar | The angle reads 0.0°: Undo took back the angle, not the Swap |
-| 6 | Tap **Front** in the top bar, then **Crop** in the step bar | The front's box is 7 wide to 5 high too |
-| 7 | Tap **Swap** | The front's box is upright again, 5 wide to 7 high |
-| 8 | Tap **Back** in the top bar | The back's box is upright again too |
+| 5 | Tap **Rotate** in the step tabs | The angle reads 0.0°: Undo took back the angle, not the Swap |
+| 6 | Tap **Front** in the top bar | The front opens on Rotate |
+| 7 | Tap **Crop** in the step tabs | The front's box is 7 wide to 5 high too |
+| 8 | Tap **Swap** | The front's box is upright again, 5 wide to 7 high |
+| 9 | Tap **Back** in the top bar | The back's box is upright again too |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -816,29 +978,67 @@ The export settings (**Size**, **Format**, **Quality**, **Interpolation** and **
 - Anchors: `#exportSize`, `#exportFormat`, `#quality`, `#interp`, `#fill`
 - Source: `js/app/pair.js` (`applyPairRules`), `js/app/shell.js` (`resetStep`)
 - Flag: to confirm. **Reset export settings** on one side resets both sides' export settings, and leaves Together / Separately as it was.
-- Cases: 1
+- Cases: 3
 
-### PAIR-21.1 Export settings changed on one side are the other side's too   [auto: phone]
+### PAIR-21.1 Size, Format and Separately chosen on one side are the other side's too   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**. Size reads **2000**, Format **JPEG**, and **Together** is selected
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Separately** | **Separately** is selected |
+| 2 | Tap Size **1080** | **1080** is selected |
+| 3 | Tap Format **WebP** | **WebP** is selected |
+| 4 | Tap **Front** in the top bar | The front's Export: Size **1080**, Format **WebP** and **Separately** are selected |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-21.2 The options' settings changed on one side are the other side's too   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**
+
+Open **Export options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls. Close them: on a phone, tap the × at the top right of the sheet (the options cover the top bar while open); on a wide screen they stay shown. Choose X in a list: tap the list's row, then pick X in the list that opens.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Open **Export options** | Quality reads 92%, Interpolation **Bilinear**, Fill outside photo **White** |
+| 2 | Drag the Quality slider's knob all the way to the left | Quality reads 50% |
+| 3 | Choose **Bicubic (sharper, slower)** in **Interpolation** | The row reads **Bicubic** |
+| 4 | Choose **Black** in **Fill outside photo** | The row reads **Black** |
+| 5 | Close **Export options** | On a phone the options close and the top bar shows **Front** / **Back** |
+| 6 | Tap **Front** in the top bar | The front opens on Export |
+| 7 | Open **Export options** | The front's options read 50%, **Bicubic**, **Black** |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-21.3 Reset export settings on one side resets both, and keeps Separately   [auto: phone]
 Flag: to confirm. Written to today's behavior: Reset export settings on one side resets both sides, and leaves Separately chosen.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**. Size reads **2000** and Format **JPEG**
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, then **Separately**, Size **1080** and Format **WebP**
 
-Open **Export options**: on a phone, tap the tab with an up arrow on the top edge of the controls; on a wide screen they are always shown under the controls.
+Open **Export options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls. Close them: on a phone, tap the × at the top right of the sheet; on a wide screen they stay shown.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Separately**, Size **1080** and Format **WebP** | All three are selected |
-| 2 | Open **Export options** | Quality reads 92%, Interpolation **Bilinear**, Fill outside photo **White** |
-| 3 | Drag the Quality slider to 80% | Quality reads 80% |
-| 4 | Tap **Interpolation** and choose **Bicubic (sharper, slower)** | The row reads **Bicubic** |
-| 5 | Tap **Fill outside photo** and choose **Black** | The row reads **Black** |
-| 6 | Tap **Front** in the top bar | The front's Export: Size **1080**, **WebP**, **Separately**; its options read 80%, **Bicubic**, **Black** |
-| 7 | Tap **Reset export settings** in the options | Size **2000**, **JPEG**, 92%, **Bilinear**, **White**; **Separately** is still selected |
-| 8 | Tap **Back** in the top bar | The back's Export shows the same: **2000**, **JPEG**, 92%, **Bilinear**, **White** |
+| 1 | Open **Export options** | **Reset export settings** is among the options |
+| 2 | Tap **Reset export settings** | Quality reads 92%, Interpolation **Bilinear**, Fill outside photo **White** |
+| 3 | Close **Export options** | Size **2000** and Format **JPEG** are selected; **Separately** is still selected |
+| 4 | Tap **Front** in the top bar | The front's Export shows the same: Size **2000**, Format **JPEG**, **Separately** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -860,17 +1060,22 @@ The pair's 5:7 lock never becomes the remembered crop preset; after Unpair the r
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
 - Starting screen: the front open on its own, on the Crop step
+
+Add the back: tap **Add back**, and choose 14_back_portrait_raw_white.JPEG in the photo picker. Open IMG_9136.JPEG: tap **Open** (the folder at the top left), and choose IMG_9136.JPEG in the photo picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap the **3:4** preset | **3:4** is selected |
-| 2 | Tap **Export** in the step bar, tap **Add back**, and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
-| 3 | Tap **Crop** in the step bar | **5:7 card** is selected |
-| 4 | Tap **Unpair**, then **Keep back** | "Unpaired. The back is a single photo now."; the crop is still **5:7 card** |
-| 5 | Tap **Open** (the folder at the top left), and choose IMG_9136.JPEG | IMG_9136.JPEG opens on its own, with no question asked |
-| 6 | Tap **Crop** in the step bar | **3:4** is selected: the app remembered 3:4, never the pair's 5:7 |
+| 2 | Tap **Export** in the step tabs | The Export step shows **Add back** |
+| 3 | Add the back | The back opens; **Front** / **Back** shows in the top bar |
+| 4 | Tap **Crop** in the step tabs | **5:7 card** is selected |
+| 5 | Tap **Unpair** | The question box asks: **Keep front**, **Keep back**, **Cancel** |
+| 6 | Tap **Keep back** | "Unpaired. The back is a single photo now."; the crop is still **5:7 card** |
+| 7 | Open IMG_9136.JPEG | IMG_9136.JPEG opens on its own, with no question asked |
+| 8 | Tap **Crop** in the step tabs | **3:4** is selected: the app remembered 3:4, never the pair's 5:7 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -892,6 +1097,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
@@ -899,14 +1105,15 @@ Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Front** in the top bar, then **Rotate** in the step bar | The front's angle reads 0.0° |
-| 2 | Type the angle 2 | The angle reads 2.0° |
-| 3 | Tap **Back** | The back opens on Rotate; its angle reads 0.0° |
-| 4 | Type the angle 5 | The angle reads 5.0° |
-| 5 | Tap **Undo** (the arrow curving left, at the top right) | The back's angle reads 0.0° |
-| 6 | Tap **Redo** (the arrow curving right, beside Undo) | The back's angle reads 5.0° |
-| 7 | Tap **Undo** | The back's angle reads 0.0° |
-| 8 | Tap **Front** | The front's angle still reads 2.0° |
+| 1 | Tap **Front** in the top bar | The front opens on Perspective |
+| 2 | Tap **Rotate** in the step tabs | The front's angle reads 0.0° |
+| 3 | Type the angle 2 | The angle reads 2.0° |
+| 4 | Tap **Back** | The back opens on Rotate; its angle reads 0.0° |
+| 5 | Type the angle 5 | The angle reads 5.0° |
+| 6 | Tap **Undo** (the arrow curving left, at the top right) | The back's angle reads 0.0° |
+| 7 | Tap **Redo** (the arrow curving right, beside Undo) | The back's angle reads 5.0° |
+| 8 | Tap **Undo** | The back's angle reads 0.0° |
+| 9 | Tap **Front** | The front's angle still reads 2.0° |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -928,6 +1135,7 @@ Each side keeps its own logo and its placement, in the Together preview and in t
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/; the logo icons/icon.svg from the app's own folder
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, Size **Original** and Format **PNG**. **Together** is selected
 
@@ -936,11 +1144,13 @@ How the logo shows in the Together preview is judged in PAIR-38.1.
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Download** | One file, 14_front_portrait_raw_white-pair.png, arrives |
-| 2 | Tap **Overlay** in the step bar | The back's Overlay step, with **Add logo** and no logo on the photo |
-| 3 | Tap **Add logo**, and choose icon.svg | The logo appears on the back |
-| 4 | Tap **Front** in the top bar | The front's Overlay step, with **Add logo** and no logo |
-| 5 | Tap **Export** in the step bar, then **Download** | A second -pair.png file arrives |
-| 6 | Compare the two files | The left half (the front) is the same in both, pixel for pixel; the right half (the back) differs where the logo is |
+| 2 | Tap **Overlay** in the step tabs | The back's Overlay step, with **Add logo** and no logo on the photo |
+| 3 | Tap **Add logo** | The file picker opens |
+| 4 | Choose icon.svg | The logo appears on the back |
+| 5 | Tap **Front** in the top bar | The front's Overlay step, with **Add logo** and no logo |
+| 6 | Tap **Export** in the step tabs | The front's Export step, **Together** selected |
+| 7 | Tap **Download** | A second -pair.png file arrives |
+| 8 | Compare the two files | The left half (the front) is the same in both, pixel for pixel; the right half (the back) differs where the logo is |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -962,6 +1172,7 @@ While paired, a **Together** / **Separately** control sits beside the size line 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back, in a browser where no pair was made before. The back is open on the Perspective step
 
@@ -969,10 +1180,11 @@ The control greys out while a side opens (PAIR-09.1) and while an export runs (P
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | **Together** / **Separately** sits beside the size line, **Together** in white |
+| 1 | Tap **Export** in the step tabs | **Together** / **Separately** sits beside the size line, **Together** in white |
 | 2 | Tap **Separately** | **Separately** is white; the size line now gives two sizes joined by + |
 | 3 | Wait two seconds, then reload the page | The start screen offers **Resume** |
-| 4 | Tap **Resume**, then **Export** in the step bar | **Separately** is still selected |
+| 4 | Tap **Resume** | The back opens on Export, with **Back** in white |
+| 5 | Look beside the size line | **Separately** is still selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -994,6 +1206,7 @@ Together saves one joined image: portrait cards side by side with the front on t
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**. Fill outside photo is **White**
 
@@ -1001,12 +1214,14 @@ The two sides are detected at slightly different sizes, so one card is smaller t
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Separately**, then **Download** | Two files: the front's and the back's, each at its own size |
-| 2 | Tap **Together**, then **Download** | One file, 14_front_portrait_raw_white-pair.jpg |
-| 3 | Measure it | Its height is the taller card's; its width is twice the wider card's plus a gap of 0.8% of that twice-width, rounded to whole pixels |
-| 4 | Look at it | The front is on the left and the back on the right, each at the size of its own file from row 1; the gap between them is white |
-| 5 | Look at the smaller card's half | The smaller card sits in the middle of its half, with white around it |
-| 6 | Look at the outer edges | No margin: the larger card's edges are the image's edges |
+| 1 | Tap **Separately** | **Separately** is selected |
+| 2 | Tap **Download** | Two files: the front's and the back's, each at its own size |
+| 3 | Tap **Together** | **Together** is selected |
+| 4 | Tap **Download** | One file, 14_front_portrait_raw_white-pair.jpg |
+| 5 | Measure it | Its height is the taller card's; its width is twice the wider card's plus a gap of 0.8% of that twice-width, rounded to whole pixels |
+| 6 | Look at it | The front is on the left and the back on the right, each at the size of its own file from row 2; the gap between them is white |
+| 7 | Look at the smaller card's half | The smaller card sits in the middle of its half, with white around it |
+| 8 | Look at the outer edges | No margin: the larger card's edges are the image's edges |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1015,15 +1230,18 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 13_front_landscape_onetouch_labeled_white.JPEG and 13_back_landscape_onetouch_labeled_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**. Fill outside photo is **White**
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Separately**, then **Download** | Two files: the front's and the back's |
-| 2 | Tap **Together**, then **Download** | One file, 13_front_landscape_onetouch_labeled_white-pair.jpg |
-| 3 | Measure it | Its width is the wider card's; its height is twice the taller card's plus a gap of 0.8% of that twice-height, rounded to whole pixels |
-| 4 | Look at it | The front is on top and the back below, each at the size of its own file from row 1; the gap between them is white |
+| 1 | Tap **Separately** | **Separately** is selected |
+| 2 | Tap **Download** | Two files: the front's and the back's |
+| 3 | Tap **Together** | **Together** is selected |
+| 4 | Tap **Download** | One file, 13_front_landscape_onetouch_labeled_white-pair.jpg |
+| 5 | Measure it | Its width is the wider card's; its height is twice the taller card's plus a gap of 0.8% of that twice-height, rounded to whole pixels |
+| 6 | Look at it | The front is on top and the back below, each at the size of its own file from row 2; the gap between them is white |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1038,22 +1256,24 @@ A Together image larger than the browser's canvas limits scales both sides down 
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `CONFIG.maxOutputArea`, `CONFIG.maxOutputPx`
-- Source: `js/app/pair.js` (`togetherLayout`), `js/engine.js` (`pairLayout`, `pairScale`)
+- Source: `js/app/pair.js` (`togetherLayout`), `js/engine.js` (`pairLayout`, `pairScale`), `js/app/export-controls.js` (`exportNotes`)
+- Ruling: R15. The note reads "Scaled down to fit the N MP limit." (approved wording; N the limit in millions of pixels, rounded down to a tenth). The app differs today.
 - Cases: 1
 
 ### PAIR-27.1 A Together image over the canvas limit scales both cards down alike   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
-- Build: the build under test
+- Build: the build under test, opened with `?maxOutputArea=1000000` added to its address (index.html?maxOutputArea=1000000), which lowers the canvas limit to 1 MP (1,000,000 pixels)
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: the app opened from the link index.html?maxOutputArea=1000000, which lowers the canvas limit to 1 MP (1,000,000 pixels). A pair: open the front, tap **Export**, tap **Add back** and choose the back. Then tap **Export**, and tap Size **Original**
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. Then tap **Export**, and tap Size **Original**
 
-Each card alone is under 1 MP; the two side by side are over it.
+Written to ruling R15, in the words Rich approved; it fails until R15 is built (BUG-011). Each card alone is under 1 MP; the two side by side are over it.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Separately** | The size line gives the front's and the back's sizes, each under 1,000,000 pixels, with no note |
-| 2 | Tap **Together** | The size line gives one size of at most 1,000,000 pixels, with the shape (width over height) of the two cards side by side; a note reads "Clamped to fit the 1 MP canvas limit." |
+| 2 | Tap **Together** | The size line gives one size of at most 1,000,000 pixels, with the shape (width over height) of the two cards side by side; a note reads "Scaled down to fit the N MP limit.", the approved words, with N the limit the app gives (the approved words say 16.7; this case's link lowers the limit to 1 MP, and which number the note then gives is for Rich) |
 | 3 | Tap **Download** | One file, at the size the line gave |
 | 4 | Look at it | Both cards are in it, shrunk by the same factor: each keeps its shape, and the gap between them is white |
 
@@ -1071,25 +1291,47 @@ Separately saves two files, each identical to that side's own export.
 - Changed: none
 - Anchors: "Separately", `#btnDownload`
 - Source: `js/app/pair.js` (`encodeSeparately`, `renderSideInto`)
-- Cases: 1
+- Cases: 2
 
-### PAIR-28.1 Separately saves each side exactly as its own export   [auto: phone, webkit]
+### PAIR-28.1 Separately saves the front exactly as its own export   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open on its own, on the Crop step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap the **5:7 card** preset | **5:7 card** is selected |
-| 2 | Tap **Export**, Size **Original**, then **Download** | One file: the front on its own |
-| 3 | Tap **Add back**, and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
-| 4 | Tap **Export**, **Separately**, then **Download** | Two files, the front's and the back's |
-| 5 | Compare the front's file with the file from row 2 | They are the same size and the same, pixel for pixel |
-| 6 | Tap **Unpair**, then **Keep back** | The back is a single photo |
-| 7 | Tap **Download** | One file: the back on its own |
-| 8 | Compare it with the back's file from row 4 | They are the same size and the same, pixel for pixel |
+| 2 | Tap **Export** in the step tabs | The Export step |
+| 3 | Tap Size **Original** | **Original** is selected |
+| 4 | Tap **Download** | One file, 14_front_portrait_raw_white-straight.jpg: the front on its own |
+| 5 | Tap **Add back** | The photo picker opens |
+| 6 | Choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
+| 7 | Tap **Export** in the step tabs | The back's Export step, Size **Original** |
+| 8 | Tap **Separately** | **Separately** is selected |
+| 9 | Tap **Download** | Two files, 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
+| 10 | Compare the front's file with the file from row 4 | They are the same size and the same, pixel for pixel |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-28.2 Separately saves the back exactly as its own export   [auto: phone, webkit]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, Size **Original**, and **Separately**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Download** | Two files, 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
+| 2 | Tap **Unpair** | The question box asks: **Keep front**, **Keep back**, **Cancel** |
+| 3 | Tap **Keep back** | The back is a single photo: **Front** / **Back** has gone |
+| 4 | Tap **Download** | One file, 14_back_portrait_raw_white-straight.jpg: the back on its own |
+| 5 | Compare it with the back's file from row 1 | They are the same size and the same, pixel for pixel |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1111,14 +1353,17 @@ Together's file is named after the front photo with **-pair** added; Separately'
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, Size **Original** and Format **PNG**
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Download** (with **Together** selected) | One file: 14_front_portrait_raw_white-pair.png |
-| 2 | Tap **Separately**, then **Download** | Two files: 14_front_portrait_raw_white-front.png and 14_back_portrait_raw_white-back.png |
-| 3 | Tap Format **JPEG**, then **Download** | Two files: 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
+| 2 | Tap **Separately** | **Separately** is selected |
+| 3 | Tap **Download** | Two files: 14_front_portrait_raw_white-front.png and 14_back_portrait_raw_white-back.png |
+| 4 | Tap Format **JPEG** | **JPEG** is selected |
+| 5 | Tap **Download** | Two files: 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1137,16 +1382,21 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 1
 
 ### PAIR-30.1 Download saves one file for Together and two, a moment apart, for Separately   [auto: phone, webkit]
+Script only
+Stand-in: nothing is replaced; the two files are a quarter of a second apart, too close to time by eye, so the script notes when each download starts. On a real iPhone, PAIR-31.1.
+
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Download** (with **Together** selected) | One file arrives; a message reads "Exported the Together image in N s." (N, a number of seconds) |
-| 2 | Tap **Separately**, then **Download** | Two files arrive, the second at least a quarter of a second after the first; a message reads "Exported the front and back in N s." |
+| 2 | Tap **Separately** | **Separately** is selected |
+| 3 | Tap **Download** | Two files arrive, the second at least a quarter of a second after the first; a message reads "Exported the front and back in N s." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1167,21 +1417,25 @@ On an iPhone, both of Separately's downloads arrive.
 ### PAIR-31.1 Both of Separately's downloads arrive on an iPhone   [phone]
 Before you start:
 - Device and browser: an iPhone, Safari
-- Build: the build under test, on the computer's local network or the live site
-- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/, copied to the iPhone (Photos or Files)
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/ (AirDrop them to the phone or save them to Photos first)
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, Size **Original**, and **Separately**
 
-That the files are named and timed right is checked by script in PAIR-29.1 and PAIR-30.1; this case is about Safari keeping both.
+At **Original** no question box asks to upscale. Safari's downloads go to the folder named in Settings › Safari › Downloads (Downloads, in iCloud Drive, unless it was changed). That the files are named and timed right is checked by script in PAIR-29.1 and PAIR-30.1; this case is about Safari keeping both.
+
+Accept Safari's downloads (a named action): each time Safari asks whether to download a file, tap **Download**, until it asks no more.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** | Safari offers or starts the first download, 14_front_portrait_raw_white-front.jpg |
-| 2 | Accept each download Safari asks about | The second, 14_back_portrait_raw_white-back.jpg, follows |
-| 3 | Open Safari's downloads list (the arrow in the address bar) | Both files are listed, complete |
-| 4 | Go back to the app | The pair is still open on Export, with **Next card** showing |
+| 1 | Tap **Download** (grey, beside the red **Share**) | A message over the photo begins "Exported the front and back in" |
+| 2 | Accept Safari's downloads | Safari asks nothing more |
+| 3 | Look at the app | The pair is still open on Export, with **Next card** in white in the bottom row |
+| 4 | Open the Files app and go to the downloads folder | Two new files are there: 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
+| 5 | Tap 14_back_portrait_raw_white-back.jpg | It opens: the back of the card, straightened and cropped to the card |
 
 Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
+On a fail, record: the row number, what you saw instead, how many times Safari asked, a screenshot (press the side button and volume up together).
 
 ## PAIR-32 Sharing a pair
 
@@ -1197,36 +1451,46 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 2
 
 ### PAIR-32.1 Share opens one share sheet with the pair's file or files   [phone]
+Waiting on find-out Q-08: what the top of the iPhone's share sheet shows for shared pictures (a small picture of each, their names). Rows 1 and 4 gain those words once Rich has seen it on the phone.
+
 Before you start:
 - Device and browser: an iPhone, Safari
-- Build: the live site (Share needs a secure page)
-- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/, copied to the iPhone
-- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP the Share button is hidden)
+- Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/ (AirDrop them to the phone or save them to Photos first)
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**. **Together** is selected
+
+At **Original** no question box asks to upscale. The share sheet is the iPhone's panel of ways to send or save a file (AirDrop, Messages, Save Image…).
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Share** (with **Together** selected) | One share sheet opens, showing one image |
-| 2 | Tap **Save Image** | The joined image, front on the left, is in Photos |
-| 3 | Tap **Separately**, then **Share** | One share sheet opens, showing two images |
-| 4 | Tap **Save 2 Images** | The front and the back are in Photos, as two photos |
+| 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo), then the share sheet rises from the bottom of the screen |
+| 2 | Tap **Save Image** | The share sheet closes; a message over the photo begins "Exported the Together image in" |
+| 3 | Tap **Separately** | **Separately** is selected (white) |
+| 4 | Tap **Share** | One share sheet rises |
+| 5 | Tap **Save 2 Images** | The share sheet closes; a message begins "Exported the front and back in" |
+| 6 | Open the Photos app | The three newest pictures are the joined image (the front on the left, the back on the right), then the front alone and the back alone |
 
 Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
+On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ### PAIR-32.2 Share hands over one file for Together and both for Separately   [auto: phone]
+Script only
+Stand-in: no person can see the names of the files a share sheet is handed, and no case uses a desktop browser's own share sheet, so the script gives the page a stand-in share sheet that records what it is handed and finishes the share at once. The real sheet is PAIR-32.1.
+
 Before you start:
-- Device and browser: a phone-width window, in a browser that can share files on a secure page
+- Device and browser: a phone-width window (390 × 844), touch, with the stand-in share sheet
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
 
-The automated test puts a stand-in for the share sheet in the page, which records what it is handed; the real sheet is PAIR-32.1.
-
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the save row | **Share** is the red button, beside **Download** |
+| 1 | Look at the row of three buttons under the size line | **Share** is the red button, beside **Download** |
 | 2 | Tap **Share** (with **Together** selected) | One share sheet, with one file: 14_front_portrait_raw_white-pair.jpg |
-| 3 | Tap **Separately**, then **Share** | One share sheet, with two files: 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
+| 3 | Tap **Separately** | **Separately** is selected |
+| 4 | Tap **Share** | One share sheet, with two files: 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1248,6 +1512,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window, in a browser that can copy images on a secure page
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
 
@@ -1280,6 +1545,7 @@ A pair counts as exported for both sides' edits together with the Together / Sep
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
 
@@ -1292,8 +1558,9 @@ Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap
 | 3 | Tap **Front** in the top bar | The front's Export: **Next card** still shows |
 | 4 | Tap **Separately** | **Next card** goes: Separately hasn't been saved |
 | 5 | Tap **Together** | **Next card** is back |
-| 6 | Tap **Rotate** in the step bar, and type the angle 2 | The angle reads 2.0° |
-| 7 | Tap **Export** in the step bar | No **Next card**: the front has changed since the export |
+| 6 | Tap **Rotate** in the step tabs | The front's Rotate step; the angle reads 0.0° |
+| 7 | Type the angle 2 | The angle reads 2.0° |
+| 8 | Tap **Export** in the step tabs | No **Next card**: the front has changed since the export |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1312,38 +1579,48 @@ A pair's export holds one full-resolution photo at a time: the open side is rend
 - Cases: 2
 
 ### PAIR-35.1 A pair's export never holds two full-size photos at once   [auto: phone]
+Script only
+Stand-in: nothing is replaced. A person can't see how many full-size photos the app holds, so the script counts them as the app reads and lets go of each. On a real iPhone, PAIR-35.2.
+
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
-
-A person can't see how many full-size photos the app holds: the automated test counts them as the app opens and lets go of each. On a real iPhone, PAIR-35.2.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Download** (with **Together** selected) | One file arrives. All through the export, at most one full-size photo is held: the back's is let go before the front's is read, and the front's before the back's is read again |
-| 2 | Look at the photo | The back's full-size photo is held again: the screen draws it as before |
-| 3 | Tap **Separately**, then **Download** | Two files arrive; again at most one full-size photo is held at a time, and the back's is held again at the end |
+| 2 | Look at what the app holds once the export has finished | The back's full-size photo, and nothing else |
+| 3 | Tap **Separately** | **Separately** is selected |
+| 4 | Tap **Download** | Two files arrive; again at most one full-size photo is held at a time, and the back's is held again at the end |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PAIR-35.2 A large pair exports on an iPhone without reloading the page   [phone]
+### PAIR-35.2 A pair of the iPhone's largest photos exports without the page reloading   [phone]
 Before you start:
 - Device and browser: an iPhone, Safari
-- Build: the build under test, on the computer's local network or the live site
-- Photos: two full-size photos taken with the iPhone's main camera (12 MP or more): a card's front and its back
-- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **3000**
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
+- Photos: two photos of one card, its front and its back, taken with the iPhone's main camera at its highest resolution setting, held upright, with the card filling at least half the photo's height, in Photos
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**. **Together** is selected
+
+At **Original** no question box asks to upscale. The open side's photo is let go during the export and read again at its end; had it not been read again, an amber warning would begin "The photo isn’t loaded after the last export." (PAIR-36.1).
+
+Accept Safari's downloads (a named action): each time Safari asks whether to download a file, tap **Download**, until it asks no more.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** (with **Together** selected), and answer **Yes** if Upscale to 3000 px? is asked | The progress line runs and the joined image is saved; the page does not reload or go blank |
-| 2 | Tap **Separately**, then **Download**, and answer **Yes** if asked | Both files are saved; the page does not reload |
-| 3 | Pinch to zoom in on the photo | The photo is sharp at full detail: it was read again after the export |
+| 1 | Tap **Download** (grey, beside the red **Share**) | A thin red line runs along the top edge of the controls (the block of buttons under the photo), then a message over the photo begins "Exported the Together image in"; the page did not reload or go blank |
+| 2 | Accept Safari's downloads | Safari asks nothing more; the back is on screen, on Export, with **Next card** in white in the bottom row and no amber warning |
+| 3 | Tap **Separately** | **Separately** is selected (white) |
+| 4 | Tap **Download** | The red line runs again, then a message begins "Exported the front and back in"; the page did not reload or go blank |
+| 5 | Accept Safari's downloads | Safari asks nothing more; the back is on screen, on Export, with **Next card** in white and no amber warning |
 
 Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot, and the iPhone model.
+On a fail, record: the row number, what you saw instead, the iPhone model, a screen recording (Control Center, the Screen Recording button).
 
 ## PAIR-36 The open photo can't be read again after an export
 
@@ -1359,20 +1636,24 @@ If the open side's photo can't be read again after a pair's export (two tries), 
 - Cases: 1
 
 ### PAIR-36.1 When the open photo can't be read again, saving waits for a side switch   [auto: phone]
+Script only
+Stand-in: from row 1 until row 4, the script makes every read of the back's photo fail, as a read under memory pressure on an iPhone can; no person can make a read fail on cue.
+
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
-- From row 1 until row 4, the back's photo can't be read again. On an iPhone this happens under memory pressure; the automated test makes the app's reads of the back's photo fail
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** | The file arrives; then a warning reads "The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back." |
+| 1 | Tap **Download** | The file arrives; then an amber warning reads "The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back." |
 | 2 | Look at the photo | The joined image is still drawn on screen |
-| 3 | Tap **Download** | No file: a message says the export failed, and why: "The photo isn’t loaded after the last export. …" |
-| 4 | Tap **Front**, then **Back** (the back's photo can be read again now) | The back opens |
-| 5 | Tap **Download** | The file arrives |
+| 3 | Tap **Download** | No file: a red message begins "Export failed" (the rest of its words are ruling R24's, checked under Messages, MSG-31) |
+| 4 | Tap **Front** in the top bar (the back's photo can be read again from now on) | The front opens |
+| 5 | Tap **Back** in the top bar | The back opens |
+| 6 | Tap **Download** | The file arrives: 14_front_portrait_raw_white-pair.jpg |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1388,13 +1669,14 @@ On Export the size line reads **W × H px · FORMAT** for Together, and **front 
 - Changed: none
 - Anchors: `#exportReadout`, `#exportMessage`, `#pairOutput`
 - Source: `js/app/export-controls.js` (`syncExportReadout`, `exportNotes`), `js/app/pair.js` (`pairReadout`, `togetherLayout`)
-- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen. R26. When the waiting side's corners are invalid, the line names the side to fix ("Fix the back’s corners in Perspective first.") and Share, Download and Copy are dimmed. The app differs today. New wording, to be approved by Rich.
+- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen: "The back is scaled down to fit the 16.7 MP limit." (or "The front…"; "Both sides are scaled down to fit the 16.7 MP limit." when both are; approved wording). R26. When the waiting side's corners are invalid, the line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"; approved wording) and Share, Download and Copy are dimmed. The app differs today.
 - Cases: 3
 
 ### PAIR-37.1 The size line gives the joined size, or the front's and the back's   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, and tap Size **Original**
 
@@ -1409,40 +1691,47 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PAIR-37.2 Separately warns when the side not on screen is scaled down   [auto: phone]
+Written to ruling R14, in the words Rich approved; it fails until R14 is built (BUG-033).
+
 Before you start:
-- Device and browser: a phone-width window
-- Build: the build under test
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test, opened with `?maxOutputArea=1000000` added to its address (index.html?maxOutputArea=1000000), which lowers the limit to 1 MP (1,000,000 pixels), the lowest a link may set
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. On the back's Perspective step, drag the top-left corner's handle about 60 px up and to the left, and the bottom-right one about 60 px down and to the right, so the back's card is drawn larger. Tap **Export**, Size **Original** and **Separately**, and note the two sizes the line gives (the front's first, then the back's, the larger). Tap **Front** in the top bar and wait two seconds. Then open the link index.html?maxOutputArea=N, with N a whole number of pixels between the two cards' areas (width × height of each), and tap **Resume**. The front is open
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
-Written to ruling R14; it fails until R14 is built (BUG-033). The ruling's wording waits for Rich's approval, so the test checks the meaning, not the words.
-
-With the link, an image may hold at most N pixels, so the back's card is scaled down and the front's is not. On a phone, while a note shows beside **Together** / **Separately**, the note takes the size line's place, so the sizes themselves are not part of this case; the automated test checks first that the back's size was scaled down to just under N pixels.
+Each card on its own is under 1 MP at **Original** (PAIR-27.1). Rows 1 and 2 draw the back's outline larger, so at **Original** the back is over the limit and scaled down, and the front is not. A corner's handle is the round handle on that corner of the outline. On a phone, while a note shows beside **Together** / **Separately**, the note takes the size line's place.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | **Separately** is selected, and beside it a note says the back was scaled down to fit the limit and names it, since it is not the side on screen |
+| 1 | Drag the top-left corner's handle about 60 px up and to the left, and let go | The handle sits outside the card, up and to the left of its corner |
+| 2 | Drag the bottom-right corner's handle about 60 px down and to the right, and let go | The handle sits outside the card, down and to the right of its corner: the outline is larger than the card |
+| 3 | Tap **Front** in the top bar | The front opens on Perspective, with **Front** in white |
+| 4 | Tap **Export** in the step tabs | The Export step, with **Together** selected |
+| 5 | Tap Size **Original** | **Original** is selected |
+| 6 | Tap **Separately** | **Separately** is selected, and beside it one note reads "The back is scaled down to fit the N MP limit.", the approved words, with N the limit the app gives (the approved words say 16.7; this case's link lowers the limit to 1 MP, and which number the note then gives is for Rich) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PAIR-37.3 When the other side's corners are crossed, the line says which side to fix   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window (390 × 844), touch, in a browser that can share files and copy images on a secure page (an iPhone's Safari on the UAT site; the automated test puts a stand-in for the share sheet in the page)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
-Written to ruling R26; it fails until R26 is built (BUG-034). The ruling's wording waits for Rich's approval, so the test checks the meaning, not the words.
+Written to ruling R26, in the words Rich approved; it fails until R26 is built (BUG-034).
 
-Today the switch in row 2 doesn't finish: the app stops part-way with a script error (see BUG-034), so rows 2 to 4 fail.
+Today the switch in row 2 doesn't finish: the app stops part-way with a script error (see BUG-034), so rows 2 to 4 fail. A corner's handle is the round handle on that corner of the outline; the line above the controls is the one line of text at the top of the controls (the block of buttons under the photo).
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner's handle down and to the right, past the bottom-right corner, and let go | The corner lines cross; the line above the controls reads "Corners cross or fold inward. Drag them back into a convex shape." |
 | 2 | Tap **Front** in the top bar | The front opens on Perspective, its picture replacing the back's; the "Opening the front…" message goes |
-| 3 | Tap **Export** in the step bar | The size line says the back's corners need fixing in Perspective; **Download** and **Copy** are greyed out |
-| 4 | Tap **Download** | Nothing is saved, and no "Export failed" message shows |
+| 3 | Tap **Export** in the step tabs | The size line reads "Fix the back’s corners in Perspective first."; **Share**, **Download** and **Copy** are greyed out |
+| 4 | Tap **Download** | Nothing is saved, and no message beginning "Export failed" shows |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1464,19 +1753,24 @@ While Together is chosen, Export shows the joined image as it will be saved (eac
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/; the logo icons/icon.svg from the app's own folder
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step; **Together** is selected
 
-Open **Export options**: tap the tab with an up arrow on the top edge of the controls. Close them with **Close** at the sheet's top. What the saved files hold is checked by script in PAIR-24.1 and PAIR-26.1; this case is about what the screen shows before saving.
+What the saved files hold is checked by script in PAIR-24.1 and PAIR-26.1; this case is about what the screen shows before saving. Two named actions:
+- Add the logo: tap **Overlay** in the step tabs (the six tabs Perspective to Export along the bottom), tap **Add logo**, and choose icon.svg in the file picker.
+- Set the fill to Transparent: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo), tap the **Fill outside photo** row, choose **Transparent** in the list it opens, and close the options with the **×** at their top right.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Overlay** in the step bar, tap **Add logo**, and choose icon.svg | The logo appears on the back |
-| 2 | Tap **Front** in the top bar, then **Levels** in the step bar | The front's Levels step |
-| 3 | Tap **Auto**, then **Apply** | The front's whites turn brighter; **Apply** is greyed out and no dot is on the **Levels** tab: the levels are applied |
-| 4 | Tap **Export** in the step bar | The photo area shows one joined image: the front on the left with its brighter levels and no logo, the back on the right with the logo where it was placed, a thin white gap between them, nothing else around them |
-| 5 | Open **Export options**, tap **Fill outside photo** and choose **Transparent**, then close the options | The gap between the cards and the space around the smaller card show a grey checkerboard instead of white |
-| 6 | Tap **Separately** | The photo area shows the front alone (the side you are on), framed by its crop, with no back beside it |
+| 1 | Add the logo | The logo appears on the back |
+| 2 | Tap **Front** in the top bar | The front opens on the Overlay step, with no logo |
+| 3 | Tap **Levels** in the step tabs | The front's Levels step |
+| 4 | Tap **Auto** | The front's whites turn brighter, and a white dot shows on the **Levels** tab |
+| 5 | Tap **Apply** | **Apply** is greyed out and the dot on the **Levels** tab goes |
+| 6 | Tap **Export** in the step tabs | The photo area shows one joined image: the front on the left with its brighter levels and no logo, the back on the right with the logo where it was placed, a thin white gap between them, nothing else around them |
+| 7 | Set the fill to Transparent | The gap between the cards and the space around the smaller card show a grey checkerboard instead of white |
+| 8 | Tap **Separately** | The photo area shows the front alone (the side you are on), framed by its crop, with no back beside it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1498,6 +1792,7 @@ The Together preview has its own zoom and pan, which fit the screen again when t
 Before you start:
 - Device and browser: any; a phone-width window (zoom with two fingers) or a wide window (zoom with the mouse wheel)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step; **Together** is selected
 
@@ -1505,14 +1800,16 @@ Zoom in: on a phone, put two fingers on the image and spread them apart; on a wi
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | The joined image fits the photo area; on a phone there is no **Fit** in the top bar, on a wide screen **Fit** is there |
+| 1 | Tap **Export** in the step tabs | The joined image fits the photo area; on a phone there is no **Fit** in the top bar, on a wide screen **Fit** is there |
 | 2 | Zoom in on the image | The image grows; on a phone **Fit** appears in the top bar |
 | 3 | Tap **Separately** | The back alone, fitted to the photo area: the zoom was the joined image's own; on a phone **Fit** goes |
 | 4 | Tap **Together** | The joined image fits the photo area again, as in row 1 |
 | 5 | Zoom in on the image | The image grows |
 | 6 | Tap **Fit** | The joined image fits the photo area again |
 | 7 | Zoom in on the image | The image grows |
-| 8 | Tap **Crop** in the step bar, tap **Swap**, then tap **Export** | The two cards now lie down, one above the other, and the joined image fits the photo area: its new size was fitted afresh |
+| 8 | Tap **Crop** in the step tabs | The back's Crop step, its box upright under **5:7 card** |
+| 9 | Tap **Swap** | The box lies down, 7 wide to 5 high, under **7:5 card** |
+| 10 | Tap **Export** in the step tabs | The two cards now lie down, one above the other, and the joined image fits the photo area: its new size was fitted afresh |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1534,23 +1831,28 @@ The pair is stored for Resume: the open side as for any photo, plus the waiting 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/; the logo icons/icon.svg from the app's own folder
-- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back, then tap **Front** in the top bar. The front is open on the Perspective step, its angle at 0.0°
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back, then tap **Front** in the top bar and **Rotate** in the step tabs. The front is open on the Rotate step, its angle at 0.0°
 
-Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap **Done**. Whether the side that was open comes back with its own work is PAIR-41.1; this case is about the side that was waiting.
+Whether the side that was open comes back with its own work is PAIR-41.1; this case is about the side that was waiting. Four named actions:
+- Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap **Done**.
+- Lay the crop down: tap **Crop** in the step tabs (the six tabs Perspective to Export), then **Swap**.
+- Add the logo: tap **Overlay** in the step tabs, tap **Add logo**, and choose icon.svg in the file picker.
+- Auto levels: tap **Levels** in the step tabs, then **Auto**.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Rotate** in the step bar, and type the angle 3 | The angle reads 3.0° |
-| 2 | Tap **Crop** in the step bar, then **Swap** | The box lies down, 7 wide to 5 high, under **7:5 card** |
-| 3 | Tap **Overlay** in the step bar, tap **Add logo**, and choose icon.svg | The logo appears on the front |
-| 4 | Tap **Levels** in the step bar, then **Auto** | **Discard** and **Apply** show, and a white dot is on the **Levels** tab |
+| 1 | Type the angle 3 | The angle reads 3.0° |
+| 2 | Lay the crop down | The box lies down, 7 wide to 5 high, under **7:5 card** |
+| 3 | Add the logo | The logo appears on the front |
+| 4 | Auto levels | **Discard** and **Apply** are no longer greyed out, and a white dot is on the **Levels** tab |
 | 5 | Tap **Back** in the top bar | The back opens on Levels, with no dot on the tab |
 | 6 | Wait two seconds, then reload the page | The start screen offers **Resume**, naming 14_front_portrait_raw_white.JPEG + 14_back_portrait_raw_white.JPEG |
 | 7 | Tap **Resume** | The back opens on Levels, with **Back** in white |
-| 8 | Tap **Front** in the top bar | The front opens on Levels: **Discard** and **Apply** show and the dot is on the **Levels** tab |
-| 9 | Tap **Rotate** in the step bar | The angle reads 3.0° |
-| 10 | Tap **Overlay** in the step bar | The logo is on the front, and the card lies down, 7 wide to 5 high |
+| 8 | Tap **Front** in the top bar | The front opens on Levels: **Discard** and **Apply** are not greyed out, and the dot is on the **Levels** tab |
+| 9 | Tap **Rotate** in the step tabs | The angle reads 3.0° |
+| 10 | Tap **Overlay** in the step tabs | The logo is on the front, and the card lies down, 7 wide to 5 high |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1572,21 +1874,24 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back, then tap **Front** in the top bar and **Rotate** in the step tabs. The front is open on the Rotate step, its angle at 0.0°
 
-Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap **Done**. Which photo is read first can't be seen: the automated test also checks, at row 6, that the waiting side's photo (the front's) is read before the open side's.
+Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap **Done**. Which photo is read first can't be seen: the automated test also checks, at row 8, that the waiting side's photo (the front's) is read before the open side's.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Front** in the top bar, then **Rotate** in the step bar, and type the angle 2 | The angle reads 2.0°; **Undo** (the arrow curving left, at the top right) can be tapped |
+| 1 | Type the angle 2 | The angle reads 2.0°; **Undo** (the arrow curving left, at the top right) can be tapped |
 | 2 | Tap **Back** in the top bar | The back opens on Rotate |
-| 3 | Tap **Export** in the step bar, Size **Original**, then **Download** | The file arrives; **Next card** shows in the bottom row |
-| 4 | Wait two seconds, then reload the page | The start screen offers **Resume**, naming 14_front_portrait_raw_white.JPEG + 14_back_portrait_raw_white.JPEG |
-| 5 | Tap **Resume** | The back opens on Export, with **Back** in white |
-| 6 | Look at the bottom row | **Next card** shows: the pair's export was remembered |
-| 7 | Tap **Front** in the top bar | The front opens on Export; **Undo** is greyed out: the front came back without its undo history |
-| 8 | Tap **Rotate** in the step bar | The angle reads 2.0° |
+| 3 | Tap **Export** in the step tabs | The back's Export step |
+| 4 | Tap Size **Original** | **Original** is selected |
+| 5 | Tap **Download** | The file arrives; **Next card** shows in the bottom row |
+| 6 | Wait two seconds, then reload the page | The start screen offers **Resume**, naming 14_front_portrait_raw_white.JPEG + 14_back_portrait_raw_white.JPEG |
+| 7 | Tap **Resume** | The back opens on Export, with **Back** in white |
+| 8 | Look at the bottom row | **Next card** shows: the pair's export was remembered |
+| 9 | Tap **Front** in the top bar | The front opens on Export; **Undo** is greyed out: the front came back without its undo history |
+| 10 | Tap **Rotate** in the step tabs | The angle reads 2.0° |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1605,12 +1910,15 @@ A stored pair that is damaged or doesn't match its photo is dropped, and the ope
 - Cases: 2
 
 ### PAIR-42.1 A damaged stored pair is dropped, and the open side resumes alone   [auto: phone, webkit]
+Script only
+Stand-in: no control can damage what the browser stores, so the script replaces the waiting side's (the front's) stored edits with a word, as a damaged record would hold.
+
 Before you start:
-- Device and browser: any; a phone-width or a wide window
+- Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step; wait two seconds
-- The stored record of the waiting side's edits is damaged. A person can't arrange this by hand; the automated test replaces the front's stored edits with a word
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step; two seconds later, the front's stored edits are damaged
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -1623,18 +1931,21 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PAIR-42.2 A stored pair whose photo doesn't match its edits is dropped   [auto: phone, webkit]
+Script only
+Stand-in: no control can change what the browser stores, so the script replaces the waiting side's (the front's) stored photo with IMG_9136.JPEG, a photo of another size, so it no longer matches its edits.
+
 Before you start:
-- Device and browser: any; a phone-width or a wide window
+- Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
-- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step; wait two seconds
-- The stored photo of the waiting side is not the one its edits were made on. A person can't arrange this by hand; the automated test replaces the front's stored photo with IMG_9136.JPEG, a photo of another size
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step; two seconds later, the front's stored photo is replaced
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Reload the page | The start screen offers **Resume** |
 | 2 | Tap **Resume** | The back (14_back_portrait_raw_white.JPEG) opens on its own; a warning reads "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." |
-| 3 | Tap **Export** in the step bar | **Add back** is in the bottom row: the back is a single photo |
+| 3 | Tap **Export** in the step tabs | **Add back** is in the bottom row: the back is a single photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1656,6 +1967,7 @@ A side brought back by Resume has no detection results, so the first switch to i
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
@@ -1666,9 +1978,10 @@ Before you start:
 | 1 | Tap **Front** in the top bar | The front opens on Perspective; **Candidate** can be tapped |
 | 2 | Drag the top-left corner's handle 40 px to the left, and let go | The handle sits 40 px left of the card's corner |
 | 3 | Tap **Back** in the top bar | The back opens on Perspective |
-| 4 | Wait two seconds, reload the page, and tap **Resume** | The back opens on Perspective, with **Back** in white |
-| 5 | Tap **Front** in the top bar | The front opens on Perspective; within a second **Candidate** can be tapped again; the top-left handle is still 40 px left of the card's corner; **Undo** (the arrow curving left, at the top right) is greyed out |
-| 6 | Tap **Candidate** | The corners jump to another shape detection found: detection ran for the front |
+| 4 | Wait two seconds, then reload the page | The start screen offers **Resume**, naming 14_front_portrait_raw_white.JPEG + 14_back_portrait_raw_white.JPEG |
+| 5 | Tap **Resume** | The back opens on Perspective, with **Back** in white |
+| 6 | Tap **Front** in the top bar | The front opens on Perspective; within a second **Candidate** can be tapped again; the top-left handle is still 40 px left of the card's corner; **Undo** (the arrow curving left, at the top right) is greyed out |
+| 7 | Tap **Candidate** | The corners jump to another shape detection found: detection ran for the front |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

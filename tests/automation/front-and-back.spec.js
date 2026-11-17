@@ -26,7 +26,6 @@ const {
   LANDSCAPE_PAIR,
   chooseFile,
   chooseInPicker,
-  unreadablePhoto,
   waitForSide,
   makePair,
   sideButton,
@@ -64,7 +63,9 @@ const {
   noteDownloadStarts,
   downloadStarts,
   slowStorageWrites,
+  waitInPage,
 } = require('./support/front-and-back.js');
+const { installShareStandIn, dragQualityTo } = require('./support/export.js');
 
 const FRONT = PORTRAIT_PAIR.front;
 const BACK = PORTRAIT_PAIR.back;
@@ -72,12 +73,18 @@ const BACK = PORTRAIT_PAIR.back;
 const OTHER_PHOTO = 'IMG_9136.JPEG';
 // A logo: the app's own icon.
 const LOGO = path.join(root, 'icons', 'icon.svg');
+// A file in tests/fixtures/, by its name.
+const fixture = name => path.join(root, 'tests', 'fixtures', name);
+// A line of text named like a photo, so no browser can read it as an image.
+const NOT_A_PHOTO = fixture('not-a-photo.JPEG');
+// A line of text, which Overlay's Add logo refuses.
+const NOT_A_LOGO = fixture('notes.txt');
+// Edits saved from the front on its own, turned 3°, its square 1:1 box dragged by hand.
+const SQUARE_CROP_EDITS = fixture('pair-front-square-crop-edits.json');
 // The 3:4 preset's id: presets are named landscape-first, and read 3:4 for an upright card.
 const THREE_BY_FOUR = '4:3';
 // An upright 3:4 box's width over its height.
 const THREE_BY_FOUR_ASPECT = 3 / 4;
-// How far a hand-drawn crop box is dragged on the Crop step, in CSS px.
-const CROP_DRAG_PX = 30;
 // The grid laid over a saved image to compare two of them: cells per side.
 const COMPARE_GRID = 16;
 // The grid's columns that lie wholly inside the front's and the back's halves of a portrait
@@ -111,6 +118,15 @@ const ASPECT_TOLERANCE = 0.01;
 const UNREADABLE_MESSAGE = 'Couldn’t read that file as an image.';
 // The message for a photo opened while an export runs (and, today, while a side opens).
 const EXPORT_WAIT_MESSAGE = 'Wait for the export to finish, then open the photo.';
+// Ruling R13's approved words for a photo opened while a side opens (tests/catalog/wording.md).
+const SIDE_WAIT_MESSAGE = 'Wait for the other side to open, then open the photo.';
+// Rulings R14 and R15's approved clamp notes, with the limit's number left to the app: these
+// cases lower the limit with a link, and whether the note then gives 16.7 or the lowered limit
+// is for Rich to say (as EXP-06.4).
+const APPROVED_CLAMP_NOTE = /^Scaled down to fit the [\d.]+ MP limit\.$/;
+const APPROVED_BACK_CLAMP_NOTE = /^The back is scaled down to fit the [\d.]+ MP limit\.$/;
+// Ruling R26's approved size line when the back, not on screen, has invalid corners.
+const FIX_BACK_MESSAGE = 'Fix the back’s corners in Perspective first.';
 const STEPS = ['perspective', 'rotate', 'crop', 'levels', 'overlay', 'export'];
 // The warning when the open photo can't be read again after a pair's export.
 const PHOTO_RELEASED_MESSAGE = 'The photo isn’t loaded after the last export. '
@@ -132,17 +148,20 @@ const CORNER_TOLERANCE_PX = 2;
 const ENLARGE_DRAG_PX = 60;
 // A size scaled down to an area limit fills at least this fraction of it (whole-pixel rounding).
 const AREA_FILL_MIN = 0.99;
-// The controls a side's opening greys out on Export.
+// The controls a side's opening greys out on Export (the corner shots' save buttons are
+// PAIR-09.4's).
 const BUSY_CONTROLS = [
   '#sideSwitch .segment[data-value="front"]',
   '#sideSwitch .segment[data-value="back"]',
   '#btnUnpair',
+  '#btnShare',
   '#btnDownload',
   '#btnCopy',
   '#pairOutput .segment[data-value="together"]',
   '#pairOutput .segment[data-value="separately"]',
-  '#btnCornerDownload',
 ];
+// The corner shots' save buttons, which a side's opening greys out too.
+const CORNER_SAVE_BUTTONS = ['#btnCornerShare', '#btnCornerDownload'];
 
 // Opens the app with the front photo on its own. Returns the hand for this target.
 async function startWithFront(page, testInfo, photo = FRONT) {
@@ -167,6 +186,16 @@ const currentStep = page => page.evaluate(() => window.__straightener.app.tab);
 
 // The white dot on the Levels tab that marks unapplied Levels changes.
 const levelsDot = page => page.locator('[data-step="levels"]:visible .step-tab-mark');
+
+// Expects Levels' Discard and Apply both to be greyed out ('disabled') or both live
+// ('enabled'). They are always shown; only whether they answer a tap changes.
+async function expectLevelsButtons(page, wanted) {
+  for (const id of ['#btnDiscardLevels', '#btnApplyLevels']) {
+    const button = page.locator(id);
+    await expect(button).toBeVisible();
+    await (wanted === 'enabled' ? expect(button).toBeEnabled() : expect(button).toBeDisabled());
+  }
+}
 
 // A crop preset's chip on the Crop step, by its preset ('3:4', '5:7', …).
 const presetChip = (page, preset) => page.locator(
@@ -416,7 +445,7 @@ test('PAIR-03.1 A back that can\'t be read leaves the front on its own [phone] [
 }, testInfo) => {
   const hand = await startWithFront(page, testInfo);
   await goToStep(page, 'export', hand);
-  await chooseFile(page, hand, page.locator('#btnAddBack'), unreadablePhoto(testInfo));
+  await chooseFile(page, hand, page.locator('#btnAddBack'), NOT_A_PHOTO);
   await check('"Couldn’t read that file as an image."; the front stays on screen', async () => {
     await expect(shownToast(page)).toHaveText(UNREADABLE_MESSAGE);
     expect((await editState(page)).source.name).toBe(FRONT);
@@ -548,24 +577,29 @@ test('PAIR-07.1 Each side keeps its own edits, Levels changes and selected corne
     await expect(angleText(page)).toHaveText('2.0°');
   });
   await goToStep(page, 'levels', hand);
-  await check('the Levels step, with no dot on its tab', async () => {
-    await expect(levelsDot(page)).toBeHidden();
-  });
+  await check('the Levels step, with no dot on its tab; Discard and Apply are greyed out',
+    async () => {
+      await expect(levelsDot(page)).toBeHidden();
+      await expectLevelsButtons(page, 'disabled');
+    });
   await hand.tap(page.locator('#toolAutoLevels'));
-  await check('Discard and Apply show, and a white dot is on the Levels tab', async () => {
-    await expect(page.locator('#btnDiscardLevels')).toBeVisible();
-    await expect(page.locator('#btnApplyLevels')).toBeVisible();
-    await expect(levelsDot(page)).toBeVisible();
-  });
+  await check('Discard and Apply are no longer greyed out, and a white dot is on the Levels tab',
+    async () => {
+      await expectLevelsButtons(page, 'enabled');
+      await expect(levelsDot(page)).toBeVisible();
+    });
   await switchTo(page, hand, 'back');
-  await check('the back opens on Levels with no dot; Undo is greyed out', async () => {
+  await check('the back opens on Levels with no dot; Discard and Apply are greyed out; Undo is '
+    + 'greyed out', async () => {
     expect(await currentStep(page)).toBe('levels');
     await expect(levelsDot(page)).toBeHidden();
+    await expectLevelsButtons(page, 'disabled');
     await expect(page.locator('#btnUndo')).toBeDisabled();
   });
   await switchTo(page, hand, 'front');
-  await check('the front opens on Levels: Discard and Apply show and the dot is back', async () => {
-    await expect(page.locator('#btnApplyLevels')).toBeVisible();
+  await check('the front opens on Levels: Discard and Apply are no longer greyed out, and the '
+    + 'dot is back', async () => {
+    await expectLevelsButtons(page, 'enabled');
     await expect(levelsDot(page)).toBeVisible();
   });
   await goToStep(page, 'perspective', hand);
@@ -575,6 +609,81 @@ test('PAIR-07.1 Each side keeps its own edits, Levels changes and selected corne
   await goToStep(page, 'rotate', hand);
   await check('the angle reads 2.0°', async () => {
     await expect(angleText(page)).toHaveText('2.0°');
+  });
+});
+
+test('PAIR-07.2 Each side keeps its own zoom [phone]', async ({ page, check }, testInfo) => {
+  const hand = await makePair(page, testInfo);
+  const fit = page.locator('#btnFit');
+  const fitted = await viewNow(page);
+  await check('there is no Fit in the top bar', async () => {
+    expect(fitted.isFitted).toBe(true);
+    await expect(fit).toBeHidden();
+  });
+  await zoomIn(page, hand);
+  const zoomed = await viewNow(page);
+  await check('the back\'s photo grows; Fit appears in the top bar', async () => {
+    expect(zoomed.isFitted).toBe(false);
+    expect(zoomed.zoom).toBeGreaterThan(fitted.zoom);
+    await expect(fit).toBeVisible();
+  });
+  await switchTo(page, hand, 'front');
+  await check('the front opens fitted to the photo area; Fit has gone', async () => {
+    expect((await editState(page)).source.name).toBe(FRONT);
+    expect((await viewNow(page)).isFitted).toBe(true);
+    await expect(fit).toBeHidden();
+  });
+  await switchTo(page, hand, 'back');
+  await check('the back opens as large as it was left; Fit is back in the top bar', async () => {
+    expect(await viewNow(page)).toEqual(zoomed);
+    await expect(fit).toBeVisible();
+  });
+});
+
+// Candidate's number (such as '1/3') and the confidence at the right of Perspective's line
+// (such as 'Confidence 97%').
+function candidateReadout(page) {
+  return page.evaluate(() => ({
+    candidate: document.querySelector('#toolCandidate .tool-value').textContent,
+    confidence: document.querySelector('#perspectiveLine .line-readout').textContent,
+  }));
+}
+
+test('PAIR-07.3 Each side keeps its own detection results [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await makePair(page, testInfo);
+  await check('Candidate reads 1/3; the line reads Confidence 97%', async () => {
+    expect(await candidateReadout(page)).toEqual({
+      candidate: '1/3',
+      confidence: 'Confidence 97%',
+    });
+  });
+  const firstCorners = (await editState(page)).corners;
+  await hand.tap(page.locator('#toolCandidate'));
+  const second = await candidateReadout(page);
+  const secondCorners = (await editState(page)).corners;
+  await check('the corners move to another shape; Candidate reads 2/3 and the line gives a '
+    + 'lower confidence: Confidence 87% (88% in some browsers)', async () => {
+    expect(secondCorners).not.toEqual(firstCorners);
+    expect(second.candidate).toBe('2/3');
+    expect(['Confidence 87%', 'Confidence 88%']).toContain(second.confidence);
+  });
+  await switchTo(page, hand, 'front');
+  await check('the front opens on Perspective: Candidate reads 1/3 and the line Confidence 99%',
+    async () => {
+      expect(await currentStep(page)).toBe('perspective');
+      expect(await candidateReadout(page)).toEqual({
+        candidate: '1/3',
+        confidence: 'Confidence 99%',
+      });
+    });
+  await switchTo(page, hand, 'back');
+  await check('the back opens with Candidate at 2/3 and the confidence row 2 gave; its corners '
+    + 'are on the second shape', async () => {
+    expect(await candidateReadout(page)).toEqual(second);
+    expect((await editState(page)).corners).toEqual(secondCorners);
   });
 });
 
@@ -624,14 +733,142 @@ test('PAIR-08.1 A switch turns off Tap to find card, Preview and an armed pick [
   });
 });
 
-test('PAIR-09.1 While a side opens, the switch and save controls are greyed out [phone]', async ({
+// Whether the photo shows without its Levels changes, with the Before levels badge (the badge
+// is drawn on the photo's canvas while the app compares).
+const isComparing = page => page.evaluate(() => !!window.__straightener.app.compare);
+
+test('PAIR-08.2 A switch ends the before-levels comparison [desktop]', async ({
   page,
   check,
 }, testInfo) => {
   const hand = await makePair(page, testInfo);
+  await goToStep(page, 'levels', hand);
+  await hand.tap(page.locator('#toolAutoLevels'));
+  const backDraft = await page.evaluate(() => window.__straightener.app.levelsDraft);
+  await check('the back\'s whites turn brighter; a white dot appears on the Levels tab',
+    async () => {
+      expect(backDraft, 'Auto set a white point').toBeTruthy();
+      await expect(levelsDot(page)).toBeVisible();
+    });
+  await page.keyboard.down('c');
+  await check('the photo goes back to how it was before Auto, with a Before levels badge',
+    async () => {
+      expect(await isComparing(page)).toBe(true);
+    });
+  await switchTo(page, hand, 'front');
+  await check('the front opens on Levels with no Before levels badge', async () => {
+    expect((await editState(page)).source.name).toBe(FRONT);
+    expect(await currentStep(page)).toBe('levels');
+    expect(await isComparing(page)).toBe(false);
+  });
+  const frontBefore = await page.evaluate(() => ({
+    levels: window.__straightener.app.state.levels,
+    draft: window.__straightener.app.levelsDraft,
+  }));
+  await page.keyboard.up('c');
+  await check('the front is unchanged', async () => {
+    expect(await isComparing(page)).toBe(false);
+    const frontAfter = await page.evaluate(() => ({
+      levels: window.__straightener.app.state.levels,
+      draft: window.__straightener.app.levelsDraft,
+    }));
+    expect(frontAfter).toEqual(frontBefore);
+  });
+  await switchTo(page, hand, 'back');
+  await check('the back opens with its brighter whites from Auto and no Before levels badge',
+    async () => {
+      expect(await page.evaluate(() => window.__straightener.app.levelsDraft)).toEqual(backDraft);
+      await expect(levelsDot(page)).toBeVisible();
+      expect(await isComparing(page)).toBe(false);
+    });
+});
+
+test('PAIR-08.3 A switch clears Overlay\'s file message [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await makePair(page, testInfo);
+  const message = page.getByText('That file type isn’t supported. Use PNG, WebP, JPG or SVG.');
+  await goToStep(page, 'overlay', hand);
+  const choosing = page.waitForEvent('filechooser');
+  await hand.tap(page.locator('#btnOverlayAdd'));
+  const chooser = await choosing;
+  await check('the file picker opens', async () => {
+    expect(chooser.isMultiple()).toBe(false);
+  });
+  await chooser.setFiles(NOT_A_LOGO);
+  await check('the line above the controls reads "That file type isn’t supported. Use PNG, '
+    + 'WebP, JPG or SVG."', async () => {
+    await expect(message).toBeVisible();
+  });
+  await switchTo(page, hand, 'front');
+  await check('the front opens on Overlay; the message has gone', async () => {
+    expect(await currentStep(page)).toBe('overlay');
+    expect((await editState(page)).source.name).toBe(FRONT);
+    await expect(message).toBeHidden();
+  });
+  await switchTo(page, hand, 'back');
+  await check('the back opens on Overlay; the message is not back', async () => {
+    expect((await editState(page)).source.name).toBe(BACK);
+    await expect(message).toBeHidden();
+  });
+});
+
+// The red save button's label on Export: 'Share', or 'Share now' after a refused share.
+const shareLabel = page => page.locator('#btnShare .action-label');
+
+test('PAIR-08.4 A switch drops a share waiting for Share now [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  // Stand-in: the share sheet refuses the first share, as Safari does after a slow export.
+  await installShareStandIn(page, 'refuseOnce');
+  const hand = await makePair(page, testInfo);
   await goToStep(page, 'export', hand);
-  await check('the switch, Unpair and the save controls can all be tapped', async () => {
-    for (const selector of BUSY_CONTROLS) await expect(page.locator(selector)).toBeEnabled();
+  await chooseSize(page, hand, '0');
+  await hand.tap(page.locator('#btnShare'));
+  await page.waitForFunction(() => window.testShares.length === 1);
+  await check('no share sheet; a message ends "Tap Share now to open the share sheet."; Share '
+    + 'reads Share now', async () => {
+    await expect(shownToast(page)).toHaveText(/Tap Share now to open the share sheet\.$/);
+    await expect(shareLabel(page)).toHaveText('Share now');
+  });
+  await switchTo(page, hand, 'front');
+  await check('the front opens on Export; the button reads Share again', async () => {
+    expect(await currentStep(page)).toBe('export');
+    expect((await editState(page)).source.name).toBe(FRONT);
+    await expect(shareLabel(page)).toHaveText('Share');
+  });
+  await hand.tap(page.locator('#btnShare'));
+  await page.waitForFunction(() => window.testShares.length === 2);
+  const second = await page.evaluate(() => ({
+    names: window.testShares[1].files.map(file => file.name),
+    isNewExport: window.testSharedFiles[1][0] !== window.testSharedFiles[0][0],
+  }));
+  await check('a new export, and the share sheet is handed one file: '
+    + '14_front_portrait_raw_white-pair.jpg', async () => {
+    expect(second).toEqual({
+      names: ['14_front_portrait_raw_white-pair.jpg'],
+      isNewExport: true,
+    });
+  });
+});
+
+test('PAIR-09.1 While a side opens, the switch and save controls are greyed out [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  // A browser that can share files and copy images, as an iPhone's Safari on the UAT site.
+  await standInShareSheet(page);
+  await standInClipboard(page);
+  const hand = await makePair(page, testInfo);
+  await goToStep(page, 'export', hand);
+  await check('Front / Back, Unpair, Share, Download, Copy and Together / Separately can all be '
+    + 'tapped', async () => {
+    for (const selector of BUSY_CONTROLS) {
+      await expect(page.locator(selector)).toBeVisible();
+      await expect(page.locator(selector)).toBeEnabled();
+    }
   });
   await holdNextOpening(page);
   await hand.tap(sideButton(page, 'front'));
@@ -655,7 +892,7 @@ test('PAIR-09.2 During a pair\'s export, Front / Back and Unpair are greyed out 
   await goToStep(page, 'export', hand);
   await chooseSize(page, hand, '0');
   // Front, Back, Unpair, Together and Separately.
-  const switchControls = BUSY_CONTROLS.filter(selector => !/Download|Copy/.test(selector));
+  const switchControls = BUSY_CONTROLS.filter(selector => !/Share|Download|Copy/.test(selector));
   await check('Front / Back, Unpair and Together / Separately can be tapped', async () => {
     for (const selector of switchControls) await expect(page.locator(selector)).toBeEnabled();
   });
@@ -695,11 +932,13 @@ test('PAIR-09.3 A photo opened while a side opens is refused with its own messag
   await chooseInPicker(page, hand, page.locator('#btnOpen'), 'IMG_9136.JPEG');
   const toastText = shownToast(page).locator('.toast-text');
   await toastText.filter({ hasNotText: 'Opening' }).waitFor();
+  // A known defect: plain value comparisons, so the case fails at once rather than waiting.
   const message = await toastText.textContent();
   const isWarning = await shownToast(page).evaluate(toast => toast.classList.contains('is-warn'));
-  await check('a warning says to wait for the other side, not for an export', async () => {
+  await check(`an amber warning reads "${SIDE_WAIT_MESSAGE}"`, async () => {
     expect(isWarning, 'the message is a warning').toBe(true);
-    expect(message, 'the message is not the export one').not.toBe(EXPORT_WAIT_MESSAGE);
+    expect(message, 'not the export\'s words').not.toBe(EXPORT_WAIT_MESSAGE);
+    expect(message).toBe(SIDE_WAIT_MESSAGE);
   });
   await releaseOpening(page);
   await waitForSide(page, 'front', FRONT);
@@ -708,6 +947,39 @@ test('PAIR-09.3 A photo opened while a side opens is refused with its own messag
     expect((await editState(page)).source.name).toBe(FRONT);
   });
 });
+
+test('PAIR-09.4 On a wide screen, a switch greys out the corner shots\' save buttons [desktop]',
+  async ({ page, check }, testInfo) => {
+    // A browser that can share files, so Share corners shows.
+    await standInShareSheet(page);
+    const hand = await makePair(page, testInfo);
+    await goToStep(page, 'export', hand);
+    await hand.tap(page.locator('#btnCornerShots'));
+    await check('the side panel shows the Corner shots part, with Share corners and Download '
+      + 'corners; both can be clicked', async () => {
+      for (const selector of CORNER_SAVE_BUTTONS) {
+        await expect(page.locator(selector)).toBeVisible();
+        await expect(page.locator(selector)).toBeEnabled();
+      }
+    });
+    await holdNextOpening(page);
+    await hand.tap(sideButton(page, 'front'));
+    await waitForOpening(page);
+    await check('while "Opening the front…" shows, Share corners and Download corners are '
+      + 'greyed out', async () => {
+      await expect(shownToast(page)).toHaveText('Opening the front…');
+      for (const selector of CORNER_SAVE_BUTTONS) {
+        await expect(page.locator(selector)).toBeDisabled();
+      }
+    });
+    await releaseOpening(page);
+    await waitForSide(page, 'front', FRONT);
+    await check('Share corners and Download corners can be clicked again', async () => {
+      for (const selector of CORNER_SAVE_BUTTONS) {
+        await expect(page.locator(selector)).toBeEnabled();
+      }
+    });
+  });
 
 test('PAIR-10.1 Unpair shows only while a pair is open [phone]', async ({
   page,
@@ -726,11 +998,12 @@ test('PAIR-10.1 Unpair shows only while a pair is open [phone]', async ({
     await expect(page.locator('#btnUnpair')).toHaveAttribute('title', 'Unpair (keep one side)');
   });
   await hand.tap(page.locator('#btnUnpair'));
-  await check('a card asks which side to keep', async () => {
-    await expect(questionCard(page)).toHaveClass(/is-open/);
+  await check('the question box asks which side to keep', async () => {
+    await expectCard(page, 'Unpair', 'Keep one side as a single photo.',
+      ['Keep front', 'Keep back', 'Cancel']);
   });
   await answerCard(page, hand, 'Keep back');
-  await check('the card closes; Unpair and Front / Back have gone', async () => {
+  await check('the question box closes; Unpair and Front / Back have gone', async () => {
     await expect(questionCard(page)).not.toHaveClass(/is-open/);
     await expect(page.locator('#btnUnpair')).toBeHidden();
     await expect(page.locator('#sideSwitch')).toBeHidden();
@@ -921,7 +1194,7 @@ test('PAIR-14.2 New photo with a file that can\'t be read keeps the pair [phone]
   check,
 }, testInfo) => {
   const hand = await makePair(page, testInfo);
-  await chooseFile(page, hand, page.locator('#btnOpen'), unreadablePhoto(testInfo));
+  await chooseFile(page, hand, page.locator('#btnOpen'), NOT_A_PHOTO);
   await check('the card asks: New photo, Replace back, Cancel', async () => {
     await expect(questionCard(page)).toHaveClass(/is-open/);
   });
@@ -1058,54 +1331,32 @@ test('PAIR-18.1 Undo can\'t take a side out of the 5:7 lock [phone]', async ({
 
 test('PAIR-18.2 An edits file with a hand-drawn square crop can\'t break the lock [phone] '
   + '[webkit]', async ({ page, check }, testInfo) => {
-  const hand = await startWithFront(page, testInfo);
-  await goToStep(page, 'rotate', hand);
-  await typeAngle(page, hand, '3');
-  await check('the angle reads 3.0°', async () => {
-    await expect(angleText(page)).toHaveText('3.0°');
-  });
-  await goToStep(page, 'crop', hand);
-  const { middleOnPage } = await cropBox(page);
-  const dragEnd = { x: middleOnPage.x, y: middleOnPage.y + CROP_DRAG_PX };
-  await hand.drag(middleOnPage, dragEnd);
-  await check('the square box has moved: it is drawn by hand', async () => {
-    const crop = (await editState(page)).crop;
-    expect(crop.mode).toBe('manual');
-    expect(crop.preset).toBe('1:1');
-  });
-  await goToStep(page, 'export', hand);
-  await openOptions(page, hand, 'export');
-  const saving = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnSaveEdits'));
-  const editsDownload = await saving;
-  const editsFile = await editsDownload.path();
-  await check('an edits file, 14_front_portrait_raw_white-edits.json, is saved', async () => {
-    expect(editsDownload.suggestedFilename()).toBe('14_front_portrait_raw_white-edits.json');
-  });
-  await closeOptions(page, hand, 'export');
-  await chooseInPicker(page, hand, page.locator('#btnAddBack'), BACK);
-  await waitForSide(page, 'back', BACK);
-  await check('the back opens; Front / Back shows in the top bar', async () => {
-    await expect(page.locator('#sideSwitch')).toBeVisible();
-  });
+  const hand = await makePair(page, testInfo);
   await switchTo(page, hand, 'front');
-  await check('the front opens on Perspective, the step the back was on', async () => {
-    expect(await currentStep(page)).toBe('perspective');
-  });
-  await goToStep(page, 'rotate', hand);
-  await typeAngle(page, hand, '0');
-  await check('the angle reads 0.0°', async () => {
-    await expect(angleText(page)).toHaveText('0.0°');
-  });
   await goToStep(page, 'export', hand);
+  // The starting screen: the front open on Export, its angle at 0.0°.
+  expect((await editState(page)).rotation.fine).toBe(0);
   await openOptions(page, hand, 'export');
-  await chooseFile(page, hand, page.locator('#btnLoadEdits'), editsFile);
+  await check('Save edits and Load edits show', async () => {
+    await expect(page.locator('#btnSaveEdits')).toBeVisible();
+    await expect(page.locator('#btnLoadEdits')).toBeVisible();
+  });
+  const choosing = page.waitForEvent('filechooser');
+  await hand.tap(page.locator('#btnLoadEdits'));
+  const chooser = await choosing;
+  await check('the file picker opens', async () => {
+    expect(chooser.isMultiple()).toBe(false);
+  });
+  await chooser.setFiles(SQUARE_CROP_EDITS);
   await page.waitForFunction(() => window.__straightener.app.state.rotation.fine === 3);
-  await check('the options stay open, with no error message', async () => {
+  await check('the options stay open, with no red message', async () => {
     await expect(page.locator('#btnLoadEdits')).toBeVisible();
     await expect(page.locator('#toast.is-shown.is-error')).toHaveCount(0);
   });
   await closeOptions(page, hand, 'export');
+  await check('the options are closed on a phone', async () => {
+    await expect(page.locator('#btnLoadEdits')).toBeHidden();
+  });
   await goToStep(page, 'rotate', hand);
   await check('the angle reads 3.0°: the file\'s edits were loaded', async () => {
     await expect(angleText(page)).toHaveText('3.0°');
@@ -1188,62 +1439,107 @@ test('PAIR-20.1 Swap turns both sides, and Undo doesn\'t turn them back [phone]'
   });
 });
 
-test('PAIR-21.1 Export settings changed on one side are the other side\'s too [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await makePair(page, testInfo);
-  await goToStep(page, 'export', hand);
-  await chooseOutput(page, hand, 'separately');
-  await chooseSize(page, hand, '1080');
-  await hand.tap(segment(page, 'exportFormat', 'webp'));
-  await check('Separately, 1080 and WebP are selected', async () => {
-    await expect(segment(page, 'pairOutput', 'separately')).toHaveAttribute('aria-pressed', 'true');
-    await expectExportSettings(page, { size: '1080', format: 'webp' });
+// Expects Separately to be the selected one of Together / Separately.
+async function expectSeparately(page) {
+  await expect(segment(page, 'pairOutput', 'separately')).toHaveAttribute('aria-pressed', 'true');
+}
+
+test('PAIR-21.1 Size, Format and Separately chosen on one side are the other side\'s too [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await makePair(page, testInfo);
+    await goToStep(page, 'export', hand);
+    // The starting screen: 2000, JPEG and Together.
+    await expectExportSettings(page, { size: '2000', format: 'jpeg' });
+    await chooseOutput(page, hand, 'separately');
+    await check('Separately is selected', async () => {
+      await expectSeparately(page);
+    });
+    await chooseSize(page, hand, '1080');
+    await check('1080 is selected', async () => {
+      await expectExportSettings(page, { size: '1080' });
+    });
+    await hand.tap(segment(page, 'exportFormat', 'webp'));
+    await check('WebP is selected', async () => {
+      await expectExportSettings(page, { format: 'webp' });
+    });
+    await switchTo(page, hand, 'front');
+    await check('the front\'s Export: Size 1080, Format WebP and Separately are selected',
+      async () => {
+        expect((await editState(page)).source.name).toBe(FRONT);
+        expect(await currentStep(page)).toBe('export');
+        await expectSeparately(page);
+        await expectExportSettings(page, { size: '1080', format: 'webp' });
+      });
   });
-  await openOptions(page, hand, 'export');
-  await check('Quality 92%, Interpolation Bilinear, Fill outside photo White', async () => {
-    await expectExportSettings(page, { quality: '92%', interp: 'Bilinear', fill: 'White' });
-  });
-  await page.locator('#quality').fill('0.8');
-  await check('Quality reads 80%', async () => {
-    await expect(page.locator('#qualityValue')).toHaveText('80%');
-  });
-  await page.locator('#interp').selectOption('bicubic');
-  await check('Interpolation reads Bicubic', async () => {
-    await expect(page.locator('#interpValue')).toHaveText('Bicubic');
-  });
-  await page.locator('#fill').selectOption('#000000');
-  await check('Fill outside photo reads Black', async () => {
-    await expect(page.locator('#fillValue')).toHaveText('Black');
-  });
-  await closeOptions(page, hand, 'export');
-  await switchTo(page, hand, 'front');
-  await check('the front: 1080, WebP, Separately; 80%, Bicubic, Black', async () => {
-    expect((await editState(page)).source.name).toBe(FRONT);
-    await expect(segment(page, 'pairOutput', 'separately')).toHaveAttribute('aria-pressed', 'true');
-    await expectExportSettings(page, {
-      size: '1080',
-      format: 'webp',
-      quality: '80%',
-      interp: 'Bicubic',
-      fill: 'Black',
+
+test('PAIR-21.2 The options\' settings changed on one side are the other side\'s too [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await makePair(page, testInfo);
+    await goToStep(page, 'export', hand);
+    await openOptions(page, hand, 'export');
+    await check('Quality reads 92%, Interpolation Bilinear, Fill outside photo White', async () => {
+      await expectExportSettings(page, { quality: '92%', interp: 'Bilinear', fill: 'White' });
+    });
+    await dragQualityTo(page, hand, 'low');
+    await check('Quality reads 50%', async () => {
+      await expect(page.locator('#qualityValue')).toHaveText('50%');
+    });
+    // A native list: picking in the list it opens is selectOption.
+    await page.locator('#interp').selectOption('bicubic');
+    await check('the row reads Bicubic', async () => {
+      await expect(page.locator('#interpValue')).toHaveText('Bicubic');
+    });
+    await page.locator('#fill').selectOption('#000000');
+    await check('the row reads Black', async () => {
+      await expect(page.locator('#fillValue')).toHaveText('Black');
+    });
+    await closeOptions(page, hand, 'export');
+    await check('the options close and the top bar shows Front / Back', async () => {
+      await expect(page.locator('#qualityValue')).toBeHidden();
+      await expect(page.locator('#sideSwitch')).toBeVisible();
+    });
+    await switchTo(page, hand, 'front');
+    await check('the front opens on Export', async () => {
+      expect((await editState(page)).source.name).toBe(FRONT);
+      expect(await currentStep(page)).toBe('export');
+    });
+    await openOptions(page, hand, 'export');
+    await check('the front\'s options read 50%, Bicubic, Black', async () => {
+      await expectExportSettings(page, { quality: '50%', interp: 'Bicubic', fill: 'Black' });
     });
   });
-  const defaults = { size: '2000', format: 'jpeg', quality: '92%', interp: 'Bilinear' };
-  await openOptions(page, hand, 'export');
-  await hand.tap(page.locator('#exportResetRow'));
-  await check('2000, JPEG, 92%, Bilinear, White; Separately is still selected', async () => {
-    await expectExportSettings(page, { ...defaults, fill: 'White' });
-    await expect(segment(page, 'pairOutput', 'separately')).toHaveAttribute('aria-pressed', 'true');
+
+test('PAIR-21.3 Reset export settings on one side resets both, and keeps Separately [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await makePair(page, testInfo);
+    await goToStep(page, 'export', hand);
+    // The starting screen: Separately, 1080 and WebP.
+    await chooseOutput(page, hand, 'separately');
+    await chooseSize(page, hand, '1080');
+    await hand.tap(segment(page, 'exportFormat', 'webp'));
+    await expectExportSettings(page, { size: '1080', format: 'webp' });
+    await openOptions(page, hand, 'export');
+    await check('Reset export settings is among the options', async () => {
+      await expect(page.locator('#exportResetRow')).toBeVisible();
+    });
+    await hand.tap(page.locator('#exportResetRow'));
+    await check('Quality reads 92%, Interpolation Bilinear, Fill outside photo White', async () => {
+      await expectExportSettings(page, { quality: '92%', interp: 'Bilinear', fill: 'White' });
+    });
+    await closeOptions(page, hand, 'export');
+    await check('Size 2000 and Format JPEG are selected; Separately is still selected',
+      async () => {
+        await expectExportSettings(page, { size: '2000', format: 'jpeg' });
+        await expectSeparately(page);
+      });
+    await switchTo(page, hand, 'front');
+    await check('the front\'s Export shows the same: Size 2000, Format JPEG, Separately',
+      async () => {
+        expect((await editState(page)).source.name).toBe(FRONT);
+        await expectExportSettings(page, { size: '2000', format: 'jpeg' });
+        await expectSeparately(page);
+      });
   });
-  await closeOptions(page, hand, 'export');
-  await switchTo(page, hand, 'back');
-  await check('the back shows the same: 2000, JPEG, 92%, Bilinear, White', async () => {
-    expect((await editState(page)).source.name).toBe(BACK);
-    await expectExportSettings(page, { ...defaults, fill: 'White' });
-  });
-});
 
 test('PAIR-22.1 The next photo after a pair starts with the preset picked before it [phone] '
   + '[webkit]', async ({ page, check }, testInfo) => {
@@ -1527,6 +1823,7 @@ test('PAIR-26.2 Together stacks landscape cards, the front on top [phone] [webki
 
 test('PAIR-27.1 A Together image over the canvas limit scales both cards down alike [phone] '
   + '[webkit]', async ({ page, check }, testInfo) => {
+  test.fail(true, 'BUG-011');
   const lowLimitLink = `index.html?maxOutputArea=${LOW_AREA}`;
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR, lowLimitLink);
   await goToStep(page, 'export', hand);
@@ -1541,14 +1838,16 @@ test('PAIR-27.1 A Together image over the canvas limit scales both cards down al
   await chooseOutput(page, hand, 'together');
   const [joined] = await readoutSizes(page);
   const full = expectedTogether(front, back, 'portrait');
-  await check('one size of at most 1 MP, the shape of the two cards side by side; '
-    + '"Clamped to fit the 1 MP canvas limit."', async () => {
+  // A known defect: a plain value comparison, so the case fails at once rather than waiting.
+  await page.locator('#exportMessage').waitFor({ state: 'visible' });
+  const note = await page.locator('#exportMessage').textContent();
+  await check('one size of at most 1 MP, the shape of the two cards side by side; a note reads '
+    + '"Scaled down to fit the N MP limit."', async () => {
     expect(joined[0] * joined[1]).toBeLessThanOrEqual(LOW_AREA);
     expect(full.width * full.height).toBeGreaterThan(LOW_AREA);
     const shapeChange = Math.abs(joined[0] / joined[1] - full.width / full.height);
     expect(shapeChange).toBeLessThan(full.width / full.height * SHAPE_TOLERANCE);
-    const note = 'Clamped to fit the 1 MP canvas limit.';
-    await expect(page.locator('#exportMessage')).toHaveText(note);
+    expect(note).toMatch(APPROVED_CLAMP_NOTE);
   });
   const [saved] = await downloadAll(page, hand, 1);
   const scale = joined[1] / full.height;
@@ -1563,7 +1862,7 @@ test('PAIR-27.1 A Together image over the canvas limit scales both cards down al
   });
 });
 
-test('PAIR-28.1 Separately saves each side exactly as its own export [phone] [webkit]', async ({
+test('PAIR-28.1 Separately saves the front exactly as its own export [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
@@ -1574,37 +1873,81 @@ test('PAIR-28.1 Separately saves each side exactly as its own export [phone] [we
     await expect(selectedPreset(page)).toHaveText('5:7 card');
   });
   await goToStep(page, 'export', hand);
-  await chooseSize(page, hand, '0');
-  const [frontAlone] = await downloadAll(page, hand, 1);
-  await check('one file: the front on its own', async () => {
-    expect(frontAlone.name).toBe('14_front_portrait_raw_white-straight.jpg');
+  await check('the Export step', async () => {
+    expect(await currentStep(page)).toBe('export');
   });
-  await chooseInPicker(page, hand, page.locator('#btnAddBack'), BACK);
+  await chooseSize(page, hand, '0');
+  await check('Original is selected', async () => {
+    await expectExportSettings(page, { size: '0' });
+  });
+  const [frontAlone] = await downloadAll(page, hand, 1);
+  await check('one file, 14_front_portrait_raw_white-straight.jpg: the front on its own',
+    async () => {
+      expect(frontAlone.name).toBe('14_front_portrait_raw_white-straight.jpg');
+    });
+  const choosing = page.waitForEvent('filechooser');
+  await hand.tap(page.locator('#btnAddBack'));
+  const chooser = await choosing;
+  await check('the photo picker opens', async () => {
+    expect(chooser.isMultiple()).toBe(false);
+  });
+  await chooser.setFiles(samplePath(BACK));
   await waitForSide(page, 'back', BACK);
   await check('the back opens; Front / Back shows in the top bar', async () => {
     await expect(page.locator('#sideSwitch')).toBeVisible();
   });
   await goToStep(page, 'export', hand);
+  await check('the back\'s Export step, Size Original', async () => {
+    expect(await currentStep(page)).toBe('export');
+    await expectExportSettings(page, { size: '0' });
+  });
   await chooseOutput(page, hand, 'separately');
+  await check('Separately is selected', async () => {
+    await expectSeparately(page);
+  });
   const [frontOfPair, backOfPair] = await downloadAll(page, hand, 2);
-  await check('two files, the front\'s and the back\'s', async () => {
+  await check('two files, 14_front_portrait_raw_white-front.jpg and '
+    + '14_back_portrait_raw_white-back.jpg', async () => {
     expect(frontOfPair.name).toBe('14_front_portrait_raw_white-front.jpg');
     expect(backOfPair.name).toBe('14_back_portrait_raw_white-back.jpg');
   });
-  await check('the front\'s file and the front alone are the same, pixel for pixel', async () => {
+  await check('the front\'s file and the file from row 4 are the same size and the same, pixel '
+    + 'for pixel', async () => {
     await expectSameImage(page, frontOfPair.file, frontAlone.file);
   });
+});
+
+test('PAIR-28.2 Separately saves the back exactly as its own export [phone] [webkit]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await makePair(page, testInfo);
+  await goToStep(page, 'export', hand);
+  await chooseSize(page, hand, '0');
+  await chooseOutput(page, hand, 'separately');
+  const [frontOfPair, backOfPair] = await downloadAll(page, hand, 2);
+  await check('two files, 14_front_portrait_raw_white-front.jpg and '
+    + '14_back_portrait_raw_white-back.jpg', async () => {
+    expect(frontOfPair.name).toBe('14_front_portrait_raw_white-front.jpg');
+    expect(backOfPair.name).toBe('14_back_portrait_raw_white-back.jpg');
+  });
   await hand.tap(page.locator('#btnUnpair'));
+  await check('the question box asks: Keep front, Keep back, Cancel', async () => {
+    await expectCard(page, 'Unpair', 'Keep one side as a single photo.',
+      ['Keep front', 'Keep back', 'Cancel']);
+  });
   await answerCard(page, hand, 'Keep back');
-  await check('the back is a single photo', async () => {
+  await check('the back is a single photo: Front / Back has gone', async () => {
     await expect(page.locator('#sideSwitch')).toBeHidden();
     expect((await editState(page)).source.name).toBe(BACK);
   });
   const [backAlone] = await downloadAll(page, hand, 1);
-  await check('one file: the back on its own', async () => {
-    expect(backAlone.name).toBe('14_back_portrait_raw_white-straight.jpg');
-  });
-  await check('it and the back\'s file from the pair are the same, pixel for pixel', async () => {
+  await check('one file, 14_back_portrait_raw_white-straight.jpg: the back on its own',
+    async () => {
+      expect(backAlone.name).toBe('14_back_portrait_raw_white-straight.jpg');
+    });
+  await check('it and the back\'s file from row 1 are the same size and the same, pixel for '
+    + 'pixel', async () => {
     await expectSameImage(page, backOfPair.file, backAlone.file);
   });
 });
@@ -1622,6 +1965,9 @@ test('PAIR-29.1 The pair\'s files are named after the front and the back [phone]
     expect(together.map(saved => saved.name)).toEqual(['14_front_portrait_raw_white-pair.png']);
   });
   await chooseOutput(page, hand, 'separately');
+  await check('Separately is selected', async () => {
+    await expectSeparately(page);
+  });
   const separatePng = await downloadAll(page, hand, 2);
   await check('two files: …-front.png and …-back.png', async () => {
     expect(separatePng.map(saved => saved.name)).toEqual([
@@ -1630,6 +1976,9 @@ test('PAIR-29.1 The pair\'s files are named after the front and the back [phone]
     ]);
   });
   await hand.tap(segment(page, 'exportFormat', 'jpeg'));
+  await check('JPEG is selected', async () => {
+    await expectExportSettings(page, { format: 'jpeg' });
+  });
   const separateJpeg = await downloadAll(page, hand, 2);
   await check('two files: …-front.jpg and …-back.jpg', async () => {
     expect(separateJpeg.map(saved => saved.name)).toEqual([
@@ -1650,6 +1999,9 @@ test('PAIR-30.1 Download saves one file for Together and two, a moment apart, fo
     await expect(shownToast(page)).toHaveText(/^Exported the Together image in \d+\.\d s\.$/);
   });
   await chooseOutput(page, hand, 'separately');
+  await check('Separately is selected', async () => {
+    await expectSeparately(page);
+  });
   await noteDownloadStarts(page);
   const separately = await downloadAll(page, hand, 2);
   const starts = await downloadStarts(page);
@@ -1681,6 +2033,9 @@ test('PAIR-32.2 Share hands over one file for Together and both for Separately [
     expect((await sharedFiles(page))[0].names).toEqual(['14_front_portrait_raw_white-pair.jpg']);
   });
   await chooseOutput(page, hand, 'separately');
+  await check('Separately is selected', async () => {
+    await expectSeparately(page);
+  });
   await hand.tap(page.locator('#btnShare'));
   await page.waitForFunction(() => window.testShared.length === 2);
   await check('one share sheet, with two files: …-front.jpg and …-back.jpg', async () => {
@@ -1744,6 +2099,10 @@ test('PAIR-34.1 Next card shows while both sides and the output choice are as ex
     await expect(nextCard).toBeVisible();
   });
   await goToStep(page, 'rotate', hand);
+  await check('the front\'s Rotate step; the angle reads 0.0°', async () => {
+    expect(await currentStep(page)).toBe('rotate');
+    await expect(angleText(page)).toHaveText('0.0°');
+  });
   await typeAngle(page, hand, '2');
   await check('the angle reads 2.0°', async () => {
     await expect(angleText(page)).toHaveText('2.0°');
@@ -1780,7 +2139,8 @@ test('PAIR-35.1 A pair\'s export never holds two full-size photos at once [phone
     expect(heldForTogether.most, 'the most full-size photos held at once').toBe(1);
     expect(heldForTogether.events).toEqual(oneAtATime);
   });
-  await check('the back\'s full-size photo is held again', async () => {
+  await check('once the export has finished, the app holds the back\'s full-size photo, and '
+    + 'nothing else', async () => {
     expect(heldForTogether.now).toBe(1);
     const openPhoto = await page.evaluate(() => {
       const img = window.__straightener.app.img;
@@ -1789,6 +2149,9 @@ test('PAIR-35.1 A pair\'s export never holds two full-size photos at once [phone
     expect(openPhoto).toEqual({ name: BACK, isHeld: true });
   });
   await chooseOutput(page, hand, 'separately');
+  await check('Separately is selected', async () => {
+    await expectSeparately(page);
+  });
   const separately = await downloadAll(page, hand, 2);
   await waitForExportEnd(page);
   const heldForSeparately = await heldPhotos(page);
@@ -1810,8 +2173,8 @@ test('PAIR-36.1 When the open photo can\'t be read again, saving waits for a sid
   await failReadsOf(page, BACK);
   const [saved] = await downloadAll(page, hand, 1);
   await waitForExportEnd(page);
-  await check('the file arrives; then a warning reads "The photo isn’t loaded after the last '
-    + 'export. Tap Front or Back to switch sides, then switch back."', async () => {
+  await check('the file arrives; then an amber warning reads "The photo isn’t loaded after the '
+    + 'last export. Tap Front or Back to switch sides, then switch back."', async () => {
     expect(saved.name).toBe('14_front_portrait_raw_white-pair.jpg');
     await expect(shownToast(page)).toHaveText(PHOTO_RELEASED_MESSAGE);
     await expect(shownToast(page)).toHaveClass(/is-warn/);
@@ -1832,16 +2195,17 @@ test('PAIR-36.1 When the open photo can\'t be read again, saving waits for a sid
   await waitForExportEnd(page);
   await page.waitForTimeout(NO_DOWNLOAD_WAIT_MS);
   const messages = await toastsSoFar(page);
-  await check('no file: a message says the export failed, and why: "The photo isn’t loaded '
-    + 'after the last export. …"', async () => {
+  await check('no file: a red message begins "Export failed"', async () => {
     expect(arrived).toEqual([]);
-    expect(messages).toContainEqual({
-      text: `Export failed: ${PHOTO_RELEASED_MESSAGE}`,
-      kind: 'error',
-    });
+    const failures = messages.filter(message => message.kind === 'error');
+    expect(failures).toHaveLength(1);
+    expect(failures[0].text).toMatch(/^Export failed/);
   });
   await allowReads(page);
   await switchTo(page, hand, 'front');
+  await check('the front opens', async () => {
+    expect((await editState(page)).source.name).toBe(FRONT);
+  });
   await switchTo(page, hand, 'back');
   await check('the back opens', async () => {
     expect((await editState(page)).source.name).toBe(BACK);
@@ -1849,7 +2213,7 @@ test('PAIR-36.1 When the open photo can\'t be read again, saving waits for a sid
   });
   await goToStep(page, 'export', hand);
   const afterSwitch = await downloadAll(page, hand, 1);
-  await check('the file arrives', async () => {
+  await check('the file arrives: 14_front_portrait_raw_white-pair.jpg', async () => {
     expect(afterSwitch.map(file => file.name)).toEqual(['14_front_portrait_raw_white-pair.jpg']);
   });
 });
@@ -1893,47 +2257,67 @@ test('PAIR-37.2 Separately warns when the side not on screen is scaled down [pho
   check,
 }, testInfo) => {
   test.fail(true, 'BUG-033');
-  const hand = await makePair(page, testInfo);
-  // The back's card is drawn larger: its top-left handle up and left, its bottom-right one down
-  // and right.
+  const lowLimitLink = `index.html?maxOutputArea=${LOW_AREA}`;
+  const hand = await makePair(page, testInfo, PORTRAIT_PAIR, lowLimitLink);
   const topLeft = await cornerOnPage(page, 0);
-  await hand.drag(topLeft, { x: topLeft.x - ENLARGE_DRAG_PX, y: topLeft.y - ENLARGE_DRAG_PX });
+  const upAndLeft = { x: topLeft.x - ENLARGE_DRAG_PX, y: topLeft.y - ENLARGE_DRAG_PX };
+  await hand.drag(topLeft, upAndLeft);
+  await check('the top-left handle sits outside the card, up and to the left of its corner',
+    async () => {
+      const handle = await cornerOnPage(page, 0);
+      expect(Math.abs(handle.x - upAndLeft.x)).toBeLessThan(CORNER_TOLERANCE_PX);
+      expect(Math.abs(handle.y - upAndLeft.y)).toBeLessThan(CORNER_TOLERANCE_PX);
+    });
   const bottomRight = await cornerOnPage(page, 2);
-  const outward = { x: bottomRight.x + ENLARGE_DRAG_PX, y: bottomRight.y + ENLARGE_DRAG_PX };
-  await hand.drag(bottomRight, outward);
-  await goToStep(page, 'export', hand);
-  await chooseSize(page, hand, '0');
-  await chooseOutput(page, hand, 'separately');
-  const [frontArea, backArea] = (await readoutSizes(page)).map(([width, height]) => width * height);
-  expect(backArea, 'before: the back\'s card is the larger').toBeGreaterThan(frontArea);
+  const downAndRight = {
+    x: bottomRight.x + ENLARGE_DRAG_PX,
+    y: bottomRight.y + ENLARGE_DRAG_PX,
+  };
+  await hand.drag(bottomRight, downAndRight);
+  await check('the bottom-right handle sits outside the card, down and to the right: the '
+    + 'outline is larger than the card', async () => {
+    const handle = await cornerOnPage(page, 2);
+    expect(Math.abs(handle.x - downAndRight.x)).toBeLessThan(CORNER_TOLERANCE_PX);
+    expect(Math.abs(handle.y - downAndRight.y)).toBeLessThan(CORNER_TOLERANCE_PX);
+  });
   await switchTo(page, hand, 'front');
-  await waitUntilPairStored(page);
-  const limit = Math.round((frontArea + backArea) / 2);
-  await page.goto(`index.html?maxOutputArea=${limit}`);
-  await page.waitForFunction(() => !!window.__straightener);
-  await page.locator('#btnResume').waitFor({ state: 'visible' });
-  await resume(page, hand, FRONT, 'front');
+  await check('the front opens on Perspective, with Front in white', async () => {
+    expect(await currentStep(page)).toBe('perspective');
+    await expect(sideButton(page, 'front')).toHaveAttribute('aria-pressed', 'true');
+  });
   await goToStep(page, 'export', hand);
-  const [, backSize] = await readoutSizes(page);
+  await check('the Export step, with Together selected', async () => {
+    await expect(segment(page, 'pairOutput', 'together')).toHaveAttribute('aria-pressed', 'true');
+  });
+  await chooseSize(page, hand, '0');
+  await check('Original is selected', async () => {
+    await expectExportSettings(page, { size: '0' });
+  });
+  await chooseOutput(page, hand, 'separately');
+  // The sizes are still in the page while the note takes their place on a phone: the front is
+  // under the limit as it is, the back scaled down to just under it.
+  const [frontSize, backSize] = await readoutSizes(page);
   // A known defect: plain value comparisons, so the case fails at once rather than waiting.
-  const isSeparately = await segment(page, 'pairOutput', 'separately')
-    .getAttribute('aria-pressed');
   const isNoteShown = await page.locator('#exportMessage').isVisible();
   const note = await page.locator('#exportMessage').textContent();
-  await check('Separately is selected, and beside it a note says the back was scaled down to '
-    + 'fit the limit and names it', async () => {
-    expect(isSeparately).toBe('true');
+  await check('Separately is selected, and beside it one note reads "The back is scaled down to '
+    + 'fit the N MP limit."', async () => {
+    await expectSeparately(page);
+    expect(frontSize[0] * frontSize[1], 'the front is under the limit').toBeLessThan(LOW_AREA);
     const backScaled = backSize[0] * backSize[1];
-    expect(backScaled, 'the back is scaled to the limit').toBeLessThanOrEqual(limit);
-    expect(backScaled, 'the back is scaled to the limit').toBeGreaterThan(limit * AREA_FILL_MIN);
+    expect(backScaled, 'the back is scaled to the limit').toBeLessThanOrEqual(LOW_AREA);
+    expect(backScaled, 'the back is scaled to the limit').toBeGreaterThan(LOW_AREA * AREA_FILL_MIN);
     expect(isNoteShown, 'a note shows').toBe(true);
-    expect(note, 'the note names the side').toMatch(/back/i);
+    expect(note).toMatch(APPROVED_BACK_CLAMP_NOTE);
   });
 });
 
 test('PAIR-37.3 When the other side\'s corners are crossed, the line says which side to fix '
   + '[phone]', async ({ page, check }, testInfo) => {
   test.fail(true, 'BUG-034');
+  // A browser that can share files and copy images, so Share and Copy show.
+  await standInShareSheet(page);
+  await standInClipboard(page);
   const hand = await makePair(page, testInfo);
   await crossCorners(page, hand);
   await check(`the corner lines cross; the line reads "${CROSSED_MESSAGE}"`, async () => {
@@ -1957,17 +2341,16 @@ test('PAIR-37.3 When the other side\'s corners are crossed, the line says which 
     expect(afterSwitch).toEqual({ step: 'perspective', photo: FRONT, isOpeningShown: false });
   });
   await goToStep(page, 'export', hand);
-  const readoutRow = await page.locator('#exportReadoutRow').textContent();
-  const isDownloadDimmed = await page.locator('#btnDownload').isDisabled();
-  const isCopyDimmed = await page.locator('#btnCopy').isDisabled();
-  await check('the size line says the back\'s corners need fixing in Perspective; Download and '
-    + 'Copy are greyed out', async () => {
-    expect(readoutRow).toMatch(/back/i);
-    expect(readoutRow).toMatch(/Perspective/);
-    expect({ isDownloadDimmed, isCopyDimmed }).toEqual({
-      isDownloadDimmed: true,
-      isCopyDimmed: true,
-    });
+  // The size line's row: on a phone a note may take the size line's place in it.
+  const readout = await page.locator('#exportReadoutRow').textContent();
+  const dimmed = {};
+  for (const id of ['btnShare', 'btnDownload', 'btnCopy']) {
+    dimmed[id] = await page.locator(`#${id}`).isDisabled();
+  }
+  await check(`the size line reads "${FIX_BACK_MESSAGE}"; Share, Download and Copy are greyed `
+    + 'out', async () => {
+    expect(readout).toContain(FIX_BACK_MESSAGE);
+    expect(dimmed).toEqual({ btnShare: true, btnDownload: true, btnCopy: true });
   });
   await recordToasts(page);
   const arrived = [];
@@ -1977,7 +2360,7 @@ test('PAIR-37.3 When the other side\'s corners are crossed, the line says which 
   await (hand.isTouch ? download.tap({ force: true }) : download.click({ force: true }));
   await page.waitForTimeout(NO_DOWNLOAD_WAIT_MS);
   const messages = await toastsSoFar(page);
-  await check('nothing is saved, and no "Export failed" message shows', async () => {
+  await check('nothing is saved, and no message beginning "Export failed" shows', async () => {
     expect(arrived).toEqual([]);
     expect(messages.filter(message => message.text.startsWith('Export failed'))).toEqual([]);
   });
@@ -1995,14 +2378,23 @@ test('PAIR-38.1 The Together preview, for a person to judge [phone]', async ({
     expect((await editState(page)).overlay).not.toBeNull();
   });
   await switchTo(page, hand, 'front');
+  await check('the front opens on the Overlay step, with no logo', async () => {
+    expect((await editState(page)).source.name).toBe(FRONT);
+    expect(await currentStep(page)).toBe('overlay');
+    expect((await editState(page)).overlay).toBeNull();
+  });
   await goToStep(page, 'levels', hand);
   await check('the front\'s Levels step', async () => {
     expect(await currentStep(page)).toBe('levels');
   });
   await hand.tap(page.locator('#toolAutoLevels'));
+  await check('the front\'s whites turn brighter, and a white dot shows on the Levels tab',
+    async () => {
+      expect(await page.evaluate(() => window.__straightener.app.levelsDraft)).toBeTruthy();
+      await expect(levelsDot(page)).toBeVisible();
+    });
   await hand.tap(page.locator('#btnApplyLevels'));
-  await check('the front\'s whites turn brighter; Apply is greyed out and no dot is on the '
-    + 'Levels tab: the levels are applied', async () => {
+  await check('Apply is greyed out and the dot on the Levels tab goes', async () => {
     await expect(page.locator('#btnApplyLevels')).toBeDisabled();
     await expect(levelsDot(page)).toBeHidden();
     expect((await editState(page)).levels).not.toBeNull();
@@ -2079,7 +2471,15 @@ test('PAIR-39.1 The Together preview zooms on its own and fits again when it cha
       await expectGrown(fitted);
     });
     await goToStep(page, 'crop', hand);
+    await check('the back\'s Crop step, its box upright under 5:7 card', async () => {
+      await expect(selectedPreset(page)).toHaveText('5:7 card');
+      await expectCardCrop(page, 'portrait');
+    });
     await hand.tap(page.locator('#toolSwap'));
+    await check('the box lies down, 7 wide to 5 high, under 7:5 card', async () => {
+      await expect(selectedPreset(page)).toHaveText('7:5 card');
+      await expectCardCrop(page, 'landscape');
+    });
     await goToStep(page, 'export', hand);
     await check('the two cards lie down, one above the other, and the joined image fits the '
       + 'photo area', async () => {
@@ -2091,7 +2491,7 @@ test('PAIR-39.1 The Together preview zooms on its own and fits again when it cha
 // Waits until the stored pair says it was exported (its record is saved a moment after the
 // export).
 function waitUntilStoredAsExported(page) {
-  return page.waitForFunction(async () => {
+  return waitInPage(page, async () => {
     const pair = await window.CF.Session.get('pair');
     return !!pair && pair.exported === true;
   });
@@ -2120,10 +2520,11 @@ test('PAIR-40.1 Resume brings back the waiting side\'s edits, Levels changes, lo
   });
   await goToStep(page, 'levels', hand);
   await hand.tap(page.locator('#toolAutoLevels'));
-  await check('Discard and Apply show, and a white dot is on the Levels tab', async () => {
-    await expect(page.locator('#btnApplyLevels')).toBeVisible();
-    await expect(levelsDot(page)).toBeVisible();
-  });
+  await check('Discard and Apply are no longer greyed out, and a white dot is on the Levels tab',
+    async () => {
+      await expectLevelsButtons(page, 'enabled');
+      await expect(levelsDot(page)).toBeVisible();
+    });
   await switchTo(page, hand, 'back');
   await check('the back opens on Levels, with no dot on the tab', async () => {
     expect(await currentStep(page)).toBe('levels');
@@ -2140,10 +2541,10 @@ test('PAIR-40.1 Resume brings back the waiting side\'s edits, Levels changes, lo
     await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
   });
   await switchTo(page, hand, 'front');
-  await check('the front opens on Levels: Discard and Apply show and the dot is on the Levels '
-    + 'tab', async () => {
+  await check('the front opens on Levels: Discard and Apply are not greyed out, and the dot is '
+    + 'on the Levels tab', async () => {
     expect(await currentStep(page)).toBe('levels');
-    await expect(page.locator('#btnApplyLevels')).toBeVisible();
+    await expectLevelsButtons(page, 'enabled');
     await expect(levelsDot(page)).toBeVisible();
   });
   await goToStep(page, 'rotate', hand);
@@ -2173,7 +2574,13 @@ test('PAIR-41.1 Resume opens the side that was open, and the waiting side withou
     expect((await editState(page)).source.name).toBe(BACK);
   });
   await goToStep(page, 'export', hand);
+  await check('the back\'s Export step', async () => {
+    expect(await currentStep(page)).toBe('export');
+  });
   await chooseSize(page, hand, '0');
+  await check('Original is selected', async () => {
+    await expectExportSettings(page, { size: '0' });
+  });
   const saved = await downloadAll(page, hand, 1);
   await check('the file arrives; Next card shows in the bottom row', async () => {
     expect(saved).toHaveLength(1);
@@ -2290,6 +2697,9 @@ test('PAIR-43.1 The first switch to a resumed side finds its card but leaves its
   });
   await waitUntilPairStored(page);
   await reloadToResume(page);
+  await check(`the start screen offers Resume, naming ${FRONT} + ${BACK}`, async () => {
+    await expect(page.locator('#resumeName')).toHaveText(`${FRONT} + ${BACK}`);
+  });
   await resume(page, hand, BACK, 'back');
   await check('the back opens on Perspective, with Back in white', async () => {
     expect(await currentStep(page)).toBe('perspective');

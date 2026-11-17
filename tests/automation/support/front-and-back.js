@@ -19,6 +19,8 @@ const {
 
 // How long a side may take to open (and, for a new photo, be detected) before a case gives up.
 const SIDE_TIMEOUT_MS = 20000;
+// How often waitInPage asks the page again, in ms.
+const POLL_MS = 100;
 // How long a case waits for its downloads before giving up.
 const DOWNLOAD_TIMEOUT_MS = 20000;
 // How long to wait for a question card to show before deciding none was asked.
@@ -217,32 +219,50 @@ function storedRecord(page, key) {
   }, key);
 }
 
+// Waits until `check(arg)`, run in the page, comes out true; gives up with an error after
+// timeoutMs. `check` may be async (it may read the app's storage): page.waitForFunction can't
+// take one, since it counts the promise an async function returns as true at once.
+async function waitInPage(page, check, arg = null, timeoutMs = SIDE_TIMEOUT_MS) {
+  const deadline = Date.now() + timeoutMs;
+  while (!(await page.evaluate(check, arg))) {
+    if (Date.now() > deadline) throw new Error(`Waited ${timeoutMs} ms in vain: ${check}`);
+    await page.waitForTimeout(POLL_MS);
+  }
+}
+
 // Waits until the pair is stored for Resume as it is on screen: the pair's record names the
-// open side, and the stored photo and edits are the open side's, edits and all. A person would
-// wait a moment before closing the page; this waits for exactly that moment.
+// open side and holds the waiting side's edits, the waiting side's photo is stored, and the
+// stored photo and edits are the open side's, edits and step and all. A person would wait a
+// moment before closing the page; this waits for exactly that moment.
 async function waitUntilPairStored(page) {
-  await page.waitForFunction(async () => {
+  await waitInPage(page, async () => {
     const app = window.__straightener.app;
     const session = window.CF.Session;
-    const [pair, edits, photo] = await Promise.all([
+    const [pair, pairPhoto, edits, photo] = await Promise.all([
       session.get('pair'),
+      session.get('pairPhoto'),
       session.get('edits'),
       session.get('photo'),
     ]);
     return !!pair
       && !!app.pair
       && pair.current === app.pair.current
+      && JSON.stringify(pair.other.edits.state) === JSON.stringify(app.pair.other.state)
+      && !!pairPhoto
+      && pairPhoto.name === app.pair.other.name
       && !!edits
       && JSON.stringify(edits.state) === JSON.stringify(app.state)
+      && edits.tab === app.tab
       && !!photo
       && photo.name === app.img.name;
-  }, null, { timeout: SIDE_TIMEOUT_MS });
+  });
 }
 
-// Waits until a single photo is stored for Resume as it is on screen (its photo and its edits)
-// and no pair is stored.
+// Waits until a single photo is stored for Resume as it is on screen (its photo, its edits and
+// the step it is on) and no pair is stored. The step is saved a moment after a step change,
+// apart from the edits, so a wait on the edits alone can end before it.
 async function waitUntilSingleStored(page) {
-  await page.waitForFunction(async () => {
+  await waitInPage(page, async () => {
     const app = window.__straightener.app;
     const session = window.CF.Session;
     const [pair, edits, photo] = await Promise.all([
@@ -253,9 +273,10 @@ async function waitUntilSingleStored(page) {
     return !pair
       && !!edits
       && JSON.stringify(edits.state) === JSON.stringify(app.state)
+      && edits.tab === app.tab
       && !!photo
       && photo.name === app.img.name;
-  }, null, { timeout: SIDE_TIMEOUT_MS });
+  });
 }
 
 // Reloads the page and waits for the start screen's Resume prompt.
@@ -600,6 +621,7 @@ module.exports = {
   noteDownloadStarts,
   downloadStarts,
   slowStorageWrites,
+  waitInPage,
   regionMeans,
   standInShareSheet,
   sharedFiles,

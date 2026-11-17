@@ -50,9 +50,9 @@ To add one: give it the next number, say exactly what to do and what to record, 
 
 ## Q-08 What the top of the share sheet shows for a picture
 
-- Waiting: EXP-08.2
-- Do: open IMG_9136.JPEG in the app on the UAT site, tap **Export**, **2000**, **Share**, then **No** in the question box. Look at the top of the share sheet before choosing anything, then close it with its **×**.
-- Write down: what the top of the share sheet shows: a small picture of the straightened card or not, and the file's name (IMG_9136-straight.jpg) or not, word for word.
+- Waiting: EXP-08.2, PAIR-32.1
+- Do: open IMG_9136.JPEG in the app on the UAT site, tap **Export**, **2000**, **Share**, then **No** in the question box. Look at the top of the share sheet before choosing anything, then close it with its **×**. Then make a pair: open 14_front_portrait_raw_white.JPEG, tap **Export**, **Add back** and choose 14_back_portrait_raw_white.JPEG; tap **Export**, **Original**, **Separately** and **Share**, and look at the top of the share sheet again before closing it.
+- Write down: what the top of the share sheet shows: a small picture of the straightened card or not, and the file's name (IMG_9136-straight.jpg) or not, word for word. For the pair: whether it shows two pictures, and the names (14_front_portrait_raw_white-front.jpg, 14_back_portrait_raw_white-back.jpg) or a count such as "2 Images", word for word.
 
 ## Q-09 Which photo makes Safari refuse a share after a slow save
 
