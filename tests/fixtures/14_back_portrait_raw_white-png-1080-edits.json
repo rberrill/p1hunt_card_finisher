@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "source": {
+    "name": "14_back_portrait_raw_white.JPEG",
+    "width": 1536,
+    "height": 2048
+  },
+  "corners": [
+    [
+      441.5798260702573,
+      516.6270417624523
+    ],
+    [
+      1116.0947811616734,
+      526.0123907498694
+    ],
+    [
+      1080.155534192246,
+      1411.9616812155982
+    ],
+    [
+      452.5469328382655,
+      1400.7872449414194
+    ]
+  ],
+  "strength": 1,
+  "aspect": {
+    "ratio": 0.7142857142857142,
+    "orientation": "auto"
+  },
+  "squareUpHeight": "preserveEdges",
+  "rotation": {
+    "quarter": 0,
+    "fine": 0,
+    "fillFrame": false
+  },
+  "flip": {
+    "h": false,
+    "v": false
+  },
+  "crop": {
+    "mode": "fit",
+    "preset": "5:7",
+    "ratio": 0.7142857142857143,
+    "swapped": false,
+    "orient": "portrait",
+    "rect": null
+  },
+  "levels": null,
+  "overlay": null,
+  "export": {
+    "format": "png",
+    "quality": 0.92,
+    "longEdge": 1080,
+    "interp": "bilinear",
+    "fill": "#ffffff"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "source": {
+    "name": "IMG_9136.JPEG",
+    "width": 1498,
+    "height": 2098
+  },
+  "corners": [
+    [
+      263.977101954434,
+      591.7601816136264
+    ],
+    [
+      1164.9330079176384,
+      588.67302382105
+    ],
+    [
+      1155.0591382716102,
+      1770.0516855930316
+    ],
+    [
+      294.1229238343632,
+      1773.044880028571
+    ]
+  ],
+  "strength": 1,
+  "aspect": {
+    "ratio": 0.7142857142857142,
+    "orientation": "auto"
+  },
+  "squareUpHeight": "preserveEdges",
+  "rotation": {
+    "quarter": 1,
+    "fine": 0,
+    "fillFrame": false
+  },
+  "flip": {
+    "h": false,
+    "v": false
+  },
+  "crop": {
+    "mode": "fit",
+    "preset": "1:1",
+    "ratio": 1,
+    "swapped": false,
+    "orient": null,
+    "rect": null
+  },
+  "levels": null,
+  "overlay": null,
+  "export": {
+    "format": "jpeg",
+    "quality": 0.92,
+    "longEdge": 2000,
+    "interp": "bilinear",
+    "fill": "#ffffff"
+  }
+}

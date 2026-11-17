@@ -2,40 +2,65 @@
 
 Saving a photo's edits to a small file and loading them back onto the same photo, including what the file holds, what is refused, and how older files and pairs are handled.
 
+The edits files and logos these cases load are in `tests/fixtures/`. Each was saved from the app and, where a case says so, changed in a text editor; the case quotes the change.
+
 ## EDT-01 Save edits
 
 **Save edits** downloads the photo's edits as a readable JSON file named after the photo with **-edits.json** added.
 
 - Risk: high
-- Check: script, saved file
+- Check: script, saved file; phone (Safari's download of the file)
 - Layout: both. On a phone the button is in Export's options sheet, opened from the tab with the up arrow above the controls; on a wide screen it is listed in the side panel.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#btnSaveEdits`, "Save edits", "-edits.json"
 - Source: `js/app/export.js` (`saveEdits`, `exportBaseName`), `js/app/export-controls.js` (`buildEditsGroup`, `bindExport`)
-- Cases: 1
+- Cases: 2
 
 ### EDT-01.1 Save edits saves a readable file named for the photo   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/ (1498 × 2098 px)
 - Starting screen: the photo open, on the Rotate step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **90° right** | The photo turns a quarter clockwise |
-| 2 | Tap **Export** in the step bar, and save the edits | A file named IMG_9136-edits.json is saved |
-| 3 | Open the file in a text editor | It is plain text, one setting to a line, and its first setting reads `"version": 2` |
-| 4 | Read its source and rotation settings | It names IMG_9136.JPEG, a width of 1498 and a height of 2098, and a quarter turn of 1 |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows, with **Download** |
+| 3 | Save the edits | A file named IMG_9136-edits.json is saved |
+| 4 | Open the file in a text editor | It is plain text, one setting to a line, and its first setting reads `"version": 2` |
+| 5 | Find `"source"` in the file | Under it: `"name": "IMG_9136.JPEG"`, `"width": 1498` and `"height": 2098` |
+| 6 | Find `"rotation"` in the file | Under it: `"quarter": 1` |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the edits file.
+
+### EDT-01.2 On an iPhone, Save edits puts the file in Files   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Export step
+
+Safari keeps downloads in the Files app, in the folder Settings › Safari › Downloads names (Downloads, unless it was changed).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | Export options rise, with **Save edits** and **Load edits** |
+| 2 | Tap **Save edits** | Safari asks whether to download IMG_9136-edits.json |
+| 3 | Tap **Download** in Safari's question | Safari's question goes; the photo is still open on the Export step, with Export options up |
+| 4 | Open the Files app, then Safari's downloads folder | IMG_9136-edits.json is there |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ## EDT-02 The logo travels in the file
 
@@ -54,20 +79,22 @@ When a logo is placed and loaded, the edits file holds the logo image itself.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green)
 - Starting screen: the photo open, on the Overlay step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Add logo** and choose green-logo.png | The green square shows on the photo |
-| 2 | Tap **Export** in the step bar, and save the edits | A file named IMG_9136-edits.json is saved |
-| 3 | Open the file in a text editor and find `"overlayImage"` near its end | It names green-logo.png, of the type image/png, and holds the logo's bytes as a long run of letters and digits (base64) that decodes to green-logo.png exactly |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows, with the green square on the photo |
+| 3 | Save the edits | A file named IMG_9136-edits.json is saved |
+| 4 | Find `"overlayImage"` near the end of the file, opened in a text editor | It names green-logo.png, of the type image/png, and holds the logo's bytes as a long run of letters and digits (base64) that decodes to green-logo.png exactly |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the edits file.
@@ -89,21 +116,25 @@ The edits file does not hold the photo, unapplied Levels changes, the Together /
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Levels step, with no levels set
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Auto** | The photo brightens; a white dot shows on the **Levels** tab: the levels wait for **Apply** |
-| 2 | Tap **Export** in the step bar, tap **Corner shots**, then **4 photos** | **4 photos** is selected |
-| 3 | Close Corner shots (on a phone, tap the **×** at its top right), and save the edits | A file named IMG_9136-edits.json is saved, under 10 KB: the photo is not in it |
-| 4 | Open the file in a text editor and find its levels line | It reads `"levels": null`: the unapplied levels are not in it |
-| 5 | Search the file for the word photos | It is nowhere in the file: the corner-shots choice is not in it |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows, with **Corner shots** |
+| 3 | Tap **Corner shots** | Corner shots shows **4 photos** and **1 sheet** (on a phone, in a sheet that rises over the photo) |
+| 4 | Tap **4 photos** | **4 photos** is selected (a solid white fill) |
+| 5 | Close Corner shots: on a phone, tap the **×** at its top right; on a wide screen there is nothing to close | The Export step's **Download** shows (on a phone, the Corner shots sheet has gone) |
+| 6 | Save the edits | A file named IMG_9136-edits.json is saved, under 10 KB: the photo is not in it |
+| 7 | Find the levels line in the file, opened in a text editor | It reads `"levels": null`: the unapplied levels are not in it |
+| 8 | Search the file for the word photos | It is nowhere in the file: the corner-shots choice is not in it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the edits file.
@@ -112,19 +143,21 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the e
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open, with the back added by **Add back** on the Export step; the back is open
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar, then **Separately** beside the size line | **Separately** is selected |
-| 2 | Save the edits | A file named 14_back_portrait_raw_white-edits.json is saved |
-| 3 | Search the file for the words front, separately, together and pair | None of them is in the file: neither the other side nor the choice is in it |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Together** and **Separately** beside the size line |
+| 2 | Tap **Separately** | **Separately** is selected |
+| 3 | Save the edits | A file named 14_back_portrait_raw_white-edits.json is saved |
+| 4 | Search the file for the words front, separately, together and pair | None of them is in the file: neither the other side nor the choice is in it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the edits file.
@@ -134,58 +167,83 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the e
 **Load edits** opens a file picker for a .json file.
 
 - Risk: high
-- Check: script
+- Check: script; phone (choosing the file from Files on an iPhone)
 - Layout: both. On a phone the button is in Export's options sheet; on a wide screen it is listed in the side panel.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#btnLoadEdits`, `#editsInput`, "Load edits"
 - Source: `js/app/export-controls.js` (`buildEditsGroup`, `bindExport`), `js/app/shell.js` (`syncUI`)
 - Ruling: R17. While an export runs, Load edits is dimmed with the save buttons (as are Size, Format, the options sheet's settings, Undo, Redo and Add back); the tab bar stays live. The app differs today.
-- Cases: 2
+- Cases: 3
 
 ### EDT-04.1 Load edits opens a picker for one .json file and applies it   [auto: phone, webkit]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **90° right** | The photo turns a quarter clockwise |
-| 2 | Tap **Export** in the step bar, and save the edits | A file named IMG_9136-edits.json is saved |
-| 3 | Tap **Undo** (the arrow curving left, at the top right) | The photo is upright again |
-| 4 | Open Export options and tap **Load edits** | A file picker opens for one file, offering only .json files |
-| 5 | Choose IMG_9136-edits.json | The photo turns a quarter clockwise again |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows |
+| 3 | Save the edits | A file named IMG_9136-edits.json is saved |
+| 4 | Tap **Undo** (the arrow curving left, at the top right) | The photo is upright again |
+| 5 | Open Export options | **Load edits** shows |
+| 6 | Tap **Load edits** | A file picker opens for one file, offering only .json files |
+| 7 | Choose IMG_9136-edits.json | The photo turns a quarter clockwise again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-04.2 While an export runs, Load edits is dimmed and the step tabs stay live   [auto: phone]
+Script only
+Stand-in: an export here lasts well under a second, too short for a person to look at the controls while it runs, so the script records them at the moment the export starts.
 Written to ruling R17; it fails until that is built (BUG-013).
 
 Before you start:
-- Device and browser: any; a phone-width or a wide window. The automated case records the screen at the moment the export begins
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Export step
 
-The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** on "Upscale to 2000 px?" | The export runs; a progress line crosses the top edge of the controls |
-| 2 | While it runs, look at the step tabs | They are live, none greyed out |
-| 3 | While it runs, open Export options and look at **Load edits** | **Load edits** is greyed out |
+| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and two or three buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | The export runs: a progress line crosses the top edge of the controls |
+| 3 | Look at the step tabs (the six tabs Perspective to Export) as the export starts | They are live, none greyed out |
+| 4 | Look at **Load edits** in Export options as the export starts | **Load edits** is greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### EDT-04.3 On an iPhone, Load edits takes an edits file from Files   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Edits file: IMG_9136-turned-edits.json from tests/fixtures/ (IMG_9136.JPEG's edits after **90° right**), saved in the iPhone's Files app first, in a folder you will find again
+- Starting screen: the photo open, upright, on the Export step
+
+Find the edits file: in what the iPhone offers, choose to browse files (not the photo library), then open the folder IMG_9136-turned-edits.json was saved in.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | Export options rise, with **Load edits** |
+| 2 | Tap **Load edits** | The iPhone offers where to choose a file from |
+| 3 | Find the edits file | IMG_9136-turned-edits.json is listed, not greyed out |
+| 4 | Tap IMG_9136-turned-edits.json | The file browser closes, and the photo is turned a quarter clockwise |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ## EDT-05 Files that are not edits files
 
@@ -204,19 +262,20 @@ A file over 8 MB, a file that is not JSON, and a JSON file that is not an edits 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Edits file: IMG_9136-edits.json, saved from this photo after **90° right**, then made larger than 8 MB (8,388,608 bytes) in a text editor by adding spaces after its last closing brace, so it is still valid JSON
-- Starting screen: the photo open, on the Export step, turned a quarter (**90° right**), then **Undo**, so the photo is upright and **Redo** is lit
+- Edits file: IMG_9136-large-edits.json, made from IMG_9136-turned-edits.json in tests/fixtures/ (this photo's edits after **90° right**): in a text editor, add spaces after its last closing brace until the file is larger than 8 MB (8,388,608 bytes); it is still valid JSON. It is too large to keep with the fixtures; the script makes its own copy the same way
+- Starting screen: the photo open, upright, on the Export step, with **Undo** (the arrow curving left, at the top right) and **Redo** (the arrow curving right) both greyed out
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | A red message reads "That file is too large to be a Card Finisher edits file." |
-| 2 | Look at the photo and **Redo** | Nothing has changed: the photo is upright and **Redo** is still lit |
+| 1 | Load the edits file IMG_9136-large-edits.json | A red message reads "That file is too large to be a Card Finisher edits file." |
+| 2 | Look at the photo, **Undo** and **Redo** | Nothing has changed: the photo is upright, and **Undo** and **Redo** are still greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -225,19 +284,20 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- File: IMG_9136-edits.json, made for the case: one line of plain text, "These are notes about a card, not an edits file."
-- Starting screen: the photo open, on the Export step
+- File: notes.json from tests/fixtures/: one line of plain text, "These are notes, not edits."
+- Starting screen: the photo open, upright, on the Export step, with **Undo** (the arrow curving left, at the top right) and **Redo** (the arrow curving right) both greyed out
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | A red message reads "That file isn’t valid JSON." |
-| 2 | Look at the photo, **Undo** and **Redo** | Nothing has changed |
+| 1 | Load the edits file notes.json | A red message reads "That file isn’t valid JSON." |
+| 2 | Look at the photo, **Undo** and **Redo** | Nothing has changed: the photo is upright, and **Undo** and **Redo** are still greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -246,20 +306,21 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Files: three copies of IMG_9136-edits.json, saved from this photo, each changed in a text editor: bad-1-edits.json with `"version": 3`; bad-2-edits.json with the `"corners"` setting taken out; bad-3-edits.json with the width written as text, `"width": "1498"`
-- Starting screen: the photo open, on the Export step
+- Files, from tests/fixtures/, each IMG_9136-turned-edits.json (this photo's edits after **90° right**) changed in a text editor: IMG_9136-version-3-edits.json (`"version": 2` changed to `"version": 3`); IMG_9136-no-corners-edits.json (the `"corners"` setting and its four pairs of numbers taken out); IMG_9136-width-as-text-edits.json (`"width": 1498` changed to `"width": "1498"`)
+- Starting screen: the photo open, upright, on the Export step, with **Undo** (the arrow curving left, at the top right) and **Redo** (the arrow curving right) both greyed out
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file bad-1-edits.json | A red message reads "That isn’t a Card Finisher edits file."; nothing changes |
-| 2 | Load the edits file bad-2-edits.json | The same red message shows again; nothing changes |
-| 3 | Load the edits file bad-3-edits.json | The same red message shows again; nothing changes |
+| 1 | Load the edits file IMG_9136-version-3-edits.json | A red message reads "That isn’t a Card Finisher edits file."; the photo is still upright, and **Undo** and **Redo** still greyed out |
+| 2 | Load the edits file IMG_9136-no-corners-edits.json | The same red message shows again; the photo is still upright, and **Undo** and **Redo** still greyed out |
+| 3 | Load the edits file IMG_9136-width-as-text-edits.json | The same red message shows again; the photo is still upright, and **Undo** and **Redo** still greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -284,21 +345,19 @@ Flag: to confirm. Written to today's behavior: the message writes the sizes with
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photos: IMG_9136.JPEG (1498 × 2098 px) and IMG_9075.JPEG (1536 × 2048 px) from samples/
-- Starting screen: IMG_9136.JPEG open, on the Export step
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9075.JPEG from samples/ (1536 × 2048 px); edits file: IMG_9136-turned-edits.json from tests/fixtures/ (saved from IMG_9136.JPEG, 1498 × 2098 px, after **90° right**)
+- Starting screen: IMG_9075.JPEG open, upright, on the Export step, with **Undo** (the arrow curving left, at the top right) and **Redo** (the arrow curving right) both greyed out
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Save the edits: open Export options, tap **Save edits**, then close Export options.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Save the edits | A file named IMG_9136-edits.json is saved |
-| 2 | Tap **Open** (the folder at the top left), choose IMG_9075.JPEG, then tap **Export** in the step bar | IMG_9075.JPEG opens |
-| 3 | Load the edits file IMG_9136-edits.json | A red message reads "These edits are for a 1498×2098 photo; this one is 1536×2048." |
-| 4 | Look at the photo, **Undo** and **Redo** | Nothing has changed |
+| 1 | Load the edits file IMG_9136-turned-edits.json | A red message reads "These edits are for a 1498×2098 photo; this one is 1536×2048." |
+| 2 | Look at the photo, **Undo** and **Redo** | Nothing has changed: the photo is upright, and **Undo** and **Redo** are still greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -314,7 +373,7 @@ Edits saved for a photo with another name but the same pixel size are applied, w
 - Changed: none
 - Anchors: "Edits were saved for “", "Applied anyway — sizes match."
 - Source: `js/app/export.js` (`loadEdits`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. New wording, to be approved by Rich.
+- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md).
 - Flag: to confirm. The message joins its two parts with a dash ("Applied anyway — sizes match."), where other messages use two sentences.
 - Cases: 2
 
@@ -324,44 +383,43 @@ Flag: to confirm. Written to today's behavior: the message joins its two parts w
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photos: IMG_9136.JPEG and IMG_9060.JPEG from samples/ (both 1498 × 2098 px)
-- Starting screen: IMG_9136.JPEG open, on the Rotate step
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9060.JPEG from samples/ (1498 × 2098 px); edits file: IMG_9136-turned-edits.json from tests/fixtures/ (saved from IMG_9136.JPEG, also 1498 × 2098 px, after **90° right**)
+- Starting screen: IMG_9060.JPEG open, upright, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Save the edits: open Export options, tap **Save edits**, then close Export options.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **90° right**, tap **Export** in the step bar, and save the edits | A file named IMG_9136-edits.json is saved |
-| 2 | Tap **Open** (the folder at the top left), choose IMG_9060.JPEG, then tap **Export** in the step bar | IMG_9060.JPEG opens, upright |
-| 3 | Load the edits file IMG_9136-edits.json | An amber message reads "Edits were saved for “IMG_9136.JPEG”. Applied anyway — sizes match." |
-| 4 | Look at the photo | It is turned a quarter clockwise: the edits were applied |
+| 1 | Load the edits file IMG_9136-turned-edits.json | An amber message reads "Edits were saved for “IMG_9136.JPEG”. Applied anyway — sizes match." |
+| 2 | Look at the photo | It is turned a quarter clockwise: the edits were applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-07.2 Another photo's name and a damaged setting give one warning   [auto: phone]
-Written to ruling R12; it fails until that is built (BUG-190). The wording is to be approved by Rich, so the case checks what the warning says, not its words.
+Written to ruling R12, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photos: IMG_9136.JPEG and IMG_9060.JPEG from samples/ (both 1498 × 2098 px)
-- Edits file: IMG_9136-edits.json, saved from IMG_9136.JPEG after **90° right**, then changed in a text editor so that `"quality": 0.92` reads `"quality": 7`
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9060.JPEG from samples/ (1498 × 2098 px)
+- Edits file: IMG_9136-quality-7-edits.json from tests/fixtures/: IMG_9136.JPEG's edits after **90° right**, changed in a text editor so that `"quality": 0.92` reads `"quality": 7`
 - Starting screen: IMG_9060.JPEG open, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | One amber warning shows, and no other message comes after it |
-| 2 | Read the warning | It says, in short lines, both that the edits were saved for IMG_9136.JPEG and that the export settings were reset |
+| 1 | Load the edits file IMG_9136-quality-7-edits.json | One amber message shows, and no other message comes after it |
+| 2 | Read the message | Its lines read "Edits loaded.", "Saved for “IMG_9136.JPEG”; sizes match." and "Reset, not valid: export.", in that order |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
@@ -377,50 +435,52 @@ Settings in the file that are not valid are reset to their defaults and named in
 - Changed: none
 - Anchors: "Some settings in these edits weren’t valid and were reset: "
 - Source: `js/app/export.js` (`loadEdits`), `js/app/state.js` (`cleanState`), `js/engine.js` (`sanitizeState`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. New wording, to be approved by Rich. R42. One damaged value resets its whole settings group (one bad Quality resets every export setting), and the warning names the group: a damaged file is untrusted. The app already does this.
+- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md). R42. One damaged value resets its whole settings group (one bad Quality resets every export setting), and the warning names the group: a damaged file is untrusted. The app already does this.
 - Cases: 2
 
 ### EDT-08.1 A damaged setting is reset and named; the rest is applied   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Edits file: IMG_9136-edits.json, saved from this photo after **90° right**, then changed in a text editor so that `"quality": 0.92` reads `"quality": 7` (Quality runs from 0.5 to 1)
-- Starting screen: the photo open, on the Export step, upright
+- Edits file: IMG_9136-quality-7-edits.json from tests/fixtures/: this photo's edits after **90° right**, changed in a text editor so that `"quality": 0.92` reads `"quality": 7` (Quality runs from 0.5 to 1)
+- Starting screen: the photo open, upright, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | An amber message reads "Some settings in these edits weren’t valid and were reset: export." |
+| 1 | Load the edits file IMG_9136-quality-7-edits.json | An amber message reads "Some settings in these edits weren’t valid and were reset: export." |
 | 2 | Look at the photo | It is turned a quarter clockwise: the rest of the file was applied |
-| 3 | Open Export options and look at **Quality** | It reads 92%: the export settings are back to their defaults |
+| 3 | Open Export options | **Quality** reads 92%: the export settings are back to their defaults |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-08.2 A damaged setting and an unreadable logo give one warning   [auto: phone]
-Written to ruling R12; it fails until that is built (BUG-190). The wording is to be approved by Rich, so the case checks what the warning says, not its words.
+Written to ruling R12, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Edits file: IMG_9136-edits.json, saved from this photo after **90° right**, then changed in a text editor: `"quality": 7` in place of 0.92, and a logo of the GIF type (a type a logo can't be) with its placement in the middle of the photo
+- Edits file: IMG_9136-quality-7-gif-logo-edits.json from tests/fixtures/: this photo's edits after **90° right**, changed in a text editor: `"quality": 0.92` reads `"quality": 7`, `"overlay": null` reads `"overlay": { "id": "gif-logo", "aspect": 1, "cx": 0.5, "cy": 0.5, "w": 0.25, "opacity": 1 }`, and after it is added `"overlayImage": { "id": "gif-logo", "type": "image/gif", "name": "logo.gif", "data": "R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" }` (a one-pixel GIF, a type a logo can't be, in the middle of the photo)
 - Starting screen: the photo open, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | One amber warning shows, and no other message comes after it |
-| 2 | Read the warning | It says, in short lines, both that the export settings were reset and that the logo (overlay) was left out |
+| 1 | Load the edits file IMG_9136-quality-7-gif-logo-edits.json | One amber message shows, and no other message comes after it |
+| 2 | Read the message | Its lines read "Edits loaded.", "Reset, not valid: export." and "Overlay left out; it couldn’t be read.", in that order |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
@@ -436,7 +496,7 @@ A logo in the file must be a known image type and at most 5 MB (or the lower lim
 - Changed: none
 - Anchors: "The overlay in these edits couldn’t be read, so it was left out.", `CONFIG.overlay.maxBytes`
 - Source: `js/app/overlay.js` (`overlayFromEdits`), `js/app/export.js` (`loadEdits`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. New wording, to be approved by Rich.
+- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md).
 - Flag: to confirm. The warning says "overlay" where the Overlay step's buttons say "logo".
 - Cases: 6
 
@@ -446,18 +506,19 @@ Flag: to confirm. Written to today's behavior: the warning says "overlay".
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Edits file: IMG_9136-edits.json, saved from this photo after **90° right**, then given a logo in a text editor: a GIF picture (a type a logo can't be), placed in the middle of the photo
-- Starting screen: the photo open, on the Export step, upright
+- Edits file: IMG_9136-gif-logo-edits.json from tests/fixtures/: this photo's edits after **90° right**, changed in a text editor: `"overlay": null` reads `"overlay": { "id": "gif-logo", "aspect": 1, "cx": 0.5, "cy": 0.5, "w": 0.25, "opacity": 1 }`, and after it is added `"overlayImage": { "id": "gif-logo", "type": "image/gif", "name": "logo.gif", "data": "R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" }` (a one-pixel GIF, a type a logo can't be, in the middle of the photo)
+- Starting screen: the photo open, upright, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 1 | Load the edits file IMG_9136-gif-logo-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
 | 2 | Look at the photo | It is turned a quarter clockwise, with no logo: the rest was applied |
 
 Pass: every row's result is seen.
@@ -469,18 +530,19 @@ Flag: to confirm. Written to today's behavior: the warning says "overlay".
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Edits file: IMG_9136-edits.json, saved from this photo after **90° right**, then given a logo in a text editor: a PNG of 5.5 MB, placed in the middle of the photo. The whole file stays under 8 MB
-- Starting screen: the photo open, on the Export step, upright
+- Edits file: IMG_9136-big-logo-edits.json, made from IMG_9136-gif-logo-edits.json in tests/fixtures/ in a text editor: `"type": "image/gif"` changed to `"type": "image/png"`, and the text in quotes after `"data": ` replaced by the base64 text of any file between 5.2 MB and 5.9 MB (made with `base64 -w 0 FILE` on Linux, or `base64 -i FILE` on a Mac). The whole file stays under 8 MB. The script makes its own copy, with 5.5 MB of zero bytes as the logo
+- Starting screen: the photo open, upright, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 1 | Load the edits file IMG_9136-big-logo-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
 | 2 | Look at the photo | It is turned a quarter clockwise, with no logo: the rest was applied |
 
 Pass: every row's result is seen.
@@ -492,12 +554,13 @@ Flag: to confirm. Written to today's behavior: the warning says "overlay".
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: noisy-logo.png, made for the case: a PNG of 200 × 200 px of random colors, about 160 KB
+- Logo: noisy-logo.png from tests/fixtures/: a PNG of 165 × 165 px of random colors, 81,928 bytes (80 KB)
 - Starting screen: the photo open, on the Overlay step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
@@ -505,9 +568,13 @@ The named actions:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Add logo** and choose noisy-logo.png | The logo shows on the photo |
-| 2 | Tap **Export** in the step bar, and save the edits | A file named IMG_9136-edits.json is saved |
-| 3 | Open the app again with `?overlay.maxBytes=65536` added to its address (a logo limit of 64 KB), open IMG_9136.JPEG, and tap **Export** | The photo opens with no logo |
-| 4 | Load the edits file IMG_9136-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out."; no logo shows |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows, with the logo on the photo |
+| 3 | Save the edits | A file named IMG_9136-edits.json is saved |
+| 4 | Go to the build's address with `?overlay.maxBytes=65536` added to it (a logo limit of 64 KB) | The start screen offers "Resume IMG_9136.JPEG?" |
+| 5 | Tap **Start fresh** | The offer to resume goes |
+| 6 | Tap **Open photo** and choose IMG_9136.JPEG | The photo opens, with no logo |
+| 7 | Tap **Export** in the step tabs | The Export step shows |
+| 8 | Load the edits file IMG_9136-edits.json (the one saved in row 3) | An amber message reads "The overlay in these edits couldn’t be read, so it was left out."; no logo shows |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -516,19 +583,22 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green
-- Starting screen: the photo open, on the Overlay step, with green-logo.png added by **Add logo**; its edits saved as IMG_9136-edits.json, then copied as placement-only-edits.json with the `"overlayImage"` setting (the logo's picture) taken out in a text editor
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green)
+- Edits file: IMG_9136-logo-placement-only-edits.json from tests/fixtures/: this photo's edits with green-logo.png added, saved, then changed in a text editor to take out the `"overlayImage"` setting (the logo's picture); its `"overlay"` placement is left in
+- Starting screen: the photo open, on the Overlay step, with green-logo.png added by **Add logo**
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Remove** | The logo goes from the photo |
-| 2 | Tap **Export** in the step bar, and load the edits file placement-only-edits.json | The green logo is back on the photo, with no message |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows, with no logo on the photo |
+| 3 | Load the edits file IMG_9136-logo-placement-only-edits.json | The green logo is back on the photo, with no message |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -539,42 +609,44 @@ Flag: to confirm. Written to today's behavior: the warning says "overlay".
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green
-- Starting screen: as for EDT-09.4: green-logo.png added, the edits saved and copied as placement-only-edits.json with the logo's picture taken out
+- Edits file: IMG_9136-logo-placement-only-edits.json from tests/fixtures/ (as in EDT-09.4: a green logo's placement, without its picture)
+- Starting screen: the page just opened, the photo open with **Open photo**, on the Export step; no logo added since the page opened
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Reload the page, tap **Start fresh**, open IMG_9136.JPEG and tap **Export** | The photo opens with no logo |
-| 2 | Load the edits file placement-only-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out."; no logo shows |
+| 1 | Load the edits file IMG_9136-logo-placement-only-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 2 | Look at the photo | No logo shows on it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-09.6 Another photo's name, a damaged setting and an unreadable logo give one warning   [auto: phone]
-Written to ruling R12; it fails until that is built (BUG-190). The wording is to be approved by Rich, so the case checks what the warning says, not its words.
+Written to ruling R12, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
-- Photos: IMG_9136.JPEG and IMG_9060.JPEG from samples/ (both 1498 × 2098 px)
-- Edits file: IMG_9136-edits.json, saved from IMG_9136.JPEG after **90° right**, then changed in a text editor: `"quality": 7` in place of 0.92, and a logo of the GIF type placed in the middle of the photo
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9060.JPEG from samples/ (1498 × 2098 px, the size of IMG_9136.JPEG)
+- Edits file: IMG_9136-quality-7-gif-logo-edits.json from tests/fixtures/ (as in EDT-08.2: IMG_9136.JPEG's edits after **90° right**, with `"quality": 7` and a one-pixel GIF as the logo)
 - Starting screen: IMG_9060.JPEG open, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | One amber warning shows, and no other message comes after it |
-| 2 | Read the warning | It says, in up to three short lines, that the edits were saved for IMG_9136.JPEG, that the export settings were reset and that the logo (overlay) was left out |
+| 1 | Load the edits file IMG_9136-quality-7-gif-logo-edits.json | One amber message shows, and no other message comes after it |
+| 2 | Read the message | Its lines read "Edits loaded.", "Saved for “IMG_9136.JPEG”; sizes match.", "Reset, not valid: export." and "Overlay left out; it couldn’t be read.", in that order |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
@@ -596,33 +668,30 @@ Loading an edits file is one undo step; loading a file identical to the current 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Rotate step
-
-**Undo** is the arrow curving left at the top right; **Redo** the arrow curving right.
+- Edits file: IMG_9136-turned-2-degrees-edits.json from tests/fixtures/: this photo's edits after **90° right** and an angle of 2° typed on Rotate (`"quarter": 1` and `"fine": 2` under `"rotation"`)
+- Starting screen: the photo open, upright, on the Export step, with **Undo** (the arrow curving left, at the top right) and **Redo** (the arrow curving right) both greyed out
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Save the edits: open Export options, tap **Save edits**, then close Export options.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **90° right**, then tap the angle, type 2 and tap **Done** | The photo is turned a quarter, and the angle reads 2.0° |
-| 2 | Tap **Export** in the step bar, and save the edits | A file named IMG_9136-edits.json is saved |
-| 3 | Tap **Undo** twice | The photo is upright at 0.0°; **Undo** is greyed out |
-| 4 | Load the edits file IMG_9136-edits.json | The photo is turned a quarter, at 2.0° |
-| 5 | Tap **Undo** once | Both are taken back: upright, at 0.0°; **Undo** is greyed out |
-| 6 | Tap **Redo**, then load the edits file IMG_9136-edits.json again | The photo stays turned a quarter, at 2.0° |
-| 7 | Tap **Undo** once | Upright, at 0.0°, and **Undo** is greyed out: the second load added no step |
+| 1 | Load the edits file IMG_9136-turned-2-degrees-edits.json | The photo is turned a quarter and tilted 2°; **Undo** is no longer greyed out |
+| 2 | Tap **Undo** | Both are taken back at once: the photo is upright, not tilted, and **Undo** is greyed out |
+| 3 | Tap **Redo** | The photo is turned a quarter and tilted 2° again |
+| 4 | Load the edits file IMG_9136-turned-2-degrees-edits.json again | The photo does not move |
+| 5 | Tap **Undo** | The photo is upright, not tilted, and **Undo** is greyed out: the second load added no step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## EDT-11 Older edits files
 
-Older edits files are brought up to date on loading: version 1's Square up becomes Flatten 0%, its Card / Case target is dropped, and a file from before the crop followed the card gets its crop orientation from its swap setting.
+Older edits files are brought up to date on loading: version 1's Square up becomes Flatten 0%, its Card / Case target (which the app no longer has) is ignored, and a file from before the crop followed the card gets its crop orientation from its swap setting.
 
 - Risk: medium
 - Check: script
@@ -637,19 +706,21 @@ Older edits files are brought up to date on loading: version 1's Square up becom
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Edits file: IMG_9136-edits.json, saved from this photo, then changed in a text editor to read as version 1 wrote it: `"version": 1`, `"mode": "square"` (Square up), `"target": "case"`, and `"strength": 1` (Flatten 100%)
+- Edits file: IMG_9136-version-1-edits.json from tests/fixtures/: this photo's edits, changed in a text editor to read as version 1 wrote them: `"version": 2` reads `"version": 1`, and `"mode": "square"` (Square up) and `"target": "case"` are added at the end; `"strength": 1` (Flatten 100%) is left as it was
 - Starting screen: the photo open, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | No message shows |
-| 2 | Tap **Perspective** in the step bar and look at **Flatten** in the tools | It reads 0% |
+| 1 | Load the edits file IMG_9136-version-1-edits.json | No message shows: the file, with its Case target, is taken |
+| 2 | Tap **Perspective** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Perspective step shows, with **Flatten** in the row of tools |
+| 3 | Look at **Flatten** | It reads 0% |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -658,19 +729,20 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/ (the card stands upright)
-- Edits file: IMG_9136-edits.json, saved from this photo, then given in a text editor the crop an older file has: the 5:4 preset, not swapped, with no `"orient"` setting (`"crop": { "mode": "fit", "preset": "5:4", "ratio": 1.25, "swapped": false, "rect": null }`)
-- Starting screen: the photo open, on the Export step
+- Edits file: IMG_9136-older-crop-edits.json from tests/fixtures/: this photo's edits, given in a text editor the crop an older file has: the 5:4 preset, not swapped, with no `"orient"` setting (`"crop": { "mode": "fit", "preset": "5:4", "ratio": 1.25, "swapped": false, "rect": null }`)
+- Starting screen: the photo open, on the Export step; the size line (on Export, the line that gives the saved picture's size in px and its format) reads Output 1400 × 1400 px · JPEG · full crop, not upscaled
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-edits.json | The crop changes |
-| 2 | Tap **Crop** in the step bar | **5:4** is selected and the box is wider than tall, 5 wide to 4 high, though the card is upright |
+| 1 | Load the edits file IMG_9136-older-crop-edits.json | The size line reads Output 1520 × 1216 px · JPEG · full crop, not upscaled: wider than tall |
+| 2 | Tap **Crop** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | **5:4** is selected and the box is wider than tall, 5 wide to 4 high, though the card is upright |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -692,24 +764,29 @@ Open the same photo again, load its edits file, and the export is pixel-identica
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green
-- Starting screen: the photo open, on the Rotate step
+- Edits file: IMG_9136-round-trip-edits.json from tests/fixtures/: this photo's edits saved from the app after an angle of 3° typed on Rotate, **4:5** on Crop, **Auto** and **Apply** on Levels, and green-logo.png (tests/fixtures/) added on Overlay; the logo is inside the file
+- Starting screen: the photo open, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Download without upscaling: tap **Download**, then **No** in the question box (the box over the dimmed photo with a question and two or three buttons) that asks "Upscale to 2000 px?".
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the angle, type 3 and tap **Done**; on **Crop** tap **4:5**; on **Levels** tap **Auto**, then **Apply**; on **Overlay** tap **Add logo** and choose green-logo.png | The photo is at 3.0°, cropped 4:5, with levels applied and the green logo on it |
-| 2 | Tap **Export** in the step bar, then **Download**, then **No** | A file named IMG_9136-straight.jpg is saved |
+| 1 | Load the edits file IMG_9136-round-trip-edits.json | The photo is tilted 3°, cropped 4:5 (taller than wide), brighter, with the green logo on it |
+| 2 | Download without upscaling | A file named IMG_9136-straight.jpg is saved |
 | 3 | Save the edits | A file named IMG_9136-edits.json is saved |
-| 4 | Reload the page, tap **Start fresh**, open IMG_9136.JPEG and tap **Export** | The photo opens with no edits: 0.0°, no logo |
-| 5 | Load the edits file IMG_9136-edits.json | The edits come back: 3.0°, 4:5, the levels and the green logo |
-| 6 | Tap **Download**, then **No** | A second IMG_9136-straight.jpg is saved, the same as the first byte for byte |
+| 4 | Reload the page | The start screen offers "Resume IMG_9136.JPEG?" |
+| 5 | Tap **Start fresh** | The offer to resume goes |
+| 6 | Tap **Open photo** and choose IMG_9136.JPEG | The photo opens with no edits: not tilted, no logo |
+| 7 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows |
+| 8 | Load the edits file IMG_9136-edits.json (the one saved in row 3) | The edits come back: tilted 3°, 4:5, brighter, with the green logo |
+| 9 | Download without upscaling | A second IMG_9136-straight.jpg is saved, the same as the first byte for byte |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and both files.
@@ -729,26 +806,26 @@ A logo loaded from an edits file is stored as this photo's logo for Resume; it d
 
 ### EDT-13.1 A loaded logo is kept for Resume but is not the saved logo   [auto: phone, webkit]
 Before you start:
-- Device and browser: any; a phone-width or a wide window, in a private window so that no logo is saved in this browser
+- Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared), so no logo is saved in this browser
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green
-- Starting screen: the photo open, on the Overlay step
+- Edits file: IMG_9136-green-logo-edits.json from tests/fixtures/: this photo's edits saved from the app with green-logo.png (tests/fixtures/) added; the logo is inside the file
+- Starting screen: the photo open, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Save the edits: open Export options, tap **Save edits**, then close Export options.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo**, choose green-logo.png, tap **Export** in the step bar and save the edits | A file named IMG_9136-edits.json is saved |
-| 2 | Tap **Overlay** in the step bar, then **Delete saved**, then **Remove** | No logo on the photo; **Add logo** shows, and no **Use saved overlay** |
-| 3 | Reload the page, tap **Start fresh**, open IMG_9136.JPEG, tap **Export**, and load the edits file IMG_9136-edits.json | The green logo is on the photo |
-| 4 | Tap **Overlay** in the step bar, then **Remove** | **Add logo** shows, and still no **Use saved overlay**: the loaded logo didn't become the saved logo |
-| 5 | Tap **Undo** (the arrow curving left, at the top right) | The green logo is back |
-| 6 | Wait a second, reload the page, and tap **Resume** | The photo opens on Overlay with the green logo on it |
+| 1 | Load the edits file IMG_9136-green-logo-edits.json | The green logo is on the photo |
+| 2 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Overlay step shows the green logo, with **Remove** in the row of tools |
+| 3 | Tap **Remove** | The logo goes; **Add logo** shows, and no **Use saved overlay**: the loaded logo didn't become the saved logo |
+| 4 | Tap **Undo** (the arrow curving left, at the top right) | The green logo is back |
+| 5 | Wait two seconds, then reload the page | The start screen offers "Resume IMG_9136.JPEG?" |
+| 6 | Tap **Resume** | The photo opens on Overlay with the green logo on it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -770,19 +847,21 @@ In a pair, **Save edits** saves the side you are on. Loading into a side applies
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open, with the back added by **Add back** on the Export step; the back is open
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar | **Back** is selected in the top bar |
-| 2 | Save the edits | A file named 14_back_portrait_raw_white-edits.json is saved, naming that photo |
-| 3 | Tap **Front** in the top bar, tap **Export**, and save the edits | A file named 14_front_portrait_raw_white-edits.json is saved, naming that photo |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows; **Back** is selected in the top bar |
+| 2 | Save the edits | A file named 14_back_portrait_raw_white-edits.json is saved, naming that photo after `"name":` |
+| 3 | Tap **Front** in the top bar | The front shows, still on the Export step, with **Front** selected |
+| 4 | Save the edits | A file named 14_front_portrait_raw_white-edits.json is saved, naming that photo after `"name":` |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -791,19 +870,20 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Edits file: 14_back_portrait_raw_white-png-1080-edits.json from tests/fixtures/: the back's edits saved in a pair, changed in a text editor so that `"format": "jpeg"` reads `"format": "png"` and `"longEdge": 2000` reads `"longEdge": 1080`
 - Starting screen: the front open, with the back added by **Add back**; the back is open, on the Export step, at **JPEG** and **2000**
-- Edits file: 14_back_portrait_raw_white-edits.json, saved from the back, then changed in a text editor to `"format": "png"` and `"longEdge": 1080`
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file 14_back_portrait_raw_white-edits.json | On the back, **PNG** and **1080** are selected |
-| 2 | Tap **Front** in the top bar, then **Export** in the step bar | On the front too, **PNG** and **1080** are selected |
+| 1 | Load the edits file 14_back_portrait_raw_white-png-1080-edits.json | On the back, **PNG** and **1080** are selected |
+| 2 | Tap **Front** in the top bar | The front shows, still on the Export step, with **PNG** and **1080** selected too |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -812,21 +892,24 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open on its own, on the Export step, its crop **1:1** (the first-time choice)
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
 - Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Save the edits | A file named 14_front_portrait_raw_white-edits.json is saved, with the 1:1 crop |
-| 2 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** / **Back** shows in the top bar |
-| 3 | Tap **Front** in the top bar, tap **Export**, and load the edits file 14_front_portrait_raw_white-edits.json | The edits load with no message |
-| 4 | Tap **Crop** in the step bar | **5:7 card** is selected and the box is taller than wide: the file's 1:1 was not taken |
+| 1 | Save the edits | A file named 14_front_portrait_raw_white-edits.json is saved, with `"preset": "1:1"` under `"crop"` |
+| 2 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** and **Back** show in the top bar |
+| 3 | Tap **Front** in the top bar | The front shows, with **Front** selected |
+| 4 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows |
+| 5 | Load the edits file 14_front_portrait_raw_white-edits.json (the one saved in row 1) | No message shows |
+| 6 | Tap **Crop** in the step tabs | **5:7 card** is selected and the box is taller than wide: the file's 1:1 was not taken |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -851,11 +934,12 @@ Flag: to confirm. Written to today's behavior: the hint repeats most of Export's
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Export step
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -870,16 +954,18 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the front open, with the back added by **Add back**; the back is open
 
 The named actions:
-- Open Export options: on a phone, tap the **Options** tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Export** in the step bar and open Export options | The Edits group shows |
-| 2 | Read the hint under **Save edits** and **Load edits** | It starts with **Saves the side you’re on.** in bold, then "A small JSON file." |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows |
+| 2 | Open Export options | The Edits group shows |
+| 3 | Read the hint under **Save edits** and **Load edits** | It starts with **Saves the side you’re on.** in bold, then "A small JSON file." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
