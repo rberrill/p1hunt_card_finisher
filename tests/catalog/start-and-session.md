@@ -435,23 +435,21 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## STA-08 Resume when the saved size doesn't match
 
-Resume applies the saved edits only if the saved width and height match the photo as decoded. Otherwise the photo opens with fresh edits, with no message today (ruling R23 adds one), and the fresh edits replace the saved ones.
+Resume applies the saved edits only if the saved width and height match the photo as decoded. Otherwise the photo opens with fresh edits and an amber message, "Full edit history could not be restored, your photo has been opened fresh.", and the fresh edits replace the saved ones.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnResume`, "Resumed where you left off."
+- Changed: 1.10.0
+- Anchors: `#btnResume`, "Resumed where you left off.", "Full edit history could not be restored, your photo has been opened fresh."
 - Source: `js/app/state.js` (`openFile`)
-- Ruling: R23. A size mismatch shows the amber message "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, 16 November 2026). The app differs today.
+- Ruling: R23. A size mismatch shows the amber message "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, 16 November 2026). The app does this since 1.10.0.
 - Cases: 2
 
 ### STA-08.1 A size mismatch says the photo was opened fresh   [auto: phone]
 Script only
 Stand-in: no control changes the size saved with the edits, and no sample photo decodes at a size other than its own, so the script changes the saved width by one pixel, as a photo that no longer decodes at the size it was saved with would be. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
-
-Written to ruling R23; it fails until that is built (BUG-050).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window

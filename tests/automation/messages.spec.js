@@ -766,7 +766,6 @@ test('MSG-09.2 Edits that don\'t fit the photo say it was opened fresh [phone]',
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-050');
   const hand = await startWithSavedPhoto(page, testInfo);
   const { width } = (await page.evaluate(async () => (
     window.__straightener.Session.get('edits'))));

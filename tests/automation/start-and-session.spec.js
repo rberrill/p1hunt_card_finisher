@@ -699,7 +699,6 @@ test('STA-08.1 A size mismatch says the photo was opened fresh [phone]', async (
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-050');
   const hand = await startWithSavedTurn(page, testInfo);
   // Script only: no control changes a saved record (whether the developer tools can is Q-07).
   await changeSavedEdits(page, 'width', PHOTO_WIDTH + 1);

@@ -308,7 +308,8 @@
   }
 
   // Opens a photo. restore: a saved session record ({ state, draft, tab, exported, width,
-  // height }) to reapply instead of starting fresh; it's used only if the photo's size matches.
+  // height }) to reapply instead of starting fresh; it's used only if the photo's size matches,
+  // and a warning says so when it doesn't (ruling R23).
   // Resolves true once the photo is open, false if it couldn't be read or another photo was
   // opened meanwhile (the open photo is then unchanged).
   async function openFile(file, name, restore) {
@@ -338,10 +339,10 @@
     if (!app.pair) app.isPairCrop = false;
     Object.assign(app, makeCopies(img));
     app.state = newState(img);
-    const resumed = !!(restore
-      && restore.state
+    const hasSavedEdits = !!(restore && restore.state);
+    const resumed = hasSavedEdits
       && restore.width === img.width
-      && restore.height === img.height);
+      && restore.height === img.height;
     if (resumed) {
       app.state = cleanState(restore.state, img).state;
       app.state.source.name = img.name;
@@ -366,6 +367,9 @@
     if (resumed) {
       toast('Resumed where you left off.');
       CF.ensureOverlayImage();
+    } else if (hasSavedEdits) {
+      // The edits were saved for a photo of another size, so none of them were used (R23).
+      toast('Full edit history could not be restored, your photo has been opened fresh.', 'warn');
     }
     runDetect({ auto: true, keepCorners: resumed });
     return true;

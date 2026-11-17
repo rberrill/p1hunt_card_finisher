@@ -334,16 +334,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-09 "Resumed where you left off."
 
-An information message, "Resumed where you left off.", after **Resume**, when the stored photo is the same size as the saved edits. When the sizes differ, the photo opens with fresh edits and no message.
+An information message, "Resumed where you left off.", after **Resume**, when the stored photo is the same size as the saved edits. When the sizes differ, the photo opens with fresh edits and an amber warning: "Full edit history could not be restored, your photo has been opened fresh."
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Resumed where you left off.", `#btnResume`
+- Changed: 1.10.0
+- Anchors: "Resumed where you left off.", "Full edit history could not be restored, your photo has been opened fresh.", `#btnResume`
 - Source: `js/app/state.js` (`openFile`); `js/app/start-screen.js` (`resumeSession`)
-- Ruling: R23. When the saved edits don't fit the stored photo, an amber warning reads "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Ruling: R23. When the saved edits don't fit the stored photo, an amber warning reads "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-09.1 Resume says it resumed   [auto: phone]
@@ -362,7 +362,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-09.2 Edits that don't fit the photo say it was opened fresh   [auto: phone]
-Written to ruling R23, with Rich's approved wording; it fails until that is built (BUG-050).
 Script only
 Stand-in: the saved edits are kept inside the browser, where no control or file can change them; the script changes the photo width they were saved for to one pixel more than the photo's.
 
