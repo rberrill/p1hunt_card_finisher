@@ -296,10 +296,10 @@ Dragging something on the photo (a corner, an edge, the crop box, the logo) is o
 - Check: script, touch; phone (a touch Control Center takes away)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#view`, `#btnUndo`
-- Source: `js/app/input.js` (`onPointerUp`, `endGesture`); `js/app/state.js` (`commitFrom`)
-- Ruling: R8. A drag the browser cancels puts things back as they were, with no undo step. The app differs today.
+- Source: `js/app/input.js` (`onPointerUp`, `onPointerCancel`, `endGesture`); `js/app/state.js` (`commitFrom`)
+- Ruling: R8. A drag the browser cancels puts things back as they were, with no undo step. The app does this since 1.10.0.
 - Cases: 3
 
 ### TOP-07.1 A drag becomes an undo step when the finger lifts   [auto: phone, webkit]
@@ -322,7 +322,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-07.2 A drag the browser cancels makes no undo step   [auto: phone]
-Written to ruling R8; it fails until that is built (BUG-060).
 Script only
 Stand-in: the script sends the browser's "touch cancelled" signal in the middle of the drag, with the finger still down, as an iPhone does when Control Center takes the touch. A person can't make a browser on a computer cancel a touch; on a real iPhone this is TOP-07.3.
 
@@ -342,7 +341,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-07.3 On an iPhone, a drag Control Center takes makes no undo step   [phone]
-Written to ruling R8; it fails until that is built (BUG-060).
 
 Before you start:
 - Device and browser: an iPhone with Face ID (Control Center opens with a swipe down from the top-right corner of the screen), Safari

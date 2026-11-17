@@ -669,10 +669,10 @@ Any drag of the box makes the crop hand-drawn, and the whole drag is one undo st
 - Check: script, touch; phone (a touch the iPhone takes away)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnUndo`, `#toolFitToCard`
-- Source: `js/app/input.js` (`setCropAbsolute`, `endGesture`); `js/app/state.js` (`commitFrom`)
-- Ruling: R8. A cancelled drag puts the box back, with no undo step. The app differs today.
+- Source: `js/app/input.js` (`setCropAbsolute`, `endGesture`, `onPointerCancel`); `js/app/state.js` (`commitFrom`)
+- Ruling: R8. A cancelled drag puts the box back, with no undo step. The app does this since 1.10.0.
 - Cases: 3
 
 ### CRP-13.1 A drag makes the box one drawn by hand, as one undo step   [auto: phone]
@@ -696,7 +696,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 ### CRP-13.2 A drag the browser cancels puts the box back   [auto: phone]
 Script only.
 Stand-in: the script presses a finger on the box, moves it 40 px, then has the browser cancel the touch instead of lifting it, as an iPhone does when a system gesture such as Control Center takes the touch. A person can't make a browser on a computer cancel a touch; CRP-13.3 is the same on a real iPhone.
-Written to ruling R8; it fails until that is built (BUG-060).
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, touch
@@ -714,7 +713,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CRP-13.3 On an iPhone, a drag Control Center takes away puts the box back   [phone]
-Written to ruling R8; it fails until that is built (BUG-060).
 
 Before you start:
 - Device and browser: an iPhone with Face ID (Control Center opens with a swipe down from the top-right corner), Safari

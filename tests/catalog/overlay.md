@@ -901,10 +901,11 @@ Dragging anywhere on the photo, except on one of the logo's corner handles, move
 - Check: script, touch
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Tap a ring to snap the logo to that corner, side or the center."
-- Source: `js/app/overlay.js` (`overlayPointerDown`, `gesturePlacement`, `overlayPointerMove`); `js/app/input.js` (`onPointerDown`, `onPointerMove`, `onPointerUp`)
-- Cases: 2
+- Source: `js/app/overlay.js` (`overlayPointerDown`, `gesturePlacement`, `overlayPointerMove`); `js/app/input.js` (`onPointerDown`, `onPointerMove`, `onPointerUp`, `onPointerCancel`)
+- Ruling: R8. A cancelled drag puts the logo back, with no undo step. The app does this since 1.10.0.
+- Cases: 3
 
 ### OVL-16.1 Dragging the logo moves it, one undo step   [auto: phone, webkit]
 Before you start:
@@ -939,6 +940,29 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
+### OVL-16.3 A logo drag the browser cancels puts the logo back   [auto: phone]
+Script only
+Stand-in: the script sends the browser's "touch cancelled" signal in the middle of the drag, with the finger still down, as an iPhone does when Control Center takes the touch. A person can't make a browser on a computer cancel a touch.
+
+Adding the logo is itself one undo step, so **Undo** is not greyed out before the drag; row 3 shows the cancelled drag added no step of its own.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px, with touch
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Logo: blue-disc.png from tests/fixtures/
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added (in the middle)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Put a finger on the disc, left of its middle ring, and drag 60 px right and 40 px down, without lifting | The logo follows the finger, 60 px right and 40 px down |
+| 2 | The browser cancels the touch, with the finger still down (the stand-in) | The logo is back in the middle, where it was before the drag |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) once | The logo is gone and **Add logo** shows again: the one undo step is the one adding the logo made |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
 ## OVL-17 Drag a corner to resize
 
 A press within 24 px of one of the logo's corner handles, then a drag, resizes the logo with its shape kept and the opposite corner fixed, never narrower than 8 px. A corner handle wins over a ring under it.
@@ -947,9 +971,10 @@ A press within 24 px of one of the logo's corner handles, then a drag, resizes t
 - Check: script, touch
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.handle.hitRadius`, "drag a corner or pinch to resize."
-- Source: `js/app/overlay.js` (`hitCorner`, `overlayPointerDown`, `gesturePlacement`); `js/engine.js` (`clampOverlay`)
+- Source: `js/app/overlay.js` (`hitCorner`, `overlayPointerDown`, `gesturePlacement`); `js/app/input.js` (`onPointerCancel`); `js/engine.js` (`clampOverlay`)
+- Ruling: R8. A cancelled corner drag puts the logo back as it was, with no undo step. The app does this since 1.10.0.
 - Cases: 3
 
 ### OVL-17.1 Dragging a corner resizes the logo, its shape and the far corner kept   [auto: phone, webkit]
@@ -1012,9 +1037,10 @@ A two-finger pinch resizes and moves the logo; if one finger lifts, the other ca
 - Check: script, touch; phone (Safari's own page zoom)
 - Layout: both, on a touch screen.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "drag a corner or pinch to resize."
-- Source: `js/app/overlay.js` (`overlayPointerDown`, `gesturePlacement`, `overlayPinchEnded`)
+- Source: `js/app/overlay.js` (`overlayPointerDown`, `gesturePlacement`, `overlayPinchEnded`); `js/app/input.js` (`onPointerCancel`)
+- Ruling: R8. A cancelled pinch puts the logo back as it was, with no undo step. The app does this since 1.10.0.
 - Cases: 3
 
 ### OVL-18.1 A pinch resizes the logo, one undo step   [auto: phone, webkit]
@@ -1110,9 +1136,10 @@ A still tap on a ring snaps the logo there, 3% of the frame's width in from the 
 - Check: script, touch
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Tap a ring to snap the logo to that corner, side or the center."
-- Source: `js/app/overlay.js` (`hitSpot`, `overlaySpotTap`); `js/engine.js` (`snapOverlay`)
+- Source: `js/app/overlay.js` (`hitSpot`, `overlaySpotTap`); `js/app/input.js` (`onPointerCancel`); `js/engine.js` (`snapOverlay`)
+- Ruling: R8. A press on a ring that the browser cancels does not snap the logo, and makes no undo step. The app does this since 1.10.0.
 - Cases: 2
 
 ### OVL-20.1 Tapping a corner ring snaps the logo there, one undo step   [auto: phone, webkit]

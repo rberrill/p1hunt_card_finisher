@@ -863,7 +863,6 @@ test('CRP-13.2 A drag the browser cancels puts the box back [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-060');
   const hand = await startOnCrop(page, testInfo);
   const before = await cropRect(page);
   const middle = await cropHandleOnPage(page, 'middle');

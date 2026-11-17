@@ -507,7 +507,6 @@ test('TOP-07.2 A drag the browser cancels makes no undo step [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-060');
   const hand = await startOn(page, testInfo);
   const before = await cornersNow(page);
   const start = await handleOnPage(page, 0);

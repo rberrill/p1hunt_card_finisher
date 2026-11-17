@@ -380,6 +380,27 @@
     hoverCursor(event);
   }
 
+  // The browser took the pointer away in the middle of a gesture (on an iPhone, a system
+  // gesture such as Control Center takes the touch). A drag that edits the photo goes back to
+  // where it started, with no undo step; any other gesture ends as it does on a lift.
+  function onPointerCancel(event) {
+    const gesture = app.gesture;
+    if (!pointers.has(event.pointerId) || !isEditDrag(gesture)) {
+      onPointerUp(event);
+      return;
+    }
+    pointers.delete(event.pointerId);
+    app.gesture = null;
+    // A still press moved nothing, so there is nothing to put back (commitFrom's comparison).
+    if (JSON.stringify(gesture.before) === JSON.stringify(app.state)) {
+      CF.requestRender();
+      return;
+    }
+    // The snapshot from before the drag becomes the state again, as Undo would put it back.
+    app.state = gesture.before;
+    CF.stateChanged();
+  }
+
   // Zooms to handleZoom × the fit scale centered on a handle, or back to fit if already zoomed.
   function zoomToHandle(handleIndex) {
     const view = CF.currentView();
@@ -401,6 +422,15 @@
     CF.requestRender();
   }
 
+  // Whether a gesture is a drag that edits the photo (a handle, the crop box or the logo): it
+  // holds the state from before the drag, to become an undo step or to go back to.
+  function isEditDrag(gesture) {
+    if (!gesture || !gesture.before) return false;
+    return gesture.type === 'handle'
+      || gesture.type === 'crop'
+      || gesture.type.startsWith('overlay');
+  }
+
   // Ends the current gesture: stops a compare, drops a dropper pick, commits a drag.
   function endGesture() {
     const gesture = app.gesture;
@@ -409,10 +439,7 @@
     clearTimeout(gesture.holdTimer);
     if (gesture.comparing) CF.setCompare(false);
     if (gesture.type === 'dropper') CF.pickAt(gesture.last);
-    const isEdit = gesture.type === 'handle'
-      || gesture.type === 'crop'
-      || gesture.type.startsWith('overlay');
-    if (isEdit && gesture.before) CF.commitFrom(gesture.before);
+    if (isEditDrag(gesture)) CF.commitFrom(gesture.before);
     CF.requestRender();
   }
 
@@ -782,6 +809,7 @@
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    onPointerCancel,
     setCropAbsolute,
     onWheel,
     onKeyDown,

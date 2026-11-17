@@ -463,7 +463,6 @@ test('PER-07.4 A drag the browser cancels puts the corner back [phone]', async (
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-060');
   await checkCancelledDrag(page, check, testInfo, TOP_RIGHT, 'corner');
 });
 
@@ -509,7 +508,6 @@ test('PER-08.2 An edge drag the browser cancels puts the edge back [phone]', asy
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-060');
   await checkCancelledDrag(page, check, testInfo, TOP_EDGE, 'top edge');
 });
 

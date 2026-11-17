@@ -223,10 +223,10 @@ Drag a corner handle to move that corner. A press counts when it lands within 24
 - Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.handle.hitRadius`, "Drag a corner or the middle of an edge."
-- Source: `js/app/input.js` (`hitHandle`, `stepGesture`, `moveHandle`, `endGesture`)
-- Ruling: R8. A cancelled drag puts the corner back, with no undo step. The app differs today.
+- Source: `js/app/input.js` (`hitHandle`, `stepGesture`, `moveHandle`, `endGesture`, `onPointerCancel`)
+- Ruling: R8. A cancelled drag puts the corner back, with no undo step. The app does this since 1.10.0.
 - Cases: 6
 
 ### PER-07.1 Dragging a corner moves it, as one undo step   [auto: phone, webkit]
@@ -283,7 +283,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-07.4 A drag the browser cancels puts the corner back   [auto: phone]
-Written to ruling R8; it fails until that is built (BUG-060).
 Script only
 Stand-in: the script sends the browser's "touch cancelled" signal in the middle of the drag, as an iPhone does when Control Center takes the touch. A person can't make a browser cancel a touch on a computer; on a real iPhone this is PER-07.6.
 
@@ -320,7 +319,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
 
 ### PER-07.6 On an iPhone, a corner drag that Control Center takes goes back   [phone]
-Written to ruling R8; it fails until that is built (BUG-060).
 
 Before you start:
 - Device and browser: an iPhone with Face ID (Control Center opens with a swipe down from the top-right corner of the screen), Safari
@@ -346,10 +344,10 @@ Drag the square at the middle of an edge to slide the whole edge in or out witho
 - Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.handle.edgeSize`, `CONFIG.handle.hitRadius`
-- Source: `js/app/input.js` (`hitHandle`, `moveHandle`, `edgeNormal`, `moveEdge`, `endGesture`)
-- Ruling: R8. A cancelled drag puts the edge back, with no undo step. The app differs today.
+- Source: `js/app/input.js` (`hitHandle`, `moveHandle`, `edgeNormal`, `moveEdge`, `endGesture`, `onPointerCancel`)
+- Ruling: R8. A cancelled drag puts the edge back, with no undo step. The app does this since 1.10.0.
 - Cases: 4
 
 ### PER-08.1 Dragging an edge's square slides the whole edge, as one undo step   [auto: phone, webkit]
@@ -369,7 +367,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-08.2 An edge drag the browser cancels puts the edge back   [auto: phone]
-Written to ruling R8; it fails until that is built (BUG-060).
 Script only
 Stand-in: the script sends the browser's "touch cancelled" signal in the middle of the drag, as an iPhone does when Control Center takes the touch. A person can't make a browser cancel a touch on a computer; on a real iPhone this is PER-08.4.
 
@@ -406,7 +403,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
 
 ### PER-08.4 On an iPhone, an edge drag that Control Center takes goes back   [phone]
-Written to ruling R8; it fails until that is built (BUG-060).
 
 Before you start:
 - Device and browser: an iPhone with Face ID (Control Center opens with a swipe down from the top-right corner of the screen), Safari

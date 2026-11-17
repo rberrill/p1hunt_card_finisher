@@ -1362,6 +1362,35 @@ test('OVL-16.2 A drag away from the logo moves it too [phone]', async ({
   });
 });
 
+test('OVL-16.3 A logo drag the browser cancels puts the logo back [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnOverlay(page, testInfo);
+  await addDisc(page, hand);
+  const start = await logoOnPage(page);
+  const placedBefore = await logoPlacement(page);
+  const from = inDisc(start);
+  const end = offsetBy(from, DRAG_ACROSS_PX, DRAG_DOWN_PX);
+  await holdDragAt(page, hand, from, end);
+  await check('the logo follows the finger, 60 px right and 40 px down', async () => {
+    const held = await logoOnPage(page);
+    expectNear(held.middle.x - start.middle.x, DRAG_ACROSS_PX, PAGE_TOLERANCE_PX);
+    expectNear(held.middle.y - start.middle.y, DRAG_DOWN_PX, PAGE_TOLERANCE_PX);
+  });
+  // The stand-in: the browser cancels the touch instead of the finger lifting.
+  await sendTouch(page, '#view', 'pointercancel', end);
+  await check('the logo is back in the middle, where it was before the drag', async () => {
+    expect(await logoPlacement(page)).toEqual(placedBefore);
+  });
+  await hand.tap(page.locator('#btnUndo'));
+  await check('the logo is gone and Add logo shows again: the one undo step is the one adding '
+    + 'the logo made', async () => {
+    expect(await logoId(page)).toBeNull();
+    await expect(page.locator('#btnOverlayAdd')).toBeVisible();
+  });
+});
+
 test('OVL-17.1 Dragging a corner resizes the logo, its shape and the far corner kept [phone] '
   + '[webkit]', async ({ page, check }, testInfo) => {
   const hand = await startOnOverlay(page, testInfo);

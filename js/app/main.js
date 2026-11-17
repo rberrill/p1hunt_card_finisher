@@ -80,7 +80,7 @@
     canvas.addEventListener('pointerdown', CF.onPointerDown);
     canvas.addEventListener('pointermove', CF.onPointerMove);
     canvas.addEventListener('pointerup', CF.onPointerUp);
-    canvas.addEventListener('pointercancel', CF.onPointerUp);
+    canvas.addEventListener('pointercancel', CF.onPointerCancel);
     canvas.addEventListener('wheel', CF.onWheel, { passive: false });
     canvas.addEventListener('contextmenu', event => event.preventDefault());
     // Stop iOS page zoom during a pinch.
