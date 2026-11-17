@@ -52,3 +52,53 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R44 | Speed limits for the automated cases | Three times the median measured on 16 November: photo on screen 1.25 s, detection 8.75 s, pair switch 0.5 s, export at 1080 0.5 s, at 2000 0.95 s, at 3000 and Original 1.65 s, upscaled export 4.75 s |
 | R45 | With a pair open, switching sides while the back is still detecting leaves "Detecting…" on the back for good | FIX: switching away never leaves a stale message; the search finishes quietly. Its result moves the corners only if no corner on that side was moved by hand; otherwise the hand-placed corners stay and the result becomes the candidates to cycle through |
 | R46 | Two photos land worse in WebKit than their Chrome detection baselines (BUG-240) | Decided after the detection fix (R34): until then the test lists them as known WebKit misses and fails if any other photo slips |
+| R47 | Under a link that lowers the size limit, which number the "Scaled down to fit the N MP limit." note gives | The limit in force (1 MP under `?maxOutputArea=1000000`; 16.7 MP normally) |
+| R48 | Whether R12's approved Load edits lines apply to a load with one problem | They apply to every load: "Edits loaded." plus each line that applies |
+| R49 | R24's short error lines give no next step, against "no messages a user can't act on" | The six short lines stand for failures the app can't explain. A message whose fix the app knows keeps its advice ("The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back.") |
+| R50 | For a pair saved Separately, the Upscale question quotes a side that is being scaled down as if at its own resolution | FIX: the question names only the side Yes would upscale ("The front is W × H px at the photo’s resolution."); both only when both are under the size |
+| R51 | With `?debug` on a phone-width screen and no photo open, the tuning panel covers Open photo and the Resume box | FIX: the panel never covers them on the start screen |
+| R52 | On a phone-width screen, Tab moves the keyboard out of an open options sheet | AS-IS |
+| R53 | A pair's joined preview loses its zoom when Together or Separately is chosen | AS-IS: the picture changes shape, so it is fitted again |
+| R54 | Tab into the photo keeps the handle selected before; the help line doesn't say the photo needs the focus first | AS-IS, behavior and help line both |
+| R55 | Pick white and Pick black read the half of the tapped patch's pixels nearest its median brightness | AS-IS (Claude's design, accepted by Rich) |
+| R56 | A handle's double tap has a 0.35 s window and no distance limit | AS-IS |
+| R57 | Fit to card is never dimmed, and a tap that changes nothing adds no undo step | AS-IS |
+| R58 | One message writes sizes "4032×3024" and another "12000px" | FIX: "W × H" and "N px" in every message |
+| R59 | Messages say "overlay" where the Overlay step's buttons say "logo" | FIX: messages say "logo"; R12's line becomes "Logo left out; it couldn’t be read." Button names are not touched |
+| R60 | The blocked-clipboard message joins its parts with a dash | FIX: two sentences, same words |
+| R61 | Export's last tip nearly repeats the hint under Save edits and Load edits | FIX: the tip goes, the hint stays |
+| R62 | Export's Next card tip doesn't mention the wait while Share now is pending | AS-IS |
+| R63 | Reset export settings leaves Together / Separately and the corner-shots output, and resets both sides of a pair | AS-IS |
+| R64 | Four messages give no next step: the format fallback, "Couldn’t estimate levels from this image.", the size-limit note, the logo that can't be saved in this browser | AS-IS: each explains a result that would otherwise look like a fault |
+| R65 | The New photo question's title and first button both read "New photo" | AS-IS |
+| R66 | Redo's tooltip names only Shift+Ctrl/Cmd+Z | AS-IS |
+| R67 | Arrow keys move a corner 1 photo pixel with no magnifier; the on-screen arrows 1 screen pixel with it | AS-IS |
+| R68 | Perspective's help says "arrows" for the pad and for the keys | AS-IS |
+| R69 | Escape closes a phone sheet and nothing else (not Tap to find card, not a Levels pick) | AS-IS |
+| R70 | A phone on its side wider than 760 px gets the wide layout | AS-IS |
+| R71 | Under reduced motion the Before levels badge still fades, the snap rings don't, and one fade is 60 ms | AS-IS |
+| R72 | While a Levels pick is armed one finger can't pan, and the color is taken where the finger lifts | AS-IS |
+| R73 | Auto shows a pop-up when it works, though a pick shows none | FIX: Auto's success pop-up goes; its failure message stays |
+| R74 | On a wide screen Levels shows two tips headings | FIX: one heading, "Tips and keys", holding the tips then the keys |
+| R75 | "Loading…", "Opening the front…" and "Detecting…" take the row above the controls with nothing to act on | AS-IS: a busy line is allowed while the app works; all three wordings stay |
+| R76 | Perspective shows "Corrected frame clamped to 12000px on the long side." | FIX: the line goes; the fact goes to the console |
+| R77 | When a search the user started finds no card, a pop-up and the row above the controls both say so | FIX: only the row's "Nothing detected. Drag the corners into place." shows |
+| R78 | Some messages say "Tap" on a wide screen | AS-IS |
+| R79 | Corner shots say "Saved", the main export and a pair "Exported" | FIX (Rich: the message says what was exported and how): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG).") |
+| R80 | "The card is too small for corner shots." stays 5 s where other errors stay 6 | FIX: 6 s |
+| R81 | Four engine faults reach the screen in raw words ("Corners are missing or invalid." and three more) | FIX: the screen shows "Fix the corners in Perspective first."; the raw words go to the console |
+| R82 | "Fix the corners in Perspective first." shows on Perspective itself | FIX: on Perspective it reads "Fix the corners first." |
+| R83 | Overlay's hint always says "up to 5 MB", though a link can lower the limit | FIX: the hint gives the limit in force |
+| R84 | On Overlay with no logo placed, every touch and the wheel do nothing | AS-IS: the photo is locked on that step |
+| R85 | A message in the row above the controls, and Preview, hide Perspective's confidence figure | AS-IS |
+| R86 | Flatten never shows its icon, only its percentage | AS-IS |
+| R87 | While Preview is on, Nudge and Flatten are dimmed | AS-IS |
+| R88 | Preview stays on across a step change | FIX: a step change turns Preview off |
+| R89 | Snap, Grid, Debug overlay and the Perspective and Rotate modes carry over to a new photo but not a reload | AS-IS |
+| R90 | Crop's fitted size depends on whether Rotate or Crop was opened first | FIX: each step fits its own way, whatever came before |
+| R91 | Zoom is kept on Perspective and on Rotate and Crop, and dropped on Levels, Overlay and Export | AS-IS |
+| R92 | A tap away from a typed angle throws it away | FIX: a tap away saves it, as Done and Enter do |
+| R93 | Reset beside the angle clears only the angle; Reset rotation clears the whole step | AS-IS |
+| R94 | A flip changes the sign of the angle shown | AS-IS |
+| R95 | Fit comes before Undo and Redo on a phone, after them on a wide screen | AS-IS |
+| R96 | A tap on an open sheet's title closes it | AS-IS |
