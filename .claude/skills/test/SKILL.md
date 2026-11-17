@@ -77,24 +77,11 @@ a port (`CARD_FINISHER_PORT`) no other run is using.
 None of them can start agents of its own, and none commits: check the report against the
 diff and the selftest, then commit yourself.
 
-How many at once: one `case-writer` at a time while files overlap or usage is tight
-(Rich, 2026-11-16: several writers at once hit his usage limit and collided).
-
-Fixers run in groups of five at most, never all of a bug list at once (Rich, 2026-11-17:
-more than that uses up his usage). The five run at the same time, each in its own worktree,
-and the next group starts only when this one is reviewed, merged into `main` and committed.
-How a group is run is *Claude's call*:
-
-- pick five bugs, most severe first, whose fixes touch different files, and give each
-  fixer its own port;
-- a worktree has no `tests/node_modules`: the brief tells the fixer to link the main
-  checkout's folder in before its first run;
-- a fixer in a group leaves `CHANGELOG.md` alone and reports its line (five edits at one
-  place would collide), and runs the selftest and its areas' specs but not the complete run;
-- bring each fixer's diff into `main` one at a time, a `reviewer` on each before its
-  commit, then one complete run for the group.
-
-Several
+How many at once: one `case-writer` or `fixer` at a time (Rich, 2026-11-16: several writers
+at once hit his usage limit and collided; Rich, 2026-11-17: five fixers at once, each in
+its own worktree, loaded the machine until WebKit cases timed out and one run hung, so
+fixers went back to one at a time). The fixer works in the main checkout under its standing
+rules; the next one starts only when this one is reviewed and committed. Several
 `triage-tester` or `reviewer` runs in parallel are fine where it helps; say what it will
 cost first. The usual chain for a bug: `case-writer` (if no test fails for it yet), `fixer`,
 `reviewer`, commit.
