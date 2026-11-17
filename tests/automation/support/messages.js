@@ -6,8 +6,22 @@
 // state only to check a result; each stand-in says why it is one.
 'use strict';
 const fs = require('fs');
+const path = require('path');
 const { expect } = require('@playwright/test');
+const { root } = require('./app.js');
 
+// The folder of the files the cases name that aren't sample photos.
+const FIXTURES = path.join(root, 'tests', 'fixtures');
+// The type a file picker gives each fixture, by its extension (lower case).
+const FIXTURE_TYPES = {
+  '.json': 'application/json',
+  '.txt': 'text/plain',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.heic': 'image/heic',
+  '.jpeg': 'image/jpeg',
+};
 // What each kind of toast looks like: its background as the browser computes it and the icon
 // it leads with ('' for none). The colors are the stylesheet's --ink (white), --warn (amber)
 // and --accent (P1Hunt red).
@@ -282,16 +296,36 @@ function clearGeometryFault(page) {
   });
 }
 
-// A file payload for a picker holding `data` as JSON (or, for a string, as it is), named
-// `name`.
-function jsonFile(name, data) {
-  const text = typeof data === 'string' ? data : JSON.stringify(data);
-  return { name, mimeType: 'application/json', buffer: Buffer.from(text) };
+// A file from tests/fixtures/ as a file payload for a picker or a drop: { name, mimeType,
+// buffer }, typed by its extension as a file picker types it.
+function fixtureFile(name) {
+  return {
+    name,
+    mimeType: FIXTURE_TYPES[path.extname(name).toLowerCase()] || '',
+    buffer: fs.readFileSync(path.join(FIXTURES, name)),
+  };
 }
 
-// Reads a saved edits file back as an object.
-function readEdits(file) {
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
+// How long a save may take to hand over all its files, in ms.
+const DOWNLOAD_TIMEOUT_MS = 30000;
+
+// Taps `control` (a question box's answer, or a save button that asks nothing) and collects
+// `count` downloads. Returns [{ name, file }] in the order they arrived.
+async function tapAndCollect(page, hand, control, count) {
+  const arrived = [];
+  const onDownload = download => arrived.push(download);
+  page.on('download', onDownload);
+  try {
+    await hand.tap(control);
+    await expect.poll(() => arrived.length, { timeout: DOWNLOAD_TIMEOUT_MS })
+      .toBeGreaterThanOrEqual(count);
+  } finally {
+    page.off('download', onDownload);
+  }
+  return Promise.all(arrived.map(async download => ({
+    name: download.suggestedFilename(),
+    file: await download.path(),
+  })));
 }
 
 // The notes under Export's size line that can be seen: [{ text, icon, iconColor }].
@@ -343,8 +377,8 @@ module.exports = {
   refuseClipboard,
   faultGeometry,
   clearGeometryFault,
-  jsonFile,
-  readEdits,
+  fixtureFile,
+  tapAndCollect,
   exportNotesNow,
   visibleTips,
 };

@@ -56,6 +56,6 @@ To add one: give it the next number, say exactly what to do and what to record, 
 
 ## Q-09 Which photo makes Safari refuse a share after a slow save
 
-- Waiting: EXP-15.3
+- Waiting: EXP-15.3, MSG-28.2
 - Do: open the largest photo you have (a 48 MP one, from an iPhone that takes them) in the app on the UAT site, tap **Export**, **Original**, then **Share**. Do it three times, with a reload between.
 - Write down: the photo (its name, and the size the source line in **Export options** gives); each time, whether the share sheet rose by itself or the red button changed to **Share now** with a message ending "Tap Share now to open the share sheet."; and the seconds the message gives.

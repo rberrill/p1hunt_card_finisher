@@ -1,6 +1,6 @@
 # Messages
 
-Every message the app shows: the short messages over the photo, the lines that take the row above the controls, the notes under Export's size line, the question cards, the text drawn on the photo, the tips, the names screen readers hear and what the app writes to the console.
+Every message the app shows: the short messages over the photo, the lines that take the row above the controls, the notes under Export's size line, the question boxes, the text drawn on the photo, the tips, the names screen readers hear and what the app writes to the console.
 
 ## MSG-01 One message at a time over the photo
 
@@ -19,13 +19,14 @@ Short messages appear as a pill over the bottom edge of the photo, one at a time
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Auto** | "Auto set white and black points. Check them, then Apply." shows over the photo |
-| 2 | Tap **Pick black** | Pick black is selected; the message is still up |
+| 2 | Tap **Pick black** | **Pick black** is selected (a white fill); the message is still up |
 | 3 | Tap the white background just left of the slab, halfway down | "That spot is too light to be a black point. Pick something dark, or skip the black point." takes its place at once, the first fading out beneath it; one message shows |
 
 Pass: every row's result is seen.
@@ -35,12 +36,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844, touch) or a wide window (1280 × 800, a mouse)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Pick black** | Pick black is selected |
+| 1 | Tap **Pick black** | **Pick black** is selected (a white fill) |
 | 2 | Tap the white background just left of the slab, halfway down | on a phone the message spans the photo area less 16 px each side, its bottom 36 px above the photo area's bottom edge; on a wide screen the message is centered, its bottom 20 px above the photo area's bottom edge, at most 460 px wide |
 
 Pass: every row's result is seen.
@@ -63,16 +65,21 @@ A message stays 3 seconds when it is information, 5 seconds when it is a warning
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
+- File: notes.json from tests/fixtures/ (a line of text, not JSON)
 - Starting screen: the photo open, on the Levels step
-- notes.json is any short text file that is not JSON.
+- A stopwatch. Each time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
+
+Load notes.json: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, EXPORT OPTIONS, tap **Load edits**; choose notes.json in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Auto** and time the message | "Auto set white and black points. Check them, then Apply." stays 3 s |
-| 2 | Tap **Pick black**, then the white background just left of the slab, halfway down, and time the message | "That spot is too light to be a black point. Pick something dark, or skip the black point." stays 5 s |
-| 3 | Go to Export, open **Export options** (the tab with the up arrow above the controls) and tap **Load edits** | a file picker opens |
-| 4 | Choose notes.json, a text file of notes, and time the message | "That file isn’t valid JSON." stays 6 s |
+| 2 | Tap **Pick black** | **Pick black** is selected (a white fill) |
+| 3 | Tap the white background just left of the slab, halfway down, and time the message | "That spot is too light to be a black point. Pick something dark, or skip the black point." stays 5 s |
+| 4 | Tap **Export** in the step tabs (the six tabs along the bottom) | The Export step's controls show |
+| 5 | Load notes.json, and time the message | "That file isn’t valid JSON." stays 6 s |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -94,14 +101,20 @@ Information is a white pill with no icon; a warning is amber with a triangle; an
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
+- File: notes.json from tests/fixtures/ (a line of text, not JSON)
 - Starting screen: the photo open, on the Levels step
+
+Load notes.json: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, EXPORT OPTIONS, tap **Load edits**; choose notes.json in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Auto** | "Auto set white and black points. Check them, then Apply." is a white pill with no icon |
-| 2 | Tap **Pick black**, then the white background just left of the slab, halfway down | "That spot is too light to be a black point. Pick something dark, or skip the black point." is amber, led by a triangle |
-| 3 | Go to Export, open **Export options**, tap **Load edits** and choose notes.json, a text file of notes | "That file isn’t valid JSON." is red, led by a circle |
+| 2 | Tap **Pick black** | **Pick black** is selected (a white fill) |
+| 3 | Tap the white background just left of the slab, halfway down | "That spot is too light to be a black point. Pick something dark, or skip the black point." is amber, led by a triangle |
+| 4 | Tap **Export** in the step tabs (the six tabs along the bottom) | The Export step's controls show |
+| 5 | Load notes.json | "That file isn’t valid JSON." is red, led by a circle |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -110,14 +123,21 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
+- File: notes.json from tests/fixtures/ (a line of text, not JSON)
 - Starting screen: the photo open, on the Levels step
+
+Load notes.json: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, EXPORT OPTIONS, tap **Load edits**; choose notes.json in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Auto** | a white pill with dark bold text and no icon, over the photo's bottom edge |
-| 2 | Tap **Pick black**, then the white background just left of the slab, halfway down | an amber pill led by a dark triangle with an exclamation mark, its text readable against the amber |
-| 3 | Go to Export, open **Export options**, tap **Load edits**, choose notes.json, a text file of notes, and close the options | a red pill led by a circle with an exclamation mark, its text white and readable against the red |
+| 2 | Tap **Pick black** | **Pick black** is selected (a white fill) |
+| 3 | Tap the white background just left of the slab, halfway down | an amber pill led by a dark triangle with an exclamation mark, its text readable against the amber |
+| 4 | Tap **Export** in the step tabs (the six tabs along the bottom) | The Export step's controls show |
+| 5 | Load notes.json | A red message shows, just above the open sheet |
+| 6 | Close the sheet with its cross (×) | a red pill led by a circle with an exclamation mark, over the photo's bottom edge, its text white and readable against the red |
 
 Pass: every row's result is seen.
 On a fail, record: what differs from the description, the screenshot.
@@ -139,6 +159,7 @@ Touches pass through a message to the photo beneath it. A long message is cut to
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
@@ -151,17 +172,22 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-04.2 A long message is cut to three lines   [auto: phone]
+Script only
+Stand-in: no photo or control makes card detection fail, so the script makes the detector report an error a paragraph long before the tap; a person can't make the app show a message that long.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
-- Stand-in: no photo makes card detection fail, so the script makes the detector report an error before the tap. Its error is a paragraph long.
+
+Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options** and tap **Tap to find card** | the line above the controls reads "Tap the card in the photo." |
-| 2 | Tap the middle of the photo | the message shows three lines of text, the rest cut off |
+| 1 | Arm Tap to find card | the line above the controls reads "Tap the card in the photo." |
+| 2 | Tap the middle of the photo | the message over the photo shows three lines of text, the rest cut off |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -170,12 +196,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
-- Starting screen: the photo open, on the Levels step
+- Starting screen: the photo open, on the Levels step; a screen reader on
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | With a screen reader on, tap **Auto** | the message is a polite status: read out when the screen reader is free |
+| 1 | Tap **Auto** | the screen reader reads "Auto set white and black points. Check them, then Apply." once it has finished what it was saying, without cutting it off |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -197,14 +224,16 @@ While an options sheet is open on a phone, the message sits just above the sheet
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Pick black**, then the white background just left of the slab, halfway down | the message's bottom is 36 px above the photo area's bottom edge |
-| 2 | Open the Levels tips (the tab with the up arrow above the controls) | with Levels tips open, the message's bottom is 36 px above the sheet's top edge |
-| 3 | Close the sheet with its **×** | with the sheet closed, the message is back 36 px above the photo area's bottom edge |
+| 1 | Tap **Pick black** | **Pick black** is selected (a white fill) |
+| 2 | Tap the white background just left of the slab, halfway down | the message's bottom is 36 px above the photo area's bottom edge |
+| 3 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | with LEVELS TIPS open, the message's bottom is 36 px above the sheet's top edge |
+| 4 | Close the sheet with its cross (×) | with the sheet closed, the message is back 36 px above the photo area's bottom edge |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -228,12 +257,13 @@ Flag: to confirm. Written to what the app does today: three different words say 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo** and choose the photo | "Loading…" shows, white, while the photo opens |
+| 1 | Tap **Open photo** on the start screen and choose the photo | "Loading…" shows, white, while the photo opens |
 | 2 | Wait for the photo | once the photo shows, "Loading…" has gone |
 
 Pass: every row's result is seen.
@@ -256,12 +286,14 @@ An error message, for 6 seconds, when the browser can't decode a HEIC photo: "Th
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: card.HEIC, a HEIC file the browser can't decode (in Chromium any HEIC photo)
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: card.HEIC from tests/fixtures/ (a line of text named like a HEIC photo: no browser decodes it; in Chromium a real HEIC photo gives the same message)
 - Starting screen: the start screen
+- A stopwatch. The time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo** and choose card.HEIC | a red message reads "This browser can’t open HEIC. Save the photo as JPEG first (Safari opens HEIC directly)." |
+| 1 | Tap **Open photo** on the start screen and choose card.HEIC | a red message reads "This browser can’t open HEIC. Save the photo as JPEG first (Safari opens HEIC directly)." |
 | 2 | Time the message | it stays 6 s |
 
 Pass: every row's result is seen.
@@ -284,12 +316,13 @@ An error message, for 6 seconds, when any other file can't be decoded as a photo
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: not-a-photo.JPEG, a text file named like a photo
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: not-a-photo.JPEG from tests/fixtures/ (a line of text named like a photo)
 - Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo** and choose not-a-photo.JPEG | a red message reads "Couldn’t read that file as an image." |
+| 1 | Tap **Open photo** on the start screen and choose not-a-photo.JPEG | a red message reads "Couldn’t read that file as an image." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -305,13 +338,14 @@ An information message, "Resumed where you left off.", after **Resume**, when th
 - Changed: none
 - Anchors: "Resumed where you left off.", `#btnResume`
 - Source: `js/app/state.js` (`openFile`); `js/app/start-screen.js` (`resumeSession`)
-- Ruling: R23. When the saved edits don't fit the stored photo, an amber warning says the edits couldn't be restored and the photo was opened fresh. New wording, to be approved by Rich. The app differs today.
+- Ruling: R23. When the saved edits don't fit the stored photo, an amber warning reads "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 2
 
 ### MSG-09.1 Resume says it resumed   [auto: phone]
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo opened once, then the page reloaded: the start screen offers **Resume**
 
@@ -323,17 +357,20 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-09.2 Edits that don't fit the photo say it was opened fresh   [auto: phone]
-Written to ruling R23; it fails until that is built (BUG-050). The warning's words wait for Rich's approval, so the case checks that one amber warning shows.
+Written to ruling R23, with Rich's approved wording; it fails until that is built (BUG-050).
+Script only
+Stand-in: the saved edits are kept inside the browser, where no control or file can change them; the script changes the photo width they were saved for to one pixel more than the photo's.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo opened once, then the page reloaded: the start screen offers **Resume**, with the saved edits' photo width changed to one more pixel
-- Stand-in: no control changes the saved edits; the script changes the width they were saved for.
+- Starting screen: the photo opened once, then the page reloaded: the start screen offers **Resume**; the saved edits' photo width is 1537 px, where the photo is 1536 px wide
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Resume** | an amber warning says the edits couldn't be restored and the photo was opened fresh |
+| 1 | Tap **Resume** | one amber warning reads "Full edit history could not be restored, your photo has been opened fresh." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -351,21 +388,43 @@ A warning, for 5 seconds, when a detection the user started finds nothing: "No c
 - Source: `js/app/state.js` (`runDetect`); `js/app/perspective.js` (`bindPerspective`); `js/app/debug-panel.js` (`toggleDebugPanel`, `buildDebugPanel`)
 - Ruling: R3. Turning on **Debug overlay** only draws; it runs no detection and leaves the corners alone. The app differs today.
 - Flag: to confirm. The row above the controls says "Nothing detected. Drag the corners into place." at the same time, so one condition shows in two wordings; the message also says "tap" on a desktop.
-- Cases: 1
+- Cases: 2
 
-### MSG-10.1 A search that finds no card says so   [auto: phone]
+### MSG-10.1 A search that finds no card says so; opening the picture doesn't   [auto: phone]
 Flag: to confirm. Written to what the app does today: the line above the controls says "Nothing detected. Drag the corners into place." at the same time, and the message says "tap" on a desktop too.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: a plain grey picture, 1200 × 1600 px, with no card in it
-- Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
+- Starting screen: the start screen
+- A stopwatch. The time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
+
+Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options** and tap **Tap to find card** | the line above the controls reads "Tap the card in the photo." |
-| 2 | Tap the middle of the picture | an amber warning reads "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again." |
-| 3 | Time the message | it stays 5 s |
+| 1 | Tap **Open photo** on the start screen and choose plain-grey.png | The picture opens on the Perspective step; the line above the controls reads "Nothing detected. Drag the corners into place."; no message shows over the picture |
+| 2 | Arm Tap to find card | the line above the controls reads "Tap the card in the photo." |
+| 3 | Tap the middle of the picture | an amber warning reads "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again." |
+| 4 | Time the message | it stays 5 s |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-10.2 Re-detect in the tuning panel says when it finds no card   [auto: desktop]
+Flag: to confirm. Written to what the app does today: the line above the controls says "Nothing detected. Drag the corners into place." at the same time.
+Before you start:
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
+- Starting screen: the app opened from a link ending ?debug: the start screen, with the Detection tuning panel showing
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Click **Open photo** on the start screen and choose plain-grey.png | The picture opens; the Detection tuning panel still shows; no message shows over the picture |
+| 2 | Click **Re-detect** in the tuning panel | an amber warning reads "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -381,23 +440,28 @@ An error message, for 6 seconds, when detection throws: "Detection failed: " fol
 - Changed: none
 - Anchors: "Detection failed: "
 - Source: `js/app/state.js` (`runDetect`); `js/app/adapters.js` (`EngineWorker.call`)
-- Ruling: R24. A fixed sentence with a next step replaces the raw error text, and the detail always goes to the console. New wording, to be approved by Rich. The app differs today.
+- Ruling: R24. The message reads "Detection failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 1
 
-### MSG-11.1 A failed search names no raw error   [auto: phone]
-Written to ruling R24; it fails until that is built (BUG-051). The sentence waits for Rich's approval, so the case checks that the error's own words stay out of it.
+### MSG-11.1 A failed search says "Detection failed."   [auto: phone]
+Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
+Script only
+Stand-in: no photo or control makes card detection fail, so the script makes the detector report an error ("Stand-in failure 4417") before the tap.
+
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a phone-width window (390 × 844), touch, with the developer tools' console open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
-- Stand-in: no photo makes card detection fail, so the script makes the detector report an error before the tap.
+
+Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options** and tap **Tap to find card** | the line above the controls reads "Tap the card in the photo." |
-| 2 | Tap the middle of the photo | the error's own words are written to the console |
-| 3 | Read the message | a red message gives a fixed sentence with a next step, without the error's own words |
+| 1 | Arm Tap to find card | the line above the controls reads "Tap the card in the photo." |
+| 2 | Tap the middle of the photo | A red message reads "Detection failed." |
+| 3 | Read the console | The failure's own words, "Stand-in failure 4417", are written to the console as an error |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -419,13 +483,15 @@ A warning, for 5 seconds, when **Resume** is tapped and the stored photo is miss
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo opened once, then the page reloaded: the start screen offers **Resume**
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open the app in a second tab and tap **Start fresh** there | in the second tab, Start fresh takes the card away |
-| 2 | Back in the first tab, tap **Resume** | an amber warning reads "The saved photo is gone. Open it again." |
+| 1 | Open the app in a second tab of the same browser | the second tab's start screen offers **Resume** and **Start fresh** too |
+| 2 | In the second tab, tap **Start fresh** | **Resume** and **Start fresh** go from the second tab |
+| 3 | Back in the first tab, tap **Resume** | an amber warning reads "The saved photo is gone. Open it again." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -441,20 +507,22 @@ An error message, for 6 seconds, when anything else fails during **Resume**: "Co
 - Changed: none
 - Anchors: "Couldn’t resume: ", `#btnResume`
 - Source: `js/app/start-screen.js` (`resumeSession`)
-- Ruling: R24. A fixed sentence with a next step replaces the raw error text, and the detail always goes to the console. New wording, to be approved by Rich. The app differs today.
+- Ruling: R24. The message reads "Couldn’t resume.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 1
 
-### MSG-13.1 A Resume that fails names no raw error   [auto: phone]
-Written to ruling R24; it fails until that is built (BUG-051). The sentence waits for Rich's approval.
+### MSG-13.1 A Resume that fails says "Couldn’t resume."   [auto: phone]
+Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: Chrome in a phone-width window (390 × 844), touch, with the developer tools open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo opened once, then the page reloaded: the start screen offers **Resume**; then the site's data cleared with the developer tools' **Clear site data**, the card still showing
+- Starting screen: the photo opened once, then the page reloaded: the start screen offers **Resume** and **Start fresh**; then the site's data cleared with the developer tools' **Clear site data** (Application tab, Storage), without reloading, so **Resume** still shows
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Resume** | a red message gives a fixed sentence with a next step, without the browser's error |
+| 1 | Tap **Resume** | a red message reads "Couldn’t resume." |
+| 2 | Read the developer tools' console | the browser's own error is written there as an error |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -477,8 +545,10 @@ Opening the app with `?selftest` in its link runs the engine's self-tests and sh
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: none
 - Starting screen: the app opened from a link ending ?selftest
+- A stopwatch. The time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -491,14 +561,18 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 ### MSG-14.2 A link with selftest=0 runs no self-tests   [auto: phone]
 Written to ruling R28; it fails until that is built (BUG-171).
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a phone-width window (390 × 844), touch, with the developer tools' console open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: none
 - Starting screen: the app opened from a link ending ?selftest=0
 
+Self-tests that run write a group headed "[card-finisher] self-tests (main thread)" to the console.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Wait 3 s on the start screen | no self-test message shows, and no self-tests run |
+| 1 | Wait 3 s on the start screen | no message starting "Self-tests:" shows over the start screen |
+| 2 | Read the console | it has no "[card-finisher] self-tests" group: no self-tests ran |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -522,7 +596,8 @@ Flag: to confirm. Written to what the app does today: the message gives no next 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: a plain white picture, 1200 × 1600 px
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: plain-white.png from tests/fixtures/ (a plain white picture, 1200 × 1600 px)
 - Starting screen: the picture open, on the Levels step
 
 | # | Do this | You should see |
@@ -551,6 +626,7 @@ Flag: to confirm. Written to what the app does today: Auto confirms itself with 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
@@ -580,6 +656,7 @@ Flag: to confirm. Written to what the app does today: Auto confirms itself with 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 13_front_landscape_onetouch_labeled_white.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
@@ -607,13 +684,14 @@ A warning, for 5 seconds, when an armed **Pick white** or **Pick black** is rele
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the photo 200 px to the right | the empty area past the photo's left edge shows |
-| 2 | Tap **Pick white** | Pick white is selected |
+| 2 | Tap **Pick white** | **Pick white** is selected (a white fill) |
 | 3 | Find the point 15 px in from the photo area's left edge, halfway down | the point near the photo area's left edge is past the photo's own edge |
 | 4 | Tap that point | an amber warning reads "That spot is outside the photo."; Pick white stays selected |
 
@@ -637,13 +715,16 @@ A warning, for 5 seconds, when a **Pick white** spot is not at least 20 brightne
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Pick black**, then the card’s dark background, up and to the left of the driver’s head | the black swatch fills with a dark grey |
-| 2 | Tap **Pick white**, then the same spot | an amber warning reads "That spot is darker than the black point. Pick something brighter."; Pick white stays selected |
+| 1 | Tap **Pick black** | **Pick black** is selected (a white fill) |
+| 2 | Tap the card’s dark background, up and to the left of the driver’s head | the color patch beside **Pick black** (the small square that shows the color picked) fills with a dark grey |
+| 3 | Tap **Pick white** | **Pick white** is selected (a white fill) |
+| 4 | Tap the same spot | an amber warning reads "That spot is darker than the black point. Pick something brighter."; **Pick white** stays selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -665,12 +746,14 @@ A warning, for 5 seconds, when a **Pick black** spot is brighter than the black-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Pick black**, then the white background just left of the slab, halfway down | an amber warning reads "That spot is too light to be a black point. Pick something dark, or skip the black point."; Pick black stays selected |
+| 1 | Tap **Pick black** | **Pick black** is selected (a white fill) |
+| 2 | Tap the white background just left of the slab, halfway down | an amber warning reads "That spot is too light to be a black point. Pick something dark, or skip the black point."; **Pick black** stays selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -692,13 +775,16 @@ A warning, for 5 seconds, when a **Pick black** spot is not at least 20 brightne
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Pick white**, then the card’s dark background, up and to the left of the driver’s head | the white swatch fills with a dark grey |
-| 2 | Tap **Pick black**, then the same spot | an amber warning reads "That spot is brighter than the white point. Pick something darker."; Pick black stays selected |
+| 1 | Tap **Pick white** | **Pick white** is selected (a white fill) |
+| 2 | Tap the card’s dark background, up and to the left of the driver’s head | the color patch beside **Pick white** (the small square that shows the color picked) fills with a dark grey |
+| 3 | Tap **Pick black** | **Pick black** is selected (a white fill) |
+| 4 | Tap the same spot | an amber warning reads "That spot is brighter than the white point. Pick something darker."; **Pick black** stays selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -720,13 +806,15 @@ An information message after a single photo's **Download**, or after **Share** f
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step
+- Starting screen: the photo open, on the Export step, with **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** on the Upscale question | the file is saved |
-| 2 | Read the message and the saved file's size | a white message reads "Exported W × H px in N s.", with the saved file's size |
+| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | One file is saved: 01_chrome_flat_black-straight.jpg, 1074 × 1074 px |
+| 3 | Read the message over the photo | A white message reads "Exported 1074 × 1074 px in N s.", N the seconds the export took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -748,13 +836,15 @@ An information message after a pair's **Download** or **Share** with **Together*
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, **Together** chosen
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, with **Together** and **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** on the Upscale question | one file is saved |
-| 2 | Read the message | a white message reads "Exported the Together image in N s." |
+| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | One file is saved: 14_front_portrait_raw_white-pair.jpg, 1583 × 1100 px |
+| 3 | Read the message over the photo | A white message reads "Exported the Together image in N s.", N the seconds the export took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -776,14 +866,16 @@ An information message after a pair's **Download** or **Share** with **Separatel
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, **Together** chosen
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, with **Together** and **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Separately** | Separately is selected |
-| 2 | Tap **Download**, then **No** on the Upscale question | two files are saved |
-| 3 | Read the message | a white message reads "Exported the front and back in N s." |
+| 1 | Tap **Separately** | **Separately** is selected (a white fill) |
+| 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 3 | Tap **No** | Two files are saved: 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
+| 4 | Read the message over the photo | A white message reads "Exported the front and back in N s.", N the seconds the export took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -804,17 +896,20 @@ An information message after **Download corners** or **Share corners** with **1 
 
 ### MSG-25.1 Download corners with 1 sheet says so   [auto: phone]
 Flag: to confirm. Written to what the app does today: corner shots say "Saved", while the main export and a pair say "Exported".
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open from a link ending ?cornerShots.upscaleTargetPx=0 (no Upscale question for corner shots), on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Corner shots**, then **1 sheet** | the Corner shots sheet is open, 1 sheet selected |
-| 2 | Tap **Download corners** | one file is saved |
-| 3 | Read the message | a white message reads "Saved the corner sheet in N s." |
+| 1 | Tap **Corner shots** | The Corner shots sheet rises |
+| 2 | Tap **1 sheet** | **1 sheet** is selected (a white fill) |
+| 3 | Tap **Download corners** | One file is saved: 01_chrome_flat_black-corners.jpg; no question box asks first |
+| 4 | Read the message | A white message reads "Saved the corner sheet in N s.", N the seconds it took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -835,17 +930,20 @@ An information message after **Download corners** or **Share corners** with **4 
 
 ### MSG-26.1 Download corners with 4 photos says so   [auto: phone]
 Flag: to confirm. Written to what the app does today: corner shots say "Saved", while the main export and a pair say "Exported".
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open from a link ending ?cornerShots.upscaleTargetPx=0 (no Upscale question for corner shots), on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Corner shots**, then **4 photos** | the Corner shots sheet is open, 4 photos selected |
-| 2 | Tap **Download corners** | four files are saved |
-| 3 | Read the message | a white message reads "Saved 4 corner shots in N s." |
+| 1 | Tap **Corner shots** | The Corner shots sheet rises |
+| 2 | Tap **4 photos** | **4 photos** is selected (a white fill) |
+| 3 | Tap **Download corners** | Four files are saved: 01_chrome_flat_black-corner-tl.jpg, -corner-tr.jpg, -corner-bl.jpg and -corner-br.jpg |
+| 4 | Read the message | A white message reads "Saved 4 corner shots in N s.", N the seconds it took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -855,63 +953,114 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 When the browser saves another format than the one chosen (Safari has no WebP encoder), the finished-export message gains a sentence, "{CHOSEN} isn’t supported by this browser, so it was saved as {SAVED}." (for example WEBP and PNG), and shows as an amber warning for 6 seconds. It applies to the main export, a pair and corner shots.
 
 - Risk: medium
-- Check: script
+- Check: script; phone (Safari's own fallback, MSG-27.2)
 - Layout: both.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: " isn’t supported by this browser, so it was saved as ", `#exportFormat`
 - Source: `js/app/export.js` (`fallbackNote`, `toastSaved`)
 - Flag: to confirm. The sentence says what happened after the fact and gives no next step.
-- Cases: 1
+- Cases: 2
 
 ### MSG-27.1 A format the browser couldn't save is named   [auto: phone]
 Flag: to confirm. Written to what the app does today: the sentence says what happened after the fact and gives no next step.
+Script only
+Stand-in: Chromium can save WebP, so the script makes it hand back a PNG when asked for WebP, as Safari does. On a real iPhone, where Safari can't save WebP, this is MSG-27.2.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step, in a browser that can't save WebP (Safari)
-- Stand-in: Chromium can save WebP, so the script makes it hand back a PNG when asked for WebP, as Safari does.
+- Starting screen: the photo open, on the Export step, with **2000** selected
+- A stopwatch. The time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **WebP** | WebP is selected |
-| 2 | Tap **Download**, then **No** on the Upscale question | the file is a PNG; an amber warning reads "Exported W × H px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." |
-| 3 | Time the message | it stays 6 s |
+| 1 | Tap **WebP** | **WebP** is selected (a white fill) |
+| 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 3 | Tap **No** | One file is saved, and it is a PNG: 01_chrome_flat_black-straight.png |
+| 4 | Read the message over the photo | An amber warning reads "Exported 1074 × 1074 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." |
+| 5 | Time the message | It stays 6 s |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-27.2 On an iPhone, a WebP export is saved as PNG and the message says so   [phone]
+Flag: to confirm. Written to what the app does today: the sentence says what happened after the fact and gives no next step.
+
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Export step, with **2000** selected
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **WebP** | **WebP** is selected (a white fill) |
+| 2 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 3 | Tap **No** | An amber message over the photo reads "Exported 1074 × 1074 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG.", N the seconds the export took; Safari asks whether to download 01_chrome_flat_black-straight.png: the name ends .png, not .webp |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ## MSG-28 "Tap Share now to open the share sheet."
 
 When the browser refuses to share because the tap was too long ago (a slow export), the finished-export message gains "Tap Share now to open the share sheet." and stays 6 seconds (white, or amber with MSG-27's sentence). Tapping **Share now** takes it down.
 
 - Risk: low
-- Check: script
+- Check: script; phone (a real refusal after a slow export, MSG-28.2)
 - Layout: both.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: "Tap Share now to open the share sheet.", `#btnShare`, `#btnCornerShare`
 - Source: `js/app/export.js` (`toastSaved`, `sharePending`); `js/app/corner-shots.js` (`shareCornerShots`)
 - Flag: to confirm. The message says "Tap" on a desktop too.
-- Cases: 1
+- Cases: 2
 
 ### MSG-28.1 A refused share says to tap Share now   [auto: phone]
 Flag: to confirm. Written to what the app does today: the message says "Tap" on a desktop too.
+Script only
+Stand-in: Safari refuses a share that starts too long after the tap, but an export of a sample photo is too quick for that, and no case uses a desktop browser's own share sheet; the script gives the page a stand-in share sheet that refuses the first share as Safari does and finishes every later one at once. On a real iPhone this is MSG-28.2.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step; the browser refuses the first share because the tap was too long ago
-- Stand-in: a script stands in for the share sheet and refuses the first share, as a browser does after a slow export (no case uses a desktop browser's own share sheet).
+- Starting screen: the photo open, on the Export step, with **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Share**, then **No** on the Upscale question | a white message reads "Exported W × H px in N s. Tap Share now to open the share sheet."; Share reads Share now |
-| 2 | Tap **Share now** | the message goes at once |
+| 1 | Tap **Share** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | A white message reads "Exported 1074 × 1074 px in N s. Tap Share now to open the share sheet."; the red button reads **Share now** |
+| 3 | Tap **Share now** | The message goes at once, well before its 6 s are up |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-28.2 On an iPhone, a slow export says to tap Share now   [phone]
+Flag: to confirm. Written to what the app does today: the message says "Tap" on a desktop too.
+Waiting on find-out Q-09: which photo is slow enough to save at **Original** that Safari refuses the share. The photo below is filled in from Rich's answer; until then the case can't be run.
+
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP the Share button is hidden)
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: the photo Q-09 names, in Photos
+- Starting screen: the photo open, on the Export step, with **Original** selected (Original never asks to upscale)
+- A stopwatch, started when the message shows
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo); no share sheet rises |
+| 2 | Wait for the line to finish | A white message over the photo reads "Exported W × H px in N s. Tap Share now to open the share sheet." (W × H the saved size, N the seconds it took); the red button reads **Share now** |
+| 3 | Within 3 s of the message showing, tap **Share now** | The message goes at once; the share sheet rises |
+| 4 | Tap the **×** at the share sheet's top right | The share sheet closes; no message is over the photo |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screen recording (Control Center, the Screen Recording button).
 
 ## MSG-29 "Copied to clipboard (PNG)."
 
@@ -930,12 +1079,14 @@ An information message after **Copy** puts a single photo, or a pair's Together 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step; the page allowed to use the clipboard
+- Starting screen: the photo open, on the Export step, with **2000** selected; the page allowed to use the clipboard
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Copy**, then **No** on the Upscale question | a white message reads "Copied to clipboard (PNG)." |
+| 1 | Tap **Copy** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | A white message reads "Copied to clipboard (PNG)."; the clipboard holds a 1074 × 1074 px picture |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -951,22 +1102,26 @@ An error message, for 6 seconds, when anything fails during **Copy**: "Copy fail
 - Changed: none
 - Anchors: "Copy failed: ", `#btnCopy`
 - Source: `js/app/export.js` (`runExport`); `js/app/pair.js` (`runPairExport`)
-- Ruling: R24. A fixed sentence with a next step replaces the raw error text, and the detail always goes to the console. New wording, to be approved by Rich. The app differs today.
+- Ruling: R24. The message reads "Copy failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 1
 
-### MSG-30.1 A failed Copy names no raw error   [auto: phone]
-Written to ruling R24; it fails until that is built (BUG-051).
+### MSG-30.1 A failed Copy says "Copy failed."   [auto: phone]
+Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
+Script only
+Stand-in: a person can't make the browser refuse the clipboard to the page on purpose, so the script makes every clipboard write fail with "Stand-in failure 4417", as a browser that blocks the page does.
+
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a phone-width window (390 × 844), touch, with the developer tools' console open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step
-- Stand-in: the script makes the clipboard refuse every write, as a browser that blocks the page does.
+- Starting screen: the photo open, on the Export step, with **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Copy**, then **No** on the Upscale question | the error's own words are written to the console |
-| 2 | Read the message | a red message gives a fixed sentence with a next step, without the error's own words |
+| 1 | Tap **Copy** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | A red message reads "Copy failed." |
+| 3 | Read the console | The failure's own words, "Stand-in failure 4417", are written to the console as an error |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -982,22 +1137,26 @@ An error message, for 6 seconds, when **Download** or **Share** fails, or when w
 - Changed: none
 - Anchors: "Export failed: ", "Encoding failed (image too large for this browser?)", "The overlay image isn’t loaded. Open the Overlay step and add it again."
 - Source: `js/app/export.js` (`runExport`, `toBlob`, `exportGeometry`, `renderWarped`); `js/app/overlay.js` (`compositeOverlay`); `js/app/pair.js` (`exportPair`, `runPairExport`, `renderSideInto`)
-- Ruling: R24. A fixed sentence with a next step replaces the raw error text, and the detail always goes to the console (today a failed pair Upscale question is not logged). New wording, to be approved by Rich. The app differs today.
+- Ruling: R24. The message reads "Export failed.", with no advice, and the error's detail always goes to the console, which today misses a failed pair Upscale question (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 1
 
-### MSG-31.1 A failed Download names no raw error   [auto: phone]
-Written to ruling R24; it fails until that is built (BUG-051).
+### MSG-31.1 A failed Download says "Export failed."   [auto: phone]
+Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
+Script only
+Stand-in: no control makes the browser fail to encode, so the script makes it hand back no file, as a canvas too big for it does.
+
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a phone-width window (390 × 844), touch, with the developer tools' console open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step
-- Stand-in: no control makes the browser fail to encode, so the script makes it hand back no file, as a canvas too big for it does.
+- Starting screen: the photo open, on the Export step, with **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** on the Upscale question | the error's own words are written to the console |
-| 2 | Read the message | a red message gives a fixed sentence with a next step, without the error's own words |
+| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | A red message reads "Export failed." |
+| 3 | Read the console | The failure's own words, "Encoding failed (image too large for this browser?)", are written to the console as an error |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1013,22 +1172,26 @@ An error message, for 6 seconds, when the share sheet fails for any reason other
 - Changed: none
 - Anchors: "Share failed: ", `#btnShare`
 - Source: `js/app/export.js` (`shareFiles`)
-- Ruling: R24. A fixed sentence with a next step replaces the raw error text, and the detail always goes to the console. New wording, to be approved by Rich. The app differs today.
+- Ruling: R24. The message reads "Share failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 1
 
-### MSG-32.1 A failed share names no raw error   [auto: phone]
-Written to ruling R24; it fails until that is built (BUG-051).
+### MSG-32.1 A failed share says "Share failed."   [auto: phone]
+Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
+Script only
+Stand-in: no case uses a desktop browser's own share sheet, and a real one can't be made to fail on purpose, so the script gives the page a stand-in share sheet that fails with "The stand-in share sheet failed".
+
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a phone-width window (390 × 844), touch, with the developer tools' console open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step; the share sheet fails with an error of its own
-- Stand-in: a script stands in for the share sheet and fails with "The stand-in share sheet failed".
+- Starting screen: the photo open, on the Export step, with **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Share**, then **No** on the Upscale question | the error's own words are written to the console |
-| 2 | Read the message | a red message gives a fixed sentence with a next step, without the error's own words |
+| 1 | Tap **Share** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | A red message reads "Share failed." |
+| 3 | Read the console | The failure's own words, "The stand-in share sheet failed", are written to the console as an error |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1050,13 +1213,18 @@ An error message, for 6 seconds, when **Load edits** is given a file over 8 MB: 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
+- Edits file: big-edits.json, any file larger than 8 MB (8,388,608 bytes) renamed to end .json; it is too large to keep in tests/fixtures/, so the script makes its own, 8 MB and one byte of spaces
 - Starting screen: the photo open, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** (the tab with the up arrow above the controls) and tap **Load edits** | a file picker opens |
-| 2 | Choose big-edits.json, a file of 8 MB and one byte | a red message reads "That file is too large to be a Card Finisher edits file." |
+| 1 | Load the edits file big-edits.json | A red message reads "That file is too large to be a Card Finisher edits file." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1078,13 +1246,18 @@ An error message, for 6 seconds, when **Load edits** is given a file that can't 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
+- Edits file: notes.json from tests/fixtures/ (one line of text, "These are notes, not edits.")
 - Starting screen: the photo open, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** (the tab with the up arrow above the controls) and tap **Load edits** | a file picker opens |
-| 2 | Choose notes.json, a text file of notes | a red message reads "That file isn’t valid JSON." |
+| 1 | Load the edits file notes.json | A red message reads "That file isn’t valid JSON." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1106,13 +1279,18 @@ An error message, for 6 seconds, when **Load edits** is given JSON of the wrong 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
+- Edits file: list.json from tests/fixtures/ (a JSON shopping list, `{"shopping":["tape","sleeves"]}`)
 - Starting screen: the photo open, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** (the tab with the up arrow above the controls) and tap **Load edits** | a file picker opens |
-| 2 | Choose list.json, a JSON shopping list | a red message reads "That isn’t a Card Finisher edits file." |
+| 1 | Load the edits file list.json | A red message reads "That isn’t a Card Finisher edits file." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1131,16 +1309,20 @@ A warning, for 5 seconds, when an edits file is loaded with no photo open: "Open
 - Cases: 1
 
 ### MSG-36.1 Edits with no photo open   [auto: phone]
+Script only
+Stand-in: **Load edits** is greyed out with no photo open, so no button reaches this; the script hands the file straight to the hidden edits picker.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: card-edits.json, an edits file
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: none
+- Edits file: 01_chrome_flat_black-turned-edits.json from tests/fixtures/: 01_chrome_flat_black.JPEG's edits after **90° right** on Rotate, as **Save edits** saves them (the photo's name "01_chrome_flat_black.JPEG", its size 1536 × 2048 px, `"quarter": 1`)
 - Starting screen: the start screen
-- Stand-in: **Load edits** is greyed out with no photo open, so no button reaches this; the script hands the file to the hidden picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Hand card-edits.json straight to the edits picker | an amber warning reads "Open the matching photo first, then load its edits."; the start screen stays |
+| 1 | Hand 01_chrome_flat_black-turned-edits.json straight to the edits picker | An amber warning reads "Open the matching photo first, then load its edits."; the start screen stays |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1161,17 +1343,23 @@ An error message, for 6 seconds, when the edits file was saved for a photo of an
 
 ### MSG-37.1 Edits for a photo of another size   [auto: phone]
 Flag: to confirm. Written to what the app does today: the sizes are written "W×H" with no spaces.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: 01_chrome_flat_black.JPEG from samples/, then IMG_9136.JPEG from samples/
-- Starting screen: the photo open; on Rotate **90° right** tapped; on Export, in **Export options**, **Save edits** tapped (card-edits.json saved, the quarter turn in it); the options closed and **Undo** tapped, so the photo is upright
-- 01_chrome_flat_black.JPEG is 1536 × 2048 px.
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/ (1498 × 2098 px)
+- Edits file: 01_chrome_flat_black-turned-edits.json from tests/fixtures/: 01_chrome_flat_black.JPEG's edits after **90° right** on Rotate, as **Save edits** saves them (the photo's name "01_chrome_flat_black.JPEG", its size 1536 × 2048 px, `"quarter": 1`)
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open IMG_9136.JPEG with **Open photo** and go to Export | the slab photo is open |
-| 2 | Open **Export options** (the tab with the up arrow above the controls) and tap **Load edits** and choose card-edits.json | a red message reads "These edits are for a 1536×2048 photo; this one is 1498×2098."; the photo stays upright |
+| 1 | Load the edits file 01_chrome_flat_black-turned-edits.json | A red message reads "These edits are for a 1536×2048 photo; this one is 1498×2098." |
+| 2 | Look at the photo | It is still upright: nothing was applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1187,40 +1375,58 @@ A warning, for 5 seconds, when the edits file's photo name differs but the size 
 - Changed: none
 - Anchors: "Edits were saved for “", "Applied anyway — sizes match.", "another photo"
 - Source: `js/app/export.js` (`loadEdits`); `js/app/core.js` (`shortText`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other before they can be read. New wording, to be approved by Rich. The app differs today.
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Overlay left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's one-problem case is written to today's wording.
 - Flag: to confirm. This message uses an em dash where most messages use two sentences.
 - Cases: 2
 
 ### MSG-38.1 Edits saved for a file of another name   [auto: phone]
-Written to ruling R12; its combined warning's words wait for Rich's approval, so the case checks the warning's kind and what it is about, not its words.
+Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
 Flag: to confirm. Written to what the app does today: the message uses an em dash where most use two sentences.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open; on Rotate **90° right** tapped; on Export, in **Export options**, **Save edits** tapped (card-edits.json saved, the quarter turn in it); the options closed and **Undo** tapped, so the photo is upright; in card-edits.json the photo's name changed to another-card.JPEG
+- Edits file: 01_chrome_flat_black-another-name-edits.json from tests/fixtures/: 01_chrome_flat_black.JPEG's edits after **90° right** on Rotate, as **Save edits** saves them (the photo's name "01_chrome_flat_black.JPEG", its size 1536 × 2048 px, `"quarter": 1`), changed in a text editor so that `"name": "01_chrome_flat_black.JPEG"` reads `"name": "another-card.JPEG"`
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** (the tab with the up arrow above the controls) and tap **Load edits** and choose card-edits.json | the edits are applied (the photo turns a quarter right); one amber warning says they were saved for another-card.JPEG |
+| 1 | Load the edits file 01_chrome_flat_black-another-name-edits.json | One amber message shows, and no other comes after it; it reads "Edits were saved for “another-card.JPEG”. Applied anyway — sizes match." |
+| 2 | Look at the photo | It is turned a quarter clockwise: the edits were applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-38.2 Three problems in one edits file make one warning   [auto: phone]
-Written to ruling R12; it fails until that is built (BUG-190). The warning's words wait for Rich's approval.
+Written to ruling R12, in the wording Rich approved; it fails until that is built (BUG-190).
+Flag: to confirm. The entry's flag, an em dash in today's message, doesn't reach this case: the approved lines have none.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open; on Rotate **90° right** tapped; on Export, in **Export options**, **Save edits** tapped (card-edits.json saved, the quarter turn in it); the options closed and **Undo** tapped, so the photo is upright; in card-edits.json the photo's name changed to another-card.JPEG, the crop setting replaced by words, and a logo added that no browser can read
+- Edits file: 01_chrome_flat_black-three-problems-edits.json from tests/fixtures/: 01_chrome_flat_black.JPEG's edits after **90° right** on Rotate, as **Save edits** saves them (the photo's name "01_chrome_flat_black.JPEG", its size 1536 × 2048 px, `"quarter": 1`), changed in a text editor: `"name": "01_chrome_flat_black.JPEG"` reads `"name": "another-card.JPEG"`; the whole `"crop": { … }` setting, from `"crop": {` to its closing `}`, reads `"crop": "the whole card"`; and `"overlay": null` reads `"overlay": { "id": "gif-logo", "aspect": 1, "cx": 0.5, "cy": 0.5, "w": 0.25, "opacity": 1 }`, and after the export settings this is added: `"overlayImage": { "id": "gif-logo", "type": "image/gif", "name": "logo.gif", "data": "R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" }` (a one-pixel GIF, a type a logo can't be)
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** (the tab with the up arrow above the controls) and tap **Load edits** and choose card-edits.json | the edits are applied, and one amber warning, of up to three short lines, covers all three problems |
+| 1 | Load the edits file 01_chrome_flat_black-three-problems-edits.json | One amber message shows, and no other comes after it |
+| 2 | Read the message | Its lines read "Edits loaded.", "Saved for “another-card.JPEG”; sizes match.", "Reset, not valid: crop." and "Overlay left out; it couldn’t be read.", in that order |
+| 3 | Look at the photo | It is turned a quarter clockwise, with no logo: the rest was applied |
 
 Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
+On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
 
 ## MSG-39 Settings in the edits file that were reset
 
@@ -1233,20 +1439,28 @@ A warning, for 6 seconds, when some fields of the edits file weren't valid and f
 - Changed: none
 - Anchors: "Some settings in these edits weren’t valid and were reset: "
 - Source: `js/app/export.js` (`loadEdits`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other before they can be read. New wording, to be approved by Rich. The app differs today.
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Overlay left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's one-problem case is written to today's wording.
 - Cases: 1
 
 ### MSG-39.1 Settings in the edits file that were reset   [auto: phone]
-Written to ruling R12; its combined warning's words wait for Rich's approval, so the case checks the warning's kind and what it is about, not its words.
+Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open; on Rotate **90° right** tapped; on Export, in **Export options**, **Save edits** tapped (card-edits.json saved, the quarter turn in it); the options closed and **Undo** tapped, so the photo is upright; in card-edits.json the crop setting replaced by words
+- Edits file: 01_chrome_flat_black-crop-as-words-edits.json from tests/fixtures/: 01_chrome_flat_black.JPEG's edits after **90° right** on Rotate, as **Save edits** saves them (the photo's name "01_chrome_flat_black.JPEG", its size 1536 × 2048 px, `"quarter": 1`), changed in a text editor so that the whole `"crop": { … }` setting, from `"crop": {` to its closing `}`, reads `"crop": "the whole card"`
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** (the tab with the up arrow above the controls) and tap **Load edits** and choose card-edits.json | the edits are applied with the crop as it was before; an amber warning says the crop setting was reset |
+| 1 | Load the edits file 01_chrome_flat_black-crop-as-words-edits.json | An amber message reads "Some settings in these edits weren’t valid and were reset: crop." |
+| 2 | Look at the photo | It is turned a quarter clockwise: the rest of the file was applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1262,20 +1476,28 @@ A warning, for 5 seconds, when the logo inside the edits file is missing or unus
 - Changed: none
 - Anchors: "The overlay in these edits couldn’t be read, so it was left out."
 - Source: `js/app/export.js` (`loadEdits`); `js/app/overlay.js` (`overlayFromEdits`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other before they can be read. New wording, to be approved by Rich. The app differs today.
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Overlay left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's one-problem case is written to today's wording.
 - Cases: 1
 
 ### MSG-40.1 A logo in the edits file that can't be read   [auto: phone]
-Written to ruling R12; its combined warning's words wait for Rich's approval, so the case checks the warning's kind and what it is about, not its words.
+Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open; on Rotate **90° right** tapped; on Export, in **Export options**, **Save edits** tapped (card-edits.json saved, the quarter turn in it); the options closed and **Undo** tapped, so the photo is upright; in card-edits.json a logo added that no browser can read
+- Edits file: 01_chrome_flat_black-gif-logo-edits.json from tests/fixtures/: 01_chrome_flat_black.JPEG's edits after **90° right** on Rotate, as **Save edits** saves them (the photo's name "01_chrome_flat_black.JPEG", its size 1536 × 2048 px, `"quarter": 1`), changed in a text editor: `"overlay": null` reads `"overlay": { "id": "gif-logo", "aspect": 1, "cx": 0.5, "cy": 0.5, "w": 0.25, "opacity": 1 }`, and after the export settings this is added: `"overlayImage": { "id": "gif-logo", "type": "image/gif", "name": "logo.gif", "data": "R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" }` (a one-pixel GIF, a type a logo can't be)
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** (the tab with the up arrow above the controls) and tap **Load edits** and choose card-edits.json | the edits are applied with no logo; an amber warning says the logo couldn't be read |
+| 1 | Load the edits file 01_chrome_flat_black-gif-logo-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 2 | Look at the photo | It is turned a quarter clockwise, with no logo: the rest was applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1293,16 +1515,18 @@ An information message after **Copy CONFIG** in the detection tuning panel puts 
 - Source: `js/app/debug-panel.js` (`buildDebugPanel`)
 - Cases: 1
 
-### MSG-41.1 Copy CONFIG says it copied   [auto: phone]
+### MSG-41.1 Copy CONFIG says it copied   [auto: desktop]
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open from a link ending ?debug, the Detection tuning panel showing, on the Perspective step; the page allowed to use the clipboard
+- Starting screen: the app opened from a link ending ?debug, then the photo opened with **Open photo** on the start screen: the photo open on the Perspective step, the Detection tuning panel showing; the page allowed to use the clipboard
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Copy CONFIG** | a white message reads "CONFIG copied."; the clipboard holds the settings |
+| 1 | Click **Copy CONFIG** in the tuning panel | A white message reads "CONFIG copied." |
+| 2 | Paste into any text editor | The pasted text starts "const CONFIG = ": the clipboard holds the settings |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1321,18 +1545,22 @@ A warning, for 5 seconds, when **Copy CONFIG** can't reach the clipboard and pri
 - Flag: to confirm. This message uses an em dash where most messages use two sentences.
 - Cases: 1
 
-### MSG-42.1 Copy CONFIG with the clipboard blocked   [auto: phone]
+### MSG-42.1 Copy CONFIG with the clipboard blocked   [auto: desktop]
 Flag: to confirm. Written to what the app does today: the message uses an em dash where most use two sentences.
+Script only
+Stand-in: a person can't make the browser refuse the clipboard to the page on purpose, so the script makes every clipboard write fail, as a browser that blocks the page does.
+
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen), with the developer tools' console open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open from a link ending ?debug, the Detection tuning panel showing, on the Perspective step
-- Stand-in: the script makes the clipboard refuse every write, as a browser that blocks the page does.
+- Starting screen: the app opened from a link ending ?debug, then the photo opened with **Open photo** on the start screen: the photo open on the Perspective step, the Detection tuning panel showing
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Copy CONFIG** | an amber warning reads "Clipboard blocked — CONFIG printed to the console."; the console holds the settings |
+| 1 | Click **Copy CONFIG** in the tuning panel | An amber warning reads "Clipboard blocked — CONFIG printed to the console." |
+| 2 | Read the console | It holds the settings, starting "const CONFIG = " |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1353,16 +1581,19 @@ A warning, for 5 seconds, when a logo is added but the browser won't store it fo
 
 ### MSG-43.1 A logo the browser won't keep   [auto: phone]
 Flag: to confirm. Written to what the app does today: the message says "overlay" where the buttons say "logo", and gives no next step.
+Script only
+Stand-in: a person can't make the browser refuse to store one thing on purpose, so the script makes the device refuse to store the logo, as a full disk would.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: 01_chrome_flat_black.JPEG from samples/; the logo icon.svg from icons/
-- Starting screen: the photo open, on the Overlay step; the browser refuses to store the logo
-- Stand-in: the script makes the device refuse to store the logo, as a full disk would.
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/; the logo icon.svg from icons/ (the app's own icon)
+- Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose icon.svg | the logo goes on the photo; an amber warning reads "This overlay works on this photo, but it can’t be saved in this browser." |
+| 1 | Tap **Add logo** and choose icon.svg | The logo goes on the middle of the photo; an amber warning reads "This overlay works on this photo, but it can’t be saved in this browser." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1383,24 +1614,27 @@ An information message while the other side of a pair is decoded after a tap on 
 
 ### MSG-44.1 "Opening the front…" while the front opens   [auto: phone]
 Flag: to confirm. Written to what the app does today: three different words say the app is busy.
+Script only
+Stand-in: a front opens in tens of milliseconds, too fast to read the message, so the script holds its opening until row 1 is seen.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
-- Stand-in: a front opens in tens of milliseconds, so the script holds its opening until row 1 is seen.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Front** in the top bar | a white message reads "Opening the front…" while the front opens |
-| 2 | Wait for the front | once the front shows, the message has gone |
+| 1 | Tap **Front** in the top bar | A white message reads "Opening the front…" while the front opens |
+| 2 | Wait for the front | Once the front shows, the message has gone |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-45 "Unpaired. The front is a single photo now."
 
-An information message after **Keep front** or **Keep back** on the Unpair card: "Unpaired. The front is a single photo now." or "Unpaired. The back is a single photo now."
+An information message after **Keep front** or **Keep back** in the Unpair question box: "Unpaired. The front is a single photo now." or "Unpaired. The back is a single photo now."
 
 - Risk: low
 - Check: script
@@ -1416,12 +1650,14 @@ An information message after **Keep front** or **Keep back** on the Unpair card:
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Unpair**, then **Keep front** | a white message reads "Unpaired. The front is a single photo now." |
+| 1 | Tap **Unpair** (beside **Front** / **Back** in the top bar) | The question box (the box over the dimmed photo with a question and buttons) asks "Unpair" |
+| 2 | Tap **Keep front** | A white message reads "Unpaired. The front is a single photo now."; **Front** / **Back** has gone from the top bar |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1437,38 +1673,45 @@ A warning, for 5 seconds, when a photo arrives (picker, drop or paste) while an 
 - Changed: none
 - Anchors: "Wait for the export to finish, then open the photo."
 - Source: `js/app/pair.js` (`receivePhoto`)
-- Ruling: R13. During a side switch the warning says to wait for the other side to open (proposed: "Wait for the other side to open, then open the photo."); during an export the wording stays. New wording, to be approved by Rich. The app differs today.
+- Ruling: R13. During a side switch the warning reads "Wait for the other side to open, then open the photo."; during an export the wording stays (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 2
 
 ### MSG-46.1 A photo opened during an export is refused   [auto: phone]
+Script only
+Stand-in: an export of a sample photo takes under a second, too quick to open a photo in the middle of it, so the script holds each encoding back 3 s, as on a slow phone.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/, then IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Export step; each image takes 3 s to encode
-- Stand-in: an export takes under a second here, so the script holds each encoding back 3 s, as on a slow phone.
+- Starting screen: the photo open, on the Export step, with **2000** selected; each image takes 3 s to encode
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** on the Upscale question | the export starts |
-| 2 | While it runs, tap **Open photo** and choose IMG_9136.JPEG | an amber warning reads "Wait for the export to finish, then open the photo."; the photo stays |
+| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | A thin red line runs along the top edge of the controls: the export is running |
+| 3 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9136.JPEG | An amber warning reads "Wait for the export to finish, then open the photo."; 01_chrome_flat_black.JPEG stays open |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-46.2 A photo opened while a side opens is refused with its own words   [auto: phone]
-Written to ruling R13; it fails until that is built (BUG-031). The new words wait for Rich's approval, so the case checks that the export's words are not used.
+Written to ruling R13, in the wording Rich approved; it fails until that is built (BUG-031).
+Script only
+Stand-in: a side opens in tens of milliseconds, too fast to open a photo in the middle of it, so the script holds the front's opening until row 2 is done.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/; then IMG_9136.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
-- Stand-in: the script holds the front's opening until row 2 is done.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Front** in the top bar | "Opening the front…" shows |
-| 2 | While the front opens, tap **Open photo** and choose IMG_9136.JPEG | an amber warning says to wait for the other side to open, not for the export |
+| 1 | Tap **Front** in the top bar | "Opening the front…" shows over the photo |
+| 2 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9136.JPEG | An amber warning reads "Wait for the other side to open, then open the photo." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1489,18 +1732,22 @@ A warning, for 8 seconds, when the open side's photo can't be decoded again afte
 
 ### MSG-47.1 The photo isn't loaded after a pair's export   [auto: phone]
 Flag: to confirm. Written to what the app does today: the message says "Tap" on a desktop too.
+Script only
+Stand-in: the back can be read again after an export on any device a person has to hand, so the script makes every read of the back fail after the export, as under memory pressure on an iPhone.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, **Original** chosen
-- Stand-in: every read of the back is made to fail, as under memory pressure on an iPhone.
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, with **Together** and **Original** selected (Original never asks to upscale)
+- A stopwatch. The time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** | the file is saved |
-| 2 | Wait for the export to end | an amber warning reads "The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back." |
-| 3 | Time the message | it stays 8 s |
+| 1 | Tap **Download** | One file is saved: 14_front_portrait_raw_white-pair.jpg |
+| 2 | Wait for the export to end | An amber warning reads "The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back." |
+| 3 | Time the message | It stays 8 s |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1519,16 +1766,19 @@ A warning, for 6 seconds, after **Resume** when the stored pair or its other pho
 - Cases: 1
 
 ### MSG-48.1 A saved pair that couldn't be rebuilt   [auto: phone]
+Script only
+Stand-in: the pair's record is kept inside the browser, where no control or file can change it; the script damages it, as a failed write could.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; the pair saved, then its stored record damaged and the page reloaded: the start screen offers **Resume**
-- Stand-in: no control damages a stored record; the script does, as a failed write could.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Resume** | an amber warning reads "The saved pair wasn’t valid, so it was reset. This photo resumed on its own.", in place of "Resumed where you left off." at once |
+| 1 | Tap **Resume** | An amber warning reads "The saved pair wasn’t valid, so it was reset. This photo resumed on its own.", in place of "Resumed where you left off." at once |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1544,22 +1794,25 @@ An error message, for 5 seconds, when **Share corners** or **Download corners** 
 - Changed: none
 - Anchors: "The card is too small for corner shots.", `#btnCornerShare`, `#btnCornerDownload`
 - Source: `js/app/corner-shots.js` (`saveCornerShots`, `renderAndSave`); `js/engine.js` (`cornerShots`)
-- Ruling: R20. When corner shots can't be made, the readout gives the real reason and both save buttons are dimmed. The app differs today.
+- Ruling: R20. When corner shots can't be made, both save buttons are dimmed and the size line ends "· the card is too small" when that is the reason, "· fix the corners in Perspective first" for any other (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Flag: to confirm. This error stays 5 seconds, while every other error stays 6.
 - Cases: 1
 
 ### MSG-49.1 Corner shots that can't be made can't be saved   [auto: phone]
-Written to ruling R20; it fails until that is built (BUG-120). Once the buttons are greyed out the message itself can no longer be raised.
+Written to ruling R20, in the wording Rich approved; it fails until that is built (BUG-120). Once the buttons are greyed out the message itself can no longer be raised.
+Script only
+Stand-in: no photo or control makes the engine refuse a card with valid corners, so the script makes it refuse; and no case uses a desktop browser's own share sheet, so the page gets a stand-in share sheet, which shows **Share corners**.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step; the engine refusing corner shots ("The card is too small for corner shots.")
-- Stand-in: no photo or control makes the engine refuse a card with valid corners, so the script makes it refuse.
+- Starting screen: the photo open, on the Export step; the engine refusing corner shots with "The card is too small for corner shots."
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Corner shots** | Download corners and Share corners are greyed out |
+| 1 | Tap **Corner shots** | The corner size line reads "Sheet · the card is too small"; **Share corners** and **Download corners** are greyed out (shown dim and not answering a tap) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1575,22 +1828,26 @@ An error message, for 6 seconds, when anything fails while corner shots are rend
 - Changed: none
 - Anchors: "Corner shots failed: "
 - Source: `js/app/corner-shots.js` (`renderAndSave`)
-- Ruling: R24. A fixed sentence with a next step replaces the raw error text, and the detail always goes to the console. New wording, to be approved by Rich. The app differs today.
+- Ruling: R24. The message reads "Corner shots failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 1
 
-### MSG-50.1 Failed corner shots name no raw error   [auto: phone]
-Written to ruling R24; it fails until that is built (BUG-051).
+### MSG-50.1 Failed corner shots say "Corner shots failed."   [auto: phone]
+Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
+Script only
+Stand-in: no control makes the browser fail to encode, so the script makes it hand back no file, as a canvas too big for it does.
+
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a phone-width window (390 × 844), touch, with the developer tools' console open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open from a link ending ?cornerShots.upscaleTargetPx=0 (no Upscale question for corner shots), on the Export step
-- Stand-in: no control makes the browser fail to encode, so the script makes it hand back no file, as a canvas too big for it does.
+- Starting screen: the photo open from a link ending ?cornerShots.upscaleTargetPx=0 (no Upscale question for corner shots), on the Export step, with **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Corner shots**, then **Download corners** | the error's own words are written to the console |
-| 2 | Read the message | a red message gives a fixed sentence with a next step, without the error's own words |
+| 1 | Tap **Corner shots** | The Corner shots sheet rises |
+| 2 | Tap **Download corners** | A red message reads "Corner shots failed." |
+| 3 | Read the console | The failure's own words, "Encoding failed (image too large for this browser?)", are written to the console as an error |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1612,13 +1869,18 @@ While **Tap to find card** is armed, the row above Perspective's controls reads 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
+Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options** and tap **Tap to find card** | the line above the controls reads "Tap the card in the photo." with a grey information icon and Cancel |
-| 2 | Tap **Cancel** | Cancel takes the line away; Tap to find card is no longer armed |
+| 1 | Drag the top-left corner handle 40 px to the right | The outline's top-left corner sits 40 px right of the card's corner |
+| 2 | Arm Tap to find card | The line above the controls reads "Tap the card in the photo." with a grey information icon and **Cancel** at its right |
+| 3 | Tap **Cancel** | The line above the controls reads NUDGE and "Corner 1 of 4" |
+| 4 | Tap the middle of the photo | No corner moves: the top-left corner stays 40 px right of the card's corner (an armed Tap to find card would have put it back on the card) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1640,6 +1902,7 @@ When the corners cross or fold inward, the row above Perspective's controls read
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
@@ -1667,6 +1930,7 @@ When two corners are closer than 8 photo pixels, the row above Perspective's con
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
@@ -1693,19 +1957,22 @@ For the engine's remaining faults the row above Perspective's controls shows, wi
 
 ### MSG-54.1 The engine's other corner faults   [auto: phone]
 Flag: to confirm. Written to what the app does today: these state a fault with no action to take, and "Could not" is written out.
+Script only
+Stand-in: no control brings these faults about, so the script makes the engine report each in turn.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
-- Stand-in: no control brings these faults about, so the script makes the engine report each in turn.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Have the engine report "Corners are missing or invalid." | the line above the controls reads "Corners are missing or invalid." with a red error icon |
-| 2 | Have the engine report "Could not solve the perspective for these corners." | the line above the controls reads "Could not solve the perspective for these corners." with a red error icon |
-| 3 | Have the engine report "Crop is empty." | the line above the controls reads "Crop is empty." with a red error icon |
-| 4 | Have the engine report "Transform is not invertible." | the line above the controls reads "Transform is not invertible." with a red error icon |
+| 1 | Have the engine report "Corners are missing or invalid." | The line above the controls reads "Corners are missing or invalid." with a red error icon |
+| 2 | Have the engine report "Could not solve the perspective for these corners." | The line above the controls reads "Could not solve the perspective for these corners." with a red error icon |
+| 3 | Have the engine report "Crop is empty." | The line above the controls reads "Crop is empty." with a red error icon |
+| 4 | Have the engine report "Transform is not invertible." | The line above the controls reads "Transform is not invertible." with a red error icon |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1726,15 +1993,17 @@ While a detection runs, the row above Perspective's controls reads "Detecting…
 
 ### MSG-55.1 "Detecting…" while a search runs   [auto: phone]
 Flag: to confirm. Written to what the app does today: the line takes the row though there is nothing to act on.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the app open, no photo
+- Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open the photo with **Open photo** | for a moment the line above the controls reads "Detecting…" with a grey information icon |
+| 1 | Tap **Open photo** on the start screen and choose 01_chrome_flat_black.JPEG | For a moment, before the corner handles show on the card, the line above the controls reads "Detecting…" with a grey information icon |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1757,6 +2026,7 @@ When the detected card in use scores under 50% confidence, the row above Perspec
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open from a link ending ?detect.minConfidence=1 (every result counts as low), on the Perspective step
 
@@ -1784,15 +2054,17 @@ After a detection run finds no card, the row above Perspective's controls reads 
 
 ### MSG-57.1 Nothing detected   [auto: phone]
 Flag: to confirm. Written to what the app does today: after a search the user started, "No card-shaped edges found…" shows at the same time.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: a plain grey picture, 1200 × 1600 px, with no card in it
-- Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
+- Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the line above the controls | the line above the controls reads "Nothing detected. Drag the corners into place." with an amber warning icon |
+| 1 | Tap **Open photo** on the start screen and choose plain-grey.png | The picture opens on the Perspective step; the line above the controls reads "Nothing detected. Drag the corners into place." with an amber warning icon |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1816,6 +2088,7 @@ Flag: to confirm. Written to what the app does today: "1000px" has no space, and
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open from a link ending ?maxOutputPx=1000, on the Perspective step
 
@@ -1843,12 +2116,13 @@ On Overlay, when the picked, dropped or pasted file isn't PNG, WebP, JPEG or SVG
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: 01_chrome_flat_black.JPEG from samples/; logo.gif, a one-pixel GIF
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/; logo.gif from tests/fixtures/ (a one-pixel GIF)
 - Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose logo.gif | the line above the controls reads "That file type isn’t supported. Use PNG, WebP, JPG or SVG." with a red error icon |
+| 1 | Tap **Add logo** and choose logo.gif | The line above the controls reads "That file type isn’t supported. Use PNG, WebP, JPG or SVG." with a red error icon |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1869,15 +2143,18 @@ On Overlay, when the logo file is larger than the limit, the row above the contr
 
 ### MSG-60.1 A logo file over the size limit   [auto: phone]
 Flag: to confirm. Written to what the app does today: the message says "overlay" where the buttons say "logo".
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: 01_chrome_flat_black.JPEG from samples/; big-logo.png, a 6 MB file named like a PNG
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Logo: big-logo.png, a file of exactly 6 MB (6,291,456 bytes) whose name ends .png; it is too large to keep in tests/fixtures/, so make one (in Windows PowerShell `[IO.File]::WriteAllBytes("$PWD\big-logo.png", [byte[]]::new(6291456))`, on a Mac `mkfile 6m big-logo.png`); the script makes its own, of zero bytes
 - Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose big-logo.png | the line above the controls reads "That file is 6.0 MB. The overlay limit is 5 MB." with a red error icon |
+| 1 | Tap **Add logo** and choose big-logo.png | The line above the controls reads "That file is 6.0 MB. The overlay limit is 5 MB." with a red error icon |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1899,12 +2176,13 @@ On Overlay, when a logo file can't be decoded, or **Use saved overlay** can't re
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: 01_chrome_flat_black.JPEG from samples/; not-a-logo.png, a text file named like a PNG
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/; not-a-logo.png from tests/fixtures/ (a line of text, "This is a line of text, not a picture.", named like a PNG)
 - Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose not-a-logo.png | the line above the controls reads "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file." with a red error icon |
+| 1 | Tap **Add logo** and choose not-a-logo.png | The line above the controls reads "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file." with a red error icon |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1926,12 +2204,13 @@ On Overlay, when an SVG logo has no width, height or viewBox, the row above the 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Photo: 01_chrome_flat_black.JPEG from samples/; unsized.svg, an SVG with no width, height or viewBox
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/; unsized.svg from tests/fixtures/ (an SVG with no width, height or viewBox: `<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#000"/></svg>`)
 - Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose unsized.svg | the line above the controls reads "That SVG has no width, height or viewBox, so it can’t be sized. Re-export it with a size." with a red error icon |
+| 1 | Tap **Add logo** and choose unsized.svg | The line above the controls reads "That SVG has no width, height or viewBox, so it can’t be sized. Re-export it with a size." with a red error icon |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1953,6 +2232,7 @@ With **Preview** on, the row above Perspective's controls reads "Preview" (in ca
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
@@ -1980,6 +2260,7 @@ With **Flip** chosen on Rotate, the row above the controls reads "Flip" (in capi
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
@@ -2007,12 +2288,13 @@ While a pair is open, Crop's size line ends with "Pair: 5:7 only" at its right.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Go to Crop | the size line ends with "Pair: 5:7 only" at its right |
+| 1 | Tap **Crop** in the step tabs (the six tabs along the bottom) | The size line ends with "Pair: 5:7 only" at its right |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2034,6 +2316,7 @@ On Levels, between **Discard** and **Apply**, the instruction reads "Pick white,
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
@@ -2061,6 +2344,7 @@ On Levels, while **Pick white** is armed, the instruction reads "Tap something w
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
@@ -2088,6 +2372,7 @@ On Levels, while **Pick black** is armed, the instruction reads "Tap something b
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
@@ -2115,6 +2400,7 @@ On Levels, when the photo shows levels (unapplied or applied) and no pick is arm
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
@@ -2145,6 +2431,7 @@ Flag: to confirm. Written to what the app does today: the hint always says 5 MB,
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Overlay step
 
@@ -2172,13 +2459,14 @@ Under Export's size line, with an amber warning mark, while Levels has changes n
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto**, and do not tap Apply | the white dot shows on the Levels tab |
-| 2 | Go to Export | under the size line, led by the amber warning mark: "Levels has unapplied changes; export uses the applied levels." |
+| 1 | Tap **Auto** | A white dot shows on the **Levels** tab: the levels are not applied yet |
+| 2 | Tap **Export** in the step tabs (the six tabs along the bottom) | Under the size line, led by the amber warning mark: "Levels has unapplied changes; export uses the applied levels." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2194,37 +2482,42 @@ Under Export's size line, with an amber warning mark, when the output (or a pair
 - Changed: none
 - Anchors: "Clamped to fit the ", " MP canvas limit.", `#exportMessage`, `CONFIG.maxOutputArea`
 - Source: `js/app/export-controls.js` (`exportNotes`, `syncExportReadouts`); `js/app/pair.js` (`pairReadout`, `togetherLayout`)
-- Ruling: R14. For a pair saved Separately the note shows when either side is clamped, and names the side when it is not the one on screen. New wording, to be approved by Rich. R15. The note shows 16.7 MP, rounded down. The app differs today.
+- Ruling: R14 and R15. The note reads "Scaled down to fit the 16.7 MP limit." (16.7 MP, rounded down). For a pair saved Separately it shows when either side is scaled down, and names the side when it is not the one on screen: "The front is scaled down to fit the 16.7 MP limit." (or "The back…"), or "Both sides are scaled down to fit the 16.7 MP limit." (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Flag: to confirm. The note informs but gives no next step.
 - Cases: 2
 
 ### MSG-72.1 The canvas-limit note says 16.7 MP   [auto: phone]
-Written to ruling R15; it fails until that is built (BUG-011).
+Written to rulings R14 and R15, in the wording Rich approved; it fails until that is built (BUG-011).
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open from a link ending ?export.longEdge=12000&export.allowUpscale=1, on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the note under the size line | under the size line, led by the amber warning mark: "Clamped to fit the 16.7 MP canvas limit." |
+| 1 | Read the note under the size line | Under the size line, led by the amber warning mark: "Scaled down to fit the 16.7 MP limit." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-72.2 With Separately, the note also covers the side not on screen   [auto: phone]
-Written to ruling R14; it fails until that is built (BUG-012). The note's words wait for Rich's approval, so the case checks that a note shows and names the front.
+Written to ruling R14, in the wording Rich approved; it fails until that is built (BUG-012).
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG (front) and 14_back_portrait_raw_white.JPEG (back) from samples/
-- Starting screen: the pair made from a link ending ?maxOutputArea=1000000; the back open, on Export
+- Starting screen: the app opened from a link ending ?maxOutputArea=1000000 (a 1 MP limit); the pair made: IMG_9136.JPEG opened, then on Export **Add back** and 14_back_portrait_raw_white.JPEG chosen; the back open, on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Original**, then **Separately** | the size line gives both sides' sizes |
-| 2 | Read the note under the size line | with the back on screen, a note under the size line says the front was scaled down to fit the canvas limit, naming the front |
+| 1 | Tap **Original** | **Original** is selected (a white fill) |
+| 2 | Tap **Separately** | **Separately** is selected (a white fill) |
+| 3 | Read the note under the size line | With the back on screen, one amber note reads "The front is scaled down to fit the N MP limit.", the approved words, with N the limit the app gives (the approved words say 16.7; this case's link lowers the limit to 1 MP, and which number the note then gives is for Rich) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2247,12 +2540,15 @@ Under Export's size line, with an amber warning mark, when Format is **JPEG** an
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step, JPEG chosen
+- Starting screen: the photo open, on the Export step, with **JPEG** selected
+
+Make the fill transparent: tap the options tab (the small tab with an up arrow on the top edge of the controls); in EXPORT OPTIONS choose Transparent in **Fill outside photo**; close the options with their cross (×).
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | In **Export options**, set **Fill outside photo** to Transparent and close the options | under the size line, led by the amber warning mark: "JPEG has no transparency; empty areas will be white." |
+| 1 | Make the fill transparent | Under the size line, led by the amber warning mark: "JPEG has no transparency; empty areas will be white." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2268,28 +2564,31 @@ In the Corner shots sheet, when the engine can't make corner shots for any reaso
 - Changed: none
 - Anchors: "the card is too small", `#cornerReadout`
 - Source: `js/app/corner-shots.js` (`readout`, `syncCornerShots`, `currentShots`)
-- Ruling: R20. The size line gives the real reason, and both save buttons are dimmed. The app differs today.
+- Ruling: R20. Both save buttons are dimmed, and the size line ends "· the card is too small" when that is the reason, "· fix the corners in Perspective first" for any other (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 1
 
 ### MSG-74.1 Corner shots that can't be made give the real reason   [auto: phone]
-Written to ruling R20; it fails until that is built (BUG-120). The line's words for the reason wait for Rich's approval.
+Written to ruling R20, in the wording Rich approved; it fails until that is built (BUG-120).
+Script only
+Stand-in: no photo or control makes the engine refuse a card with valid corners, so the script makes it refuse; and no case uses a desktop browser's own share sheet, so the page gets a stand-in share sheet, which shows **Share corners**.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Export step; the engine refusing corner shots with "Transform is not invertible."
-- Stand-in: no photo or control makes the engine refuse a card with valid corners, so the script makes it refuse.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Corner shots** | the size line gives the real reason, not "the card is too small"; Download corners is greyed out |
+| 1 | Tap **Corner shots** | The corner size line reads "Sheet · fix the corners in Perspective first"; **Share corners** and **Download corners** are greyed out (shown dim and not answering a tap) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-75 The Upscale question for a single photo
 
-When **Download**, **Share** or **Copy** would save a crop whose long edge is under the chosen Size, a card over the photo asks "Upscale to {Size} px?" with "The crop is {width} × {height} px at the photo’s resolution.", **Yes** (red), **No** and **Cancel**.
+When **Download**, **Share** or **Copy** would save a crop whose long edge is under the chosen Size, the question box (the box over the dimmed photo with a question and buttons) asks "Upscale to {Size} px?" with "The crop is {width} × {height} px at the photo’s resolution.", **Yes** (red), **No** and **Cancel**.
 
 - Risk: medium
 - Check: script
@@ -2304,19 +2603,20 @@ When **Download**, **Share** or **Copy** would save a crop whose long edge is un
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step, 2000 chosen
+- Starting screen: the photo open, on the Export step, with **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** | a card over the photo asks "Upscale to 2000 px?" and reads "The crop is W × H px at the photo’s resolution.", with Yes in red, No and Cancel |
+| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" and reads "The crop is 1074 × 1074 px at the photo’s resolution.", with **Yes** in red, **No** and **Cancel** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-76 The Upscale question for a pair's Together image
 
-For a pair with **Together** chosen, or a pair's **Copy**, when the joined image's long edge is under the chosen Size, the card's text reads "The image is {width} × {height} px at the photos’ resolution."
+For a pair with **Together** chosen, or a pair's **Copy**, when the joined image's long edge is under the chosen Size, the question box's text reads "The image is {width} × {height} px at the photos’ resolution."
 
 - Risk: low
 - Check: script
@@ -2331,19 +2631,20 @@ For a pair with **Together** chosen, or a pair's **Copy**, when the joined image
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, **Together** chosen, 2000 chosen
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, with **Together** and **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** | the card reads "The image is W × H px at the photos’ resolution." |
+| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" and reads "The image is 1583 × 1100 px at the photos’ resolution." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-77 The Upscale question for a pair saved Separately
 
-For a pair with **Separately** chosen, when either side's file would be under the chosen Size, the card's text reads "The front is {width} × {height} px and the back {width} × {height} px at the photos’ resolution."
+For a pair with **Separately** chosen, when either side's file would be under the chosen Size, the question box's text reads "The front is {width} × {height} px and the back {width} × {height} px at the photos’ resolution."
 
 - Risk: low
 - Check: script
@@ -2358,20 +2659,21 @@ For a pair with **Separately** chosen, when either side's file would be under th
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, **Together** chosen, 2000 chosen
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, with **Together** and **2000** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Separately** | Separately is selected |
-| 2 | Tap **Download** | the card reads "The front is W × H px and the back W × H px at the photos’ resolution." |
+| 1 | Tap **Separately** | **Separately** is selected (a white fill) |
+| 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" and reads "The front is 748 × 1047 px and the back 785 × 1100 px at the photos’ resolution." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-78 The Upscale question for corner shots
 
-When a corner file would be under 2000 px, **Share corners** and **Download corners** ask "Upscale to 2000 px?" with "The sheet is {size} px at the photo’s resolution." or "Each corner is {size} px at the photo’s resolution." The card lies above the open Corner shots sheet.
+When a corner file would be under 2000 px, **Share corners** and **Download corners** ask "Upscale to 2000 px?" with "The sheet is {size} px at the photo’s resolution." or "Each corner is {size} px at the photo’s resolution." The question box lies above the open Corner shots sheet.
 
 - Risk: low
 - Check: script
@@ -2386,20 +2688,24 @@ When a corner file would be under 2000 px, **Share corners** and **Download corn
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Corner shots**, then **Download corners** | with 1 sheet, a card above the open sheet asks "Upscale to 2000 px?" and reads "The sheet is N px at the photo’s resolution." |
-| 2 | Tap **Cancel**, then **4 photos**, then **Download corners** | with 4 photos, it reads "Each corner is N px at the photo’s resolution." |
+| 1 | Tap **Corner shots** | The Corner shots sheet rises, with **1 sheet** selected |
+| 2 | Tap **Download corners** | The question box (the box over the dimmed photo with a question and buttons), above the open sheet, asks "Upscale to 2000 px?" and reads "The sheet is 314 px at the photo’s resolution." |
+| 3 | Tap **Cancel** | The question box goes; the sheet stays open |
+| 4 | Tap **4 photos** | **4 photos** is selected (a white fill) |
+| 5 | Tap **Download corners** | The question box asks "Upscale to 2000 px?" and reads "Each corner is 156 px at the photo’s resolution." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-79 The Unpair card
+## MSG-79 The Unpair question box
 
-**Unpair** in the top bar asks, on a card over the photo, "Unpair" with "Keep one side as a single photo.", **Keep front** and **Keep back** (neither is red) and **Cancel**.
+**Unpair** in the top bar asks, in the question box, "Unpair" with "Keep one side as a single photo.", **Keep front** and **Keep back** (neither is red) and **Cancel**.
 
 - Risk: medium
 - Check: script
@@ -2410,23 +2716,24 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Source: `js/app/pair.js` (`askUnpair`, `showPrompt`)
 - Cases: 1
 
-### MSG-79.1 The Unpair card   [auto: phone]
+### MSG-79.1 The Unpair question box   [auto: phone]
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Unpair** | a card over the photo asks "Unpair" and reads "Keep one side as a single photo.", with Keep front, Keep back (neither red) and Cancel |
+| 1 | Tap **Unpair** (beside **Front** / **Back** in the top bar) | The question box (the box over the dimmed photo with a question and buttons) asks "Unpair" and reads "Keep one side as a single photo.", with **Keep front**, **Keep back** (neither red) and **Cancel** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-80 The New photo card
+## MSG-80 The New photo question box
 
-Open, drop or paste while a pair is open asks, on a card over the photo, "New photo" with "End the pair, or replace the side you’re on?", **New photo**, **Replace front** or **Replace back** (the side on screen) and **Cancel**. **Next card** and **Add back** don't ask.
+Open, drop or paste while a pair is open asks, in the question box, "New photo" with "End the pair, or replace the side you’re on?", **New photo**, **Replace front** or **Replace back** (the side on screen) and **Cancel**. **Next card** and **Add back** don't ask.
 
 - Risk: medium
 - Check: script
@@ -2435,20 +2742,22 @@ Open, drop or paste while a pair is open asks, on a card over the photo, "New ph
 - Changed: none
 - Anchors: "End the pair, or replace the side you’re on?", "Replace ", `#pairPrompt`, `#btnPromptSecond`
 - Source: `js/app/pair.js` (`receivePhoto`, `showPrompt`)
-- Flag: to confirm. The card's title and its first button both read "New photo".
+- Flag: to confirm. The question box's title and its first button both read "New photo".
 - Cases: 1
 
-### MSG-80.1 The New photo card   [auto: phone]
-Flag: to confirm. Written to what the app does today: the card's title and its first button both read "New photo".
+### MSG-80.1 The New photo question box   [auto: phone]
+Flag: to confirm. Written to what the app does today: the question box's title and its first button both read "New photo".
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/; then IMG_9136.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo** and choose IMG_9136.JPEG | a card over the photo asks "New photo" and reads "End the pair, or replace the side you’re on?", with New photo, Replace back and Cancel |
+| 1 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9136.JPEG | The question box (the box over the dimmed photo with a question and buttons) asks "New photo" and reads "End the pair, or replace the side you’re on?", with **New photo**, **Replace back** and **Cancel** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2469,16 +2778,18 @@ When the corners are invalid, "Fix the corners in Perspective first." is drawn i
 
 ### MSG-81.1 "Fix the corners in Perspective first." on the photo, for a person to judge   [eye]
 Flag: to confirm. Written to what the app does today: the text also shows on Perspective while **Preview** is on.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag the top-left corner handle past the bottom-right one | the corner lines cross |
-| 2 | Go to Rotate | in place of the photo, grey text centered in the photo area reads "Fix the corners in Perspective first."; no picture is drawn |
+| 1 | Drag the top-left corner handle past the bottom-right one | The corner lines cross |
+| 2 | Tap **Rotate** in the step tabs (the six tabs along the bottom) | In place of the photo, grey text centered in the photo area reads "Fix the corners in Perspective first."; no picture is drawn |
 
 Pass: every row's result is seen.
 On a fail, record: what differs from the description, the screenshot.
@@ -2494,36 +2805,42 @@ On Export for a pair with **Together** chosen, when either side's corners are in
 - Changed: none
 - Anchors: "Fix the corners of both sides in Perspective first."
 - Source: `js/app/view.js` (`drawTogether`, `drawMessage`)
-- Ruling: R26. With the waiting side's corners invalid, the row under Export's size names the side to fix (proposed: "Fix the back’s corners in Perspective first.") and **Share**, **Download** and **Copy** are dimmed. New wording, to be approved by Rich. The app differs today.
+- Ruling: R26. With the waiting side's corners invalid, Export's size line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…") and **Share**, **Download** and **Copy** are dimmed (wording approved by Rich, tests/catalog/wording.md). The app differs today.
 - Cases: 2
 
 ### MSG-82.1 "Fix the corners of both sides in Perspective first." on the joined image, for a person to judge   [eye]
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag the back's top-left corner handle past its bottom-right one | the corner lines cross |
-| 2 | Go to Export | with Together chosen, grey text centered in the photo area reads "Fix the corners of both sides in Perspective first."; no joined image is drawn |
+| 1 | Drag the back's top-left corner handle past its bottom-right one | The corner lines cross |
+| 2 | Tap **Export** in the step tabs (the six tabs along the bottom) | With **Together** selected, grey text centered in the photo area reads "Fix the corners of both sides in Perspective first."; no joined image is drawn |
 
 Pass: every row's result is seen.
 On a fail, record: what differs from the description, the screenshot.
 
 ### MSG-82.2 With the waiting side's corners crossed, Export names the side to fix   [auto: phone]
-Written to ruling R26; it fails until that is built (BUG-034). The row's words wait for Rich's approval, so the case checks that it names the back.
+Written to ruling R26, in the wording Rich approved; it fails until that is built (BUG-034).
+Script only
+Stand-in: no case uses a desktop browser's own share sheet, so the page gets a stand-in share sheet, which shows **Share**.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag the back's top-left corner handle past its bottom-right one | the corner lines cross |
-| 2 | Tap **Front** in the top bar, then go to Export | the row under the size line names the back as the side to fix in Perspective; Share, Download and Copy are greyed out |
+| 1 | Drag the back's top-left corner handle past its bottom-right one | The corner lines cross |
+| 2 | Tap **Front** in the top bar | The front opens on the Perspective step |
+| 3 | Tap **Export** in the step tabs (the six tabs along the bottom) | The size line reads "Fix the back’s corners in Perspective first."; **Share**, **Download** and **Copy** are greyed out (shown dim and not answering a tap) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2545,13 +2862,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Perspective options** (the tab with the up arrow above the controls) | the options rise from the bottom |
-| 2 | Tap **Tips** | four paragraphs open in place, in this order: dragging and double-tapping handles, the arrows, Flatten, and Tap to find card |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | PERSPECTIVE OPTIONS rise from the bottom |
+| 2 | Tap **Tips** | Four paragraphs open in place, in this order: "Drag a corner or the middle of an edge. Double tap a handle to zoom in on it; double tap again to zoom out.", "The arrows nudge the selected handle. Hold one to repeat.", "Flatten: 0% squares the card up but keeps the camera’s depth. 100% is a flat 5:7 rectangle, like a scan." and "Corners on the wrong card? Tap to find card, then tap the card." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2573,13 +2891,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Rotate options** (the tab with the up arrow above the controls) | the options rise from the bottom |
-| 2 | Tap **Tips** | four paragraphs open in place: the ruler and the typed angle, Fill frame, Flip and the grid |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | ROTATE OPTIONS rise from the bottom |
+| 2 | Tap **Tips** | Four paragraphs open in place, in this order: "Drag the ruler to straighten, or tap the angle to type it.", "Fill frame zooms in so a tilted photo leaves no empty corners.", "Flip mirrors the photo as you see it on screen." and "The grid is a guide; it is never exported." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2601,13 +2920,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Crop step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Crop options** (the tab with the up arrow above the controls) | the options rise from the bottom |
-| 2 | Tap **Tips** | one paragraph opens in place: "Drag inside the box to move it, and its handles to resize." |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | CROP OPTIONS rise from the bottom |
+| 2 | Tap **Tips** | One paragraph opens in place: "Drag inside the box to move it, and its handles to resize." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2630,12 +2950,13 @@ Levels' sheet, titled "Levels tips", is its tips: three paragraphs on picking wh
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open the Levels sheet (the tab with the up arrow above the controls) | a sheet titled "Levels tips" holds three paragraphs: picking white and black, Auto, and holding the photo to compare |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | A sheet titled LEVELS TIPS rises, holding three paragraphs, in this order: "White: tap a grading label or the card’s white border; avoid foil and reflections. Black is optional.", "Auto estimates both from the framed image; colored backdrops can fool it, so check the result." and "Hold the photo to compare with no levels. Clear, then Apply, removes levels." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2657,13 +2978,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Overlay options** (the tab with the up arrow above the controls) | the options rise from the bottom |
-| 2 | Tap **Tips** | four paragraphs open in place: the rings and gestures, the photo framed as set in Crop, the logo kept in the browser, and Delete saved |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | OVERLAY OPTIONS rise from the bottom |
+| 2 | Tap **Tips** | Four paragraphs open in place, in this order: "Tap a ring to snap the logo to that corner, side or the center. Drag to move it; drag a corner or pinch to resize.", "On this step the photo stays framed as set in Crop.", "Your last logo is kept in this browser for the next photo." and "Delete saved leaves the logo on this photo." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2684,16 +3006,18 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-88.1 Export's tips   [auto: phone]
 Flag: to confirm. Written to what the app does today: Next card is also held back while **Share now** waits, and the fourth tip nearly repeats the Edits hint.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** (the tab with the up arrow above the controls) | the options rise from the bottom |
-| 2 | Tap **Tips** | four paragraphs open in place: Save Image, Original, Next card and the edits file |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | EXPORT OPTIONS rise from the bottom |
+| 2 | Tap **Tips** | Four paragraphs open in place, in this order: "Share’s Save Image puts the photo in Photos.", "Original keeps the crop at the photo’s own resolution and never upscales.", "Next card shows once these edits are exported." and "An edits file is small. Re-open the same photo, load it, and the export is identical." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2716,12 +3040,13 @@ The Corner shots sheet says "Close-ups of the card’s four corners, at the phot
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Corner shots** | the sheet reads "Close-ups of the card’s four corners, at the photo’s own resolution, with this photo’s levels and no overlay." |
+| 1 | Tap **Corner shots** | The Corner shots sheet rises and reads "Close-ups of the card’s four corners, at the photo’s own resolution, with this photo’s levels and no overlay." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2730,27 +3055,30 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** | under Save edits and Load edits: "A small JSON file. Re-open the same photo, load it, and the export is identical." |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | EXPORT OPTIONS rise from the bottom; under **Save edits** and **Load edits**: "A small JSON file. Re-open the same photo, load it, and the export is identical." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-89.3 With a pair open, the edits hint says which side it saves   [auto: phone]
 Flag: to confirm. Written to what the app does today: the Edits hint nearly repeats Export's fourth tip.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open **Export options** | the hint reads "Saves the side you’re on. A small JSON file. Re-open the same photo, load it, and the export is identical.", its first sentence in bold |
+| 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | EXPORT OPTIONS rise from the bottom; under **Save edits** and **Load edits** the hint reads "Saves the side you’re on. A small JSON file. Re-open the same photo, load it, and the export is identical.", its first sentence in bold |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2771,17 +3099,19 @@ Under the heading "Tips and keys", each step except Export adds one paragraph of
 
 ### MSG-90.1 Keyboard help on a wide screen   [auto: desktop]
 Flag: to confirm. Written to what the app does today: Perspective's help says "Tab selects the next handle" without saying the photo needs the focus, and "arrows" means two things.
+
 Before you start:
 - Device and browser: a wide window (1280 × 800), a mouse and keyboard
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the panel's tips | on Rotate, under "Tips and keys": "F fits; 1 to 6 change step." |
-| 2 | Go to Crop | on Crop, under "Tips and keys": "Shift keeps the aspect in Free." |
-| 3 | Go to Export | on Export there is no keyboard help |
+| 1 | Read the panel at the right, under "Tips and keys" | On Rotate, the keyboard help reads "F fits; 1 to 6 change step." |
+| 2 | Click **Crop** in the top bar | On Crop, under "Tips and keys": "Shift keeps the aspect in Free." |
+| 3 | Click **Export** in the top bar | On Export there is no keyboard help |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2804,13 +3134,16 @@ Every control without visible text has a name a screen reader announces: **Open 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Rotate step; a screen reader on
+- Starting screen: the photo open, on the Rotate step, zoomed in by spreading two fingers apart on the photo, so that a third button shows at the right of the top bar, beside the two arrows; then a screen reader turned on (with VoiceOver, swipe right to move to the next control and double-tap to press it)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Move through the top bar's icon buttons | the top bar's icon buttons are named Open photo, Fit to screen, Undo and Redo |
-| 2 | Move to the tab with the up arrow above the controls, open it, and move to the sheet's close button | the tab with the up arrow above the controls is named Options, and the options sheet's close button Close |
+| 1 | Move through the top bar's buttons | They are named "Open photo", "Fit to screen", "Undo" and "Redo" |
+| 2 | Move to the options tab (the small tab with an up arrow on the top edge of the controls) | It is named "Options" |
+| 3 | Press the options tab | ROTATE OPTIONS rise from the bottom |
+| 4 | Move to the cross (×) at the sheet's top right | It is named "Close" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2820,6 +3153,7 @@ Flag: to confirm. Written to what the app does today: Redo's tooltip names only 
 Before you start:
 - Device and browser: a wide window (1280 × 800), a mouse and keyboard
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
@@ -2831,18 +3165,21 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### MSG-91.3 The nudge keys, Close tuning and the corner thumbnails have names   [auto: phone]
+### MSG-91.3 The nudge keys, Close tuning and the corner thumbnails have names   [auto: desktop]
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open from a link ending ?debug, the Detection tuning panel showing, on the Perspective step; a screen reader on
+- Starting screen: the app opened from a link ending ?debug, then the photo opened with **Open photo** on the start screen: the photo open on the Perspective step, the Detection tuning panel showing; a screen reader on
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Move through the four arrow keys under **Nudge** | the four arrow keys under Nudge are named Nudge left, Nudge up, Nudge down and Nudge right |
-| 2 | Move to the tuning panel's close button (×) | the tuning panel's close button is named Close tuning |
-| 3 | Go to Export, tap **Corner shots** and move through the four thumbnails | the four thumbnails are named Top-left corner, Top-right corner, Bottom-left corner and Bottom-right corner |
+| 1 | Move through the four arrow keys under **Nudge** | They are named "Nudge left", "Nudge up", "Nudge down" and "Nudge right" |
+| 2 | Move to the tuning panel's close button (×) | It is named "Close tuning" |
+| 3 | Click **Export** in the top bar | The Export step's controls show |
+| 4 | Click **Corner shots** | The four corner thumbnails show |
+| 5 | Move through the four thumbnails | They are named "Top-left corner", "Top-right corner", "Bottom-left corner" and "Bottom-right corner" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2851,6 +3188,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; a screen reader on
 
@@ -2878,13 +3216,14 @@ The console shows the version at start, each photo's load time and each side swi
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the start screen, the developer tools' console open
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the console | the console reads "[card-finisher] vX.Y.Z" at start, with the build's version |
-| 2 | Open the photo | then "[card-finisher] 01_chrome_flat_black.JPEG: W×H loaded + previewed in N ms" |
+| 1 | Read the console | It reads "[card-finisher] vX.Y.Z", with the build's version |
+| 2 | Tap **Open photo** on the start screen and choose 01_chrome_flat_black.JPEG | Then "[card-finisher] 01_chrome_flat_black.JPEG: 1536×2048 loaded + previewed in N ms", N the milliseconds it took |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2893,6 +3232,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: none
 - Starting screen: the app opened from a link ending ?nonsense=1, the developer tools' console open
 
@@ -2904,31 +3244,37 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-92.3 The console warns when the photo couldn't be saved   [auto: phone]
+Script only
+Stand-in: a person can't make the browser refuse to store one thing on purpose, so the script makes the device refuse to store the photo, as a full disk would.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the start screen, the developer tools' console open; the device refusing to store the photo
-- Stand-in: the script makes the device refuse to store the photo, as a full disk would.
+- Starting screen: the start screen, the developer tools' console open
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open the photo | the console warns "[card-finisher] session photo not saved:" |
+| 1 | Tap **Open photo** on the start screen and choose 01_chrome_flat_black.JPEG | The photo opens; the console warns "[card-finisher] session photo not saved:" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-92.4 The console warns when the background worker falls back   [auto: phone]
+Script only
+Stand-in: every browser the app supports can start a background worker, so the script takes the browser's background workers away before the app loads.
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the start screen, the developer tools' console open; a browser that can't start background workers
-- Stand-in: the script takes away the browser's background workers.
+- Starting screen: the start screen, the developer tools' console open
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open the photo | the console warns "[card-finisher] Web Worker unavailable, running on main thread:"; the photo still opens with its card found |
+| 1 | Tap **Open photo** on the start screen and choose 01_chrome_flat_black.JPEG | The console warns "[card-finisher] Web Worker unavailable, running on main thread:"; the photo still opens with its corner handles on the card |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
