@@ -2,6 +2,8 @@
 
 How the app treats what comes from outside it (links, files, storage), the page's security policy, and what the public code may not contain.
 
+The edits files and logos these cases load are in `tests/fixtures/`. Each edits file was saved from the app and changed in a text editor; the case quotes the change.
+
 ## SEC-01 The page's security policy
 
 The page carries a strict content security policy, before any style or script: nothing is allowed by default; scripts and styles come only from the app's own files; the image engine's worker comes from the page itself; images only from the app's files and the page's own photos; no base address and no form posting; and the page sends no referrer.
@@ -19,6 +21,7 @@ The page carries a strict content security policy, before any style or script: n
 Before you start:
 - Device: a computer with Node installed
 - Build: the build under test, as files in the repository folder
+- Browser data: not used; the case runs in a terminal, not a browser
 - Starting screen: a terminal open in the repository folder
 
 | # | Do this | You should see |
@@ -31,16 +34,18 @@ On a fail, record: the row number and the whole line the self-test printed for t
 
 ### SEC-01.2 The browser applies the policy: a script or a picture from elsewhere is refused   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
+- Device and browser: Chrome or Edge on a computer, in a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Starting screen: the start screen
 
-A person can't add a script to the page by hand without the developer tools; the automated test writes both into the page.
+Each row types one line into the Console and presses Enter. The lines add a script and a picture to the page, as an attacker's text would try to; the page's security policy must refuse both.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | In the Console, add a script element to the page whose text sets a mark on the page | The mark is not set: the script did not run |
-| 2 | Add a picture to the page whose address is on another site (https://example.com/picture.png) | The browser reports both as refused by the page's security policy: the script under its script rule, the picture under its image rule |
+| 1 | Type `const s = document.createElement('script'); s.textContent = 'window.testInlineRan = true'; document.body.append(s)` | A red error in the Console names the policy rule "script-src 'self'": the script was blocked |
+| 2 | Type `window.testInlineRan` | The Console answers undefined: the script did not run |
+| 3 | Type `const p = document.createElement('img'); p.src = 'https://example.com/picture.png'; document.body.append(p)` | A red error in the Console names the policy rule "img-src 'self' blob: data:": the picture was blocked |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what the Console printed, a screenshot.
@@ -62,16 +67,20 @@ Once the page's own files have loaded, opening, editing and exporting a photo ma
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Network tab
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen, with the page fully loaded; then clear the Network tab's list
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the start screen | It reads "Open, drop, or paste a photo." and "Everything stays on this device." |
-| 2 | Tap **Open photo** and choose the photo | The photo opens on Perspective with its corners found |
-| 3 | Tap **Rotate** in the step bar, then **90° right** | The photo turns a quarter right |
-| 4 | Tap **Export**, then **Download**, and answer **No** to "Upscale to 2000 px?" | IMG_9136-straight.jpg is saved |
-| 5 | Look at the Network tab | No request to any address over the network was made since step 1 |
+| 2 | Tap **Open photo** and choose the photo | The photo opens on the Perspective step, with the corner outline on the card's edges |
+| 3 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Rotate step shows, with **90° right** |
+| 4 | Tap **90° right** | The photo turns a quarter right |
+| 5 | Tap **Export** in the step tabs | The Export step shows, with **Download** |
+| 6 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 7 | Tap **No** | IMG_9136-straight.jpg is saved |
+| 8 | Look at the Network tab | No request went over the network since the list was cleared: every address listed, if any, starts with blob: or data:, which stay on the device |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, the address of any request in the Network tab, a screenshot.
@@ -93,22 +102,26 @@ A link can set only settings that already exist and are numbers or on/off. Text,
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
 - Build: the build under test, opened with the link index.html?crop.defaultPreset=4:3&export.format=png&storageKey=elsewhere&__proto__.polluted=1&crop.presets.0.label=Hacked
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the start screen; then open the photo
+- Starting screen: the photo opened with **Open photo**, on the Perspective step
+
+The page leaves the app's table of settings open to the Console under the name CONFIG; row 5 reads one setting from it.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the Console | A warning reads "[card-finisher] URL settings ignored (unknown, not a number / on-off setting, or outside its safe range): crop.defaultPreset, export.format, storageKey, __proto__.polluted, crop.presets.0.label" |
-| 2 | Tap **Crop** in the step bar | **1:1** is the selected preset, and the first preset still reads **Free** |
-| 3 | Tap **Export** in the step bar | **JPEG** is the selected Format |
-| 4 | In the Console, read a new empty object's `polluted` and the app's storage key (CONFIG.storageKey) | The first is undefined; the second is p1hunt.straightener.v1: nothing outside the settings changed |
+| 2 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom) | **1:1** is the selected preset, and the first preset still reads **Free** |
+| 3 | Tap **Export** in the step tabs | **JPEG** is the selected Format |
+| 4 | In the Console, type `({}).polluted` and press Enter | The Console answers undefined: nothing was added to every object |
+| 5 | In the Console, type `CONFIG.storageKey` and press Enter | The Console answers 'p1hunt.straightener.v1', the key as shipped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## SEC-04 Size and memory limits can only be lowered from a link
 
-The 44 settings that size images, memory or loops each have a safe range. A link can lower a cap but never raise it, and a value outside the range is rejected.
+The settings that size images, memory or loops each have a safe range. A link can lower a cap but never raise it, and a value outside the range is rejected.
 
 - Risk: high
 - Check: script
@@ -123,14 +136,17 @@ The 44 settings that size images, memory or loops each have a safe range. A link
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
 - Build: the build under test, opened with the link index.html?export.longEdge=20000&maxOutputArea=50000000&overlay.maxBytes=10000000&export.editsMaxBytes=100 (the first three above their caps, the last below its range)
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the start screen; then open the photo
+- Starting screen: the photo opened with **Open photo**, on the Perspective step
+
+The page leaves the app's table of settings open to the Console under the name CONFIG; row 3 reads three settings from it.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the Console | A warning reads "[card-finisher] URL settings ignored (unknown, not a number / on-off setting, or outside its safe range): export.longEdge, maxOutputArea, overlay.maxBytes, export.editsMaxBytes" |
-| 2 | Tap **Export** in the step bar | **2000** is the selected Size, the shipped default |
-| 3 | In the Console, read CONFIG.maxOutputArea, CONFIG.overlay.maxBytes and CONFIG.export.editsMaxBytes | 16777216, 5242880 and 8388608: the caps as shipped |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | **2000** is the selected Size, the shipped default |
+| 3 | In the Console, type `[CONFIG.maxOutputArea, CONFIG.overlay.maxBytes, CONFIG.export.editsMaxBytes]` and press Enter | The Console answers [16777216, 5242880, 8388608]: the caps as shipped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -139,12 +155,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test, opened with the link index.html?maxOutputArea=1000000 (a 1 MP cap, under the 16.7 MP shipped)
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/ (its 1:1 crop is 1400 × 1400 px)
 - Starting screen: the photo open, on the Export step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Original** under Size | The size line reads 1000 × 1000 px: the crop is held to 1 MP |
+| 1 | Tap **Original** under Size | The size line (the line that gives the saved picture's size in px and its format) starts "Output 1000 × 1000 px": the crop is held to 1 MP |
 
 Pass: every row's result is seen.
 On a fail, record: what the size line reads, a screenshot.
@@ -160,23 +177,30 @@ When **Load edits** reads a file, every field is checked; a malformed field is r
 - Changed: none
 - Anchors: `#btnLoadEdits`, `"Some settings in these edits weren’t valid and were reset: "`
 - Source: `js/app/export.js` (`loadEdits`), `js/app/state.js` (`cleanState`), `js/engine.js` (`sanitizeState`)
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's case has one problem and is written to today's wording.
 - Cases: 1
 
 ### SEC-05.1 A malformed field is reset and named, the rest is applied   [auto: phone]
+Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, and a text editor
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Rotate step
+- Edits file: IMG_9136-levels-as-words-edits.json from tests/fixtures/: this photo's edits after **90° right** (IMG_9136-turned-edits.json), changed in a text editor so that `"levels": null` reads `"levels": "bright please"`, a value the app can't use for its levels
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo).
+- Close Export options: tap the **×** at their top right.
+- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **90° right** | The photo turns a quarter right |
-| 2 | Tap **Export**, open **Export options** (the tab with an up arrow on the top edge of the controls), then tap **Save edits** | IMG_9136-edits.json is saved |
-| 3 | In the text editor, change the file's `"levels": null` to `"levels": "bright please"` and save it | The file now holds a value the app can't use for its levels |
-| 4 | Close the options, tap **Rotate** and tap **90° left** | The photo is upright again |
-| 5 | Tap **Export**, open **Export options**, tap **Load edits** and choose the changed file | An amber warning reads "Some settings in these edits weren’t valid and were reset: levels." |
-| 6 | Look at the photo, and tap **Levels** in the step bar | The photo is turned a quarter right again (the file's other edits were applied), and no levels are set |
+| 1 | Load the edits file IMG_9136-levels-as-words-edits.json | An amber message reads "Some settings in these edits weren’t valid and were reset: levels." |
+| 2 | Look at the photo | It is turned a quarter right: the file's other edits were applied |
+| 3 | Tap **Levels** in the step tabs (the six tabs Perspective to Export, along the bottom) | **Clear** and **Apply** are greyed out (shown dim and not answering a tap), and there is no dot on the **Levels** tab: no levels are set |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -196,17 +220,26 @@ An edits file over 8 MB, one that isn't valid JSON, or one that isn't a Card Fin
 
 ### SEC-06.1 A file too large, not JSON or not an edits file is refused, and nothing changes   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, and a text editor
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open and turned a quarter right (**Rotate**, **90° right**), on the Export step with **Export options** open
-- Three files, each named IMG_9136-edits.json: one of 8,388,609 spaces (1 byte over 8 MB); one that reads `{"version": 2, "corners": [`; one that reads `{"version": 9, "source": {"width": 1, "height": 1}, "corners": []}`
+- Files:
+  - IMG_9136-large-edits.json, made from IMG_9136-turned-edits.json in tests/fixtures/ (this photo's edits after **90° right**): in a text editor, add spaces after its last closing brace until the file is larger than 8 MB (8,388,608 bytes). It is too large to keep with the fixtures; the script makes its own copy the same way
+  - notes.json from tests/fixtures/: one line of plain text, "These are notes, not edits."
+  - IMG_9136-version-3-edits.json from tests/fixtures/: IMG_9136-turned-edits.json with `"version": 2` changed to `"version": 3`, a version the app doesn't know
+- Starting screen: the photo open and turned a quarter right (on Rotate, **90° right**), on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo).
+- Close Export options: tap the **×** at their top right.
+- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Load edits** and choose the 8 MB file | A red message reads "That file is too large to be a Card Finisher edits file."; the photo is still turned a quarter right |
-| 2 | Tap **Load edits** and choose the file that ends `[` | A red message reads "That file isn’t valid JSON."; the photo is unchanged |
-| 3 | Tap **Load edits** and choose the version 9 file | A red message reads "That isn’t a Card Finisher edits file."; the photo is unchanged |
+| 1 | Load the edits file IMG_9136-large-edits.json | A red message reads "That file is too large to be a Card Finisher edits file."; the photo is still turned a quarter right |
+| 2 | Load the edits file notes.json | A red message reads "That file isn’t valid JSON."; the photo is still turned a quarter right |
+| 3 | Load the edits file IMG_9136-version-3-edits.json | A red message reads "That isn’t a Card Finisher edits file."; the photo is still turned a quarter right |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -222,23 +255,33 @@ A logo carried inside an edits file must be a PNG, WebP, JPEG or SVG, and at mos
 - Changed: none
 - Anchors: `CONFIG.overlay.maxBytes`, `"The overlay in these edits couldn’t be read, so it was left out."`
 - Source: `js/app/overlay.js` (`overlayFromEdits`, `register`)
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's case loads files with one problem each and is written to today's wording.
 - Cases: 1
 
 ### SEC-07.1 An edits file's logo of the wrong type or over 5 MB is left out   [auto: phone]
+Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, and a text editor
+- Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
-- Photo: IMG_9136.JPEG from samples/; logo: icons/icon.svg from the repository
-- Starting screen: the photo open, on the Overlay step
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Files:
+  - IMG_9136-gif-logo-edits.json from tests/fixtures/: this photo's edits after **90° right**, changed in a text editor: `"overlay": null` reads `"overlay": { "id": "gif-logo", "aspect": 1, "cx": 0.5, "cy": 0.5, "w": 0.25, "opacity": 1 }`, and after it is added `"overlayImage": { "id": "gif-logo", "type": "image/gif", "name": "logo.gif", "data": "R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" }` (a one-pixel GIF, a type a logo can't be)
+  - IMG_9136-big-logo-edits.json, made from IMG_9136-gif-logo-edits.json in a text editor: `"type": "image/gif"` changed to `"type": "image/png"`, and the text in quotes after `"data": ` replaced by the base64 text of any file between 5.2 MB and 5.9 MB (made with `base64 -w 0 FILE` on Linux, or `base64 -i FILE` on a Mac). The whole file stays under 8 MB. It is too large to keep with the fixtures; the script makes its own copy, with 5.5 MB of zero bytes as the logo
+- Starting screen: the photo open, upright, on the Export step, with no logo
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo).
+- Close Export options: tap the **×** at their top right.
+- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose icon.svg | The logo is placed on the photo |
-| 2 | Tap **Export**, open **Export options**, tap **Save edits** | IMG_9136-edits.json is saved, with the logo inside it |
-| 3 | Close the options, tap **Overlay**, then **Remove** | The logo is gone from the photo |
-| 4 | Copy the edits file twice. In the first copy change `"type": "image/svg+xml"` under `overlayImage` to `"type": "image/gif"`; in the second replace the text of `data` under `overlayImage` with 6,990,508 letters A (a picture of just over 5 MB) | Two changed files |
-| 5 | Tap **Export**, open **Export options**, tap **Load edits** and choose the first copy | An amber warning reads "The overlay in these edits couldn’t be read, so it was left out."; no logo is on the photo |
-| 6 | Tap **Load edits** and choose the second copy | The same amber warning; no logo is on the photo |
+| 1 | Load the edits file IMG_9136-gif-logo-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 2 | Look at the photo | It is turned a quarter right, with no logo on it |
+| 3 | Load the edits file IMG_9136-big-logo-edits.json | The same amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 4 | Look at the photo | It is still turned a quarter right, with no logo on it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -254,24 +297,29 @@ On **Resume**, the stored session is checked like an edits file: its edits are c
 - Changed: none
 - Anchors: `#btnResume`, `"The saved pair wasn’t valid, so it was reset. "`, `"[card-finisher] pair not restored:"`
 - Source: `js/app/state.js` (`openFile`, `restoreLevelsDraft`), `js/app/start-screen.js` (`resumeSession`), `js/app/pair.js` (`restorePair`, `isPairRecord`, `finishResume`)
-- Ruling: R23. A Resume whose stored size doesn't match opens the photo fresh with the amber warning "Couldn’t restore your edits, so the photo was opened fresh." The app differs today. New wording, to be approved by Rich.
+- Ruling: R23. A Resume whose stored size doesn't match opens the photo fresh with an amber warning, in the wording Rich approved: "Full edit history could not be restored, your photo has been opened fresh." The app differs today (BUG-050; its case is STA-08.1).
 - Cases: 1
 
 ### SEC-08.1 Resume cleans a damaged field and an unknown step   [auto: phone, webkit]
+Script only
+Stand-in: no control changes the edits the app has saved on the device, so the script rewrites two of their values, as a damaged saved record would hold them. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo and its edits on the device, so the reload offers to resume them
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open on the Rotate step, turned a quarter right (**90° right**); wait two seconds
-- The stored edits are damaged: their crop is a word and their step is "settings". A person can't arrange this by hand; the automated test changes the stored record
+- Starting screen: the photo open on the Rotate step, turned a quarter right with **90° right**, then two seconds' wait, so the turn is saved
 
 A stored size that doesn't match the photo is STA-08.1; a damaged stored pair is PAIR-42.1.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Reload the page | The start screen offers **Resume** |
-| 2 | Tap **Resume** | The photo opens on the Perspective step (not an unknown one), still turned a quarter right |
-| 3 | Tap **Crop** in the step bar | **1:1** is the selected preset: the damaged crop was reset |
+| 1 | The script changes the crop saved with the edits to the words "square please" | The saved edits hold that crop |
+| 2 | The script changes the step saved with the edits to "settings", a step the app doesn't have | The saved edits hold the step "settings" |
+| 3 | Reload the page | The start screen offers **Resume** |
+| 4 | Tap **Resume** | The photo opens on the Perspective step, still turned a quarter right |
+| 5 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom) | **1:1** is the selected preset: the damaged crop was reset |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -291,17 +339,22 @@ Remembered preferences are checked like an edits file before they are used; an u
 
 ### SEC-09.1 Malformed remembered preferences fall back to the defaults   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px
+- Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
 - Build: the build under test
+- Browser data: the remembered preferences only, which row 1 writes (start from a private window, or with the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- The remembered preferences hold values the app doesn't know: crop preset "<b>4:3</b>", format "gif", quality 7, size "big", interpolation "nearest", fill "red", corner shots "many" and pair output "both". A person can't arrange this by hand; the automated test writes them into the browser's storage before the page opens
 - Starting screen: the start screen
+
+Row 1 writes preferences the app doesn't know into the browser's storage, under the key the app keeps them in: crop preset "<b>4:3</b>", format "gif", quality 7, size "big", interpolation "nearest", fill "red" and corner shots "many".
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo** and choose the photo, then tap **Crop** in the step bar | **1:1** is the selected preset |
-| 2 | Tap **Export** in the step bar | **2000** is the selected Size and **JPEG** the selected Format |
-| 3 | Tap **Corner shots** | The Corner shots sheet opens with **1 sheet** selected |
+| 1 | In the Console, type `localStorage.setItem('p1hunt.straightener.v1', '{"cropPreset":"<b>4:3</b>","export":{"format":"gif","quality":7,"longEdge":"big","interp":"nearest","fill":"red"},"cornerShots":"many"}')` and press Enter | The Console answers undefined |
+| 2 | Reload the page | The start screen shows, with **Open photo** |
+| 3 | Tap **Open photo** and choose the photo | The photo opens on the Perspective step |
+| 4 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom) | **1:1** is the selected preset |
+| 5 | Tap **Export** in the step tabs | **2000** is the selected Size and **JPEG** the selected Format |
+| 6 | Tap **Corner shots** | The Corner shots sheet opens with **1 sheet** selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -310,16 +363,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
 - Build: the build under test
+- Browser data: the remembered preferences only, which row 1 writes (start from a private window, or with the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- The remembered preferences are text that can't be read: `{"cropPreset": "4:3", export:`. The automated test writes it into the browser's storage before the page opens
 - Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo**, choose the photo, then tap **Crop** in the step bar | **1:1** is the selected preset, and the Console shows no error |
+| 1 | In the Console, type `localStorage.setItem('p1hunt.straightener.v1', '{"cropPreset": "4:3", export:')` and press Enter | The Console answers undefined: text that can't be read is stored as the preferences |
+| 2 | Reload the page | The start screen shows, and the Console holds no error |
+| 3 | Tap **Open photo** and choose the photo | The photo opens on the Perspective step, and the Console still holds no error |
+| 4 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom) | **1:1** is the selected preset, not 4:3 |
 
 Pass: every row's result is seen.
-On a fail, record: what you saw instead, a screenshot.
+On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## SEC-10 What a logo file may be
 
@@ -339,43 +395,52 @@ A logo file must be a PNG, WebP, JPEG or SVG of at most 5 MB, and an SVG must st
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
-- Photo: IMG_9136.JPEG from samples/; logo: no-size.svg, a text file that reads `<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>`
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Logo: unsized.svg from tests/fixtures/: a text file that reads `<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#000"/></svg>`, with no width, height or viewBox on the `<svg>`
 - Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose no-size.svg | The line above the controls reads "That SVG has no width, height or viewBox, so it can’t be sized. Re-export it with a size." in red; no logo is placed |
+| 1 | Tap **Add logo** and choose unsized.svg | The line above the controls (the one line of text at the top of the block of buttons under the photo) reads "That SVG has no width, height or viewBox, so it can’t be sized. Re-export it with a size." in red |
+| 2 | Look at the photo | No logo is on it |
 
 Pass: every row's result is seen.
-On a fail, record: what you saw instead, a screenshot.
+On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### SEC-10.2 An SVG logo's script never runs   [auto: phone, webkit]
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
 - Build: the build under test
-- Photo: IMG_9136.JPEG from samples/; logo: with-script.svg, a 200 × 100 red rectangle whose `<svg>` carries `onload="window.parent.testSvgRan = 1"` and holds `<script>window.parent.testSvgRan = 2;</script>`
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Logo: svg-with-script.svg from tests/fixtures/: a 200 × 100 red rectangle whose `<svg>` carries `onload="window.parent.testSvgRan = 1"` and holds `<script>window.parent.testSvgRan = 2;</script>`
 - Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose with-script.svg | A red rectangle is placed on the photo |
-| 2 | Wait a second, then read `testSvgRan` in the Console | It is undefined: neither the script nor the onload handler ran |
+| 1 | Tap **Add logo** and choose svg-with-script.svg | A red rectangle is placed on the photo |
+| 2 | Wait a second, then type `window.testSvgRan` in the Console and press Enter | The Console answers undefined: neither the script nor the onload handler ran |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what the Console printed, a screenshot.
 
 ### SEC-10.3 With a lower limit from a link, the refusal names it   [auto: phone]
 Flag: to confirm. Written to what the app does today: the hint keeps saying 5 MB, and the refusal names the lower limit in MB with four decimals.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test, opened with the link index.html?overlay.maxBytes=65536 (a 64 KB logo limit)
-- Photo: IMG_9136.JPEG from samples/; logo: big-logo.png, a file of 100,000 bytes
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Logo: noisy-logo.png from tests/fixtures/: a PNG of 165 × 165 px of random colors, 81,928 bytes (80 KB), over the 64 KB limit
 - Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the hint above the controls | It says "up to 5 MB" |
-| 2 | Tap **Add logo** and choose big-logo.png | The line reads "That file is 0.1 MB. The overlay limit is 0.0625 MB." |
+| 1 | Read the line above the controls (the one line of text at the top of the block of buttons under the photo) | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." |
+| 2 | Tap **Add logo** and choose noisy-logo.png | The line reads "That file is 0.1 MB. The overlay limit is 0.0625 MB." in red |
+| 3 | Look at the photo | No logo is on it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -391,38 +456,51 @@ Names from photos and edits files are shown only as plain text, never as markup,
 - Changed: none
 - Anchors: `#resumeName`, `"Edits were saved for “"`
 - Source: `js/app/core.js` (`shortText`), `js/app/start-screen.js` (`resumeName`, `resumeSession`), `js/app/export.js` (`loadEdits`), `js/app/pair.js` (`restorePair`)
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; SEC-11.2 loads a file with one problem and is written to today's wording.
 - Cases: 2
 
 ### SEC-11.1 A photo's name with markup shows as text on the Resume card, cut to 60   [auto: phone, webkit]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px
+- Device and browser: a Mac or a Linux computer (Windows doesn't allow `<`, `>` or `"` in a file name), a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
 - Build: the build under test
-- Photo: a copy of IMG_9136.JPEG from samples/ named `<b>bold</b> <img src=x onerror="window.testRan=1"> ` followed by 240 letters x and .JPEG (a name of 296 characters). A computer may not allow these characters in a file name; the automated test hands the file to the picker under this name
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo and its edits on the device, so the reload offers to resume them
+- Photo: a copy of IMG_9136.JPEG from samples/, renamed `<b>bold</b> <img src=x onerror="window.testRan=1"> ` followed by 240 letters x and .JPEG (a name of 296 characters). It can't be kept with the fixtures, since a Windows computer can't hold that name; the script hands the photo to the picker under this name
 - Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo** and choose the copy | The photo opens |
-| 2 | Tap **Rotate**, then **90° right**; wait two seconds | The photo turns a quarter right |
-| 3 | Reload the page | The Resume card reads the name's first 59 characters as typed, tags and all, then "…"; nothing in it is bold or a picture |
-| 4 | Tap **Resume** | The photo opens turned a quarter right, and nothing the name holds has run |
-| 5 | Tap **Export** in the step bar and open **Export options** | The source line at the foot of the options ends with the name's first 199 characters and "…": the name kept for the reopened file is cut to 200 characters |
+| 1 | Tap **Open photo** and choose the renamed copy | The photo opens on the Perspective step |
+| 2 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Rotate step shows, with **90° right** |
+| 3 | Tap **90° right**, then wait two seconds | The photo turns a quarter right |
+| 4 | Reload the page | The Resume card (the box on the start screen with **Resume**) reads "Resume <b>bold</b> <img src=x onerror="window.testRan=1"> xxxxxxxx…?": the name's first 59 characters as typed, tags and all, then "…"; the whole name is in the same bold type, and no picture shows |
+| 5 | Tap **Resume** | The photo opens turned a quarter right |
+| 6 | In the Console, type `window.testRan` and press Enter | The Console answers undefined: nothing the name holds has run |
+| 7 | Tap **Export** in the step tabs | The Export step shows |
+| 8 | Tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Export options rise; the source line at their foot ends with the name's first 199 characters and "…": the name kept for the reopened file is cut to 200 characters |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### SEC-11.2 An edits file's name with markup shows as text in the warning, cut to 60   [auto: phone]
+Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, and a text editor
+- Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Export step with **Export options** open
+- Edits file: IMG_9136-markup-name-edits.json from tests/fixtures/: this photo's edits after **90° right** (IMG_9136-turned-edits.json), changed in a text editor so that `"name": "IMG_9136.JPEG"` under `"source"` reads `"name": "<b>bold</b> <img src=x onerror=\"window.testRan=1\"> ` followed by 80 letters y and `.JPEG"`
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo).
+- Close Export options: tap the **×** at their top right.
+- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Save edits** | IMG_9136-edits.json is saved |
-| 2 | In the text editor, change the file's `"name"` under `source` to `<b>bold</b> <img src=x onerror="window.testRan=1"> ` followed by 80 letters y and .JPEG | The file names a photo with markup in its name |
-| 3 | Tap **Load edits** and choose the changed file | An amber warning reads "Edits were saved for “", the name's first 59 characters as typed and "…", then "”. Applied anyway — sizes match."; nothing in it is bold or a picture |
+| 1 | Load the edits file IMG_9136-markup-name-edits.json | An amber message reads "Edits were saved for “<b>bold</b> <img src=x onerror="window.testRan=1"> yyyyyyyy…”. Applied anyway — sizes match.": the name's first 59 characters as typed, tags and all, then "…"; nothing in it is bold, and no picture shows |
+| 2 | In the Console, type `window.testRan` and press Enter | The Console answers undefined: nothing the name holds has run |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -444,6 +522,7 @@ The app never builds HTML from text anywhere: no markup strings, no `eval`, no c
 Before you start:
 - Device: a computer with Node installed
 - Build: the build under test, as files in the repository folder
+- Browser data: not used; the case runs in a terminal, not a browser
 - Starting screen: a terminal open in the repository folder
 
 | # | Do this | You should see |
@@ -471,6 +550,7 @@ The published files hold no private network address or local drive path, and the
 Before you start:
 - Device: a computer with Node installed
 - Build: the build under test, as files in the repository folder
+- Browser data: not used; the case runs in a terminal, not a browser
 - Starting screen: a terminal open in the repository folder
 
 | # | Do this | You should see |
@@ -499,17 +579,26 @@ Opening a photo, working through every step and exporting it puts no error in th
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/; logo: icons/icon.svg from the repository
 - Starting screen: the photo open, on the Perspective step
 
+The named actions (the step tabs are the six tabs Perspective to Export, along the bottom):
+- Turn the photo: tap **Rotate** in the step tabs, then **90° right**.
+- Crop to 4:3: tap **Crop** in the step tabs, then the **4:3** preset.
+- Apply Auto levels: tap **Levels** in the step tabs, then **Auto**, then **Apply**.
+- Add the logo: tap **Overlay** in the step tabs, then **Add logo**, and choose icon.svg in the file picker.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Rotate** in the step bar, then **90° right** | The photo turns a quarter right |
-| 2 | Tap **Crop**, then the **4:3** preset | The crop box is 4:3 |
-| 3 | Tap **Levels**, then **Auto**, then **Apply** | The photo's colors change and stay |
-| 4 | Tap **Overlay**, then **Add logo**, and choose icon.svg | The logo is placed |
-| 5 | Tap **Export**, then **Download**, and answer **No** to "Upscale to 2000 px?" | IMG_9136-straight.jpg is saved |
-| 6 | Look at the Console | It holds no error, and no message that the security policy refused something |
+| 1 | Turn the photo | The photo turns a quarter right |
+| 2 | Crop to 4:3 | **4:3** is the selected preset |
+| 3 | Apply Auto levels | The photo's colors change, and there is no dot on the **Levels** tab: the levels are applied |
+| 4 | Add the logo | The app's icon is placed on the photo |
+| 5 | Tap **Export** in the step tabs | The Export step shows, with **Download** |
+| 6 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 7 | Tap **No** | IMG_9136-straight.jpg is saved |
+| 8 | Look at the Console | It holds no error, and no message that the security policy refused something |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, the Console's error, a screenshot.
@@ -528,34 +617,47 @@ A logo read back from the device's storage (the saved logo, this photo's logo, o
 - Cases: 2
 
 ### SEC-15.1 A stored logo of an unknown type is not offered   [auto: phone]
+Script only
+Stand-in: no control changes the saved logo the app keeps on the device, so the script changes its stored type, as a damaged saved record would hold it. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding icon.svg in the starting screen saved it in this browser as the saved logo, and the open photo is kept for Resume
 - Photo: IMG_9136.JPEG from samples/; logo: icons/icon.svg from the repository
-- Starting screen: the photo open on the Overlay step, icon.svg added with **Add logo** (it becomes the saved logo)
-- The saved logo's stored type is then changed to text/html. A person can't arrange this by hand; the automated test changes the stored record
+- Starting screen: the photo open on the Overlay step, icon.svg added with **Add logo**
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Reload the page and tap **Start fresh** | The start screen, with no Resume card |
-| 2 | Tap **Open photo**, choose the photo, then tap **Overlay** in the step bar | **Add logo** shows; **Use saved overlay** does not: the stored logo was skipped |
+| 1 | The script changes the type stored with the saved logo to text/html | The saved logo's record holds the type text/html |
+| 2 | Reload the page | The start screen offers **Resume** |
+| 3 | Tap **Start fresh** | The start screen, with no Resume card |
+| 4 | Tap **Open photo** and choose the photo | The photo opens on the Perspective step |
+| 5 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | **Add logo** shows; **Use saved overlay** does not: the stored logo was skipped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### SEC-15.2 A stored logo whose bytes are damaged is refused when used   [auto: phone]
+Script only
+Stand-in: no control changes the saved logo the app keeps on the device, so the script replaces its stored bytes with a line of text, as a damaged saved record would hold. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site at the start (a private window, or the site's data cleared); adding apple-touch-icon.png in the starting screen saved it in this browser as the saved logo, and the open photo is kept for Resume
 - Photo: IMG_9136.JPEG from samples/; logo: icons/apple-touch-icon.png from the repository
 - Starting screen: the photo open on the Overlay step, apple-touch-icon.png added with **Add logo**
-- The saved logo's stored bytes are then replaced with a line of text, its type left as PNG. A person can't arrange this by hand; the automated test changes the stored record
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Reload the page and tap **Start fresh** | The start screen, with no Resume card |
-| 2 | Tap **Open photo**, choose the photo, then tap **Overlay** in the step bar | **Use saved overlay** shows |
-| 3 | Tap **Use saved overlay** | The line above the controls reads "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file." in red; no logo is placed |
+| 1 | The script replaces the saved logo's stored bytes with the text "Not a picture any more.", its type left as PNG | The saved logo's record holds those 23 bytes |
+| 2 | Reload the page | The start screen offers **Resume** |
+| 3 | Tap **Start fresh** | The start screen, with no Resume card |
+| 4 | Tap **Open photo** and choose the photo | The photo opens on the Perspective step |
+| 5 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | **Use saved overlay** shows |
+| 6 | Tap **Use saved overlay** | The line above the controls (the one line of text at the top of the block of buttons under the photo) reads "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file." in red |
+| 7 | Look at the photo | No logo is on it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

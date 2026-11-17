@@ -2,6 +2,8 @@
 
 What a link can change, the self-tests a link can run, the detection tuning panel, and the hook automated tests use.
 
+Several cases read a setting in the browser's Console. The page leaves the app's table of settings open to the Console under the name CONFIG: typing `CONFIG.historyLimit` and pressing Enter answers with that setting's value.
+
 ## DEV-01 A link can change a setting
 
 A link can change one of the app's settings by its dotted name, such as `?detect.cannyHigh=90`. Only settings that already exist and are a number or on/off can be changed.
@@ -21,12 +23,13 @@ That a link can't set text, lists or anything outside the settings is SEC-03.1.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test, opened with the link index.html?export.longEdge=1080
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the start screen
+- Starting screen: the photo open, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo**, choose the photo, then tap **Export** in the step bar | **1080** is the selected Size, where the shipped default is 2000 |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | **1080** is the selected Size, where the shipped default is 2000 |
 
 Pass: every row's result is seen.
 On a fail, record: the Size that is selected, a screenshot.
@@ -47,16 +50,23 @@ The on/off settings a link can turn on or off are: session saving, the Share but
 Turning session saving off from a link is STA-17.1, and upscaling on, EXP-04.3.
 
 ### DEV-02.1 A link turns the Share button off, with 0 or false only   [auto: phone]
+Script only
+Stand-in: **Share** shows only in a browser that can share files, and no case uses a desktop browser's own share feature, so the script gives the page a stand-in share feature that says it can share files.
+
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, in a browser that can share files (a secure page on an iPhone; the automated test gives the page a stand-in share sheet), with the developer tools open on the Console
+- Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen, opened with the link index.html?export.share=0
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Open photo**, choose the photo, then tap **Export** in the step bar | **Share** is not shown; **Download** is |
-| 2 | Open the link index.html?export.share=no, open the photo again and tap **Export** | The Console warns "[card-finisher] URL settings ignored (unknown, not a number / on-off setting, or outside its safe range): export.share", and **Share** is shown |
+| 1 | Tap **Open photo** and choose the photo | The photo opens on the Perspective step |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | **Download** shows; **Share** does not |
+| 3 | Open the link index.html?export.share=no | The Console warns "[card-finisher] URL settings ignored (unknown, not a number / on-off setting, or outside its safe range): export.share" |
+| 4 | Tap **Open photo** and choose the photo | The photo opens on the Perspective step |
+| 5 | Tap **Export** in the step tabs | **Share** shows beside **Download**: "no" did not turn it off |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -65,13 +75,15 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test, opened with the link index.html?historyLimit=2
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **90° right** three times | The photo has turned three quarters |
-| 2 | Tap **Undo** twice | The photo is turned one quarter right, and **Undo** is greyed out: only two steps were kept |
+| 1 | Tap **90° right** three times | The photo has turned three quarters right: its top is at the left |
+| 2 | Tap **Undo** (the arrow curving left, at the top right) | The photo is turned two quarters: upside down |
+| 3 | Tap **Undo** again | The photo is turned one quarter right, and **Undo** is greyed out (shown dim and not answering a tap): only two steps were kept |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -80,13 +92,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Starting screen: none; the case opens two links
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Open the link index.html?historyLimit=0 | The Console warns "[card-finisher] URL settings ignored (unknown, not a number / on-off setting, or outside its safe range): historyLimit" |
 | 2 | Open the link index.html?historyLimit=201 | The same warning again |
-| 3 | In the Console, read CONFIG.historyLimit | 50, the shipped length |
+| 3 | In the Console, type `CONFIG.historyLimit` and press Enter | The Console answers 50, the shipped length |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, the Console's text.
@@ -108,14 +121,14 @@ A setting in a link that doesn't exist, isn't a number or on/off, or is out of i
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test, opened with the link index.html?nope=1&crop.presets=x&historyLimit=500&detect.cannyHigh=90
-- Photo: IMG_9136.JPEG from samples/
-- Starting screen: the start screen; then open the photo
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the Console | One warning, in the warning color, reads "[card-finisher] URL settings ignored (unknown, not a number / on-off setting, or outside its safe range): nope, crop.presets, historyLimit" |
-| 2 | Look at the screen | No message shows about the link |
-| 3 | In the Console, read CONFIG.detect.cannyHigh | 90: the good setting in the same link was applied |
+| 2 | Look at the screen | The start screen, with no message about the link |
+| 3 | In the Console, type `CONFIG.detect.cannyHigh` and press Enter | The Console answers 90: the good setting in the same link was applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, the Console's text, a screenshot.
@@ -135,16 +148,19 @@ A link with `?debug` (any value but `0` or `false`) opens the tuning panel at st
 
 ### DEV-04.1 ?debug opens the tuning panel, turns Debug overlay on and logs each detection   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
+- Device and browser: a computer, a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test, opened with the link index.html?debug (no value)
-- Photo: IMG_9136.JPEG from samples/
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/, in a file browser beside the window
 - Starting screen: the start screen
+
+On a phone-width window the tuning panel covers **Open photo** (DEV-06.2), so row 2 drops the photo on the start screen instead.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the screen | The **Detection tuning** panel is open |
-| 2 | Tap **Open photo** and choose the photo | The Console logs a line that starts "[card-finisher] detect" |
-| 3 | Open **Perspective options** | **Debug overlay** is on |
+| 2 | Drag IMG_9136.JPEG from the file browser onto the start screen, above the tuning panel, and let go | The photo opens, and the Console logs a line that starts "[card-finisher] detect" |
+| 3 | Tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Perspective options rise, with **Debug overlay** on |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -153,13 +169,18 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: none; the case opens two links
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Open the link index.html?debug=0 and open the photo | No tuning panel; **Debug overlay** in **Perspective options** is off; no "[card-finisher] detect" line in the Console |
-| 2 | Open the link index.html?debug=false and open the photo | The same |
+| 1 | Open the link index.html?debug=0 | The start screen, with no tuning panel |
+| 2 | Tap **Open photo** and choose the photo | The photo opens; the Console has no line that starts "[card-finisher] detect" |
+| 3 | Tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Perspective options rise, with **Debug overlay** off |
+| 4 | Open the link index.html?debug=false | The start screen, with no tuning panel |
+| 5 | Tap **Open photo** and choose the photo | The photo opens; the Console has no line that starts "[card-finisher] detect" |
+| 6 | Tap the options tab | Perspective options rise, with **Debug overlay** off |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -182,6 +203,7 @@ A link with `?selftest` runs the engine's self-tests on the page and in the back
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Starting screen: none
 
 | # | Do this | You should see |
@@ -194,9 +216,11 @@ On a fail, record: the row number, the message's text, the Console's tables.
 
 ### DEV-05.2 ?selftest=0 runs no self-tests   [auto: phone]
 Written to ruling R28; it fails until that is built (BUG-171).
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Starting screen: none
 
 | # | Do this | You should see |
@@ -218,55 +242,81 @@ The **Detection tuning** panel has a field for each number and on/off setting of
 - Anchors: `#debugPanel`, `"Detection tuning"`, `CONFIG.detect.cannyLow`
 - Source: `js/app/debug-panel.js` (`toggleDebugPanel`, `buildDebugPanel`), `css/app.css` (`#debugPanel`)
 - Ruling: R29. The tuning panel's fields may take values outside the safe ranges a link is held to; it is a tuning tool. The app already does this.
-- Flag: to confirm. On the phone with no photo open, the panel floats over the start screen.
-- Cases: 3
+- Flag: to confirm. On the phone with no photo open, the panel floats over the start screen and covers **Open photo**, so a photo can't be opened with a tap while it is open.
+- Cases: 4
 
-### DEV-06.1 The panel has a field per detection setting and detects again after a change   [auto: phone]
+### DEV-06.1 The panel has a field per detection setting, and a change detects again   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px
+- Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test, opened with the link index.html?debug=1
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, the **Detection tuning** panel showing
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Scroll through the panel's fields | One field for each number and on/off setting of detection, named as in js/config.js (workingSize first, refineInlierPx last) |
-| 2 | Clear **cannyHigh** and type 70 | The setting is 70 at once (CONFIG.detect.cannyHigh in the Console); detection has not run yet |
-| 3 | Wait a second | Detection has run once, about 0.35 s after the last keystroke: the report under the fields has changed |
+| 1 | Scroll through the panel's fields | One field for each number and on/off setting of detection, named as in js/config.js under `detect`, in the same order: workingSize first, refineInlierPx last |
+| 2 | Select the value in **cannyHigh** and type 70 | The field reads 70 |
+| 3 | In the Console, type `CONFIG.detect.cannyHigh` and press Enter | The Console answers 70: the setting took the field's value |
+| 4 | Look at the Console's lines above | A new line that starts "[card-finisher] detect" shows after the typing: detection ran again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DEV-06.2 Where the panel sits   [auto: both, webkit]
-Flag: to confirm. Written to what the app does today: on a phone with no photo open, the panel floats over the start screen.
+Flag: to confirm. Written to what the app does today: on a phone with no photo open, the panel floats over the start screen and covers **Open photo**.
+
 Before you start:
-- Device and browser: a phone-width window (390 × 844 px) or a wide one (1280 × 800 px)
+- Device and browser: a computer, a phone-width window (390 × 844 px) or a wide one (1280 × 800 px)
 - Build: the build under test, opened with the link index.html?debug=1
-- Photo: IMG_9136.JPEG from samples/
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/, in a file browser beside the window
 - Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the screen | On a phone, the panel floats over the start screen |
-| 2 | Open the photo | On a phone, the panel spans the window less 8 px each side, its bottom 8 px above the controls, at most 40% of the window's height. On a wide screen, it is 64 px from the top and 8 px left of the 380 px side panel |
+| 1 | Look at the screen | On a phone, the panel floats over the start screen and covers **Open photo**. On a wide screen, it is 64 px from the top, and its right edge is 388 px from the window's right edge (where the 380 px side panel will be, less 8 px) |
+| 2 | Drag IMG_9136.JPEG from the file browser onto the start screen, above the tuning panel, and let go | The photo opens. On a phone, the panel spans the window less 8 px each side, its bottom 8 px above the controls, at most 40% of the window's height. On a wide screen, it is 64 px from the top and 8 px left of the 380 px side panel |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, the panel's position, a screenshot.
 
 ### DEV-06.3 A field takes a value a link could not   [auto: phone]
 Written to ruling R29, which keeps what the app does today: the panel is a tuning tool.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test, opened with the link index.html?debug=1
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, the panel showing
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Clear **workingSize** and type 2500 | CONFIG.detect.workingSize reads 2500, over the 2000 a link is held to |
+| 1 | Select the value in **workingSize** and type 2500 | The field reads 2500 |
+| 2 | In the Console, type `CONFIG.detect.workingSize` and press Enter | The Console answers 2500, over the 2000 a link is held to |
 
 Pass: every row's result is seen.
-On a fail, record: the value read, a screenshot.
+On a fail, record: the row number, the value read, a screenshot.
+
+### DEV-06.4 Detection runs once, 0.35 s after the last change   [auto: phone]
+Script only
+Stand-in: nothing is replaced, but no person can type two keys and look within 0.35 s, nor time a detection; the script types 70 into **cannyHigh** as two quick keystrokes and counts the detection runs at the moment the typing ends and a second later.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test, opened with the link index.html?debug=1
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, the panel showing, detection finished
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script selects the value in **cannyHigh** and types 70, two keystrokes in quick succession | The setting is 70 at once, and detection has not run again yet |
+| 2 | Wait a second | Detection has run exactly once more |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, the count of detection runs.
 
 ## DEV-07 The tuning panel's buttons
 
@@ -284,15 +334,16 @@ The panel has a close button (tooltip **Close tuning**), **Copy CONFIG**, which 
 
 ### DEV-07.1 Re-detect runs detection, and Close tuning closes the panel   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px
+- Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test, opened with the link index.html?debug=1
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, the panel showing
+- Starting screen: the photo open, the panel showing, detection finished
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Re-detect** | Detection runs once more: the report's round trip time changes |
-| 2 | Tap **Close tuning** (the × at the panel's top right) | The panel closes; **Debug overlay** stays on |
+| 1 | Tap **Re-detect** | One new line that starts "[card-finisher] detect" shows in the Console: detection ran once more |
+| 2 | Tap **Close tuning** (the × at the panel's top right) | The panel closes; detection's lines are still drawn over the photo: **Debug overlay** stays on |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -301,6 +352,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, in a browser allowed to use the clipboard, and a text editor
 - Build: the build under test, opened with the link index.html?debug=1
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, the panel showing
 
@@ -313,10 +365,14 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DEV-07.3 With the clipboard blocked, CONFIG goes to the console   [auto: phone]
+Script only
+Stand-in: a person can't make the browser refuse the clipboard to the page on purpose, so the script makes every clipboard write fail, as a browser that blocks the page does.
 Flag: to confirm. Written to what the app does today: the message joins its two parts with a dash.
+
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console, in a browser that refuses to write to the clipboard. A person can arrange this in the browser's site settings; the automated test makes the clipboard refuse
+- Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test, opened with the link index.html?debug=1
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, the panel showing
 
@@ -345,6 +401,7 @@ Under its fields the panel shows the last detection's timings (round trip, analy
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test, opened with the link index.html?debug=1
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, the panel showing
 
@@ -375,29 +432,34 @@ Opening the tuning panel turns the **Debug overlay** on. If it was off and a pho
 Before you start:
 - Device and browser: a desktop browser, 1280 × 800 px, with a keyboard
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Perspective step, **Debug overlay** off
+- Starting screen: the photo open, on the Perspective step, **Debug overlay** off (Perspective's options are always shown under the controls at the right on a wide screen)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click the photo, then press the backtick key (`) | The **Detection tuning** panel opens; **Debug overlay** turns on; detection runs again |
-| 2 | Read the panel's report | It starts "round trip " |
+| 1 | Press the backtick key (`) | The **Detection tuning** panel opens |
+| 2 | Look at **Debug overlay** in Perspective's options | It is on, and detection's lines are drawn over the photo |
+| 3 | Read the panel's report, under its fields | It starts "round trip ": detection ran again and filled it in |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DEV-09.2 Opening the panel leaves corners placed by hand alone   [auto: desktop]
 Written to ruling R3; it fails until that is built (BUG-211).
+
 Before you start:
-- Device and browser: a desktop browser, 1280 × 800 px, with a keyboard
+- Device and browser: a desktop browser, 1280 × 800 px, with a keyboard and a mouse
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, **Debug overlay** off
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner handle 40 px down and right | The corner moves off the card |
-| 2 | Click the photo, then press the backtick key (`) | The panel opens and **Debug overlay** turns on; the top-left corner stays where it was dragged |
+| 2 | Press the backtick key (`) | The panel opens, and **Debug overlay** turns on |
+| 3 | Look at the top-left corner | It stays where it was dragged |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, where the corner went, a screenshot.
@@ -419,12 +481,13 @@ The page exposes a hook for automated tests, `window.__straightener`, with the a
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Starting screen: the start screen
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | In the Console, read `window.__straightener` | An object holding `app` (the app's state) |
-| 2 | Read its other names | Functions openFile, runDetect, renderFull, setTab, commit, undo, redo and stateChanged, and the parts EngineWorker, Detector, draw, Session, resumeSession, shareFile and Exporter |
+| 1 | In the Console, type `typeof window.__straightener.app` and press Enter | The Console answers 'object': the hook holds the app's state |
+| 2 | Type `Object.keys(window.__straightener)` and press Enter | The list holds openFile, runDetect, renderFull, setTab, commit, undo, redo and stateChanged, and EngineWorker, Detector, draw, Session, resumeSession, shareFile and Exporter |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, the names missing.

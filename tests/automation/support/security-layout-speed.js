@@ -8,7 +8,9 @@
 const fs = require('fs');
 const path = require('path');
 const { openApp, openPhoto, handFor, goToStep, openOptions } = require('./app.js');
-const { pickWith } = require('./start-and-session.js');
+const { pickWith, waitForPhoto, rememberPhoto } = require('./start-and-session.js');
+const { waitForQuestion } = require('./export.js');
+const { sampleFile, dragFiles } = require('./edits-drop-keys.js');
 const { runDir } = require('./case.js');
 
 // The photo most cases use: a PSA slab, 1498 × 2098 px.
@@ -370,11 +372,89 @@ function recordTiming(testInfo, what, durationMs) {
   testInfo.annotations.push({ type: 'measured', description });
 }
 
+// Taps `control` (the start screen's Open photo, or the top bar's Open), chooses the sample
+// photo `name` in the picker and waits until it is open and its card detection has finished.
+async function openWith(page, hand, control, name) {
+  await pickWith(page, hand, control, name);
+  await waitForPhoto(page, name);
+}
+
+// Drops the sample photo `name` on the photo area, as a person drags it from a file browser and
+// lets go there, and waits until it is open and its card detection has finished. The drop is
+// sent to the photo area itself, wherever a panel floats over it.
+async function dropPhoto(page, name) {
+  await rememberPhoto(page);
+  await dragFiles(page, '#stage', [sampleFile(name)]);
+  await waitForPhoto(page, name);
+}
+
+// The step the app shows now: 'perspective', 'rotate' and so on.
+function stepShown(page) {
+  return page.evaluate(() => window.__straightener.app.tab);
+}
+
+// True when the corners are on the card the app found: at least one candidate was found and
+// the corners are the best one's.
+function isOnFoundCard(page) {
+  return page.evaluate(() => {
+    const app = window.__straightener.app;
+    const best = app.detection.candidates[0];
+    return !!best && JSON.stringify(best.corners) === JSON.stringify(app.state.corners);
+  });
+}
+
+// Taps Download on the Export step and waits until the question box is up or the file comes,
+// whichever is first. Returns { question, downloading }: the question box's title ('' when
+// none was asked) and the download still to come (a promise of Playwright's download).
+async function tapDownload(page, hand) {
+  const downloading = page.waitForEvent('download');
+  await hand.tap(page.locator('#btnDownload'));
+  const asking = waitForQuestion(page, true).then(() => true, () => false);
+  const isAsked = await Promise.race([downloading.then(() => false), asking]);
+  if (!isAsked) return { question: '', downloading };
+  const card = page.locator('#pairPrompt');
+  const question = (await card.locator('.alert-title').textContent()).trim();
+  return { question, downloading };
+}
+
+// Answers the question box with `answer` ('Yes' or 'No') and waits for the file that
+// `downloading` (from tapDownload) brings. Returns { name, file }: the name the app gave it and
+// the path of the saved copy.
+async function answerForFile(page, hand, answer, downloading) {
+  const card = page.locator('#pairPrompt');
+  await hand.tap(card.getByRole('button', { name: answer, exact: true }));
+  const download = await downloading;
+  return { name: download.suggestedFilename(), file: await download.path() };
+}
+
+// Writes `text` into the browser's local storage as the app's remembered preferences, on the
+// page as it is now, as a person does by typing localStorage.setItem in the Console. Returns
+// what the storage then holds under the key.
+function writePrefsNow(page, text) {
+  return page.evaluate(({ key, value }) => {
+    localStorage.setItem(key, value);
+    return localStorage.getItem(key);
+  }, { key: PREFS_KEY, value: text });
+}
+
+// The console lines that start with `start`, out of the messages watchConsole records.
+function linesStarting(messages, start) {
+  return messages.filter(message => message.text.startsWith(start));
+}
+
 module.exports = {
   PHOTO,
   TOUCH_MIN_PX,
   PREFS_KEY,
   startWith,
+  openWith,
+  dropPhoto,
+  stepShown,
+  isOnFoundCard,
+  tapDownload,
+  answerForFile,
+  writePrefsNow,
+  linesStarting,
   watchConsole,
   watchRequests,
   watchPolicyRefusals,

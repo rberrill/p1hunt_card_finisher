@@ -44,7 +44,7 @@ To add one: give it the next number, say exactly what to do and what to record, 
 
 ## Q-07 Editing stored values in Chrome's developer tools
 
-- Waiting: STA-05.5, STA-08.1, STA-08.2
+- Waiting: STA-05.5, STA-08.1, STA-08.2, SEC-08.1, SEC-15.1, SEC-15.2
 - Do (on the computer, not the phone): in Chrome, open the app, open a photo, open developer tools, Application, IndexedDB, and click a stored value.
 - Write down: whether a value can be edited in place, or only refreshed and deleted.
 

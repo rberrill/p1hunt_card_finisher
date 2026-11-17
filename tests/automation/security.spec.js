@@ -4,7 +4,11 @@
 // no console error in normal use.
 // Each test drives the app as a person would, through hand.tap and hand.drag (a finger on the
 // phone targets, the mouse on the wide ones), and reads the app's state only to check a result.
-// SEC-01, SEC-12 and SEC-13 are proven by node tests/selftest.js, so they have no test here.
+// What a case has a person type into the Console, the test runs in the page; what a Script
+// only case's script changes in storage, the test changes the same way. The files a case names
+// are the committed ones in tests/fixtures/; a file too large to commit is made here from the
+// fixture the case names, as the case tells a person to make it.
+// SEC-01.1, SEC-12 and SEC-13 are proven by node tests/selftest.js, so they have no test here.
 'use strict';
 const fs = require('fs');
 const { test, expect } = require('./support/case.js');
@@ -16,40 +20,52 @@ const {
   editState,
   handFor,
   openOptions,
-  closeOptions,
-  saveByDownload,
 } = require('./support/app.js');
 const {
   pickWith,
+  waitForPhoto,
   waitForSaved,
   reloadToStart,
   resumeAs,
-  toastNow,
   addLogo,
+  storedRecord,
 } = require('./support/start-and-session.js');
+const { loadEdits, recordMessages, messagesSoFar } = require('./support/edits-drop-keys.js');
+const { fixtureFile, fixturePath, fixtureEdits } = require('./support/edits-files.js');
 const { choiceButton, selectedChoices } = require('./support/export.js');
-const { presetChip, selectedChips } = require('./support/crop.js');
-const { chooseLogo, chooseBadLogo, oversizedPng } = require('./support/overlay.js');
+const { presetChip, chipLabels, selectedChips } = require('./support/crop.js');
+const { fixtureLogo, chooseLogo, chooseBadLogo } = require('./support/overlay.js');
+const { statusNow } = require('./support/messages.js');
+const { levelsDot } = require('./support/levels.js');
+const { waitInPage } = require('./support/front-and-back.js');
 const {
   PHOTO,
   startWith,
+  openWith,
+  stepShown,
+  isOnFoundCard,
+  tapDownload,
+  answerForFile,
+  writePrefsNow,
   watchConsole,
   watchRequests,
   watchPolicyRefusals,
   policyRefusals,
-  editsPayload,
   textPayload,
-  saveEditsFile,
-  loadEditsFile,
   changeSavedRecord,
-  storePrefsText,
 } = require('./support/security-layout-speed.js');
 
-// The start screen's promise, word for word.
+// The start screen's words, word for word.
+const OPEN_PROMPT = 'Open, drop, or paste a photo.';
 const STAYS_ON_DEVICE = 'Everything stays on this device.';
 // The console warning for settings a link sets that the app ignores, up to the names.
 const IGNORED_WARNING = '[card-finisher] URL settings ignored (unknown, not a number / on-off '
   + 'setting, or outside its safe range):';
+// The policy rules a refused script and a refused picture are reported under.
+const SCRIPT_RULE = 'script-src \'self\'';
+const IMAGE_RULE = 'img-src \'self\' blob: data:';
+// The Upscale question for the default Size.
+const UPSCALE_QUESTION = 'Upscale to 2000 px?';
 // The edits-file messages, word for word.
 const RESET_WARNING = 'Some settings in these edits weren’t valid and were reset: ';
 const TOO_LARGE = 'That file is too large to be a Card Finisher edits file.';
@@ -57,44 +73,91 @@ const NOT_JSON = 'That file isn’t valid JSON.';
 const NOT_EDITS = 'That isn’t a Card Finisher edits file.';
 const LOGO_LEFT_OUT = 'The overlay in these edits couldn’t be read, so it was left out.';
 const SAVED_FOR = 'Edits were saved for “';
-// The logo messages, word for word.
+// The message a photo shows while it opens.
+const LOADING = 'Loading…';
+const SIZES_MATCH = '”. Applied anyway — sizes match.';
+// The logo messages and the Overlay step's hint, word for word.
 const NO_SIZE = 'That SVG has no width, height or viewBox, so it can’t be sized. '
   + 'Re-export it with a size.';
 const CANT_READ = 'Couldn’t read that image. Try another PNG, WebP, JPG or SVG file.';
-// The largest edits file the app reads, in bytes (CONFIG.export.editsMaxBytes, 8 MB).
-const EDITS_MAX_BYTES = 8 * 1024 * 1024;
-// The logo limit, 5 MB, and the base64 text that decodes to just over it.
-const LOGO_MAX_BYTES = 5 * 1024 * 1024;
-const OVER_LOGO_BASE64_LENGTH = Math.ceil((LOGO_MAX_BYTES + 1024) / 3) * 4;
-// A logo file of 100,000 bytes, over a limit of 65,536 bytes set by a link, and the refusal.
-const LOWERED_LOGO_TEST_BYTES = 100000;
+const LOGO_HINT = 'Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.';
 const LOWERED_LIMIT_MESSAGE = 'That file is 0.1 MB. The overlay limit is 0.0625 MB.';
-// A long name with markup in it: 70 characters of text, then a tag.
+// The files in tests/fixtures/ the cases name (each described in its case).
+const TURNED = 'IMG_9136-turned-edits.json';
+const LEVELS_AS_WORDS = 'IMG_9136-levels-as-words-edits.json';
+const NOTES = 'notes.json';
+const VERSION_3 = 'IMG_9136-version-3-edits.json';
+const GIF_LOGO = 'IMG_9136-gif-logo-edits.json';
+const MARKUP_NAME = 'IMG_9136-markup-name-edits.json';
+const UNSIZED_SVG = 'unsized.svg';
+const SVG_WITH_SCRIPT = 'svg-with-script.svg';
+const NOISY_LOGO = 'noisy-logo.png';
+// The largest edits file the app reads, in bytes (CONFIG.export.editsMaxBytes, 8 MB), and a
+// logo of 5.5 MB: over the logo limit of 5 MB and, written into a file, still under 8 MB.
+const EDITS_MAX_BYTES = 8 * 1024 * 1024;
+const OVER_LOGO_LIMIT_BYTES = 5.5 * 1024 * 1024;
+// The start of a name with markup in it (51 characters), as the cases write it.
 const MARKUP_NAME_START = '<b>bold</b> <img src=x onerror="window.testRan=1"> ';
+// How many letters x follow it in SEC-11.1's photo name (a name of 296 characters).
+const NAME_LETTERS = 240;
 // How long a name may be on the Resume card and in a message: 59 characters and an ellipsis.
 const SHORT_NAME_LENGTH = 60;
 // How long a reopened file's name may be: 199 characters and an ellipsis.
 const KEPT_NAME_LENGTH = 200;
-// How long a case waits for a message before reading what is shown, in ms.
-const TOAST_WAIT_MS = 5000;
-// How long a case waits to be sure nothing more happens, in ms.
-const SETTLE_MS = 800;
+// The text a damaged saved logo holds in place of its bytes, and its length in bytes.
+const DAMAGED_LOGO_TEXT = 'Not a picture any more.';
+const DAMAGED_LOGO_BYTES = 23;
+// How long a case waits for a message or a change, in ms.
+const WAIT_MS = 10000;
+// How long a case waits to be sure nothing more happens, in ms ("wait a second").
+const SETTLE_MS = 1000;
 
-// Opens Rotate and taps 90° right once.
+// Opens Rotate and taps 90° right once, then waits for the quarter turn.
 async function turnRight(page, hand) {
   await goToStep(page, 'rotate', hand);
   await hand.tap(page.locator('#toolRotateRight'));
+  await page.waitForFunction(() => window.__straightener.app.state.rotation.quarter === 1);
 }
 
-// The shown toast's text and kind, once it is up with text that starts `start`, or after
-// TOAST_WAIT_MS whatever it shows then (the case's verdict then names what it found).
-async function waitForToast(page, start) {
-  await page.waitForFunction(text => {
-    const toast = document.getElementById('toast');
-    return !!toast && toast.classList.contains('is-shown')
-      && toast.querySelector('.toast-text').textContent.startsWith(text);
-  }, start, { timeout: TOAST_WAIT_MS }).catch(() => {});
-  return toastNow(page);
+// The number of messages the toast has shown since the page opened (see recordMessages).
+const messageCount = async page => (await messagesSoFar(page)).length;
+
+// Waits for the first message the toast shows after the first `before` of them, other than
+// the "Loading…" a photo shows while it opens, and returns it: { text, kind }.
+async function messageAfter(page, before) {
+  await page.waitForFunction(({ count, loading }) => window.testMessages.slice(count)
+    .some(message => message.text !== loading), { count: before, loading: LOADING },
+  { timeout: WAIT_MS });
+  const messages = (await messagesSoFar(page)).slice(before);
+  return messages.find(message => message.text !== LOADING);
+}
+
+// Runs one verdict with `check`, then drops any security policy refusal its screenshot
+// caused: in WebKit, Playwright's screenshot adds a stylesheet of its own, which the policy
+// refuses (support/case.js drops the console error it logs the same way).
+async function checkDroppingShotRefusals(page, check, description, assertion) {
+  const before = (await policyRefusals(page)).length;
+  await check(description, assertion);
+  await page.evaluate(count => {
+    window.testPolicyRefusals.length = count;
+  }, before);
+}
+
+// The quarter turns the photo has, once the edits a loaded file brings have been applied.
+async function quarterAfterLoad(page, quarter) {
+  await page.waitForFunction(
+    wanted => window.__straightener.app.state.rotation.quarter === wanted,
+    quarter,
+    { timeout: WAIT_MS },
+  ).catch(() => {});
+  return (await editState(page)).rotation.quarter;
+}
+
+// Taps Download, answers No to the Upscale question and waits for the file. Returns the name
+// the app gave it.
+async function downloadAnsweringNo(page, hand) {
+  const { downloading } = await tapDownload(page, hand);
+  return (await answerForFile(page, hand, 'No', downloading)).name;
 }
 
 /* ---------------- SEC-01 The page's security policy ---------------- */
@@ -102,25 +165,41 @@ async function waitForToast(page, start) {
 test('SEC-01.2 The browser applies the policy: a script or a picture from elsewhere is refused '
   + '[phone]', async ({ page, check }) => {
   await watchPolicyRefusals(page);
+  const messages = watchConsole(page);
   await openApp(page);
   await page.evaluate(() => {
     const script = document.createElement('script');
-    script.textContent = 'window.testInlineRan = true;';
+    script.textContent = 'window.testInlineRan = true';
     document.body.append(script);
+  });
+  await waitInPage(page, () => window.testPolicyRefusals.length >= 1);
+  await check(`a red error in the Console names the policy rule "${SCRIPT_RULE}": the script was `
+    + 'blocked', async () => {
+    const errors = messages.filter(message => message.type === 'error'
+      && message.text.includes(SCRIPT_RULE));
+    expect(errors).toHaveLength(1);
+    const directives = (await policyRefusals(page)).map(refusal => refusal.directive);
+    // Chromium reports the rule a script element breaks as script-src-elem.
+    expect(directives.map(directive => directive.startsWith('script-src'))).toEqual([true]);
+  });
+  await check('the Console answers undefined: the script did not run', async () => {
+    expect(await page.evaluate(() => window.testInlineRan)).toBeUndefined();
+  });
+  await page.evaluate(() => {
     const picture = document.createElement('img');
     picture.src = 'https://example.com/picture.png';
     document.body.append(picture);
   });
-  await page.waitForFunction(() => window.testPolicyRefusals.length >= 2);
-  await check('the script written into the page did not run', async () => {
-    expect(await page.evaluate(() => window.testInlineRan)).toBeUndefined();
+  await waitInPage(page, () => window.testPolicyRefusals.length >= 2);
+  await check(`a red error in the Console names the policy rule "${IMAGE_RULE}": the picture was `
+    + 'blocked', async () => {
+    const errors = messages.filter(message => message.type === 'error'
+      && message.text.includes(IMAGE_RULE));
+    expect(errors).toHaveLength(1);
+    const refusals = await policyRefusals(page);
+    expect(refusals[1].directive.startsWith('img-src')).toBe(true);
+    expect(refusals[1].blocked).toBe('https://example.com/picture.png');
   });
-  await check('the browser refused both: the script and the picture from another site',
-    async () => {
-      const directives = (await policyRefusals(page)).map(refusal => refusal.directive);
-      expect(directives.some(directive => directive.startsWith('script-src'))).toBe(true);
-      expect(directives.some(directive => directive.startsWith('img-src'))).toBe(true);
-    });
 });
 
 /* ---------------- SEC-02 Nothing leaves the device ---------------- */
@@ -128,20 +207,41 @@ test('SEC-01.2 The browser applies the policy: a script or a picture from elsewh
 test('SEC-02.1 Opening, editing and exporting a photo sends nothing over the network [phone]',
   async ({ page, check }, testInfo) => {
     await openApp(page);
-    await check(`the start screen reads "${STAYS_ON_DEVICE}"`, async () => {
+    await check(`the start screen reads "${OPEN_PROMPT}" and "${STAYS_ON_DEVICE}"`, async () => {
+      await expect(page.locator('#empty')).toContainText(OPEN_PROMPT);
       await expect(page.locator('#empty')).toContainText(STAYS_ON_DEVICE);
     });
     const requests = watchRequests(page);
-    await openPhoto(page, PHOTO);
     const hand = handFor(page, testInfo);
-    await turnRight(page, hand);
+    await openWith(page, hand, page.locator('#btnOpenEmpty'), PHOTO);
+    await check('the photo opens on the Perspective step, with the corner outline on the card\'s '
+      + 'edges', async () => {
+      expect(await stepShown(page)).toBe('perspective');
+      expect(await isOnFoundCard(page)).toBe(true);
+    });
+    await goToStep(page, 'rotate', hand);
+    await check('the Rotate step shows, with 90° right', async () => {
+      await expect(page.locator('#toolRotateRight')).toBeVisible();
+    });
+    await hand.tap(page.locator('#toolRotateRight'));
+    await check('the photo turns a quarter right', async () => {
+      expect(await quarterAfterLoad(page, 1)).toBe(1);
+    });
     await goToStep(page, 'export', hand);
-    const saved = await saveByDownload(page, hand, 'No');
-    await check('the photo was exported as IMG_9136-straight.jpg', async () => {
+    await check('the Export step shows, with Download', async () => {
+      await expect(page.locator('#btnDownload')).toBeVisible();
+    });
+    const { question, downloading } = await tapDownload(page, hand);
+    await check(`the question box asks "${UPSCALE_QUESTION}"`, async () => {
+      expect(question).toBe(UPSCALE_QUESTION);
+    });
+    const saved = await answerForFile(page, hand, 'No', downloading);
+    await check('IMG_9136-straight.jpg is saved', async () => {
       expect(saved.name).toBe('IMG_9136-straight.jpg');
     });
-    await check('no request went over the network after the page loaded', async () => {
-      const overNetwork = requests.filter(address => /^(https?|wss?):/.test(address));
+    await check('no request went over the network since the list was cleared: every address, '
+      + 'if any, starts with blob: or data:', async () => {
+      const overNetwork = requests.filter(address => !/^(blob|data):/.test(address));
       expect(overNetwork).toEqual([]);
     });
   });
@@ -156,26 +256,26 @@ test('SEC-03.1 A link can\'t set text or reach past the settings [phone]', async
   const link = 'index.html?crop.defaultPreset=4:3&export.format=png'
     + '&storageKey=elsewhere&__proto__.polluted=1&crop.presets.0.label=Hacked';
   const hand = await startWith(page, testInfo, { address: link });
-  await check(`the console warns: "${IGNORED_WARNING}" and names all five`, async () => {
-    const warning = messages.find(message => message.text.startsWith(IGNORED_WARNING));
-    expect(warning && warning.text).toBe(`${IGNORED_WARNING} crop.defaultPreset, export.format, `
-      + 'storageKey, __proto__.polluted, crop.presets.0.label');
+  const names = 'crop.defaultPreset, export.format, storageKey, __proto__.polluted, '
+    + 'crop.presets.0.label';
+  await check(`a warning reads "${IGNORED_WARNING} ${names}"`, async () => {
+    const warnings = messages.filter(message => message.text.startsWith(IGNORED_WARNING));
+    expect(warnings.map(message => message.text)).toEqual([`${IGNORED_WARNING} ${names}`]);
   });
   await goToStep(page, 'crop', hand);
-  await check('Crop starts at 1:1, and the first preset still reads Free', async () => {
+  await check('1:1 is the selected preset, and the first preset still reads Free', async () => {
     expect(await selectedChips(page)).toEqual(['1:1']);
-    await expect(presetChip(page, 'Free')).toBeVisible();
+    expect((await chipLabels(page))[0]).toBe('Free');
   });
   await goToStep(page, 'export', hand);
-  await check('Export\'s Format is JPEG', async () => {
+  await check('JPEG is the selected Format', async () => {
     expect(await selectedChoices(page, 'exportFormat')).toEqual(['JPEG']);
   });
-  await check('nothing outside the settings was changed', async () => {
-    const reached = await page.evaluate(() => ({
-      polluted: ({}).polluted,
-      storageKey: CONFIG.storageKey,
-    }));
-    expect(reached).toEqual({ polluted: undefined, storageKey: 'p1hunt.straightener.v1' });
+  await check('({}).polluted is undefined: nothing was added to every object', async () => {
+    expect(await page.evaluate(() => ({}).polluted)).toBeUndefined();
+  });
+  await check('CONFIG.storageKey is \'p1hunt.straightener.v1\', the key as shipped', async () => {
+    expect(await page.evaluate(() => CONFIG.storageKey)).toBe('p1hunt.straightener.v1');
   });
 });
 
@@ -189,16 +289,16 @@ test('SEC-04.1 A link can\'t raise a size cap or go outside its range [phone]', 
   const link = 'index.html?export.longEdge=20000&maxOutputArea=50000000'
     + '&overlay.maxBytes=10000000&export.editsMaxBytes=100';
   const hand = await startWith(page, testInfo, { address: link });
-  await check('the console warning names all four settings', async () => {
-    const warning = messages.find(message => message.text.startsWith(IGNORED_WARNING));
-    expect(warning && warning.text).toBe(`${IGNORED_WARNING} export.longEdge, maxOutputArea, `
-      + 'overlay.maxBytes, export.editsMaxBytes');
+  const names = 'export.longEdge, maxOutputArea, overlay.maxBytes, export.editsMaxBytes';
+  await check(`a warning reads "${IGNORED_WARNING} ${names}"`, async () => {
+    const warnings = messages.filter(message => message.text.startsWith(IGNORED_WARNING));
+    expect(warnings.map(message => message.text)).toEqual([`${IGNORED_WARNING} ${names}`]);
   });
   await goToStep(page, 'export', hand);
-  await check('Export\'s Size is 2000, the shipped default', async () => {
+  await check('2000 is the selected Size, the shipped default', async () => {
     expect(await selectedChoices(page, 'exportSize')).toEqual(['2000']);
   });
-  await check('the caps are as shipped', async () => {
+  await check('the Console answers [16777216, 5242880, 8388608]: the caps as shipped', async () => {
     const caps = await page.evaluate(() => [
       CONFIG.maxOutputArea,
       CONFIG.overlay.maxBytes,
@@ -212,10 +312,12 @@ test('SEC-04.2 A link can lower a size cap [phone]', async ({ page, check }, tes
   const hand = await startWith(page, testInfo, { address: 'index.html?maxOutputArea=1000000' });
   await goToStep(page, 'export', hand);
   await hand.tap(choiceButton(page, 'exportSize', 'Original'));
-  await check('at Original the size line reads 1000 × 1000 px: the 1400 px crop is held to '
-    + '1 MP', async () => {
-    await expect(page.locator('#exportReadout')).toContainText('1000 × 1000 px');
-  });
+  await check('the size line starts "Output 1000 × 1000 px": the crop is held to 1 MP',
+    async () => {
+      expect(await selectedChoices(page, 'exportSize')).toEqual(['Original']);
+      const line = (await page.locator('#exportReadout').textContent()).trim();
+      expect(line.startsWith('Output 1000 × 1000 px')).toBe(true);
+    });
 });
 
 /* ---------------- SEC-05 A loaded edits file is checked field by field ---------------- */
@@ -224,72 +326,91 @@ test('SEC-05.1 A malformed field is reset and named, the rest is applied [phone]
   page,
   check,
 }, testInfo) => {
+  await recordMessages(page);
   const hand = await startWith(page, testInfo);
-  await turnRight(page, hand);
-  const edits = await saveEditsFile(page, hand);
-  edits.levels = 'bright please';
-  await closeOptions(page, hand, 'export');
-  await goToStep(page, 'rotate', hand);
-  await hand.tap(page.locator('#toolRotateLeft'));
-  await check('the photo is upright again before loading', async () => {
-    expect((await editState(page)).rotation.quarter).toBe(0);
+  await goToStep(page, 'export', hand);
+  const before = await messageCount(page);
+  await loadEdits(page, hand, fixtureFile(LEVELS_AS_WORDS));
+  const shown = await messageAfter(page, before);
+  await check(`an amber message reads "${RESET_WARNING}levels."`, async () => {
+    expect(shown).toEqual({ text: `${RESET_WARNING}levels.`, kind: 'warn' });
   });
-  await loadEditsFile(page, hand, editsPayload(edits));
-  const shown = await waitForToast(page, RESET_WARNING);
-  await check(`an amber warning reads "${RESET_WARNING}levels."`, async () => {
-    expect(shown).toEqual({ text: `${RESET_WARNING}levels.`, kind: 'warn', isShown: true });
-  });
-  await check('the quarter turn from the file is applied, and no levels are set', async () => {
-    const state = await editState(page);
-    expect(state.rotation.quarter).toBe(1);
-    expect(state.levels).toBeNull();
+  await check('the photo is turned a quarter right: the file\'s other edits were applied',
+    async () => {
+      expect(await quarterAfterLoad(page, 1)).toBe(1);
+    });
+  await goToStep(page, 'levels', hand);
+  await check('Clear and Apply are greyed out, and there is no dot on the Levels tab: no levels '
+    + 'are set', async () => {
+    await expect(page.locator('#toolClearLevels')).toBeDisabled();
+    await expect(page.locator('#btnApplyLevels')).toBeDisabled();
+    await expect(levelsDot(page)).toBeHidden();
+    expect((await editState(page)).levels).toBeNull();
   });
 });
 
 /* ---------------- SEC-06 A bad edits file is refused before anything changes ---------------- */
 
+// IMG_9136-large-edits.json as the case tells a person to make it: IMG_9136-turned-edits.json
+// with spaces after its last closing brace until the file is larger than 8 MB.
+function largeEditsFile() {
+  const text = fs.readFileSync(fixturePath(TURNED), 'utf8');
+  const padded = text + ' '.repeat(EDITS_MAX_BYTES + 1 - Buffer.byteLength(text));
+  return textPayload(padded, 'IMG_9136-large-edits.json');
+}
+
 test('SEC-06.1 A file too large, not JSON or not an edits file is refused, and nothing changes '
   + '[phone]', async ({ page, check }, testInfo) => {
+  await recordMessages(page);
   const hand = await startWith(page, testInfo);
   await turnRight(page, hand);
+  await goToStep(page, 'export', hand);
   const before = await editState(page);
-  const bad = [
-    { file: textPayload(' '.repeat(EDITS_MAX_BYTES + 1)), message: TOO_LARGE },
-    { file: textPayload('{"version": 2, "corners": ['), message: NOT_JSON },
-    { file: editsPayload({ version: 9, source: { width: 1, height: 1 }, corners: [] }),
-      message: NOT_EDITS },
+  const files = [
+    { file: largeEditsFile(), message: TOO_LARGE },
+    { file: fixtureFile(NOTES), message: NOT_JSON },
+    { file: fixtureFile(VERSION_3), message: NOT_EDITS },
   ];
-  for (const { file, message } of bad) {
-    await loadEditsFile(page, hand, file);
-    const shown = await waitForToast(page, message);
-    await check(`a red message reads "${message}"; the edits are as they were`, async () => {
-      expect(shown).toEqual({ text: message, kind: 'error', isShown: true });
-      expect(await editState(page)).toEqual(before);
+  for (const { file, message } of files) {
+    const count = await messageCount(page);
+    await loadEdits(page, hand, file);
+    const shown = await messageAfter(page, count);
+    await check(`loading ${file.name}: a red message reads "${message}"; the photo is still `
+      + 'turned a quarter right', async () => {
+      expect(shown).toEqual({ text: message, kind: 'error' });
+      const now = await editState(page);
+      expect(now.rotation.quarter).toBe(1);
+      expect(now).toEqual(before);
     });
   }
 });
 
 /* ---------------- SEC-07 A logo inside an edits file is checked ---------------- */
 
+// IMG_9136-big-logo-edits.json as the case tells a person to make it: IMG_9136-gif-logo-
+// edits.json with the logo's type made PNG and its data replaced by a 5.5 MB file's base64.
+function bigLogoEditsFile() {
+  const edits = fixtureEdits(GIF_LOGO);
+  edits.overlayImage.type = 'image/png';
+  edits.overlayImage.data = Buffer.alloc(OVER_LOGO_LIMIT_BYTES).toString('base64');
+  return textPayload(JSON.stringify(edits, null, 2), 'IMG_9136-big-logo-edits.json');
+}
+
 test('SEC-07.1 An edits file\'s logo of the wrong type or over 5 MB is left out [phone]',
   async ({ page, check }, testInfo) => {
+    await recordMessages(page);
     const hand = await startWith(page, testInfo);
-    await goToStep(page, 'overlay', hand);
-    await addLogo(page, hand, page.locator('#btnOverlayAdd'), 'icon.svg');
-    const edits = await saveEditsFile(page, hand);
-    await closeOptions(page, hand, 'export');
-    await goToStep(page, 'overlay', hand);
-    await hand.tap(page.locator('#toolOverlayRemove'));
-    const wrongType = JSON.parse(JSON.stringify(edits));
-    wrongType.overlayImage.type = 'image/gif';
-    const tooLarge = JSON.parse(JSON.stringify(edits));
-    tooLarge.overlayImage.data = 'A'.repeat(OVER_LOGO_BASE64_LENGTH);
-    for (const [what, file] of [['a GIF', wrongType], ['over 5 MB', tooLarge]]) {
-      await loadEditsFile(page, hand, editsPayload(file));
-      const shown = await waitForToast(page, LOGO_LEFT_OUT);
-      await check(`with a logo ${what}: an amber warning reads "${LOGO_LEFT_OUT}" and no logo `
-        + 'is placed', async () => {
-        expect(shown).toEqual({ text: LOGO_LEFT_OUT, kind: 'warn', isShown: true });
+    await goToStep(page, 'export', hand);
+    const files = [fixtureFile(GIF_LOGO), bigLogoEditsFile()];
+    for (const file of files) {
+      const count = await messageCount(page);
+      await loadEdits(page, hand, file);
+      const shown = await messageAfter(page, count);
+      await check(`loading ${file.name}: an amber message reads "${LOGO_LEFT_OUT}"`, async () => {
+        expect(shown).toEqual({ text: LOGO_LEFT_OUT, kind: 'warn' });
+      });
+      await check('the photo is turned a quarter right, with no logo on it', async () => {
+        expect(await quarterAfterLoad(page, 1)).toBe(1);
         expect((await editState(page)).overlay).toBeNull();
       });
     }
@@ -304,43 +425,67 @@ test('SEC-08.1 Resume cleans a damaged field and an unknown step [phone] [webkit
   const hand = await startWith(page, testInfo);
   await turnRight(page, hand);
   await waitForSaved(page, { quarter: 1, tab: 'rotate' });
-  await changeSavedRecord(page, 'edits', { 'state.crop': 'square please', tab: 'settings' });
-  await reloadToStart(page);
-  await resumeAs(page, hand, PHOTO);
-  await check('the photo opens on Perspective, still turned a quarter right', async () => {
-    await expect(page.locator('section[data-panel="perspective"]')).toHaveClass(/active/);
-    expect((await editState(page)).rotation.quarter).toBe(1);
+  await changeSavedRecord(page, 'edits', { 'state.crop': 'square please' });
+  await check('the saved edits hold the crop "square please"', async () => {
+    expect((await storedRecord(page, 'edits')).state.crop).toBe('square please');
   });
+  await changeSavedRecord(page, 'edits', { tab: 'settings' });
+  await check('the saved edits hold the step "settings"', async () => {
+    expect((await storedRecord(page, 'edits')).tab).toBe('settings');
+  });
+  await reloadToStart(page);
+  await check('the start screen offers Resume', async () => {
+    await expect(page.locator('#btnResume')).toBeVisible();
+  });
+  await resumeAs(page, hand, PHOTO);
+  await check('the photo opens on the Perspective step, still turned a quarter right',
+    async () => {
+      expect(await stepShown(page)).toBe('perspective');
+      await expect(page.locator('section[data-panel="perspective"]')).toHaveClass(/active/);
+      expect((await editState(page)).rotation.quarter).toBe(1);
+    });
   await goToStep(page, 'crop', hand);
-  await check('Crop is back at 1:1', async () => {
+  await check('1:1 is the selected preset: the damaged crop was reset', async () => {
     expect(await selectedChips(page)).toEqual(['1:1']);
   });
 });
 
 /* ---------------- SEC-09 Remembered preferences are checked before use ---------------- */
 
+// The preferences SEC-09.1 has a person type into the Console, as text.
+const UNKNOWN_PREFS = '{"cropPreset":"<b>4:3</b>","export":{"format":"gif","quality":7,'
+  + '"longEdge":"big","interp":"nearest","fill":"red"},"cornerShots":"many"}';
+
 test('SEC-09.1 Malformed remembered preferences fall back to the defaults [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  await storePrefsText(page, JSON.stringify({
-    cropPreset: '<b>4:3</b>',
-    export: { format: 'gif', quality: 7, longEdge: 'big', interp: 'nearest', fill: 'red' },
-    cornerShots: 'many',
-    pairOutput: 'both',
-  }));
-  const hand = await startWith(page, testInfo);
+  await openApp(page);
+  const hand = handFor(page, testInfo);
+  const stored = await writePrefsNow(page, UNKNOWN_PREFS);
+  await check('the Console answers undefined: the values are stored', async () => {
+    expect(stored).toBe(UNKNOWN_PREFS);
+  });
+  await reloadToStart(page);
+  await check('the start screen shows, with Open photo', async () => {
+    await expect(page.locator('#btnOpenEmpty')).toBeVisible();
+  });
+  await openWith(page, hand, page.locator('#btnOpenEmpty'), PHOTO);
+  await check('the photo opens on the Perspective step', async () => {
+    expect(await stepShown(page)).toBe('perspective');
+  });
   await goToStep(page, 'crop', hand);
-  await check('Crop starts at 1:1', async () => {
+  await check('1:1 is the selected preset', async () => {
     expect(await selectedChips(page)).toEqual(['1:1']);
   });
   await goToStep(page, 'export', hand);
-  await check('Export starts at 2000 and JPEG', async () => {
+  await check('2000 is the selected Size and JPEG the selected Format', async () => {
     expect(await selectedChoices(page, 'exportSize')).toEqual(['2000']);
     expect(await selectedChoices(page, 'exportFormat')).toEqual(['JPEG']);
   });
   await hand.tap(page.locator('#btnCornerShots'));
-  await check('Corner shots starts on 1 sheet', async () => {
+  await check('the Corner shots sheet opens with 1 sheet selected', async () => {
+    await expect(page.locator('#cornerShotsSheet')).toBeVisible();
     expect(await selectedChoices(page, 'cornerOutput')).toEqual(['1 sheet']);
   });
 });
@@ -349,40 +494,48 @@ test('SEC-09.2 Remembered preferences that aren\'t JSON are ignored [phone]', as
   page,
   check,
 }, testInfo) => {
-  await storePrefsText(page, '{"cropPreset": "4:3", export:');
-  const hand = await startWith(page, testInfo);
-  await goToStep(page, 'crop', hand);
-  await check('Crop starts at 1:1, and no error is in the console', async () => {
-    expect(await selectedChips(page)).toEqual(['1:1']);
+  await openApp(page);
+  const hand = handFor(page, testInfo);
+  const text = '{"cropPreset": "4:3", export:';
+  const stored = await writePrefsNow(page, text);
+  await check('the Console answers undefined: text that can\'t be read is stored as the '
+    + 'preferences', async () => {
+    expect(stored).toBe(text);
+  });
+  await reloadToStart(page);
+  await check('the start screen shows, and the Console holds no error', async () => {
+    await expect(page.locator('#btnOpenEmpty')).toBeVisible();
     expect(check.consoleErrors()).toEqual([]);
+  });
+  await openWith(page, hand, page.locator('#btnOpenEmpty'), PHOTO);
+  await check('the photo opens on the Perspective step, and the Console still holds no error',
+    async () => {
+      expect(await stepShown(page)).toBe('perspective');
+      expect(check.consoleErrors()).toEqual([]);
+    });
+  await goToStep(page, 'crop', hand);
+  await check('1:1 is the selected preset, not 4:3', async () => {
+    expect(await selectedChips(page)).toEqual(['1:1']);
   });
 });
 
 /* ---------------- SEC-10 What a logo file may be ---------------- */
 
-// An SVG logo that states no size: no width, no height and no viewBox.
-function unsizedSvg() {
-  const markup = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>';
-  return { name: 'no-size.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(markup) };
-}
-
-// An SVG logo with a script and an onload handler in it; each would set a mark on the page if
-// it ran.
-function svgWithScript() {
-  const markup = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" '
-    + 'onload="window.parent.testSvgRan = 1">'
-    + '<script>window.parent.testSvgRan = 2;</script>'
-    + '<rect width="200" height="100" fill="#e5322d"/></svg>';
-  return { name: 'with-script.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(markup) };
+// True when no logo is on the photo: none in the edits and none drawn.
+function hasNoLogo(page) {
+  return page.evaluate(() => !window.__straightener.app.state.overlay);
 }
 
 test('SEC-10.1 An SVG with no size is refused [phone]', async ({ page, check }, testInfo) => {
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'overlay', hand);
-  await chooseBadLogo(page, hand, page.locator('#btnOverlayAdd'), unsizedSvg());
-  await check(`the line above the controls reads "${NO_SIZE}"; no logo is placed`, async () => {
-    await expect(page.locator('#overlayStatus')).toHaveText(NO_SIZE);
-    expect((await editState(page)).overlay).toBeNull();
+  await chooseBadLogo(page, hand, page.locator('#btnOverlayAdd'), fixtureLogo(UNSIZED_SVG));
+  await check(`the line above the controls reads "${NO_SIZE}" in red`, async () => {
+    const status = await statusNow(page, 'overlayStatus');
+    expect({ text: status.text, kind: status.kind }).toEqual({ text: NO_SIZE, kind: 'error' });
+  });
+  await check('no logo is on the photo', async () => {
+    expect(await hasNoLogo(page)).toBe(true);
   });
 });
 
@@ -392,14 +545,17 @@ test('SEC-10.2 An SVG logo\'s script never runs [phone] [webkit]', async ({
 }, testInfo) => {
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'overlay', hand);
-  await chooseLogo(page, hand, page.locator('#btnOverlayAdd'), svgWithScript());
+  await chooseLogo(page, hand, page.locator('#btnOverlayAdd'), fixtureLogo(SVG_WITH_SCRIPT));
+  await check('a red rectangle is placed on the photo', async () => {
+    const overlay = (await editState(page)).overlay;
+    expect(overlay).not.toBeNull();
+    expect(overlay.aspect).toBeCloseTo(2, 3);
+  });
   await page.waitForTimeout(SETTLE_MS);
-  await check('the logo is placed on the photo', async () => {
-    expect((await editState(page)).overlay).not.toBeNull();
-  });
-  await check('neither its script nor its onload handler ran', async () => {
-    expect(await page.evaluate(() => window.testSvgRan)).toBeUndefined();
-  });
+  await check('window.testSvgRan is undefined: neither the script nor the onload handler ran',
+    async () => {
+      expect(await page.evaluate(() => window.testSvgRan)).toBeUndefined();
+    });
 });
 
 test('SEC-10.3 With a lower limit from a link, the refusal names it [phone]', async ({
@@ -408,21 +564,25 @@ test('SEC-10.3 With a lower limit from a link, the refusal names it [phone]', as
 }, testInfo) => {
   const hand = await startWith(page, testInfo, { address: 'index.html?overlay.maxBytes=65536' });
   await goToStep(page, 'overlay', hand);
-  const logo = oversizedPng(LOWERED_LOGO_TEST_BYTES);
-  await check('the hint above the controls says "up to 5 MB"', async () => {
-    await expect(page.locator('section[data-panel="overlay"]')).toContainText('up to 5 MB');
+  await check(`the line above the controls reads "${LOGO_HINT}"`, async () => {
+    await expect(page.locator('#overlayHintLine')).toHaveText(LOGO_HINT);
   });
-  await chooseBadLogo(page, hand, page.locator('#btnOverlayAdd'), logo);
-  await check(`the line reads "${LOWERED_LIMIT_MESSAGE}"`, async () => {
-    await expect(page.locator('#overlayStatus')).toHaveText(LOWERED_LIMIT_MESSAGE);
+  await chooseBadLogo(page, hand, page.locator('#btnOverlayAdd'), fixtureLogo(NOISY_LOGO));
+  await check(`the line reads "${LOWERED_LIMIT_MESSAGE}" in red`, async () => {
+    await expect(page.locator('#overlayStatus .status-text')).toHaveText(LOWERED_LIMIT_MESSAGE);
+    expect((await statusNow(page, 'overlayStatus')).kind).toBe('error');
+  });
+  await check('no logo is on the photo', async () => {
+    expect(await hasNoLogo(page)).toBe(true);
   });
 });
 
 /* ---------------- SEC-11 File names are shown as plain text, cut short ---------------- */
 
-// A photo file whose name is markup, long enough to be cut: a copy of the case photo.
+// SEC-11.1's photo: a copy of the case photo named with markup, 296 characters long. Windows
+// can't hold this name, so the copy is made here.
 function photoWithMarkupName() {
-  const name = `${MARKUP_NAME_START}${'x'.repeat(KEPT_NAME_LENGTH + 40)}.JPEG`;
+  const name = `${MARKUP_NAME_START}${'x'.repeat(NAME_LETTERS)}.JPEG`;
   return { name, mimeType: 'image/jpeg', buffer: fs.readFileSync(samplePath(PHOTO)) };
 }
 
@@ -432,48 +592,66 @@ test('SEC-11.1 A photo\'s name with markup shows as text on the Resume card, cut
   const hand = handFor(page, testInfo);
   const photo = photoWithMarkupName();
   await pickWith(page, hand, page.locator('#btnOpenEmpty'), photo);
-  await page.waitForFunction(() => !!window.__straightener.app.geometry);
-  await turnRight(page, hand);
-  await waitForSaved(page, { quarter: 1 });
-  await reloadToStart(page);
-  const expected = `${photo.name.slice(0, SHORT_NAME_LENGTH - 1)}…`;
-  await check(`the card reads the name as typed, cut to 60 characters: "${expected}"`, async () => {
-    await expect(page.locator('#resumeName')).toHaveText(expected);
-    expect(await page.locator('#resumeName').evaluate(el => el.children.length)).toBe(0);
+  await waitForPhoto(page, photo.name);
+  await check('the photo opens on the Perspective step', async () => {
+    expect(await stepShown(page)).toBe('perspective');
   });
-  await hand.tap(page.locator('#btnResume'));
-  await page.waitForFunction(() => !!window.__straightener.app.geometry);
-  await check('the photo opens turned a quarter right, and nothing the name holds has run',
-    async () => {
-      expect((await editState(page)).rotation.quarter).toBe(1);
-      expect(await page.evaluate(() => window.testRan)).toBeUndefined();
-    });
-  await goToStep(page, 'export', hand);
-  await openOptions(page, hand, 'export');
+  await goToStep(page, 'rotate', hand);
+  await check('the Rotate step shows, with 90° right', async () => {
+    await expect(page.locator('#toolRotateRight')).toBeVisible();
+  });
+  await hand.tap(page.locator('#toolRotateRight'));
+  await waitForSaved(page, { quarter: 1 });
+  await check('the photo turns a quarter right', async () => {
+    expect((await editState(page)).rotation.quarter).toBe(1);
+  });
+  await reloadToStart(page);
+  const cut = `${photo.name.slice(0, SHORT_NAME_LENGTH - 1)}…`;
+  await check(`the Resume card reads "Resume ${cut}?", tags as typed, no picture`, async () => {
+    await expect(page.locator('#resume .resume-name')).toHaveText(`Resume ${cut}?`);
+    expect(await page.locator('#resumeName').evaluate(el => el.children.length)).toBe(0);
+    expect(await page.locator('#resume .resume-name img').count()).toBe(0);
+  });
+  // The reopened photo keeps its name cut to 200 characters.
   const kept = `${photo.name.slice(0, KEPT_NAME_LENGTH - 1)}…`;
-  await check('the source line in Export options ends with the name cut to 200 characters',
-    async () => {
-      const line = await page.locator('#sourceInfo').textContent();
-      expect(line.endsWith(` · ${kept}`)).toBe(true);
-    });
+  await resumeAs(page, hand, kept);
+  await check('the photo opens turned a quarter right', async () => {
+    expect((await editState(page)).rotation.quarter).toBe(1);
+  });
+  await check('window.testRan is undefined: nothing the name holds has run', async () => {
+    expect(await page.evaluate(() => window.testRan)).toBeUndefined();
+  });
+  await goToStep(page, 'export', hand);
+  await check('the Export step shows', async () => {
+    expect(await stepShown(page)).toBe('export');
+  });
+  await openOptions(page, hand, 'export');
+  await check('Export options rise; the source line ends with the name\'s first 199 characters '
+    + 'and "…"', async () => {
+    const line = await page.locator('#sourceInfo').textContent();
+    expect(line.endsWith(` · ${kept}`)).toBe(true);
+  });
 });
 
 test('SEC-11.2 An edits file\'s name with markup shows as text in the warning, cut to 60 '
   + '[phone]', async ({ page, check }, testInfo) => {
+  await recordMessages(page);
   const hand = await startWith(page, testInfo);
-  const edits = await saveEditsFile(page, hand);
-  const name = `${MARKUP_NAME_START}${'y'.repeat(80)}.JPEG`;
-  edits.source.name = name;
-  await loadEditsFile(page, hand, editsPayload(edits));
-  const shown = await waitForToast(page, SAVED_FOR);
+  await goToStep(page, 'export', hand);
+  const before = await messageCount(page);
+  await loadEdits(page, hand, fixtureFile(MARKUP_NAME));
+  const shown = await messageAfter(page, before);
+  const name = fixtureEdits(MARKUP_NAME).source.name;
   const cut = `${name.slice(0, SHORT_NAME_LENGTH - 1)}…`;
-  await check(`an amber warning reads "Edits were saved for “${cut}”. Applied anyway — sizes `
-    + 'match."', async () => {
-    expect(shown.text).toBe(`${SAVED_FOR}${cut}”. Applied anyway — sizes match.`);
-    expect(shown.kind).toBe('warn');
+  await check(`an amber message reads "${SAVED_FOR}${cut}${SIZES_MATCH}"; nothing in it is bold, `
+    + 'and no picture shows', async () => {
+    expect(shown).toEqual({ text: `${SAVED_FOR}${cut}${SIZES_MATCH}`, kind: 'warn' });
     const toastChildren = await page.locator('#toast .toast-text')
       .evaluate(el => el.children.length);
     expect(toastChildren).toBe(0);
+  });
+  await check('window.testRan is undefined: nothing the name holds has run', async () => {
+    expect(await page.evaluate(() => window.testRan)).toBeUndefined();
   });
 });
 
@@ -485,30 +663,81 @@ test('SEC-14.1 A whole edit and export puts no error in the console [phone] [web
 }, testInfo) => {
   await watchPolicyRefusals(page);
   const hand = await startWith(page, testInfo);
+  const verdict = (description, assertion) => checkDroppingShotRefusals(
+    page,
+    check,
+    description,
+    assertion,
+  );
   await turnRight(page, hand);
+  await verdict('the photo turns a quarter right', async () => {
+    expect((await editState(page)).rotation.quarter).toBe(1);
+  });
   await goToStep(page, 'crop', hand);
   await hand.tap(presetChip(page, '4:3'));
+  await verdict('4:3 is the selected preset', async () => {
+    expect(await selectedChips(page)).toEqual(['4:3']);
+  });
+  const lookBefore = await editState(page);
   await goToStep(page, 'levels', hand);
   await hand.tap(page.locator('#toolAutoLevels'));
   await hand.tap(page.locator('#btnApplyLevels'));
+  await verdict('the photo\'s colors change, and there is no dot on the Levels tab: the levels '
+    + 'are applied', async () => {
+    expect(lookBefore.levels).toBeNull();
+    expect((await editState(page)).levels).not.toBeNull();
+    await expect(levelsDot(page)).toBeHidden();
+  });
   await goToStep(page, 'overlay', hand);
   await addLogo(page, hand, page.locator('#btnOverlayAdd'), 'icon.svg');
+  await verdict('the app\'s icon is placed on the photo', async () => {
+    expect((await editState(page)).overlay).not.toBeNull();
+  });
   await goToStep(page, 'export', hand);
-  const saved = await saveByDownload(page, hand, 'No');
-  // Read before the first verdict: WebKit's screenshot adds a stylesheet of the tool's own,
-  // which the policy refuses (support/case.js).
+  await verdict('the Export step shows, with Download', async () => {
+    await expect(page.locator('#btnDownload')).toBeVisible();
+  });
+  const { question, downloading } = await tapDownload(page, hand);
+  await verdict(`the question box asks "${UPSCALE_QUESTION}"`, async () => {
+    expect(question).toBe(UPSCALE_QUESTION);
+  });
+  const saved = await answerForFile(page, hand, 'No', downloading);
+  // Read before the next verdict, whose screenshot would add the tool's own refusal.
   const refusals = await policyRefusals(page);
   const errors = check.consoleErrors();
-  await check('the photo was exported as IMG_9136-straight.jpg', async () => {
+  await check('IMG_9136-straight.jpg is saved', async () => {
     expect(saved.name).toBe('IMG_9136-straight.jpg');
   });
-  await check('no error is in the console, and the policy refused nothing', async () => {
+  await check('the Console holds no error, and no message that the security policy refused '
+    + 'something', async () => {
     expect(errors).toEqual([]);
     expect(refusals).toEqual([]);
   });
 });
 
 /* ---------------- SEC-15 A logo from storage is checked before use ---------------- */
+
+// Waits until the saved logo is stored on the device, as adding a logo stores it.
+function waitForSavedLogo(page) {
+  return waitInPage(page, async () => !!(await window.__straightener.Session.get('overlay')));
+}
+
+// From the start screen after a reload: taps Start fresh, then opens the case photo with Open
+// photo. Each is a row of the case, checked with `check`.
+async function startFreshAndOpen(page, hand, check) {
+  await check('the start screen offers Resume', async () => {
+    await expect(page.locator('#btnResume')).toBeVisible();
+  });
+  await hand.tap(page.locator('#btnFresh'));
+  await check('the start screen, with no Resume card', async () => {
+    await expect(page.locator('#resume')).toBeHidden();
+    await expect(page.locator('#btnOpenEmpty')).toBeVisible();
+  });
+  await openWith(page, hand, page.locator('#btnOpenEmpty'), PHOTO);
+  await check('the photo opens on the Perspective step', async () => {
+    expect(await stepShown(page)).toBe('perspective');
+  });
+}
 
 test('SEC-15.1 A stored logo of an unknown type is not offered [phone]', async ({
   page,
@@ -517,16 +746,19 @@ test('SEC-15.1 A stored logo of an unknown type is not offered [phone]', async (
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'overlay', hand);
   await addLogo(page, hand, page.locator('#btnOverlayAdd'), 'icon.svg');
-  await page.waitForFunction(async () => !!(await window.__straightener.Session.get('overlay')));
+  await waitForSavedLogo(page);
   await changeSavedRecord(page, 'overlay', { type: 'text/html' });
-  await reloadToStart(page);
-  await hand.tap(page.locator('#btnFresh'));
-  await openPhoto(page, PHOTO);
-  await goToStep(page, 'overlay', hand);
-  await check('Use saved overlay is not shown; Add logo is', async () => {
-    await expect(page.locator('#btnUseSaved')).toBeHidden();
-    await expect(page.locator('#btnOverlayAdd')).toBeVisible();
+  await check('the saved logo\'s record holds the type text/html', async () => {
+    expect((await storedRecord(page, 'overlay')).type).toBe('text/html');
   });
+  await reloadToStart(page);
+  await startFreshAndOpen(page, hand, check);
+  await goToStep(page, 'overlay', hand);
+  await check('Add logo shows; Use saved overlay does not: the stored logo was skipped',
+    async () => {
+      await expect(page.locator('#btnOverlayAdd')).toBeVisible();
+      await expect(page.locator('#btnUseSaved')).toBeHidden();
+    });
 });
 
 test('SEC-15.2 A stored logo whose bytes are damaged is refused when used [phone]', async ({
@@ -536,21 +768,32 @@ test('SEC-15.2 A stored logo whose bytes are damaged is refused when used [phone
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'overlay', hand);
   await addLogo(page, hand, page.locator('#btnOverlayAdd'), 'apple-touch-icon.png');
-  await page.waitForFunction(async () => !!(await window.__straightener.Session.get('overlay')));
-  await page.evaluate(async () => {
+  await waitForSavedLogo(page);
+  await page.evaluate(async text => {
     const Session = window.__straightener.Session;
     const record = await Session.get('overlay');
-    record.buf = new TextEncoder().encode('Not a picture any more.').buffer;
+    record.buf = new TextEncoder().encode(text).buffer;
     await Session.put('overlay', record);
+  }, DAMAGED_LOGO_TEXT);
+  await check(`the saved logo's record holds those ${DAMAGED_LOGO_BYTES} bytes`, async () => {
+    const record = await storedRecord(page, 'overlay');
+    expect(record.buf).toEqual({ bytes: DAMAGED_LOGO_BYTES });
+    expect(record.type).toBe('image/png');
   });
   await reloadToStart(page);
-  await hand.tap(page.locator('#btnFresh'));
-  await openPhoto(page, PHOTO);
+  await startFreshAndOpen(page, hand, check);
   await goToStep(page, 'overlay', hand);
+  await check('Use saved overlay shows', async () => {
+    await expect(page.locator('#btnUseSaved')).toBeVisible();
+  });
   await hand.tap(page.locator('#btnUseSaved'));
-  await check(`the line above the controls reads "${CANT_READ}"; no logo is placed`,
-    async () => {
-      await expect(page.locator('#overlayStatus')).toHaveText(CANT_READ);
-      expect((await editState(page)).overlay).toBeNull();
-    });
+  await page.locator('#overlayStatus .status-text').filter({ hasText: CANT_READ })
+    .waitFor({ timeout: WAIT_MS }).catch(() => {});
+  await check(`the line above the controls reads "${CANT_READ}" in red`, async () => {
+    const status = await statusNow(page, 'overlayStatus');
+    expect({ text: status.text, kind: status.kind }).toEqual({ text: CANT_READ, kind: 'error' });
+  });
+  await check('no logo is on the photo', async () => {
+    expect(await hasNoLogo(page)).toBe(true);
+  });
 });
