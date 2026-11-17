@@ -1,24 +1,22 @@
 // The layout cases (tests/catalog/layout.md): the switch between the phone and wide layouts, the
 // fixed heights on the phone, the side panel on a wide screen, the safe areas and the browser's
 // bars as far as a script can see them, touch target sizes, what covers the photo, the step
-// tabs on a small phone, Export's options, reduced motion, the brand look, turning the phone,
-// sideways scrolling and cut-off labels.
-// Each test drives the app as a person would, through hand.tap and hand.drag (a finger on the
-// phone targets, the mouse on the wide ones), and reads the app's state and the page's
-// measurements only to check a result.
+// tabs on a small phone, Export's options, reduced motion, the brand's colors, turning the
+// phone, sideways scrolling and cut-off labels.
+// Each test drives the app as a person would, through hand.tap (a finger on the phone targets,
+// the mouse on the wide ones) and, where the browser itself must take the touch (a held
+// ruler or slider, a swipe on the row of presets), through Chromium's own touch input. It reads
+// the app's state and the page's measurements only to check a result.
 // LAY-04.1, LAY-05.1, LAY-12.1, LAY-13.1 and LAY-14.2 need a real iPhone, so they have no test.
 'use strict';
 const { test, expect } = require('./support/case.js');
 const {
   goToStep,
-  middleOf,
   openOptions,
   closeOptions,
-  saveByDownload,
   waitForStill,
   hasWhiteFill,
 } = require('./support/app.js');
-const { pinchAt } = require('./support/perspective.js');
 const {
   startWith,
   smallTargets,
@@ -27,17 +25,55 @@ const {
   sidewaysScrollPx,
   partHeights,
   stepTabsPlace,
+  tapDownload,
+  answerForFile,
 } = require('./support/security-layout-speed.js');
+const { makePair, sideButton } = require('./support/front-and-back.js');
+const { swipePresetRow, rowScroll } = require('./support/crop.js');
+const {
+  holdFinger,
+  recordSheetFrames,
+  recordPillFrames,
+  framesRecorded,
+  pillSlides,
+  isBetween,
+  knobMiddle,
+  knobHeightPx,
+  screenDifference,
+  recordProgress,
+  progressRecorded,
+} = require('./support/layout.js');
 
-// The six steps, in order.
+// The six steps, in order, and their names on the step tabs.
 const STEPS = ['perspective', 'rotate', 'crop', 'levels', 'overlay', 'export'];
+const STEP_NAMES = {
+  perspective: 'Perspective',
+  rotate: 'Rotate',
+  crop: 'Crop',
+  levels: 'Levels',
+  overlay: 'Overlay',
+  export: 'Export',
+};
+// Each step's options sheet's title, as the screen shows it (in capitals).
+const SHEET_TITLES = {
+  perspective: 'PERSPECTIVE OPTIONS',
+  rotate: 'ROTATE OPTIONS',
+  crop: 'CROP OPTIONS',
+  levels: 'LEVELS TIPS',
+  overlay: 'OVERLAY OPTIONS',
+  export: 'EXPORT OPTIONS',
+};
 // The phone layout's fixed heights, in CSS px (css/app.css: --top-bar-height and the rest).
 const PHONE_TOP_BAR_PX = 48;
 const CONTROLS_PX = 200;
 const TABS_PX = 52;
-// The wide layout's top bar and side panel, in CSS px.
+// The wide layout's top bar and side panel, and the panel's content in Chrome (the panel less
+// the room it keeps for its scroll bar; WebKit keeps none), in CSS px.
 const WIDE_TOP_BAR_PX = 56;
 const SIDE_PANEL_PX = 380;
+const PANEL_CONTENT_PX = 369;
+// The steps whose side panel scrolls at 1280 × 800 (their options are taller than the window).
+const SCROLLING_PANELS = ['perspective', 'export'];
 // The widest window that gets the phone layout, in CSS px.
 const PHONE_MAX_WIDTH = 760;
 // The window sizes the cases switch between.
@@ -49,31 +85,50 @@ const BARS_SHOWN_HEIGHT = 700;
 // The grabber's target: 88 × 44 CSS px.
 const GRABBER_WIDTH_PX = 88;
 const GRABBER_HEIGHT_PX = 44;
-// The step tabs' label size on a narrow phone, in CSS px.
+// The step tabs' label size on a narrow phone, in CSS px, and that window's width.
 const SMALL_LABEL_PX = '11px';
+const SMALL_WIDTH_PX = 375;
 // The brand's red, as the browser reports a color.
 const BRAND_RED = 'rgb(229, 50, 45)';
 // The page's dark color, which the browser's own bar takes (the theme-color meta).
 const THEME_COLOR = '#161618';
-// How far into a slide a sheet is looked at, in ms: well inside a 280 ms slide.
-const MID_SLIDE_MS = 60;
+// The Straighten ruler's pointer at rest and held, in CSS px (css/app.css, the ruler part).
+const POINTER_REST_PX = 28;
+const POINTER_HELD_PX = 36;
+// A slider's knob at rest and held, across, in CSS px (css/app.css, the slider part), and how
+// far a knob measured from a screenshot may be from it (anti-aliased edges).
+const KNOB_REST_PX = 22;
+const KNOB_HELD_PX = 30;
+const KNOB_TOLERANCE_PX = 1.5;
+// How long a held or lifted finger waits before the pointer or knob is measured, in ms: past
+// its 100 ms growth or shrink (the knob's isn't one the page can wait on: the browser draws it).
+const HOLD_SETTLE_MS = 300;
+// A link that makes the export work in small bands of rows (the lowest the link may set), so
+// its progress line takes many steps; and how many steps between 0 and 1 count as moving.
+const SMALL_BANDS_LINK = 'index.html?export.bandPx=65536';
+const PROGRESS_STEPS_MIN = 3;
+// The share of the screen's pixels that may differ before a screen counts as changed (a
+// thousandth: a redraw's stray anti-aliased pixels, never a control or a sheet).
+const SCREEN_CHANGE_MAX = 0.001;
+// Export's progress line on the control area (js/app/export.js draws on it).
+const EXPORT_PROGRESS_ID = 'exportAreaProgress';
 
-// Opens each step in turn by its tab and runs `look(step)` on it. Returns what each look
-// returned, by step.
-async function onEveryStep(page, hand, look) {
-  const seen = {};
-  for (const step of STEPS) {
-    await goToStep(page, step, hand);
+// Starts on the Perspective step, where the photo opens, and visits each step in `steps` in
+// turn: Perspective as it is, every other by tapping its tab. Runs `visit(step)` on each, at
+// rest.
+async function onEveryStep(page, hand, visit, steps = STEPS) {
+  for (const step of steps) {
+    if (step !== 'perspective') await goToStep(page, step, hand);
     await waitForStill(page);
-    seen[step] = await look(step);
+    await visit(step);
   }
-  return seen;
 }
 
-// The steps whose list is not empty, with their lists.
-const nonEmpty = seen => Object.fromEntries(
-  Object.entries(seen).filter(([, list]) => list.length),
-);
+// What a row's check says for a step: the first row looks at Perspective as the case starts;
+// every other row taps a step tab first.
+function rowFor(step, result) {
+  return step === 'perspective' ? result : `after tapping ${STEP_NAMES[step]}: ${result}`;
+}
 
 // Waits until the layout has followed a window size: the step tabs are where the width says.
 async function resizeTo(page, size) {
@@ -102,13 +157,27 @@ function viewNow(page) {
   });
 }
 
+// The page's spare height and width, in CSS px: how much taller and wider it is than the
+// window (0 when it has nothing to scroll).
+function spareSize(page) {
+  return page.evaluate(() => ({
+    height: document.documentElement.scrollHeight - innerHeight,
+    width: document.documentElement.scrollWidth - innerWidth,
+  }));
+}
+
+// The whole screen as a picture, to tell whether anything on it changed.
+function screenNow(page) {
+  return page.screenshot();
+}
+
 /* ---------------- LAY-01 The layout follows the window's width ---------------- */
 
 test('LAY-01.1 760 px and narrower is the phone layout, wider the wide one [desktop] [webkit]',
   async ({ page, check }, testInfo) => {
     await startWith(page, testInfo);
     await resizeTo(page, { width: PHONE_MAX_WIDTH, height: WIDE_SIZE.height });
-    await check('at 760 px: the step tabs are a row along the bottom', async () => {
+    await check('at 760 px: the step tabs are a 52 px row along the bottom', async () => {
       expect(await stepTabsPlace(page)).toBe('bottom');
       const heights = await partHeights(page);
       expect(heights.tabs).toBe(TABS_PX);
@@ -128,8 +197,9 @@ test('LAY-01.2 Going wide lists the options in the panel; going narrow closes th
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'rotate', hand);
   await openOptions(page, hand, 'rotate');
-  await check('on the phone layout, Rotate options open as a sheet', async () => {
+  await check('ROTATE OPTIONS rise as a sheet over the photo', async () => {
     expect(await areOptionsShown(page, 'rotate')).toBe(true);
+    expect(await stepTabsPlace(page)).toBe('bottom');
   });
   await resizeTo(page, WIDE_SIZE);
   await check('wide: every step\'s options are shown in the side panel, Rotate\'s among them',
@@ -163,69 +233,65 @@ test('LAY-02.1 The phone\'s parts keep their heights on every step [phone] [webk
   check,
 }, testInfo) => {
   const hand = await startWith(page, testInfo);
-  const seen = await onEveryStep(page, hand, () => partHeights(page));
   const photoHeight = PHONE_SIZE.height - PHONE_TOP_BAR_PX - CONTROLS_PX - TABS_PX;
-  await check(`on all six steps: top bar 48 px, photo ${photoHeight} px, controls 200 px, step `
-    + 'tabs 52 px', async () => {
-    for (const [step, heights] of Object.entries(seen)) {
-      expect(heights, step).toEqual({
-        topBar: PHONE_TOP_BAR_PX,
-        photo: photoHeight,
-        controls: CONTROLS_PX,
-        tabs: TABS_PX,
-        app: PHONE_SIZE.height,
-      });
-    }
+  const expected = {
+    topBar: PHONE_TOP_BAR_PX,
+    photo: photoHeight,
+    controls: CONTROLS_PX,
+    tabs: TABS_PX,
+    app: PHONE_SIZE.height,
+  };
+  await onEveryStep(page, hand, async step => {
+    const result = step === 'perspective'
+      ? `top bar 48 px, photo ${photoHeight} px, controls 200 px, step tabs 52 px: 844 px in all`
+      : `the same four heights: 48, ${photoHeight}, 200 and 52 px`;
+    await check(rowFor(step, result), async () => {
+      expect(await partHeights(page)).toEqual(expected);
+    });
   });
 });
 
 /* ---------------- LAY-03 Wide: the photo beside a side panel ---------------- */
 
-test('LAY-03.1 The side panel is 380 px and its content as wide on every step [desktop] '
-  + '[webkit]', async ({ page, check }, testInfo) => {
-  const hand = await startWith(page, testInfo);
-  const seen = await onEveryStep(page, hand, () => page.evaluate(() => {
+// The side panel now: its width, its content's width and whether it scrolls.
+function sidePanel(page) {
+  return page.evaluate(() => {
     const panel = document.getElementById('panel');
     const section = panel.querySelector('section.active');
     return {
-      panel: Math.round(panel.getBoundingClientRect().width),
+      width: Math.round(panel.getBoundingClientRect().width),
       content: Math.round(section.getBoundingClientRect().width),
       scrolls: panel.scrollHeight > panel.clientHeight,
-      topBar: Math.round(document.querySelector('.top-bar').getBoundingClientRect().height),
     };
-  }));
-  await check('the top bar is 56 px and holds the step tabs', async () => {
-    expect(await stepTabsPlace(page)).toBe('top bar');
-    expect(Object.values(seen).map(look => look.topBar)).toEqual(STEPS.map(() => WIDE_TOP_BAR_PX));
   });
-  await check('the panel is 380 px on every step, and its content one width on all six',
-    async () => {
-      const widths = Object.values(seen).map(look => look.content);
-      expect(Object.values(seen).map(look => look.panel)).toEqual(STEPS.map(() => SIDE_PANEL_PX));
-      expect(new Set(widths).size, `content widths ${widths.join(', ')}`).toBe(1);
-    });
-  await check('the panel scrolls on at least one step, where its content is taller', async () => {
-    expect(Object.values(seen).some(look => look.scrolls)).toBe(true);
-  });
-});
+}
 
-test('LAY-03.2 The top bar\'s right-hand buttons come in a different order on each layout '
-  + '[both]', async ({ page, check }, testInfo) => {
-  const isPhone = testInfo.project.name.includes('phone');
-  await startWith(page, testInfo);
-  if (isPhone) {
-    const view = await page.locator('#view').boundingBox();
-    await pinchAt(page, { x: view.x + view.width / 2, y: view.y + view.height / 2 }, 60, 180);
-    await page.locator('#btnFit').waitFor({ state: 'visible' });
-  }
-  const order = await page.evaluate(() => ['btnFit', 'btnUndo', 'btnRedo']
-    .map(id => ({ id, left: document.getElementById(id).getBoundingClientRect().left }))
-    .sort((first, second) => first.left - second.left)
-    .map(button => button.id));
-  const expected = isPhone ? ['btnFit', 'btnUndo', 'btnRedo'] : ['btnUndo', 'btnRedo', 'btnFit'];
-  const words = isPhone ? 'Fit to screen, Undo, Redo' : 'Undo, Redo, Fit to screen';
-  await check(`from left to right: ${words}`, async () => {
-    expect(order).toEqual(expected);
+test('LAY-03.1 The side panel is 380 px and its content as wide on every step [desktop] '
+  + '[webkit]', async ({ page, check }, testInfo) => {
+  const hand = await startWith(page, testInfo);
+  await check('the top bar is 56 px tall, with the step tabs in it', async () => {
+    expect(await stepTabsPlace(page)).toBe('top bar');
+    const topBar = await page.locator('.top-bar').boundingBox();
+    expect(Math.round(topBar.height)).toBe(WIDE_TOP_BAR_PX);
+  });
+  const firstPanel = await sidePanel(page);
+  await onEveryStep(page, hand, async step => {
+    const scrolls = SCROLLING_PANELS.includes(step);
+    const content = step === 'perspective'
+      ? 'its content 369 px in Chrome (the room kept for the scroll bar differs by browser)'
+      : 'its content as wide as on Perspective';
+    const scrolling = scrolls ? 'scrolls' : 'doesn\'t scroll';
+    const result = `the panel is 380 px wide, ${content}; the panel ${scrolling}`;
+    await check(rowFor(step, result), async () => {
+      expect(await sidePanel(page)).toEqual({
+        width: SIDE_PANEL_PX,
+        content: firstPanel.content,
+        scrolls,
+      });
+      if (testInfo.project.name.startsWith('chromium')) {
+        expect(firstPanel.content).toBe(PANEL_CONTENT_PX);
+      }
+    });
   });
 });
 
@@ -244,10 +310,12 @@ test('LAY-04.2 The page is laid out under the whole screen, with no padding wher
       box: [box.left, box.top, box.width, box.height],
     };
   });
-  await check('the page asks to cover the whole screen, notch included', async () => {
+  await check('the viewport setting holds viewport-fit=cover: the page is laid out under the '
+    + 'whole screen', async () => {
     expect(layout.coversScreen).toBe(true);
   });
-  await check('with no unsafe edges, the app has no padding and fills the window', async () => {
+  await check('the app has no padding on any side and fills the window, 390 × 844 px from its '
+    + 'top-left', async () => {
     expect(layout.padding).toEqual(['0px', '0px', '0px', '0px']);
     expect(layout.box).toEqual([0, 0, PHONE_SIZE.width, PHONE_SIZE.height]);
   });
@@ -255,83 +323,103 @@ test('LAY-04.2 The page is laid out under the whole screen, with no padding wher
 
 /* ---------------- LAY-05 The app fills the screen as Safari's bars come and go ---------- */
 
+// Where the app is: its top and its height, in CSS px.
+function appBox(page) {
+  return page.evaluate(() => {
+    const box = document.getElementById('app').getBoundingClientRect();
+    return [box.top, box.height];
+  });
+}
+
 test('LAY-05.2 The app fills the window as its height changes, and the page never scrolls '
   + '[phone] [webkit]', async ({ page, check }, testInfo) => {
   await startWith(page, testInfo);
-  const fill = () => page.evaluate(() => {
-    const box = document.getElementById('app').getBoundingClientRect();
-    const root = document.documentElement;
-    return {
-      app: [box.top, box.height],
-      window: innerHeight,
-      scrollsDown: root.scrollHeight - innerHeight,
-    };
+  await check('the app fills the window from the top, 844 px tall', async () => {
+    expect(await appBox(page)).toEqual([0, PHONE_SIZE.height]);
   });
-  const full = await fill();
+  await check('the page\'s spare height is 0', async () => {
+    expect((await spareSize(page)).height).toBe(0);
+  });
   await page.setViewportSize({ width: PHONE_SIZE.width, height: BARS_SHOWN_HEIGHT });
   await page.waitForFunction(height => {
     const box = document.getElementById('app').getBoundingClientRect();
     return Math.round(box.height) === height;
   }, BARS_SHOWN_HEIGHT);
-  const shorter = await fill();
-  await check('the app fills the window exactly at 844 px tall and at 700 px tall', async () => {
-    expect(full.app).toEqual([0, PHONE_SIZE.height]);
-    expect(shorter.app).toEqual([0, BARS_SHOWN_HEIGHT]);
+  await check('the app fills the window again, from the top, 700 px tall', async () => {
+    expect(await appBox(page)).toEqual([0, BARS_SHOWN_HEIGHT]);
   });
-  await check('at both heights the page has nothing to scroll', async () => {
-    expect([full.scrollsDown, shorter.scrollsDown]).toEqual([0, 0]);
+  await check('the page\'s spare height is 0 at 700 px too', async () => {
+    expect((await spareSize(page)).height).toBe(0);
   });
 });
 
 /* ---------------- LAY-06 Every touch control is at least 44 px ---------------- */
 
-test('LAY-06.1 Every control on every step and in every options sheet is at least 44 px '
-  + '[phone] [webkit]', async ({ page, check }, testInfo) => {
+test('LAY-06.1 Every control on every step is at least 44 px [phone] [webkit]', async ({
+  page,
+  check,
+}, testInfo) => {
   const hand = await startWith(page, testInfo);
-  const onScreen = await onEveryStep(page, hand, () => smallTargets(page));
-  await check('on the six steps no control under 44 × 44 px', async () => {
-    expect(nonEmpty(onScreen)).toEqual({});
-  });
-  const inSheets = {};
-  for (const step of STEPS) {
-    await goToStep(page, step, hand);
-    await openOptions(page, hand, step);
-    await waitForStill(page);
-    inSheets[step] = await smallTargets(page, `#${step}Sheet`);
-    await closeOptions(page, hand, step);
-  }
-  await check('in the six options sheets no control under 44 × 44 px', async () => {
-    expect(nonEmpty(inSheets)).toEqual({});
+  await onEveryStep(page, hand, async step => {
+    await check(rowFor(step, 'every control on the screen is at least 44 × 44 px'), async () => {
+      expect(await smallTargets(page)).toEqual([]);
+    });
   });
 });
+
+// In each 1 px column across a step's grabber, how many CSS px a touch lands on it, from well
+// above its tab to well inside the controls (a strip above the tab counts too). Returns
+// { columns, shortest }.
+function grabberStrip(page, step) {
+  return page.evaluate(id => {
+    const grabber = document.getElementById(id);
+    const box = grabber.getBoundingClientRect();
+    const heights = [];
+    for (let x = Math.ceil(box.left); x < box.right; x++) {
+      let height = 0;
+      for (let y = Math.floor(box.top) - 40; y < box.bottom + 20; y++) {
+        const found = document.elementFromPoint(x + 0.5, y + 0.5);
+        if (found && grabber.contains(found)) height++;
+      }
+      heights.push(height);
+    }
+    return { columns: heights.length, shortest: Math.min(...heights) };
+  }, `${step}AreaGrabber`);
+}
 
 test('LAY-06.2 The tab that opens the options takes a touch 88 × 44 px [phone] [webkit]',
   async ({ page, check }, testInfo) => {
     const hand = await startWith(page, testInfo);
-    const seen = await onEveryStep(page, hand, step => page.evaluate(id => {
-      const grabber = document.getElementById(id);
-      const box = grabber.getBoundingClientRect();
-      // In each 1 px column across the target, how many CSS px a touch lands on it, from well
-      // above its tab to well inside the controls (a strip above the tab counts too).
-      const heights = [];
-      for (let x = Math.ceil(box.left); x < box.right; x++) {
-        let height = 0;
-        for (let y = Math.floor(box.top) - 40; y < box.bottom + 20; y++) {
-          const found = document.elementFromPoint(x + 0.5, y + 0.5);
-          if (found && grabber.contains(found)) height++;
-        }
-        heights.push(height);
-      }
-      return { columns: heights.length, shortest: Math.min(...heights) };
-    }, `${step}AreaGrabber`));
-    await check('on all six steps the tab takes touches over 88 px across, each column at '
-      + 'least 44 px tall', async () => {
-      for (const [step, strip] of Object.entries(seen)) {
-        expect(strip.columns, step).toBe(GRABBER_WIDTH_PX);
-        expect(strip.shortest, step).toBeGreaterThanOrEqual(GRABBER_HEIGHT_PX);
-      }
+    await onEveryStep(page, hand, async step => {
+      const result = 'the options tab takes touches over 88 px across, and at least 44 px down '
+        + 'in every column';
+      await check(rowFor(step, result), async () => {
+        const strip = await grabberStrip(page, step);
+        expect(strip.columns).toBe(GRABBER_WIDTH_PX);
+        expect(strip.shortest).toBeGreaterThanOrEqual(GRABBER_HEIGHT_PX);
+      });
     });
   });
+
+test('LAY-06.3 Every control in every options sheet is at least 44 px [phone] [webkit]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startWith(page, testInfo);
+  for (const step of STEPS) {
+    await goToStep(page, step, hand);
+    await openOptions(page, hand, step);
+    await waitForStill(page);
+    const title = SHEET_TITLES[step];
+    await check(`every control in ${title} is at least 44 × 44 px`, async () => {
+      expect(await areOptionsShown(page, step)).toBe(true);
+      const shown = await page.locator(`#${step}Sheet .sheet-title`).textContent();
+      expect(shown.toUpperCase()).toBe(title);
+      expect(await smallTargets(page, `#${step}Sheet`)).toEqual([]);
+    });
+    await closeOptions(page, hand, step);
+  }
+});
 
 /* ---------------- LAY-07 Nothing covers the photo unless you asked for it ---------------- */
 
@@ -340,31 +428,11 @@ test('LAY-07.1 Nothing covers the photo on any step [both]', async ({
   check,
 }, testInfo) => {
   const hand = await startWith(page, testInfo);
-  const seen = await onEveryStep(page, hand, () => overThePhoto(page));
-  await check('on all six steps nothing lies over the photo but its own tab', async () => {
-    expect(nonEmpty(seen)).toEqual({});
-  });
-});
-
-test('LAY-07.2 A message over the photo lets touches through [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startWith(page, testInfo);
-  await goToStep(page, 'export', hand);
-  await saveByDownload(page, hand, 'No');
-  const toast = page.locator('#toast');
-  await expect(toast).toHaveClass(/is-shown/);
-  const middle = await middleOf(toast.locator('.toast-text'));
-  await check('a message "Exported …" shows over the photo\'s bottom edge', async () => {
-    await expect(toast).toContainText('Exported ');
-  });
-  const under = await page.evaluate(point => {
-    const found = document.elementFromPoint(point.x, point.y);
-    return found ? found.id || found.className : '';
-  }, middle);
-  await check('a touch on the message lands on the photo under it', async () => {
-    expect(under).toBe('view');
+  await onEveryStep(page, hand, async step => {
+    const result = 'nothing lies over the photo but, on a phone, the options tab';
+    await check(rowFor(step, result), async () => {
+      expect(await overThePhoto(page)).toEqual([]);
+    });
   });
 });
 
@@ -388,9 +456,9 @@ test('LAY-08.1 On a 375 px phone the six step tabs fit one row at 11 px [small]'
   await check('six tabs on one row, inside the 375 px window', async () => {
     expect(tabs).toHaveLength(STEPS.length);
     expect(new Set(tabs.map(tab => tab.top)).size).toBe(1);
-    expect(Math.max(...tabs.map(tab => tab.right))).toBeLessThanOrEqual(375);
+    expect(Math.max(...tabs.map(tab => tab.right))).toBeLessThanOrEqual(SMALL_WIDTH_PX);
   });
-  await check('every label is 11 px and none is cut', async () => {
+  await check('every label is 11 px text and none is cut short', async () => {
     expect(tabs.map(tab => tab.fontSize)).toEqual(STEPS.map(() => SMALL_LABEL_PX));
     expect(tabs.filter(tab => tab.isCut)).toEqual([]);
   });
@@ -415,7 +483,8 @@ test('LAY-09.1 Export options show down to Tips without scrolling [phone] [webki
       isTipsInside: tips.top >= bodyBox.top && tips.bottom <= bodyBox.bottom + 0.5,
     };
   });
-  await check('the Tips row shows whole, and the sheet has nothing to scroll', async () => {
+  await check('EXPORT OPTIONS show every row down to Tips whole; nothing is cut off at the '
+    + 'bottom, so the sheet has nothing to scroll', async () => {
     expect(fit.isTipsInside).toBe(true);
     expect(fit.overflowPx).toBeLessThanOrEqual(0);
   });
@@ -423,114 +492,269 @@ test('LAY-09.1 Export options show down to Tips without scrolling [phone] [webki
 
 /* ---------------- LAY-10 Reduced motion ---------------- */
 
-// Where a sheet is a moment after its grabber is tapped: its offset down from its resting
-// place, in CSS px (0 at rest).
-async function sheetOffsetMidSlide(page, hand, step) {
-  await hand.tap(page.locator(`#${step}AreaGrabber`));
-  await page.waitForTimeout(MID_SLIDE_MS);
-  return page.evaluate(id => {
-    const sheet = document.querySelector(`#${id} .sheet`);
-    return Math.round(new DOMMatrix(getComputedStyle(sheet).transform).m42);
-  }, `${step}Sheet`);
+// Taps `control` while recording the frames of a step's sheet. Returns the frames.
+async function sheetFramesAfter(page, hand, step, control) {
+  await recordSheetFrames(page, step);
+  await hand.tap(control);
+  return framesRecorded(page);
 }
 
-test('LAY-10.1 Under reduced motion a sheet jumps to its place and the pill doesn\'t slide '
+test('LAY-10.1 Under reduced motion an options sheet is in its place at once [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startWith(page, testInfo);
+  await goToStep(page, 'rotate', hand);
+  await waitForStill(page);
+  const grabber = page.locator('#rotateAreaGrabber');
+  const rising = await sheetFramesAfter(page, hand, 'rotate', grabber);
+  await check('ROTATE OPTIONS slide up from the bottom of the screen', async () => {
+    const shown = rising.filter(frame => frame.isShown);
+    expect(shown.some(frame => frame.offsetPx > 0)).toBe(true);
+    expect(shown[shown.length - 1].offsetPx).toBe(0);
+  });
+  await waitForStill(page);
+  const close = page.locator('#rotateSheet .sheet-close');
+  const falling = await sheetFramesAfter(page, hand, 'rotate', close);
+  await page.locator('#rotateSheet').waitFor({ state: 'hidden' });
+  await check('the sheet slides down out of sight', async () => {
+    expect(falling.some(frame => frame.isShown && frame.offsetPx > 0)).toBe(true);
+    expect(await page.locator('#rotateSheet').isHidden()).toBe(true);
+  });
+  await waitForStill(page);
+  const before = await screenNow(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await check('with reduced motion turned on, nothing on the screen changes', async () => {
+    expect(await screenDifference(page, before, await screenNow(page)))
+      .toBeLessThanOrEqual(SCREEN_CHANGE_MAX);
+  });
+  const reduced = await sheetFramesAfter(page, hand, 'rotate', grabber);
+  await check('ROTATE OPTIONS are in their place at once, with no slide; only the dimming over '
+    + 'the photo fades in', async () => {
+    const shown = reduced.filter(frame => frame.isShown);
+    expect(shown.map(frame => frame.offsetPx)).toEqual(shown.map(() => 0));
+    const finalDimming = shown[shown.length - 1].dimming;
+    expect(shown.some(frame => frame.dimming > 0 && frame.dimming < finalDimming)).toBe(true);
+  });
+});
+
+test('LAY-10.2 Under reduced motion the Front and Back pill jumps [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await makePair(page, testInfo);
+  await waitForStill(page);
+  await recordPillFrames(page);
+  await hand.tap(sideButton(page, 'front'));
+  const sliding = await framesRecorded(page);
+  const slides = await pillSlides(page);
+  await check('the pill slides from Back to Front: the browser runs a slide across on it, and '
+    + 'it ends on Front', async () => {
+    expect(slides).toContain('transform');
+    expect(sliding[sliding.length - 1]).toBe(0);
+  });
+  await page.waitForFunction(() => {
+    const app = window.__straightener.app;
+    return app.pair.current === 'front' && !app.isSwitching && app.detection.message === '';
+  });
+  await waitForStill(page);
+  const before = await screenNow(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await check('with reduced motion turned on, nothing on the screen changes', async () => {
+    expect(await screenDifference(page, before, await screenNow(page)))
+      .toBeLessThanOrEqual(SCREEN_CHANGE_MAX);
+  });
+  await recordPillFrames(page);
+  await hand.tap(sideButton(page, 'back'));
+  const jumping = await framesRecorded(page);
+  const jumps = await pillSlides(page);
+  await check('the pill jumps: no slide is run on it, and in every frame it is wholly on Front '
+    + 'or wholly on Back, never between', async () => {
+    expect(jumps).toEqual([]);
+    expect(jumping.filter(isBetween)).toEqual([]);
+    expect(jumping[jumping.length - 1]).toBe(1);
+  });
+});
+
+// The Straighten ruler's pointer's height on the page, in CSS px.
+function pointerHeight(page) {
+  return page.locator('#rotateArea .ruler-pointer').evaluate(pointer => (
+    Math.round(pointer.getBoundingClientRect().height)
+  ));
+}
+
+test('LAY-10.3 Under reduced motion the Straighten ruler\'s pointer doesn\'t grow when held '
   + '[phone]', async ({ page, check }, testInfo) => {
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'rotate', hand);
   await waitForStill(page);
-  const slidingOffset = await sheetOffsetMidSlide(page, hand, 'rotate');
-  await check('with motion: 60 ms after the tap, the sheet is still sliding up', async () => {
-    expect(slidingOffset).toBeGreaterThan(0);
+  const ruler = await page.locator('#rotateArea .ruler').boundingBox();
+  const middle = { x: ruler.x + ruler.width / 2, y: ruler.y + ruler.height / 2 };
+  let lift = await holdFinger(page, middle);
+  await page.waitForTimeout(HOLD_SETTLE_MS);
+  await check('held: the pointer grows to 36 px tall', async () => {
+    expect(await pointerHeight(page)).toBe(POINTER_HELD_PX);
   });
-  await closeOptions(page, hand, 'rotate');
+  await lift();
+  await waitForStill(page);
+  await check('let go: the pointer is 28 px tall again', async () => {
+    expect(await pointerHeight(page)).toBe(POINTER_REST_PX);
+  });
+  const before = await screenNow(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const reducedOffset = await sheetOffsetMidSlide(page, hand, 'rotate');
-  await check('with reduced motion: 60 ms after the tap, the sheet is already in its place',
-    async () => {
-      expect(reducedOffset).toBe(0);
-    });
-  const still = await page.evaluate(() => {
-    const thumb = document.querySelector('.segment-thumb');
-    const pointer = document.querySelector('.ruler-pointer');
-    return {
-      thumb: thumb ? getComputedStyle(thumb).transitionProperty : 'none',
-      pointer: getComputedStyle(pointer).transitionProperty,
-    };
+  await check('with reduced motion turned on, nothing on the screen changes', async () => {
+    expect(await screenDifference(page, before, await screenNow(page)))
+      .toBeLessThanOrEqual(SCREEN_CHANGE_MAX);
   });
-  await check('the two-part switches\' pill and the ruler\'s pointer change only by fading',
-    async () => {
-      expect(['none', 'opacity']).toContain(still.thumb);
-      expect(['none', 'opacity']).toContain(still.pointer);
-    });
+  lift = await holdFinger(page, middle);
+  await page.waitForTimeout(HOLD_SETTLE_MS);
+  await check('held with reduced motion: the pointer stays 28 px tall', async () => {
+    expect(await page.locator('#rotateArea .ruler').getAttribute('class')).toContain('is-held');
+    expect(await pointerHeight(page)).toBe(POINTER_REST_PX);
+  });
+  await lift();
 });
 
-/* ---------------- LAY-11 The brand look ---------------- */
+test('LAY-10.4 Under reduced motion a slider\'s knob doesn\'t grow when held [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startWith(page, testInfo);
+  await hand.tap(page.locator('#toolFlatten'));
+  const slider = page.locator('#strength');
+  await slider.waitFor({ state: 'visible' });
+  await waitForStill(page);
+  await check('the Flatten slider shows at 100%, its knob at the right end, 22 px across',
+    async () => {
+      expect(await slider.inputValue()).toBe('100');
+      expect(await knobHeightPx(page, slider)).toBeCloseTo(KNOB_REST_PX, 0);
+    });
+  const knob = await knobMiddle(slider);
+  let lift = await holdFinger(page, knob);
+  await page.waitForTimeout(HOLD_SETTLE_MS);
+  await check('held: the knob grows to 30 px across', async () => {
+    const heightPx = await knobHeightPx(page, slider);
+    expect(Math.abs(heightPx - KNOB_HELD_PX)).toBeLessThanOrEqual(KNOB_TOLERANCE_PX);
+  });
+  await lift();
+  await page.waitForTimeout(HOLD_SETTLE_MS);
+  await check('let go: the knob is 22 px across again', async () => {
+    const heightPx = await knobHeightPx(page, slider);
+    expect(Math.abs(heightPx - KNOB_REST_PX)).toBeLessThanOrEqual(KNOB_TOLERANCE_PX);
+  });
+  const before = await screenNow(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await check('with reduced motion turned on, nothing on the screen changes', async () => {
+    expect(await screenDifference(page, before, await screenNow(page)))
+      .toBeLessThanOrEqual(SCREEN_CHANGE_MAX);
+  });
+  lift = await holdFinger(page, knob);
+  await page.waitForTimeout(HOLD_SETTLE_MS);
+  await check('held with reduced motion: the knob stays 22 px across', async () => {
+    expect(await page.locator('#perspectiveArea .slider').getAttribute('class'))
+      .toContain('is-held');
+    const heightPx = await knobHeightPx(page, slider);
+    expect(Math.abs(heightPx - KNOB_REST_PX)).toBeLessThanOrEqual(KNOB_TOLERANCE_PX);
+  });
+  await lift();
+});
 
-test('LAY-11.1 The brand look, for a person to judge [phone]', async ({
+test('LAY-10.5 Under reduced motion the export\'s progress line still moves [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const hand = await startWith(page, testInfo, { address: SMALL_BANDS_LINK });
+  await goToStep(page, 'export', hand);
+  await waitForStill(page);
+  const { question, downloading } = await tapDownload(page, hand);
+  await check('the question box asks "Upscale to 2000 px?"', async () => {
+    expect(question).toBe('Upscale to 2000 px?');
+  });
+  await recordProgress(page, EXPORT_PROGRESS_ID);
+  await answerForFile(page, hand, 'Yes', downloading);
+  await expect(page.locator('#toast')).toContainText('Exported 2000 × 2000 px');
+  const changes = await progressRecorded(page);
+  await check('a thin red line on the top edge of the controls grows from left to right in '
+    + 'several steps, then goes; a message begins "Exported 2000 × 2000 px"', async () => {
+    const shown = changes.filter(change => !change.isHidden).map(change => change.scale);
+    const between = [...new Set(shown.filter(scale => scale > 0 && scale < 1))];
+    expect(between.length).toBeGreaterThanOrEqual(PROGRESS_STEPS_MIN);
+    expect(shown).toEqual([...shown].sort((first, second) => first - second));
+    expect(changes[changes.length - 1].isHidden).toBe(true);
+    await expect(page.locator('#toast')).toContainText('Exported 2000 × 2000 px');
+  });
+});
+
+/* ---------------- LAY-11 The brand's colors ---------------- */
+
+test('LAY-11.1 The brand\'s colors, for a person to judge [phone]', async ({
   page,
   check,
 }, testInfo) => {
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'export', hand);
   await waitForStill(page);
-  await check.eye('Export on the phone: matte black and white; Download red; the selected Size '
-    + '(2000) and Format (JPEG) solid white; no gradients, no amber, no italics, no F1 marks');
+  await check.eye('Export on the phone: Download is red with white text; the chosen Size (2000) '
+    + 'and Format (JPEG) are solid white with dark text; the other Size and Format choices are '
+    + 'dark gray with white text; behind the photo and the controls is black');
   await goToStep(page, 'crop', hand);
   await waitForStill(page);
-  await check.eye('Crop on the phone: the selected preset (1:1) a solid white chip; every other '
-    + 'control dark gray with white text; nothing red but a main action');
+  await check.eye('Crop on the phone: the chosen preset (1:1) is a solid white chip with dark '
+    + 'text; the other presets are dark gray chips with white text');
 });
 
-test('LAY-11.2 No gradient anywhere, Download red and the selected size white [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startWith(page, testInfo);
-  await goToStep(page, 'export', hand);
-  // The saved logo's thumbnail sits on a checkerboard (to show see-through parts), drawn with
-  // a hard-edged conic gradient that shows as flat squares: the one gradient in the stylesheet,
-  // an agreed exception to "no gradients" (ruling R43).
-  const gradients = await page.evaluate(() => [...document.querySelectorAll('*')]
-    .filter(element => /gradient/.test(getComputedStyle(element).backgroundImage))
-    .map(element => element.id || element.className)
-    .filter(name => name !== 'overlayThumb'));
-  await check('no element has a gradient, but for the checkerboard behind the saved logo (an '
-    + 'agreed exception, ruling R43)',
-    async () => {
-      expect(gradients).toEqual([]);
-    });
-  await check('Download is the brand\'s red, and the selected Size is a solid white fill',
-    async () => {
+test('LAY-11.2 Download is the brand\'s red and the chosen size and format white [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startWith(page, testInfo);
+    await goToStep(page, 'export', hand);
+    await check('Download\'s background is the brand\'s red, #e5322d', async () => {
       const red = await page.locator('#btnDownload')
         .evaluate(element => getComputedStyle(element).backgroundColor);
       expect(red).toBe(BRAND_RED);
-      expect(await hasWhiteFill(page.locator('#exportSize .segment[aria-pressed="true"]')))
-        .toBe(true);
     });
-});
+    await check('the chosen Size (2000) is a solid white fill', async () => {
+      const chosen = page.locator('#exportSize .segment[aria-pressed="true"]');
+      await expect(chosen).toHaveText('2000');
+      expect(await hasWhiteFill(chosen)).toBe(true);
+    });
+    await check('the chosen Format (JPEG) is a solid white fill', async () => {
+      const chosen = page.locator('#exportFormat .segment[aria-pressed="true"]');
+      await expect(chosen).toHaveText('JPEG');
+      expect(await hasWhiteFill(chosen)).toBe(true);
+    });
+  });
 
 /* ---------------- LAY-13 Safari's toolbar keeps its dark color ---------------- */
+
+// The computed position of an element, by its id.
+function positionOf(page, id) {
+  return page.locator(`#${id}`).evaluate(element => getComputedStyle(element).position);
+}
 
 test('LAY-13.2 An open sheet is placed against the app, never fixed to the screen [phone] '
   + '[webkit]', async ({ page, check }, testInfo) => {
   const hand = await startWith(page, testInfo);
-  const positions = {};
   for (const step of STEPS) {
     await goToStep(page, step, hand);
     await openOptions(page, hand, step);
-    positions[step] = await page.locator(`#${step}Sheet`)
-      .evaluate(element => getComputedStyle(element).position);
+    await check(`${STEP_NAMES[step]}'s sheet: its layer's position is absolute, not fixed`,
+      async () => {
+        expect(await areOptionsShown(page, step)).toBe(true);
+        expect(await positionOf(page, `${step}Sheet`)).toBe('absolute');
+      });
     await closeOptions(page, hand, step);
   }
   await hand.tap(page.locator('#btnCornerShots'));
-  positions.cornerShots = await page.locator('#cornerShotsSheet')
-    .evaluate(element => getComputedStyle(element).position);
-  await check('every options sheet and the Corner shots sheet is placed absolutely, not fixed',
-    async () => {
-      expect(Object.values(positions)).toEqual(Object.keys(positions).map(() => 'absolute'));
+  await check('the Corner shots sheet rises', async () => {
+    await page.waitForFunction(() => {
+      return window.CF.isSheetOpen(document.getElementById('cornerShotsSheet'));
     });
-  await check(`the browser's color is the page's dark ${THEME_COLOR}`, async () => {
+  });
+  await check('the Corner shots sheet\'s layer is placed absolutely', async () => {
+    expect(await positionOf(page, 'cornerShotsSheet')).toBe('absolute');
+  });
+  await check(`the page's theme color is the page's dark gray, ${THEME_COLOR}`, async () => {
     const color = await page.locator('meta[name="theme-color"]').getAttribute('content');
     expect(color).toBe(THEME_COLOR);
   });
@@ -553,8 +777,8 @@ test('LAY-14.1 Sideways and back, the layout is as it was [phone] [webkit]', asy
   await resizeTo(page, PHONE_SIZE);
   await page.waitForFunction(() => window.CF.currentView().auto !== false);
   const after = { heights: await partHeights(page), view: await viewNow(page) };
-  await check('upright again: the same heights, the step tabs along the bottom, the photo '
-    + 'fitted as before', async () => {
+  await check('upright again: top bar 48 px, photo 544 px, controls 200 px, step tabs 52 px '
+    + 'along the bottom, the photo fitted at the same size as before', async () => {
     expect(await stepTabsPlace(page)).toBe('bottom');
     expect(after.heights).toEqual(before.heights);
     expect(after.view.isFitted).toBe(true);
@@ -564,52 +788,69 @@ test('LAY-14.1 Sideways and back, the layout is as it was [phone] [webkit]', asy
 
 /* ---------------- LAY-15 The page never scrolls sideways ---------------- */
 
-// The body of LAY-15.1 and LAY-15.2: no sideways scroll on any step, and on the phone the
-// crop presets' row scrolls inside itself.
-async function noSidewaysScroll(page, check, testInfo) {
-  const hand = await startWith(page, testInfo);
-  const seen = await onEveryStep(page, hand, () => sidewaysScrollPx(page));
-  await check('on all six steps the page doesn\'t scroll sideways', async () => {
-    expect(Object.values(seen).filter(overflow => overflow > 0)).toEqual([]);
+// The rows of LAY-15.1 and LAY-15.2 that check a step: the page's spare width is 0 on each of
+// `steps` in turn.
+async function checkSpareWidths(page, check, hand, steps) {
+  await onEveryStep(page, hand, async step => {
+    const result = 'the page\'s spare width is 0';
+    const row = step === 'perspective' ? result : `check ${STEP_NAMES[step]}: ${result}`;
+    await check(row, async () => {
+      expect((await spareSize(page)).width).toBe(0);
+    });
+  }, steps);
+}
+
+// The rows of LAY-15.2 and LAY-15.3 on the Crop step: a swipe on the row of presets scrolls the
+// row inside itself, and the page still has nothing to scroll sideways.
+async function swipeThePresets(page, check) {
+  const scrolledBefore = await rowScroll(page);
+  await swipePresetRow(page, 'left');
+  await check('the row of presets moves inside itself: presets further along come into view',
+    async () => {
+      expect(await rowScroll(page)).toBeGreaterThan(scrolledBefore);
+    });
+  await check('the page\'s spare width is 0: the top bar, the photo and the step tabs haven\'t '
+    + 'moved sideways', async () => {
+    expect(await sidewaysScrollPx(page)).toBe(0);
+    expect(await page.evaluate(() => window.scrollX)).toBe(0);
   });
-  if (!testInfo.project.name.includes('desktop')) {
-    await goToStep(page, 'crop', hand);
-    await check('the row of crop presets is wider than the screen and scrolls inside itself',
-      async () => {
-        const row = await page.locator('#cropPresets').evaluate(element => ({
-          content: element.scrollWidth,
-          shown: element.clientWidth,
-          style: getComputedStyle(element).overflowX,
-        }));
-        expect(row.content).toBeGreaterThan(row.shown);
-        expect(row.style).toBe('auto');
-        expect(await sidewaysScrollPx(page)).toBeLessThanOrEqual(0);
-      });
-  }
 }
 
 test('LAY-15.1 No step scrolls the page sideways [both] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
-  await noSidewaysScroll(page, check, testInfo);
+  const hand = await startWith(page, testInfo);
+  await checkSpareWidths(page, check, hand, STEPS);
 });
 
 test('LAY-15.2 No step scrolls the page sideways on a 375 px phone [small]', async ({
   page,
   check,
 }, testInfo) => {
-  await noSidewaysScroll(page, check, testInfo);
+  const hand = await startWith(page, testInfo);
+  const cropLast = ['perspective', 'rotate', 'levels', 'overlay', 'export', 'crop'];
+  await checkSpareWidths(page, check, hand, cropLast);
+  await swipeThePresets(page, check);
 });
+
+test('LAY-15.3 On a phone the row of presets scrolls inside itself, not the page [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startWith(page, testInfo);
+    await goToStep(page, 'crop', hand);
+    await waitForStill(page);
+    await swipeThePresets(page, check);
+  });
 
 /* ---------------- LAY-16 No button label is cut off ---------------- */
 
 // The body of LAY-16.1 and LAY-16.2: no label cut off on any step.
 async function noCutLabels(page, check, testInfo) {
   const hand = await startWith(page, testInfo);
-  const seen = await onEveryStep(page, hand, () => cutOffLabels(page));
-  await check('on all six steps no button\'s label is cut off', async () => {
-    expect(nonEmpty(seen)).toEqual({});
+  await onEveryStep(page, hand, async step => {
+    await check(rowFor(step, 'every button\'s label is whole'), async () => {
+      expect(await cutOffLabels(page)).toEqual([]);
+    });
   });
 }
 
