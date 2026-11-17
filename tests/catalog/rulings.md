@@ -28,7 +28,7 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R20 | Corner readout always "the card is too small"; buttons live | FIX: real reason; both save buttons dimmed |
 | R21 | Corner shots checks Share once; Share now vs Next card | FIX: corner shots re-checks share availability each sync; Next card stays independent of corner shots (AS-IS) |
 | R22 | Remove leaves photoOverlay in storage | AS-IS (needed for Undo after Resume); test Undo-after-Resume |
-| R23 | Resume with size mismatch silently opens fresh | FIX: amber "Couldn’t restore your edits, so the photo was opened fresh." (WORDING) |
+| R23 | Resume with size mismatch silently opens fresh | FIX: amber "Full edit history could not be restored, your photo has been opened fresh." (Rich's words; wording.md) |
 | R24 | Raw error text in six toasts; two not logged | FIX: fixed sentence + next step; detail always to console (six lines of WORDING) |
 | R25 | Unpair save not awaited | FIX: await the save before "Unpaired"; automated case reloads immediately |
 | R26 | Pair readout with invalid waiting side (not reproduced) | FIX/SPEC: readout row names the side to fix ("Fix the back’s corners in Perspective first."), Share/Download/Copy dimmed (WORDING) |

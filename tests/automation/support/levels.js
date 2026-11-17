@@ -6,7 +6,16 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { openApp, openPhoto, goToStep, handFor } = require('./app.js');
+const {
+  openApp,
+  openPhoto,
+  goToStep,
+  handFor,
+  viewNow,
+  viewZoom,
+  tapPoint,
+  nextFrames,
+} = require('./app.js');
 const { sendTouch, openPicture, fixturePicture } = require('./perspective.js');
 
 // The photo the pick cases use: a graded card in a clear slab on a white background. Its white
@@ -183,11 +192,6 @@ async function pickSpot(page, hand, which, spot) {
   await tapPoint(page, hand, point);
 }
 
-// Taps (a finger) or clicks (the mouse) one point of the page.
-function tapPoint(page, hand, point) {
-  return hand.isTouch ? page.touchscreen.tap(point.x, point.y) : page.mouse.click(point.x, point.y);
-}
-
 // Puts a finger (dispatched) or the mouse button down on a point of the photo, and leaves it
 // there. releasePhoto lifts it.
 async function pressPhoto(page, hand, point) {
@@ -279,13 +283,6 @@ function badgeBoxPixels(page) {
 function badgeBoxChange(first, second) {
   return first.filter((value, index) => Math.abs(value - second[index]) > BADGE_PIXEL_CHANGE)
     .length;
-}
-
-// Waits until the photo area has been drawn twice more, so a change asked for is on screen.
-function afterDraw(page) {
-  return page.evaluate(() => new Promise(resolve => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  }));
 }
 
 // The box around a pick mark's letter, in CSS px from the picked point: drawPickMarker in
@@ -507,19 +504,6 @@ function outputPointOf(page, sourcePoint) {
   }, sourcePoint);
 }
 
-// The photo view's zoom: CSS px per px of the picture.
-function viewZoom(page) {
-  return page.evaluate(() => window.CF.currentView().zoom);
-}
-
-// The photo view's place: { zoom, panX, panY }.
-function viewNow(page) {
-  return page.evaluate(() => {
-    const view = window.CF.currentView();
-    return { zoom: view.zoom, panX: view.panX, panY: view.panY };
-  });
-}
-
 module.exports = {
   LEVELS_PHOTO,
   SPOTS,
@@ -544,7 +528,6 @@ module.exports = {
   badgeShown,
   badgeBoxPixels,
   badgeBoxChange,
-  afterDraw,
   labelSurround,
   badgeFadeSeries,
   pressThenTap,
@@ -553,4 +536,5 @@ module.exports = {
   outputPointOf,
   viewZoom,
   viewNow,
+  afterDraw: nextFrames,
 };

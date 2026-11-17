@@ -20,6 +20,7 @@ const {
   cropBox,
   waitForStill,
   hasWhiteFill,
+  waitInPage,
 } = require('./support/app.js');
 const {
   pressFinger,
@@ -27,7 +28,10 @@ const {
   liftFinger,
   zeroTickOnPage,
   saveCopy,
+  typeAngle,
+  angleText,
 } = require('./support/rotate.js');
+const { exportStep, downloadStep, answerNo } = require('./support/export.js');
 
 const PHOTO = 'IMG_9136.JPEG';
 const SECOND_PHOTO = 'IMG_9075.JPEG';
@@ -68,9 +72,6 @@ async function startOnRotate(page, testInfo) {
   await goToStep(page, 'rotate', hand);
   return hand;
 }
-
-// The angle as the line above the controls shows it.
-const angleText = page => page.locator('#rotateAngleText');
 // The text box that takes the angle's place while it is typed.
 const angleField = page => page.locator('#rotateAngleField');
 
@@ -118,14 +119,6 @@ async function doneStep(page, hand, check, angle, description) {
     await expect(angleField(page)).toBeHidden();
     await expect(angleText(page)).toHaveText(angle);
   });
-}
-
-// The named action "Type the angle N": taps the angle, types N and taps Done.
-async function typeAngle(page, hand, text) {
-  await hand.tap(page.locator('#rotateAngle'));
-  await angleField(page).waitFor({ state: 'visible' });
-  await page.keyboard.type(text);
-  await hand.tap(page.locator('#btnAngleDone'));
 }
 
 // Drags the Straighten ruler sideways by dx CSS px from its middle (dragging right lowers the
@@ -939,33 +932,6 @@ test('ROT-15.3 A flip mirrors a crop box drawn by hand [phone]', async ({
   });
 });
 
-// Taps Download on the Export step (a row of its own) and checks that the question box asks
-// UPSCALE_QUESTION. Returns { downloading }: the download to wait for once the question is
-// answered (wrapped, since an async function returning a promise would wait for it).
-async function downloadStep(page, hand, check, description) {
-  const downloading = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnDownload'));
-  await check(description, async () => {
-    await expect(page.locator('#pairPromptTitle')).toHaveText(UPSCALE_QUESTION);
-  });
-  return { downloading };
-}
-
-// Taps No in the question box and waits for the download. Returns { name, file }.
-async function answerNo(page, hand, { downloading }) {
-  await hand.tap(page.locator('#pairPrompt').getByRole('button', { name: 'No', exact: true }));
-  const download = await downloading;
-  return { name: download.suggestedFilename(), file: await download.path() };
-}
-
-// Taps Export in the step tabs and checks that the Export step shows Download.
-async function exportStep(page, hand, check, description) {
-  await goToStep(page, 'export', hand);
-  await check(description, async () => {
-    await expect(page.locator('#btnDownload')).toBeVisible();
-  });
-}
-
 test('ROT-15.4 The saved picture is mirrored too [phone] [webkit]', async ({
   page,
   check,
@@ -1374,7 +1340,7 @@ test('ROT-23.2 Flip and Grid are not kept after a reload [phone] [webkit]', asyn
   const hand = await startOnRotate(page, testInfo);
   await chooseFlipAndHideGridSteps(page, hand, check, '');
   // A person waits two seconds; the script waits until the photo is saved for Resume.
-  await page.waitForFunction(async name => {
+  await waitInPage(page, async name => {
     const record = await window.__straightener.Session.peek();
     return !!record && record.name === name;
   }, PHOTO);

@@ -7,7 +7,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { openApp, openPhoto, handFor, goToStep, openOptions } = require('./app.js');
+const { openApp, openPhoto, handFor, goToStep, openOptions, stepNow } = require('./app.js');
 const { pickWith, waitForPhoto, rememberPhoto } = require('./start-and-session.js');
 const { waitForQuestion } = require('./export.js');
 const { sampleFile, dragFiles } = require('./edits-drop-keys.js');
@@ -388,11 +388,6 @@ async function dropPhoto(page, name) {
   await waitForPhoto(page, name);
 }
 
-// The step the app shows now: 'perspective', 'rotate' and so on.
-function stepShown(page) {
-  return page.evaluate(() => window.__straightener.app.tab);
-}
-
 // True when the corners are on the card the app found: at least one candidate was found and
 // the corners are the best one's.
 function isOnFoundCard(page) {
@@ -449,7 +444,6 @@ module.exports = {
   startWith,
   openWith,
   dropPhoto,
-  stepShown,
   isOnFoundCard,
   tapDownload,
   answerForFile,
@@ -476,4 +470,5 @@ module.exports = {
   watchTapsAndDownloads,
   tapToDownloadMs,
   recordTiming,
+  stepShown: stepNow,
 };

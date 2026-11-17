@@ -13,21 +13,17 @@ const {
   openPhoto,
   goToStep,
   handFor,
-  cornerOnPage,
   middleOf,
+  waitInPage,
+  crossTheCorners,
 } = require('./app.js');
 
 // How long a side may take to open (and, for a new photo, be detected) before a case gives up.
 const SIDE_TIMEOUT_MS = 20000;
-// How often waitInPage asks the page again, in ms.
-const POLL_MS = 100;
 // How long a case waits for its downloads before giving up.
 const DOWNLOAD_TIMEOUT_MS = 20000;
 // How long to wait for a question card to show before deciding none was asked.
 const QUESTION_WAIT_MS = 1500;
-// How far past the bottom-right corner the top-left one is dragged to cross the outline, in
-// source px (as support/export.js's crossTheCorners).
-const CROSS_PAST_PX = 60;
 // The pointer ids of the two dispatched fingers of a pinch: any numbers a real pointer is
 // unlikely to have.
 const PINCH_FINGER_IDS = [11, 12];
@@ -219,17 +215,6 @@ function storedRecord(page, key) {
   }, key);
 }
 
-// Waits until `check(arg)`, run in the page, comes out true; gives up with an error after
-// timeoutMs. `check` may be async (it may read the app's storage): page.waitForFunction can't
-// take one, since it counts the promise an async function returns as true at once.
-async function waitInPage(page, check, arg = null, timeoutMs = SIDE_TIMEOUT_MS) {
-  const deadline = Date.now() + timeoutMs;
-  while (!(await page.evaluate(check, arg))) {
-    if (Date.now() > deadline) throw new Error(`Waited ${timeoutMs} ms in vain: ${check}`);
-    await page.waitForTimeout(POLL_MS);
-  }
-}
-
 // Waits until the pair is stored for Resume as it is on screen: the pair's record names the
 // open side and holds the waiting side's edits, the waiting side's photo is stored, and the
 // stored photo and edits are the open side's, edits and step and all. A person would wait a
@@ -379,20 +364,6 @@ function standInClipboard(page) {
 
 // What the clipboard stand-in recorded: { type, width, height }, or null before a copy.
 const copiedImage = page => page.evaluate(() => window.testCopied);
-
-// On the Perspective step, drags the top-left corner handle past the bottom-right one, so the
-// outline crosses itself and the corners are invalid.
-async function crossCorners(page, hand) {
-  const start = await cornerOnPage(page, 0);
-  const end = await page.evaluate(pastPx => {
-    const app = window.__straightener.app;
-    const [right, bottom] = app.state.corners[2];
-    const [x, y] = window.CF.toScreen(window.CF.currentView(), [right + pastPx, bottom + pastPx]);
-    const box = document.getElementById('view').getBoundingClientRect();
-    return { x: box.left + x, y: box.top + y };
-  }, CROSS_PAST_PX);
-  await hand.drag(start, end);
-}
 
 // Spreads two dispatched fingers apart on the photo, around `center` (page CSS px). Like
 // touchDrag in app.js, setPointerCapture ignores the dispatched fingers for the gesture.
@@ -608,7 +579,6 @@ function changeStoredPair(page, change, photoName = '') {
 }
 
 module.exports = {
-  crossCorners,
   zoomIn,
   viewNow,
   failReadsOf,
@@ -653,4 +623,5 @@ module.exports = {
   resume,
   shownToast,
   readoutSizes,
+  crossCorners: crossTheCorners,
 };

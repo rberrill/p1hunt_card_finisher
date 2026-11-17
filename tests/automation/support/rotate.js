@@ -1,7 +1,8 @@
 // Helpers for the Rotate step's cases (tests/automation/rotate.spec.js): a finger that presses,
 // moves and lifts in separate steps, so a case can look at the screen while the finger is still
 // down (the shared touchDrag in app.js does a whole drag at once); where the ruler's ticks are;
-// and a save that reports the question the app asked on the way.
+// a save that reports the question the app asked on the way; and the typed angle, which other
+// areas use too.
 'use strict';
 
 // The pointer id of the held finger. Any number a real pointer is unlikely to have.
@@ -104,10 +105,23 @@ async function saveCopy(page, hand) {
   return { question, name: download.suggestedFilename(), file: await download.path() };
 }
 
+// The angle as the line above the Straighten ruler shows it.
+const angleText = page => page.locator('#rotateAngleText');
+
+// The named action "Type the angle N": taps the angle, types N and taps Done.
+async function typeAngle(page, hand, text) {
+  await hand.tap(page.locator('#rotateAngle'));
+  await page.locator('#rotateAngleField').waitFor({ state: 'visible' });
+  await page.keyboard.type(text);
+  await hand.tap(page.locator('#btnAngleDone'));
+}
+
 module.exports = {
   pressFinger,
   moveFinger,
   liftFinger,
   zeroTickOnPage,
   saveCopy,
+  angleText,
+  typeAngle,
 };

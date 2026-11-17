@@ -3,7 +3,15 @@
 // app.js, they drive the app as a person would and read its state only through
 // window.__straightener and CF, to check a result.
 'use strict';
-const { openApp, openPhoto, goToStep, handFor } = require('./app.js');
+const {
+  openApp,
+  openPhoto,
+  goToStep,
+  handFor,
+  viewNow,
+  undoSteps,
+  holdFinger,
+} = require('./app.js');
 
 // The photo most cases use: a PSA slab, its card upright, found within 0.5% by detection.
 const CROP_PHOTO = 'IMG_9136.JPEG';
@@ -93,19 +101,6 @@ function cropHandleOnPage(page, part) {
   }, part);
 }
 
-// The photo view's zoom (CSS px per px of the picture) and pan, as on screen now.
-function viewNow(page) {
-  return page.evaluate(() => {
-    const view = window.CF.currentView();
-    return { zoom: view.zoom, panX: view.panX, panY: view.panY };
-  });
-}
-
-// How many undo steps there are.
-function undoSteps(page) {
-  return page.evaluate(() => window.CF.History.undo.length);
-}
-
 // The crop's size as the line above the controls shows it ('1400 × 1400'), and whether its
 // "px" shows: { size, isUnitShown }.
 async function sizeLine(page) {
@@ -127,19 +122,12 @@ async function swipePresetRow(page, direction) {
   const nearRight = Math.round(box.x + box.width * (1 - SWIPE_NEAR_EDGE));
   const fromX = direction === 'left' ? nearRight : nearLeft;
   const toX = direction === 'left' ? nearLeft : nearRight;
-  const client = await page.context().newCDPSession(page);
-  // Sends one touch event of `type` with the finger at (x, y); a touchEnd has no finger left.
-  const touch = (type, x) => client.send('Input.dispatchTouchEvent', {
-    type,
-    touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
-  });
-  await touch('touchStart', fromX);
+  const finger = await holdFinger(page, { x: fromX, y });
   for (let i = 1; i <= SWIPE_MOVES; i++) {
-    await touch('touchMove', fromX + (toX - fromX) * i / SWIPE_MOVES);
+    await finger.moveTo({ x: fromX + (toX - fromX) * i / SWIPE_MOVES, y });
     await page.waitForTimeout(SWIPE_MOVE_MS);
   }
-  await touch('touchEnd', toX);
-  await client.detach();
+  await finger.lift();
   // The row may glide on after the finger lifts: wait until it has stopped moving.
   let last = -1;
   for (;;) {
@@ -183,6 +171,9 @@ function rowScroll(page) {
   return page.locator('#cropPresets').evaluate(row => row.scrollLeft);
 }
 
+// The selected crop preset's chip.
+const selectedPreset = page => page.locator('#cropPresets .preset-chip[aria-pressed="true"]');
+
 module.exports = {
   CROP_PHOTO,
   startOnCrop,
@@ -201,4 +192,5 @@ module.exports = {
   isChipInView,
   rowScroll,
   rowScrollMax,
+  selectedPreset,
 };

@@ -7,7 +7,17 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { root, openApp, openPhoto, goToStep, handFor } = require('./app.js');
+const {
+  root,
+  openApp,
+  openPhoto,
+  goToStep,
+  handFor,
+  viewNow,
+  undoSteps,
+  nextFrames,
+  holdFinger,
+} = require('./app.js');
 const { pickWith, waitUntil } = require('./start-and-session.js');
 
 // The photo most cases use: a PSA slab.
@@ -193,19 +203,6 @@ async function ringOnPage(page, where) {
   return { x, y };
 }
 
-// The photo view's zoom and pan: { zoom, panX, panY }.
-function viewNow(page) {
-  return page.evaluate(() => {
-    const view = window.CF.currentView();
-    return { zoom: view.zoom, panX: view.panX, panY: view.panY };
-  });
-}
-
-// How many steps Undo can take back now.
-function undoSteps(page) {
-  return page.evaluate(() => window.CF.History.undo.length);
-}
-
 // Slides a slider (a range input) with a real finger on a phone target, or the mouse on a wide
 // one, from `fromFrac` to `toFrac` of its width (0 to 1), without lifting. Call liftSlide to
 // let go. A dispatched pointer doesn't move a native slider, so a phone target's finger goes
@@ -220,17 +217,12 @@ async function holdSlide(page, hand, slider, fromFrac, toFrac) {
     await page.mouse.move(xAt(toFrac), middleY, { steps: SLIDE_MOVES });
     return null;
   }
-  const session = await page.context().newCDPSession(page);
-  const touch = (type, x) => session.send('Input.dispatchTouchEvent', {
-    type,
-    touchPoints: type === 'touchEnd' ? [] : [{ x, y: middleY }],
-  });
-  await touch('touchStart', xAt(fromFrac));
+  const finger = await holdFinger(page, { x: xAt(fromFrac), y: middleY });
   for (let i = 1; i <= SLIDE_MOVES; i++) {
     const fraction = fromFrac + (toFrac - fromFrac) * i / SLIDE_MOVES;
-    await touch('touchMove', xAt(fraction));
+    await finger.moveTo({ x: xAt(fraction), y: middleY });
   }
-  return { touch, session };
+  return finger;
 }
 
 // Lets go of a slide holdSlide started (`held` is what it returned).
@@ -239,8 +231,7 @@ async function liftSlide(page, held) {
     await page.mouse.up();
     return;
   }
-  await held.touch('touchEnd', 0);
-  await held.session.detach();
+  await held.lift();
 }
 
 // Slides a slider from `fromFrac` to `toFrac` of its width and lets go.
@@ -324,13 +315,6 @@ async function ringMarksAt(page, point, shadowPx) {
     ).data.slice(0, 3));
     return { dot: read(x, y), shadow: read(x - offsetPx, y) };
   }, { x: point.x, y: point.y, offsetPx: shadowPx });
-}
-
-// Waits for the next two frames the page draws, so a redraw asked for now has happened.
-function nextFrames(page) {
-  return page.evaluate(() => new Promise(resolve => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  }));
 }
 
 // Reads a saved image file in the page. Returns { width, height, box, row }:

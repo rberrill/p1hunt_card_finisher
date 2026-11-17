@@ -6,10 +6,8 @@
 // Each test drives the app as a person would, through hand.tap and hand.drag (a finger on the
 // phone targets, the mouse on the wide ones), and reads the app's state only to check a result.
 'use strict';
-const path = require('path');
 const { test, expect } = require('./support/case.js');
 const {
-  root,
   samplePath,
   goToStep,
   editState,
@@ -66,6 +64,8 @@ const {
   labelSurround,
   badgeFadeSeries,
 } = require('./support/levels.js');
+const { exportStep, downloadStep, answerNo } = require('./support/export.js');
+const { fixturePath } = require('./support/edits-files.js');
 
 // Another photo, a raw card on white, for the cases that open a second photo.
 const SECOND_PHOTO = '14_front_portrait_raw_white.JPEG';
@@ -222,9 +222,6 @@ function expectMidGrey(color) {
   });
 }
 
-// The path of a picture in tests/fixtures/.
-const fixturePath = name => path.join(root, 'tests', 'fixtures', name);
-
 // The grey [value, value, value].
 const grey = value => [value, value, value];
 
@@ -248,33 +245,6 @@ async function patchTooltip(page, which) {
   const patch = page.locator(which === 'white' ? '#swatchWhite' : '#swatchBlack');
   await patch.hover();
   return patch.getAttribute('title');
-}
-
-// Taps Download on the Export step and checks that the question box asks UPSCALE_QUESTION.
-// Returns { downloading }: the download to wait for once the question is answered (wrapped, so
-// that an async function doesn't wait for it).
-async function downloadStep(page, hand, check, description) {
-  const downloading = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnDownload'));
-  await check(description, async () => {
-    await expect(page.locator('#pairPromptTitle')).toHaveText(UPSCALE_QUESTION);
-  });
-  return { downloading };
-}
-
-// Taps No in the question box and waits for the download. Returns { name, file }.
-async function answerNo(page, hand, { downloading }) {
-  await hand.tap(page.locator('#pairPrompt').getByRole('button', { name: 'No', exact: true }));
-  const download = await downloading;
-  return { name: download.suggestedFilename(), file: await download.path() };
-}
-
-// Taps Export in the step tabs and checks that the Export step shows Download.
-async function exportStep(page, hand, check, description) {
-  await goToStep(page, 'export', hand);
-  await check(description, async () => {
-    await expect(page.locator('#btnDownload')).toBeVisible();
-  });
 }
 
 test('LEV-01.1 Discard drops the unapplied changes [phone]', async ({

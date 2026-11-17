@@ -15,6 +15,7 @@ const {
   openOptions,
   waitForStill,
   hasWhiteFill,
+  stepNow,
 } = require('./support/app.js');
 const { recordExports, exportStarts, downloadAnswering, isSameFile, readoutText } =
   require('./support/export.js');
@@ -55,6 +56,7 @@ const {
   undoRedoGreyed,
   isLogoGreen,
 } = require('./support/edits-files.js');
+const { selectedPreset } = require('./support/crop.js');
 
 // The name of IMG_9136.JPEG's edits file.
 const EDITS_NAME = 'IMG_9136-edits.json';
@@ -141,18 +143,12 @@ async function expectNothingChanged(page, before) {
   expect(await undoRedoGreyed(page)).toEqual({ undo: true, redo: true });
 }
 
-// The selected crop preset's chip.
-const selectedChip = page => page.locator('#cropPresets .preset-chip[aria-pressed="true"]');
-
 // The crop box's shape now: 'portrait' (taller than wide), 'landscape' or 'square'.
 async function cropShape(page) {
   const crop = await page.evaluate(() => window.__straightener.app.geometry.crop);
   if (Math.abs(crop.width - crop.height) < 1) return 'square';
   return crop.width > crop.height ? 'landscape' : 'portrait';
 }
-
-// The open step's name ('export', 'crop' and so on).
-const openStep = page => page.evaluate(() => window.__straightener.app.tab);
 
 // Which side the Front | Back switch has selected: 'front', 'back' or null.
 function selectedSide(page) {
@@ -298,7 +294,7 @@ test('EDT-04.1 Load edits opens a picker for one .json file and applies it [phon
     });
     await goToStep(page, 'export', hand);
     await check('the Export step shows', async () => {
-      expect(await openStep(page)).toBe('export');
+      expect(await stepNow(page)).toBe('export');
     });
     const saved = await saveEdits(page, hand, testInfo);
     await check('a file named IMG_9136-edits.json is saved', () => {
@@ -548,7 +544,7 @@ test('EDT-09.3 A link\'s lower logo limit leaves a larger logo out [phone]', asy
   });
   await goToStep(page, 'export', hand);
   await check('the Export step shows, with the logo on the photo', async () => {
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     expect(await logoOnPage(page)).not.toBeNull();
   });
   const saved = await saveEdits(page, hand, testInfo);
@@ -571,7 +567,7 @@ test('EDT-09.3 A link\'s lower logo limit leaves a larger logo out [phone]', asy
   });
   await goToStep(page, 'export', hand);
   await check('the Export step shows', async () => {
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
   });
   await loadEdits(page, hand, saved.file);
   await check(`an amber message reads "${LOGO_LEFT_OUT}"; no logo shows`, async () => {
@@ -591,7 +587,7 @@ test('EDT-09.4 A logo placement with no picture keeps a logo the app already has
     });
     await goToStep(page, 'export', hand);
     await check('the Export step shows, with no logo on the photo', async () => {
-      expect(await openStep(page)).toBe('export');
+      expect(await stepNow(page)).toBe('export');
       expect(await logoOnPage(page)).toBeNull();
     });
     const before = (await messagesSoFar(page)).length;
@@ -696,7 +692,7 @@ test('EDT-11.2 A file from before the crop followed the card takes its swap sett
     await goToStep(page, 'crop', hand);
     await check('5:4 is selected and the box is wider than tall, 5 wide to 4 high, though the '
       + 'card is upright', async () => {
-      await expect(selectedChip(page)).toHaveText('5:4');
+      await expect(selectedPreset(page)).toHaveText('5:4');
       expect(await cropShape(page)).toBe('landscape');
     });
   });
@@ -739,7 +735,7 @@ test('EDT-12.1 Re-opened with its edits file, the photo exports the same file [p
   });
   await goToStep(page, 'export', hand);
   await check('the Export step shows', async () => {
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
   });
   await loadEdits(page, hand, saved.file);
   await check('the edits come back: tilted 3°, 4:5, brighter, with the green logo', async () => {
@@ -796,7 +792,7 @@ test('EDT-13.1 A loaded logo is kept for Resume but is not the saved logo [phone
       return !!app.state && !!app.geometry && app.tab === 'overlay';
     });
     await check('the photo opens on Overlay with the green logo on it', async () => {
-      expect(await openStep(page)).toBe('overlay');
+      expect(await stepNow(page)).toBe('overlay');
       await expect.poll(() => isLogoGreen(page)).toBe(true);
     });
   });
@@ -808,7 +804,7 @@ test('EDT-14.1 In a pair, Save edits saves the side you\'re on [phone]', async (
   const hand = await makePair(page, testInfo);
   await goToStep(page, 'export', hand);
   await check('the Export step shows; Back is selected in the top bar', async () => {
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     expect(await selectedSide(page)).toBe('back');
   });
   const back = await saveEdits(page, hand, testInfo);
@@ -820,7 +816,7 @@ test('EDT-14.1 In a pair, Save edits saves the side you\'re on [phone]', async (
   await switchTo(page, hand, 'front');
   await check('the front shows, still on the Export step, with Front selected', async () => {
     expect((await editState(page)).source.name).toBe(PORTRAIT_PAIR.front);
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     expect(await selectedSide(page)).toBe('front');
   });
   const front = await saveEdits(page, hand, testInfo);
@@ -849,7 +845,7 @@ test('EDT-14.2 Loading into one side gives the other side the file\'s export set
     await check('the front shows, still on the Export step, with PNG and 1080 selected too',
       async () => {
         expect((await editState(page)).source.name).toBe(PORTRAIT_PAIR.front);
-        expect(await openStep(page)).toBe('export');
+        expect(await stepNow(page)).toBe('export');
         await expect(format).toHaveText('PNG');
         await expect(size).toHaveText('1080');
       });
@@ -879,7 +875,7 @@ test('EDT-14.3 A single photo\'s edits loaded into a side keep the 5:7 lock [pho
   });
   await goToStep(page, 'export', hand);
   await check('the Export step shows', async () => {
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
   });
   const before = (await messagesSoFar(page)).length;
   await loadEdits(page, hand, saved.file);
@@ -889,7 +885,7 @@ test('EDT-14.3 A single photo\'s edits loaded into a side keep the 5:7 lock [pho
   await goToStep(page, 'crop', hand);
   await check('5:7 card is selected and the box is taller than wide: the file\'s 1:1 was not '
     + 'taken', async () => {
-    await expect(selectedChip(page)).toHaveText('5:7 card');
+    await expect(selectedPreset(page)).toHaveText('5:7 card');
     expect(await cropShape(page)).toBe('portrait');
   });
 });
@@ -932,7 +928,7 @@ test('EDT-15.2 While paired, the hint starts with "Saves the side you\'re on." [
     const hand = await makePair(page, testInfo);
     await goToStep(page, 'export', hand);
     await check('the Export step shows', async () => {
-      expect(await openStep(page)).toBe('export');
+      expect(await stepNow(page)).toBe('export');
     });
     await openOptions(page, hand, 'export');
     await check('the Edits group shows', async () => {

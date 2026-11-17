@@ -20,6 +20,12 @@ const DISPATCHED_POINTER_ID = 7;
 const WHITE_FILL_MIN = 230;
 // The image types a saved file can have, by its extension.
 const MIME_TYPES = { '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
+// How long waitInPage waits for its check to come out true before giving up, in ms.
+const WAIT_IN_PAGE_TIMEOUT_MS = 20000;
+// How often waitInPage asks the page again, in ms.
+const WAIT_IN_PAGE_POLL_MS = 100;
+// How far past the bottom-right corner crossTheCorners drags the top-left one, in source px.
+const CROSS_PAST_PX = 60;
 
 // The full path of a sample photo.
 const samplePath = name => path.join(root, 'samples', name);
@@ -186,12 +192,12 @@ async function closeOptions(page, hand, step) {
   await sheet.waitFor({ state: 'hidden' });
 }
 
-// Taps Download on the Export step, answers the Upscale question if it is asked (with
-// `upscaleAnswer`, 'No' by default) and waits for the file. Returns { name, file }: the name
-// the app gave it and the path of the saved copy.
-async function saveByDownload(page, hand, upscaleAnswer = 'No') {
+// Taps a button that saves a file (Download, Download corners, Save edits: a locator),
+// answers the Upscale question with `upscaleAnswer` ('No' by default) if it is asked, and waits
+// for the file. Returns { name, file }: the name the app gave it and the path of the saved copy.
+async function saveFileBy(page, hand, button, upscaleAnswer = 'No') {
   const downloading = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnDownload'));
+  await hand.tap(button);
   const card = page.locator('#pairPrompt');
   // Either the file comes, or the question is asked first.
   const isAsked = await Promise.race([
@@ -201,6 +207,17 @@ async function saveByDownload(page, hand, upscaleAnswer = 'No') {
   if (isAsked) await hand.tap(card.getByRole('button', { name: upscaleAnswer, exact: true }));
   const download = await downloading;
   return { name: download.suggestedFilename(), file: await download.path() };
+}
+
+// saveFileBy for Download on the Export step.
+function saveByDownload(page, hand, upscaleAnswer = 'No') {
+  return saveFileBy(page, hand, page.locator('#btnDownload'), upscaleAnswer);
+}
+
+// The size of a saved image file, as [width, height] in px.
+async function savedSize(page, file) {
+  const image = await readSavedImage(page, file);
+  return [image.width, image.height];
 }
 
 // Reads a saved image file in the page. Returns { width, height, corners, cells }: its size in
@@ -280,6 +297,100 @@ function cropBox(page) {
   });
 }
 
+// On the Perspective step, drags the top-left corner handle past the bottom-right one, so the
+// outline crosses itself and the corners are invalid.
+async function crossTheCorners(page, hand) {
+  const start = await cornerOnPage(page, 0);
+  const end = await page.evaluate(pastPx => {
+    const app = window.__straightener.app;
+    const [right, bottom] = app.state.corners[2];
+    const [x, y] = window.CF.toScreen(window.CF.currentView(), [right + pastPx, bottom + pastPx]);
+    const box = document.getElementById('view').getBoundingClientRect();
+    return { x: box.left + x, y: box.top + y };
+  }, CROSS_PAST_PX);
+  await hand.drag(start, end);
+}
+
+// A point moved by (dx, dy) CSS px.
+const offsetBy = (point, dx, dy) => ({ x: point.x + dx, y: point.y + dy });
+
+// Taps (a finger) or clicks (the mouse) one point of the page.
+function tapPoint(page, hand, point) {
+  return hand.isTouch ? page.touchscreen.tap(point.x, point.y) : page.mouse.click(point.x, point.y);
+}
+
+// Puts one finger on the page at `point` (CSS px) and keeps it there, through the browser's own
+// touch input (the DevTools protocol's Input.dispatchTouchEvent), as a real finger would be: the
+// browser scrolls a row and moves a native slider for it as it does for a real finger, which a
+// dispatched pointer can't do and Playwright's touchscreen (it can only tap) can't either.
+// Chromium only. Returns the finger: { moveTo(point), lift() }; lift ends the touch.
+async function holdFinger(page, point) {
+  const session = await page.context().newCDPSession(page);
+  // Sends one touch event of `type` with the finger at (x, y); a touchEnd has no finger left.
+  const touch = (type, place) => session.send('Input.dispatchTouchEvent', {
+    type,
+    touchPoints: type === 'touchEnd' ? [] : [{ x: place.x, y: place.y }],
+  });
+  await touch('touchStart', point);
+  return {
+    moveTo: target => touch('touchMove', target),
+    lift: async () => {
+      await touch('touchEnd', point);
+      await session.detach();
+    },
+  };
+}
+
+// Waits until the next two frames have been drawn, so a redraw the app has asked for (the
+// photo, a thumbnail, a badge) is on the screen.
+function nextFrames(page) {
+  return page.evaluate(() => new Promise(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
+}
+
+// The step the app shows: 'perspective', 'rotate' and so on.
+const stepNow = page => page.evaluate(() => window.__straightener.app.tab);
+
+// The view the photo area is drawn with now: { zoom, panX, panY }.
+function viewNow(page) {
+  return page.evaluate(() => {
+    const view = window.CF.currentView();
+    return { zoom: view.zoom, panX: view.panX, panY: view.panY };
+  });
+}
+
+// The photo view's zoom: CSS px per px of the picture.
+function viewZoom(page) {
+  return page.evaluate(() => window.CF.currentView().zoom);
+}
+
+// How many undo steps there are.
+function undoSteps(page) {
+  return page.evaluate(() => window.CF.History.undo.length);
+}
+
+// Waits until no detection is running: the last run has cleared its message.
+function waitForDetection(page) {
+  return page.waitForFunction(() => window.__straightener.app.detection.message === '');
+}
+
+// The question box over the photo (the question card layer), and one of its buttons by label.
+const questionCard = page => page.locator('#pairPrompt');
+const questionButton = (page, label) => questionCard(page)
+  .getByRole('button', { name: label, exact: true });
+
+// True when the question box is up. Its layer's open mark is read, not its hidden, which lags
+// about 200 ms behind a close.
+function isQuestionUp(page) {
+  return page.evaluate(() => window.CF.isAlertOpen(document.getElementById('pairPrompt')));
+}
+
+// An element's background color as the browser computes it ('rgb(r, g, b)').
+function backgroundOf(locator) {
+  return locator.evaluate(el => getComputedStyle(el).backgroundColor);
+}
+
 // Waits until nothing on the page is moving: no transition or finite animation still running
 // (a step change fades the control rows in, a sheet slides). Call it before check.eye, so the
 // screenshot shows the screen at rest.
@@ -296,6 +407,29 @@ async function hasWhiteFill(locator) {
   const color = await locator.evaluate(element => getComputedStyle(element).backgroundColor);
   const channels = (color.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
   return channels.length === 3 && channels.every(channel => channel > WHITE_FILL_MIN);
+}
+
+// Waits until `check(arg)`, run in the page, comes out true; gives up with an error after
+// timeoutMs. `check` may be async (it may read the app's storage): page.waitForFunction can't
+// take one, since it counts the promise an async function returns as true at once.
+async function waitInPage(page, check, arg = null, timeoutMs = WAIT_IN_PAGE_TIMEOUT_MS) {
+  const deadline = Date.now() + timeoutMs;
+  while (!(await page.evaluate(check, arg))) {
+    if (Date.now() > deadline) throw new Error(`Waited ${timeoutMs} ms in vain: ${check}`);
+    await page.waitForTimeout(WAIT_IN_PAGE_POLL_MS);
+  }
+}
+
+// Waits until the open photo's edits, as they are now, are kept on the device for Resume
+// (what a person's "wait two seconds" gives time for), so a reload or opening the build again
+// offers them: the stored edits and step match the screen's.
+function waitForEditsKept(page) {
+  return waitInPage(page, async () => {
+    const app = window.__straightener.app;
+    const record = await window.__straightener.Session.peek();
+    const isSameState = !!record && JSON.stringify(record.state) === JSON.stringify(app.state);
+    return isSameState && record.tab === app.tab;
+  });
 }
 
 // Answers the question card (Upscale to N px?, Unpair, New photo) if one is showing.
@@ -322,10 +456,28 @@ module.exports = {
   openOptions,
   closeOptions,
   answerQuestion,
+  saveFileBy,
   saveByDownload,
+  savedSize,
   readSavedImage,
+  crossTheCorners,
+  offsetBy,
+  tapPoint,
+  holdFinger,
+  nextFrames,
+  stepNow,
+  viewNow,
+  viewZoom,
+  undoSteps,
+  waitForDetection,
+  questionCard,
+  questionButton,
+  isQuestionUp,
+  backgroundOf,
   pictureOf,
   cropBox,
   waitForStill,
+  waitInPage,
+  waitForEditsKept,
   hasWhiteFill,
 };

@@ -17,6 +17,9 @@ const {
   closeOptions,
   waitForStill,
   hasWhiteFill,
+  waitInPage,
+  viewNow,
+  waitForDetection,
 } = require('./support/app.js');
 const {
   PHOTO,
@@ -47,6 +50,7 @@ const {
   releaseButton,
   recordCornerMoveTimes,
   readCornerMoveTimes,
+  handleName,
 } = require('./support/perspective.js');
 const {
   GROUND_TRUTH,
@@ -353,9 +357,6 @@ const ARROW_TAPS = 10;
 async function tapArrow(page, hand, direction, times) {
   for (let tap = 0; tap < times; tap++) await hand.tap(arrowButton(page, direction));
 }
-
-// The handle's name in the line above the controls (Corner 1 of 4, Edge 2 of 4 and so on).
-const handleName = page => page.locator('#perspectiveLine .line-value');
 
 test('PER-07.1 Dragging a corner moves it, as one undo step [phone] [webkit]', async ({
   page,
@@ -1543,14 +1544,6 @@ function isHandleAt(page, point) {
   return page.evaluate(({ x, y }) => window.CF.hitsPhotoControl(x, y), point);
 }
 
-// The view the photo area is drawn with now: { zoom, panX, panY }.
-function viewNow(page) {
-  return page.evaluate(() => {
-    const view = window.CF.currentView();
-    return { zoom: view.zoom, panX: view.panX, panY: view.panY };
-  });
-}
-
 // Preview's switch: its corner reads On or Off.
 const previewState = page => page.locator('#toolPreview .tool-state');
 
@@ -2296,11 +2289,6 @@ test('PER-33.2 With no candidate, Reset perspective puts the corners on the cent
 // The Debug overlay switch in Perspective's options.
 const debugSwitch = page => page.locator('#debugOverlay');
 
-// Waits until no search for the card is running (the switch may start one).
-function waitForSearch(page) {
-  return page.waitForFunction(() => window.__straightener.app.detection.message === '');
-}
-
 test('PER-34.1 The Debug overlay\'s drawing, for a person to judge [phone]', async ({
   page,
   check,
@@ -2316,7 +2304,7 @@ test('PER-34.1 The Debug overlay\'s drawing, for a person to judge [phone]', asy
   await check('it is on', async () => {
     await expect(debugSwitch(page)).toBeChecked();
   });
-  await waitForSearch(page);
+  await waitForDetection(page);
   await closeOptions(page, hand, 'perspective');
   await check.eye('cyan dots tracing the edges found; thin yellow lines right across the photo '
     + 'along the strongest edges; magenta outlines of the scored shapes, the best one thicker, '
@@ -2355,7 +2343,7 @@ test('PER-34.2 The Debug overlay switch leaves corners placed by hand where they
     await check('it is on', async () => {
       await expect(debugSwitch(page)).toBeChecked();
     });
-    await waitForSearch(page);
+    await waitForDetection(page);
     await closeOptions(page, hand, 'perspective');
     await check('the top-left corner ring is still where it was dragged in row 1', async () => {
       expectSameCorners(await cornersNow(page), dragged);
@@ -2658,7 +2646,7 @@ test('PER-37.2 Flatten, Snap and Debug overlay are not kept after a reload [phon
   const hand = await startOnPerspective(page, testInfo);
   await setSessionTools(page, hand, check);
   // A person would wait a moment; the script waits until the photo is saved for Resume.
-  await page.waitForFunction(async name => {
+  await waitInPage(page, async name => {
     const record = await window.__straightener.Session.peek();
     return !!record && record.name === name;
   }, PHOTO);
@@ -2753,7 +2741,7 @@ test('PER-38.2 The Debug overlay switch adds no undo step after a hand-placed co
       await expect(debugSwitch(page)).not.toBeChecked();
     });
     await hand.tap(debugSwitch(page));
-    await waitForSearch(page);
+    await waitForDetection(page);
     await check('it is on', async () => {
       await expect(debugSwitch(page)).toBeChecked();
     });
@@ -2787,13 +2775,6 @@ const KNOWN_SLIPS = {
   },
 };
 
-// The worst corner's error of the corners as they are now, against the hand-placed ones of
-// the sample `name` (% of the photo's diagonal).
-async function errorNow(page, name) {
-  const { corners, source } = await editState(page);
-  return cornerErrorPct(corners, GROUND_TRUTH[name], source.width, source.height);
-}
-
 // Opens one sample through the app's file input, as Open does, and measures its detection
 // against the hand-placed corners: the corners as they landed (the top pick), then after each
 // tap on Candidate until it has shown each of its numbers. Returns { name, sawDetecting,
@@ -2807,10 +2788,10 @@ async function measureDetection(page, hand, name) {
     && await page.evaluate(() => window.__straightener.app.detection.message === '');
   const confidences = await page.evaluate(() => window.__straightener.app.detection.candidates
     .map(candidate => Math.round(candidate.confidence * 100)));
-  const errors = confidences.length ? [await errorNow(page, name)] : [];
+  const errors = confidences.length ? [await errorAgainstTruth(page, name)] : [];
   for (let tap = 1; tap < confidences.length; tap++) {
     await hand.tap(page.locator('#toolCandidate'));
-    errors.push(await errorNow(page, name));
+    errors.push(await errorAgainstTruth(page, name));
   }
   return {
     name,

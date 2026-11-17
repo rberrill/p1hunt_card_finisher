@@ -5,9 +5,8 @@
 // Like app.js, they drive the app as a person would and read its state only through
 // window.__straightener and CF, to check a result.
 'use strict';
-const { openApp, openPhoto, goToStep, handFor } = require('./app.js');
+const { openApp, openPhoto, goToStep, handFor, holdFinger, waitInPage } = require('./app.js');
 const { sendTouch } = require('./perspective.js');
-const { waitInPage } = require('./front-and-back.js');
 
 // The photo most cases use: it detects the same in Chromium and WebKit.
 const PHOTO = '01_chrome_flat_black.JPEG';
@@ -221,19 +220,12 @@ async function swipeFrom(page, selector, dy) {
   const box = await page.locator(selector).boundingBox();
   const x = Math.round(box.x + box.width / 2);
   const fromY = Math.round(box.y + box.height / 2);
-  const client = await page.context().newCDPSession(page);
-  // Sends one touch event of `type` with the finger at (x, y); a touchEnd has no finger left.
-  const touch = (type, y) => client.send('Input.dispatchTouchEvent', {
-    type,
-    touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
-  });
-  await touch('touchStart', fromY);
+  const finger = await holdFinger(page, { x, y: fromY });
   for (let i = 1; i <= SWIPE_MOVES; i++) {
-    await touch('touchMove', Math.round(fromY + dy * i / SWIPE_MOVES));
+    await finger.moveTo({ x, y: Math.round(fromY + dy * i / SWIPE_MOVES) });
     await page.waitForTimeout(SWIPE_MOVE_MS);
   }
-  await touch('touchEnd', fromY + dy);
-  await client.detach();
+  await finger.lift();
   await waitForScrollStill(page, selector);
 }
 

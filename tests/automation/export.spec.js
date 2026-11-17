@@ -21,6 +21,11 @@ const {
   hasWhiteFill,
   readSavedImage,
   waitForStill,
+  waitInPage,
+  waitForEditsKept,
+  savedSize,
+  questionCard,
+  questionButton,
 } = require('./support/app.js');
 const {
   installShareStandIn,
@@ -51,7 +56,11 @@ const {
   takeAwayWebpSaving,
   copyPhotoToClipboard,
   rectsOverlap,
+  nextCard,
+  tapFormat,
+  shareLabel,
 } = require('./support/export.js');
+const { typeAngle } = require('./support/rotate.js');
 
 const PHOTO = 'IMG_9136.JPEG';
 const SECOND_PHOTO = 'IMG_9075.JPEG';
@@ -130,14 +139,6 @@ const ANY_CLAMP_NOTE = new RegExp('^(Clamped to fit the [0-9.]+ MP canvas limit'
 // Taps one of the Size choices by its label ('1080', '2000', '3000' or 'Original').
 const tapSize = (page, hand, label) => hand.tap(choiceButton(page, 'exportSize', label));
 
-// Taps one of the Format choices by its label ('JPEG', 'PNG' or 'WebP').
-const tapFormat = (page, hand, label) => hand.tap(choiceButton(page, 'exportFormat', label));
-
-// The question box over the photo, and one of its buttons by label.
-const questionCard = page => page.locator('#pairPrompt');
-const questionButton = (page, label) => questionCard(page)
-  .getByRole('button', { name: label, exact: true });
-
 // Records the verdict that the Upscale question is up, asking for `sizePx`.
 async function checkAskedToUpscale(page, check, sizePx = 2000) {
   await check(`a question box asks "Upscale to ${sizePx} px?"`, async () => {
@@ -152,9 +153,6 @@ async function shareAnsweringNo(page, hand) {
   await hand.tap(page.locator('#btnShare'));
   await hand.tap(questionButton(page, 'No'));
 }
-
-// The label the red Share button shows.
-const shareLabel = page => page.locator('#btnShare .action-label');
 
 // Expects each of these buttons, by id, to be live (true) or greyed out (false).
 async function expectLive(page, ids, isLive) {
@@ -706,14 +704,6 @@ test('EXP-11.2 Without Share, Download is red and wider [phone] [webkit]', async
   });
 });
 
-// Types an angle on the Rotate step: taps the angle, types `text` and taps Done.
-async function typeAngle(page, hand, text) {
-  await hand.tap(page.locator('#rotateAngle'));
-  await page.locator('#rotateAngleField').waitFor({ state: 'visible' });
-  await page.keyboard.type(text);
-  await hand.tap(page.locator('#btnAngleDone'));
-}
-
 // Lets the page read and write the clipboard. Only Chromium can grant that to a page under
 // test, so a Copy case runs there only.
 async function allowClipboard(context, browserName) {
@@ -1104,8 +1094,6 @@ function waitForPhotoOpen(page, name) {
   }, name);
 }
 
-const nextCard = page => page.locator('#btnNextCard');
-
 // Records the verdict that Next card shows, in white.
 async function checkNextCardShows(page, check, description) {
   await check(description, async () => {
@@ -1423,7 +1411,7 @@ test('EXP-23.1 Exported edits still count after a reload and Resume [phone] [web
     await expect(nextCard(page)).toBeVisible();
   });
   // A person would wait a moment; the script waits until the exported edits are saved.
-  await page.waitForFunction(async () => {
+  await waitInPage(page, async () => {
     const record = await window.__straightener.Session.peek();
     return !!record && record.exported === true;
   });
@@ -1953,23 +1941,6 @@ test('EXP-31.1 The version line names the app and its version [phone]', async ({
 const SMALL_PREVIEW_LINK = 'index.html?previewMaxPx=512';
 // The on-screen copy's long side with that link, in px.
 const SMALL_PREVIEW_PX = 512;
-
-// The size of a saved image file, as [width, height] in px.
-async function savedSize(page, file) {
-  const image = await readSavedImage(page, file);
-  return [image.width, image.height];
-}
-
-// Waits until the open photo's edits, as they are now, are kept on the device (what a person's
-// "wait two seconds" gives time for), so a reload offers them.
-function waitForEditsKept(page) {
-  return page.waitForFunction(async () => {
-    const app = window.__straightener.app;
-    const record = await window.__straightener.Session.peek();
-    const isSameState = !!record && JSON.stringify(record.state) === JSON.stringify(app.state);
-    return isSameState && record.tab === app.tab;
-  });
-}
 
 test('EXP-32.1 The saved file doesn\'t depend on the preview\'s resolution [phone] [webkit]',
   async ({ page, check }, testInfo) => {

@@ -8,7 +8,7 @@
 // Every row of a case has its own check, in order, described in the row's own words.
 'use strict';
 const { test, expect } = require('./support/case.js');
-const { samplePath, waitForStill } = require('./support/app.js');
+const { samplePath, waitForStill, stepNow, backgroundOf } = require('./support/app.js');
 const {
   choiceButton,
   selectedChoices,
@@ -40,6 +40,7 @@ const {
   askAndCheck,
   answerAndCheckClosed,
   openCornerSheetAndCheck,
+  downloadButton,
 } = require('./support/questions.js');
 
 const ASK_2000 = 'Upscale to 2000 px?';
@@ -72,9 +73,6 @@ const PHONE_LANDSCAPE = { width: 844, height: 390 };
 const NARROW_DESKTOP = { width: 700, height: 800 };
 // The first row's words for the question box, with its definition.
 const FIRST_ASK = `${QUESTION_BOX} asks "${ASK_2000}"`;
-
-// The Download button on Export.
-const downloadButton = page => page.locator('#btnDownload');
 
 // The question box's title, its line and its three buttons' labels, as the screen shows them.
 async function boxWords(page) {
@@ -109,9 +107,6 @@ function expectChoicesLaidOut(places) {
   const choicesRight = second.x + second.width;
   expect(Math.abs(cancel.x + cancel.width - choicesRight)).toBeLessThan(PLACE_TOLERANCE_PX);
 }
-
-// The background color of one of the question box's buttons, as the browser writes it.
-const backgroundOf = locator => locator.evaluate(el => getComputedStyle(el).backgroundColor);
 
 // True when one of the question box's buttons has the red main look.
 const isRed = async locator => (await backgroundOf(locator)) === P1HUNT_RED;
@@ -338,9 +333,6 @@ async function tapAt(page, locator) {
   const box = await boxOf(locator);
   await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
 }
-
-// The step the app is on.
-const stepNow = page => page.evaluate(() => window.__straightener.app.tab);
 
 test('QCD-05.1 On a wide screen, shortcuts, the top bar and the panel do nothing while the '
   + 'question box is up [desktop]', async ({ page, check }, testInfo) => {

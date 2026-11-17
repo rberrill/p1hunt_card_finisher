@@ -590,12 +590,12 @@ test('LAY-10.3 Under reduced motion the Straighten ruler\'s pointer doesn\'t gro
   await waitForStill(page);
   const ruler = await page.locator('#rotateArea .ruler').boundingBox();
   const middle = { x: ruler.x + ruler.width / 2, y: ruler.y + ruler.height / 2 };
-  let lift = await holdFinger(page, middle);
+  let finger = await holdFinger(page, middle);
   await page.waitForTimeout(HOLD_SETTLE_MS);
   await check('held: the pointer grows to 36 px tall', async () => {
     expect(await pointerHeight(page)).toBe(POINTER_HELD_PX);
   });
-  await lift();
+  await finger.lift();
   await waitForStill(page);
   await check('let go: the pointer is 28 px tall again', async () => {
     expect(await pointerHeight(page)).toBe(POINTER_REST_PX);
@@ -606,13 +606,13 @@ test('LAY-10.3 Under reduced motion the Straighten ruler\'s pointer doesn\'t gro
     expect(await screenDifference(page, before, await screenNow(page)))
       .toBeLessThanOrEqual(SCREEN_CHANGE_MAX);
   });
-  lift = await holdFinger(page, middle);
+  finger = await holdFinger(page, middle);
   await page.waitForTimeout(HOLD_SETTLE_MS);
   await check('held with reduced motion: the pointer stays 28 px tall', async () => {
     expect(await page.locator('#rotateArea .ruler').getAttribute('class')).toContain('is-held');
     expect(await pointerHeight(page)).toBe(POINTER_REST_PX);
   });
-  await lift();
+  await finger.lift();
 });
 
 test('LAY-10.4 Under reduced motion a slider\'s knob doesn\'t grow when held [phone]', async ({
@@ -630,13 +630,13 @@ test('LAY-10.4 Under reduced motion a slider\'s knob doesn\'t grow when held [ph
       expect(await knobHeightPx(page, slider)).toBeCloseTo(KNOB_REST_PX, 0);
     });
   const knob = await knobMiddle(slider);
-  let lift = await holdFinger(page, knob);
+  let finger = await holdFinger(page, knob);
   await page.waitForTimeout(HOLD_SETTLE_MS);
   await check('held: the knob grows to 30 px across', async () => {
     const heightPx = await knobHeightPx(page, slider);
     expect(Math.abs(heightPx - KNOB_HELD_PX)).toBeLessThanOrEqual(KNOB_TOLERANCE_PX);
   });
-  await lift();
+  await finger.lift();
   await page.waitForTimeout(HOLD_SETTLE_MS);
   await check('let go: the knob is 22 px across again', async () => {
     const heightPx = await knobHeightPx(page, slider);
@@ -648,7 +648,7 @@ test('LAY-10.4 Under reduced motion a slider\'s knob doesn\'t grow when held [ph
     expect(await screenDifference(page, before, await screenNow(page)))
       .toBeLessThanOrEqual(SCREEN_CHANGE_MAX);
   });
-  lift = await holdFinger(page, knob);
+  finger = await holdFinger(page, knob);
   await page.waitForTimeout(HOLD_SETTLE_MS);
   await check('held with reduced motion: the knob stays 22 px across', async () => {
     expect(await page.locator('#perspectiveArea .slider').getAttribute('class'))
@@ -656,7 +656,7 @@ test('LAY-10.4 Under reduced motion a slider\'s knob doesn\'t grow when held [ph
     const heightPx = await knobHeightPx(page, slider);
     expect(Math.abs(heightPx - KNOB_REST_PX)).toBeLessThanOrEqual(KNOB_TOLERANCE_PX);
   });
-  await lift();
+  await finger.lift();
 });
 
 test('LAY-10.5 Under reduced motion the export\'s progress line still moves [phone]', async ({

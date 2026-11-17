@@ -1,8 +1,10 @@
 // Helpers for the layout cases (tests/automation/layout.spec.js) that the other areas don't
-// share: a finger held still on the screen, the frames a sheet or the Front and Back pill
-// passes through, the height of a slider's knob as drawn, and the steps the export's progress
-// line takes. They read the page only to check a result.
+// share: the frames a sheet or the Front and Back pill passes through, the height of a slider's
+// knob as drawn, and the steps the export's progress line takes. They read the page only to
+// check a result. holdFinger (a finger held still on the screen) is support/app.js's, exported
+// here too.
 'use strict';
+const { holdFinger } = require('./app.js');
 
 // How long a recorder watches the frames after a tap, in ms: past a 280 ms sheet slide.
 const RECORD_MS = 450;
@@ -19,21 +21,6 @@ const KNOB_REACH_PX = 22;
 const SCREEN_CHANNEL_SLACK = 16;
 // A slider's knob at rest, across, in CSS px (css/app.css, the slider part's thumb).
 const KNOB_PX = 22;
-
-// Puts one finger on the page at `point` (CSS px) and keeps it there, through the browser's own
-// touch input (the DevTools protocol), as a real finger would be; Chromium only. Returns a
-// function that lifts it.
-async function holdFinger(page, point) {
-  const session = await page.context().newCDPSession(page);
-  await session.send('Input.dispatchTouchEvent', {
-    type: 'touchStart',
-    touchPoints: [{ x: point.x, y: point.y }],
-  });
-  return async () => {
-    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await session.detach();
-  };
-}
 
 // Starts recording, at every frame for RECORD_MS, where a step's options sheet is: in
 // window.testFrames, { isShown, offsetPx, dimming } per frame, with offsetPx how far the sheet

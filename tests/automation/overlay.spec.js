@@ -7,7 +7,7 @@
 // only a file over the size limit, too big to keep there, is made in the test.
 'use strict';
 const { test, expect } = require('./support/case.js');
-const { goToStep, openOptions } = require('./support/app.js');
+const { goToStep, openOptions, stepNow, offsetBy } = require('./support/app.js');
 const {
   pickWith,
   waitForPhoto,
@@ -203,9 +203,6 @@ async function openNext(page, hand, name) {
   await pickWith(page, hand, page.locator('#btnOpen'), name);
   await waitForPhoto(page, name);
 }
-
-// The step on screen ('perspective' … 'export').
-const stepNow = page => page.evaluate(() => window.__straightener.app.tab);
 
 // How many px of the row `row` (red channel values) between `fromX` and `toX` are gray: the
 // soft part of an edge between black and white.
@@ -1242,9 +1239,6 @@ async function emptyPoint(page) {
   };
 }
 
-// A point moved by (dx, dy) CSS px.
-const movedBy = (point, dx, dy) => ({ x: point.x + dx, y: point.y + dy });
-
 test('OVL-15.1 A drag and a pinch on the photo move the logo, not the photo [phone] [webkit]',
   async ({ page, check }, testInfo) => {
     const hand = await startOnOverlay(page, testInfo);
@@ -1252,7 +1246,7 @@ test('OVL-15.1 A drag and a pinch on the photo move the logo, not the photo [pho
     const view = await viewNow(page);
     const start = await logoOnPage(page);
     const from = await emptyPoint(page);
-    await hand.drag(from, movedBy(from, DRAG_ACROSS_PX, DRAG_DOWN_PX));
+    await hand.drag(from, offsetBy(from, DRAG_ACROSS_PX, DRAG_DOWN_PX));
     const dragged = await logoOnPage(page);
     await check('the logo moves 60 px right and 40 px down; the photo doesn\'t move', async () => {
       expect(await viewNow(page)).toEqual(view);
@@ -1275,7 +1269,7 @@ test('OVL-15.2 With no logo placed, a drag and a pinch do nothing [phone]', asyn
   const view = await viewNow(page);
   const steps = await undoSteps(page);
   const from = await emptyPoint(page);
-  await hand.drag(from, movedBy(from, DRAG_ACROSS_PX, DRAG_DOWN_PX));
+  await hand.drag(from, offsetBy(from, DRAG_ACROSS_PX, DRAG_DOWN_PX));
   await check('the photo stays where it was, at the same size; Undo is still greyed out',
     async () => {
       expect(await viewNow(page)).toEqual(view);
@@ -1326,7 +1320,7 @@ test('OVL-16.1 Dragging the logo moves it, one undo step [phone] [webkit]', asyn
   await addDisc(page, hand);
   const start = await logoOnPage(page);
   const from = inDisc(start);
-  await hand.drag(from, movedBy(from, DRAG_ACROSS_PX, DRAG_DOWN_PX));
+  await hand.drag(from, offsetBy(from, DRAG_ACROSS_PX, DRAG_DOWN_PX));
   const moved = await logoOnPage(page);
   await check('the logo moves with the finger, 60 px right and 40 px down, its size kept', () => {
     expectNear(moved.middle.x - start.middle.x, DRAG_ACROSS_PX, PAGE_TOLERANCE_PX);
@@ -1349,7 +1343,7 @@ test('OVL-16.2 A drag away from the logo moves it too [phone]', async ({
   await addDisc(page, hand);
   const start = await logoOnPage(page);
   const from = await emptyPoint(page);
-  await hand.drag(from, movedBy(from, -DRAG_DOWN_PX, -DRAG_ACROSS_PX));
+  await hand.drag(from, offsetBy(from, -DRAG_DOWN_PX, -DRAG_ACROSS_PX));
   const moved = await logoOnPage(page);
   await check('the logo moves 40 px left and 60 px up', () => {
     expectNear(moved.middle.x - start.middle.x, -DRAG_DOWN_PX, PAGE_TOLERANCE_PX);
@@ -1363,7 +1357,7 @@ test('OVL-17.1 Dragging a corner resizes the logo, its shape and the far corner 
   await addDisc(page, hand);
   const start = await logoOnPage(page);
   const corner = start.corners.se;
-  await hand.drag(corner, movedBy(corner, CORNER_DRAG_PX, CORNER_DRAG_PX / 2));
+  await hand.drag(corner, offsetBy(corner, CORNER_DRAG_PX, CORNER_DRAG_PX / 2));
   const resized = await logoOnPage(page);
   await check('the logo is 40 px wider and 40 px higher, still square; its top-left corner '
     + 'hasn\'t moved', () => {
@@ -1386,7 +1380,7 @@ test('OVL-17.2 A corner drag never makes the logo narrower than 8 px [phone]', a
   await addDisc(page, hand);
   const start = await logoOnPage(page);
   const corner = start.corners.se;
-  const farPast = movedBy(start.corners.nw, -2 * CORNER_DRAG_PX, -2 * CORNER_DRAG_PX);
+  const farPast = offsetBy(start.corners.nw, -2 * CORNER_DRAG_PX, -2 * CORNER_DRAG_PX);
   await hand.drag(corner, farPast);
   const box = await logoBox(page);
   const shrunk = await logoOnPage(page);
@@ -1426,7 +1420,7 @@ test('OVL-17.3 A corner handle near a ring wins over the ring [phone]', async ({
     expect(fromCorner).toBeLessThan(HIT_RADIUS_PX);
     expect(fromRing).toBeLessThan(HIT_RADIUS_PX);
   });
-  await hand.drag(between, movedBy(between, CORNER_DRAG_PX / 2, CORNER_DRAG_PX / 2));
+  await hand.drag(between, offsetBy(between, CORNER_DRAG_PX / 2, CORNER_DRAG_PX / 2));
   const resized = await logoOnPage(page);
   await check('the logo is resized, smaller, its bottom-right corner where it was: the handle '
     + 'took the press, not the ring', () => {
@@ -1476,10 +1470,10 @@ test('OVL-18.2 After one finger lifts, the other moves the logo on [phone]', asy
   });
   const left = finger(PINCH_END_PX, -1);
   for (let i = 1; i <= FINGER_MOVES; i++) {
-    const step = movedBy(left, DRAG_ACROSS_PX * i / FINGER_MOVES, 0);
+    const step = offsetBy(left, DRAG_ACROSS_PX * i / FINGER_MOVES, 0);
     await sendTouch(page, '#view', 'pointermove', step, FIRST_FINGER);
   }
-  await sendTouch(page, '#view', 'pointerup', movedBy(left, DRAG_ACROSS_PX, 0), FIRST_FINGER);
+  await sendTouch(page, '#view', 'pointerup', offsetBy(left, DRAG_ACROSS_PX, 0), FIRST_FINGER);
   const moved = await logoOnPage(page);
   await check('the logo moves 60 px right with the finger, its size kept', () => {
     expectNear(moved.middle.x - pinched.middle.x, DRAG_ACROSS_PX, PAGE_TOLERANCE_PX);
@@ -1586,7 +1580,7 @@ test('OVL-21.1 A drag that starts on a ring moves the logo [phone]', async ({
   await addDisc(page, hand);
   const start = await logoOnPage(page);
   const ring = await ringOnPage(page, 'l');
-  await hand.drag(ring, movedBy(ring, DRAG_ACROSS_PX, 0));
+  await hand.drag(ring, offsetBy(ring, DRAG_ACROSS_PX, 0));
   const moved = await logoOnPage(page);
   await check('the logo moves 60 px right; it doesn\'t snap to the left', () => {
     expectNear(moved.middle.x - start.middle.x, DRAG_ACROSS_PX, PAGE_TOLERANCE_PX);
@@ -1601,7 +1595,7 @@ test('OVL-22.1 The rings fade during a drag, for a person to judge [phone]', asy
   const hand = await startOnOverlay(page, testInfo);
   await addDisc(page, hand);
   const start = inDisc(await logoOnPage(page));
-  const end = movedBy(start, DRAG_ACROSS_PX, DRAG_DOWN_PX);
+  const end = offsetBy(start, DRAG_ACROSS_PX, DRAG_DOWN_PX);
   await holdDragAt(page, hand, start, end);
   await page.waitForTimeout(RINGS_BACK_MS);
   expect((await logoPlacement(page)).cx).toBeGreaterThan(0.5);

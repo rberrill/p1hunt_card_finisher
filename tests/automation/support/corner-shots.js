@@ -16,8 +16,11 @@ const {
   handFor,
   openOptions,
   closeOptions,
-  readSavedImage,
   cornerOnPage,
+  questionCard,
+  questionButton,
+  isQuestionUp,
+  savedSize,
 } = require('./app.js');
 const {
   installShareStandIn,
@@ -132,11 +135,6 @@ function saveCorners(page, hand, count = 1, answer = 'No') {
   return downloadAll(page, hand, count, answer, '#btnCornerDownload');
 }
 
-// The question card over the photo, and one of its buttons by label.
-const questionCard = page => page.locator('#pairPrompt');
-const questionButton = (page, label) => questionCard(page)
-  .getByRole('button', { name: label, exact: true });
-
 // Expects the question card to be up, asking `title` (and, when given, saying `text`).
 async function expectQuestion(page, title, text = null) {
   await waitForQuestion(page, true);
@@ -144,16 +142,8 @@ async function expectQuestion(page, title, text = null) {
   if (text !== null) await expect(questionCard(page).locator('.alert-text')).toHaveText(text);
 }
 
-// True while the question card is up (shown and not leaving).
-function isQuestionUp(page) {
-  return page.evaluate(() => window.CF.isAlertOpen(document.getElementById('pairPrompt')));
-}
-
-// A saved image's size in px: [width, height].
-async function imageSize(page, file) {
-  const image = await readSavedImage(page, file);
-  return [image.width, image.height];
-}
+// The sheet's Download button.
+const downloadCorners = page => page.locator('#btnCornerDownload');
 
 // Collects every download that arrives from now on into the returned list ({ name, file }
 // promises resolve as each finishes). Call stop() to stop collecting.
@@ -494,7 +484,6 @@ module.exports = {
   questionButton,
   expectQuestion,
   isQuestionUp,
-  imageSize,
   collectDownloads,
   downloadsAfterWait,
   downloadsArrived,
@@ -516,4 +505,6 @@ module.exports = {
   thumbnailDigests,
   isOutlineCrossed,
   logoCoverOfShot,
+  imageSize: savedSize,
+  downloadCorners,
 };

@@ -5,12 +5,16 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { expect } = require('@playwright/test');
 const {
   openOptions,
   closeOptions,
-  cornerOnPage,
+  goToStep,
+  saveFileBy,
   saveByDownload,
   waitForStill,
+  crossTheCorners,
+  holdFinger,
 } = require('./app.js');
 
 // The image types a saved file can have, by its extension.
@@ -48,9 +52,8 @@ const WATCHED_CONTROLS = [
 ];
 // The groups of choices whose segments recordExports keeps, by id.
 const WATCHED_CHOICES = ['exportSize', 'exportFormat', 'pairOutput', 'cornerOutput', 'sideSwitch'];
-// How far past the bottom-right corner the top-left one is dragged to cross the outline, in
-// source px.
-const CROSS_PAST_PX = 60;
+// The question the box asks before saving a crop smaller than the default 2000 px Size.
+const UPSCALE_2000_QUESTION = 'Upscale to 2000 px?';
 // How many moves a drag of the Quality slider is made of (dragQualityTo).
 const QUALITY_SLIDE_MOVES = 12;
 // How far past an end of the Quality slider's track a drag to that end goes, in CSS px, so
@@ -220,20 +223,6 @@ async function toastMessage(page) {
   return isShown ? (await toast.locator('.toast-text').textContent()).trim() : '';
 }
 
-// On the Perspective step, drags the top-left corner handle past the bottom-right one, so the
-// outline crosses itself and the corners are invalid.
-async function crossTheCorners(page, hand) {
-  const start = await cornerOnPage(page, 0);
-  const end = await page.evaluate(pastPx => {
-    const app = window.__straightener.app;
-    const [right, bottom] = app.state.corners[2];
-    const [x, y] = window.CF.toScreen(window.CF.currentView(), [right + pastPx, bottom + pastPx]);
-    const box = document.getElementById('view').getBoundingClientRect();
-    return { x: box.left + x, y: box.top + y };
-  }, CROSS_PAST_PX);
-  await hand.drag(start, end);
-}
-
 // Downloads the export and returns { name, file, bytes }: the name the app gave it, the path of
 // the saved copy and its size in bytes. upscaleAnswer as for saveByDownload.
 async function downloadExport(page, hand, upscaleAnswer = 'No') {
@@ -307,21 +296,6 @@ function readClipboardImage(page) {
   });
 }
 
-// Taps a button that saves a file (Download corners, Save edits), answers the Upscale question
-// with `upscaleAnswer` if it is asked, and waits for the file. Returns { name, file }.
-async function saveFileBy(page, hand, button, upscaleAnswer = 'No') {
-  const downloading = page.waitForEvent('download');
-  await hand.tap(button);
-  const card = page.locator('#pairPrompt');
-  const isAsked = await Promise.race([
-    downloading.then(() => false),
-    card.waitFor({ state: 'visible' }).then(() => true, () => false),
-  ]);
-  if (isAsked) await hand.tap(card.getByRole('button', { name: upscaleAnswer, exact: true }));
-  const download = await downloading;
-  return { name: download.suggestedFilename(), file: await download.path() };
-}
-
 // Reads pixels of a saved image file in the page. points: [[across, down]] as fractions (0 to
 // 1) of the image's width and height. Returns { width, height, pixels }, with each point's
 // [r, g, b, a] (0 to 255).
@@ -392,18 +366,12 @@ async function dragQualityTo(page, hand, end, pauseMs = 0) {
     await page.mouse.up();
     return;
   }
-  const session = await page.context().newCDPSession(page);
-  const touch = (type, x) => session.send('Input.dispatchTouchEvent', {
-    type,
-    touchPoints: type === 'touchEnd' ? [] : [{ x, y: middleY }],
-  });
-  await touch('touchStart', startX);
+  const finger = await holdFinger(page, { x: startX, y: middleY });
   for (let move = 1; move <= QUALITY_SLIDE_MOVES; move++) {
-    await touch('touchMove', xAtMove(move));
+    await finger.moveTo({ x: xAtMove(move), y: middleY });
     if (pauseMs) await page.waitForTimeout(pauseMs);
   }
-  await touch('touchEnd', endX);
-  await session.detach();
+  await finger.lift();
 }
 
 // Reads three rows of pixels of a saved image file in the page, at a quarter, a half and three
@@ -505,6 +473,43 @@ function rectsOverlap(first, second) {
   return !isApartAcross && !isApartDown;
 }
 
+// The label the red Share button shows.
+const shareLabel = page => page.locator('#btnShare .action-label');
+
+// The Next card button on Export.
+const nextCard = page => page.locator('#btnNextCard');
+
+// Taps one of the Format choices by its label ('JPEG', 'PNG' or 'WebP').
+const tapFormat = (page, hand, label) => hand.tap(choiceButton(page, 'exportFormat', label));
+
+// Taps Export in the step tabs and checks that the Export step shows Download.
+async function exportStep(page, hand, check, description) {
+  await goToStep(page, 'export', hand);
+  await check(description, async () => {
+    await expect(page.locator('#btnDownload')).toBeVisible();
+  });
+}
+
+// Taps Download on the Export step and checks that the question box asks
+// UPSCALE_2000_QUESTION. Returns { downloading }: the download to wait for once the question is
+// answered (wrapped, so that an async function doesn't wait for it).
+async function downloadStep(page, hand, check, description) {
+  const downloading = page.waitForEvent('download');
+  await hand.tap(page.locator('#btnDownload'));
+  await check(description, async () => {
+    await expect(page.locator('#pairPromptTitle')).toHaveText(UPSCALE_2000_QUESTION);
+  });
+  return { downloading };
+}
+
+// Taps No in the question box and waits for the download downloadStep started. Returns
+// { name, file }.
+async function answerNo(page, hand, { downloading }) {
+  await hand.tap(page.locator('#pairPrompt').getByRole('button', { name: 'No', exact: true }));
+  const download = await downloading;
+  return { name: download.suggestedFilename(), file: await download.path() };
+}
+
 module.exports = {
   SHARE_FAILURE_MESSAGE,
   installShareStandIn,
@@ -536,4 +541,10 @@ module.exports = {
   takeAwayWebpSaving,
   copyPhotoToClipboard,
   rectsOverlap,
+  shareLabel,
+  nextCard,
+  tapFormat,
+  exportStep,
+  downloadStep,
+  answerNo,
 };

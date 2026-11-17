@@ -6,7 +6,13 @@
 // window.__straightener and CF) only to wait for a result or to check one.
 'use strict';
 const { expect } = require('@playwright/test');
-const { openApp, hasWhiteFill, openOptions, closeOptions } = require('./app.js');
+const {
+  openApp,
+  hasWhiteFill,
+  openOptions,
+  closeOptions,
+  waitForEditsKept,
+} = require('./app.js');
 const { choiceButton, selectedChoices, waitForQuestion } = require('./export.js');
 const {
   questionButton,
@@ -22,6 +28,9 @@ const QUESTION_BOX = 'the question box (the box over the dimmed photo with a que
   + 'buttons)';
 // The Interpolation choices, as its list offers them.
 const INTERPOLATIONS = ['Bilinear', 'Bicubic (sharper, slower)'];
+
+// The Download button on Export.
+const downloadButton = page => page.locator('#btnDownload');
 
 // Taps `control` once no question box is up and records the row's verdict: the question box
 // asks `title` (and, when given, reads `text`). description: the row's result in its own words.
@@ -102,17 +111,6 @@ async function setBicubicAndCheck(page, hand, check) {
   });
 }
 
-// Waits until the open photo's edits, as they are now, are kept on the device (what a person's
-// "wait two seconds" gives time for), so that opening the build again offers them.
-function waitForEditsKept(page) {
-  return page.waitForFunction(async () => {
-    const app = window.__straightener.app;
-    const record = await window.__straightener.Session.peek();
-    const isSameState = !!record && JSON.stringify(record.state) === JSON.stringify(app.state);
-    return isSameState && record.tab === app.tab;
-  });
-}
-
 // Waits for the edits to be kept, opens the build again at `address` (a reload when it is
 // null) and records the row's verdict: the start screen asks "Resume `name`?", with Resume and
 // Start fresh.
@@ -158,4 +156,5 @@ module.exports = {
   waitForEditsKept,
   reopenAndCheck,
   resumeAndCheck,
+  downloadButton,
 };

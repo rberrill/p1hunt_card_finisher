@@ -16,6 +16,8 @@ const {
   closeOptions,
   middleOf,
   hasWhiteFill,
+  stepNow,
+  nextFrames: waitForThumbnails,
 } = require('./support/app.js');
 const {
   installShareStandIn,
@@ -31,6 +33,8 @@ const {
   downloadAnswering,
   isSameFile,
   dragQualityTo,
+  nextCard,
+  tapFormat,
 } = require('./support/export.js');
 const {
   PORTRAIT_PAIR,
@@ -83,6 +87,7 @@ const {
   thumbnailDigests,
   isOutlineCrossed,
   logoCoverOfShot,
+  downloadCorners,
 } = require('./support/corner-shots.js');
 
 // The case photo's corner shots at its own resolution, in px: each shot's side, and the sheet's
@@ -173,18 +178,9 @@ const QUALITY_LOW = '50%';
 // The Corner shots button, and the sheet's two save buttons and their labels.
 const cornerShotsButton = page => page.locator('#btnCornerShots');
 const shareCorners = page => page.locator('#btnCornerShare');
-const downloadCorners = page => page.locator('#btnCornerDownload');
 const shareCornersLabel = page => page.locator('#btnCornerShare .action-label');
-const nextCard = page => page.locator('#btnNextCard');
-
-// Taps one of the Format choices by its label ('JPEG', 'PNG' or 'WebP').
-const tapFormat = (page, hand, label) => hand.tap(choiceButton(page, 'exportFormat', label));
-
 // True when a control has the red main look.
 const isRed = locator => locator.evaluate(el => el.classList.contains('is-main'));
-
-// The step the app shows.
-const stepNow = page => page.evaluate(() => window.__straightener.app.tab);
 
 // Taps Share corners and waits until the stand-in share sheet has had `count` calls in all.
 async function shareCornersOnce(page, hand, count) {
@@ -206,13 +202,6 @@ function thumbnailsArePlain(page, rgb) {
       }
       return canvas.width > 0;
     }), rgb);
-}
-
-// Waits until the thumbnails have been drawn since the sheet opened (two frames).
-function waitForThumbnails(page) {
-  return page.evaluate(() => new Promise(resolve => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  }));
 }
 
 // Taps a step tab and records the row's verdict: that step shows (`then` checks anything more

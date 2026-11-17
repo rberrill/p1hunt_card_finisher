@@ -7,7 +7,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { root, openApp, openPhoto, handFor } = require('./app.js');
+const { root, openApp, openPhoto, handFor, tapPoint, viewZoom, offsetBy } = require('./app.js');
 
 // The photo most cases use: a PSA slab, found within 0.5% by detection.
 const PHOTO = 'IMG_9136.JPEG';
@@ -43,17 +43,9 @@ function handleOnPage(page, index) {
   }, index);
 }
 
-// A point moved by (dx, dy) CSS px.
-const offsetBy = (point, dx, dy) => ({ x: point.x + dx, y: point.y + dy });
-
 // The four corners, in the photo's own px (source px), top-left first.
 function cornersNow(page) {
   return page.evaluate(() => JSON.parse(JSON.stringify(window.__straightener.app.state.corners)));
-}
-
-// The photo view's zoom: CSS px per photo px.
-function zoomNow(page) {
-  return page.evaluate(() => window.CF.currentView().zoom);
 }
 
 // The zoom at which the whole photo fits the photo area.
@@ -62,11 +54,6 @@ function fittedZoom(page) {
     const img = window.__straightener.app.img;
     return window.CF.fitView(img.width, img.height).zoom;
   });
-}
-
-// Taps (a finger on a phone target) or clicks (the mouse) one point of the page.
-function tapAt(page, hand, point) {
-  return hand.isTouch ? page.touchscreen.tap(point.x, point.y) : page.mouse.click(point.x, point.y);
 }
 
 // Two quick taps on one point: two finger taps, or a mouse double-click.
@@ -372,6 +359,9 @@ function middleColor(page) {
   });
 }
 
+// The line above Perspective's controls that names the selected handle.
+const handleName = page => page.locator('#perspectiveLine .line-value');
+
 module.exports = {
   PHOTO,
   startOnPerspective,
@@ -383,9 +373,7 @@ module.exports = {
   handleOnPage,
   offsetBy,
   cornersNow,
-  zoomNow,
   fittedZoom,
-  tapAt,
   doubleTapAt,
   sendTouch,
   pressAt,
@@ -405,4 +393,7 @@ module.exports = {
   recordCornerMoveTimes,
   readCornerMoveTimes,
   middleColor,
+  tapAt: tapPoint,
+  zoomNow: viewZoom,
+  handleName,
 };

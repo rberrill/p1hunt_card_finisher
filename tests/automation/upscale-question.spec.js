@@ -35,6 +35,7 @@ const {
   topElementAt,
   openPicker,
   chooseFixtureLogo,
+  downloadCorners,
 } = require('./support/corner-shots.js');
 const {
   QUESTION_BOX,
@@ -46,6 +47,7 @@ const {
   setBicubicAndCheck,
   reopenAndCheck,
   resumeAndCheck,
+  downloadButton,
 } = require('./support/questions.js');
 
 // The case photo, its crop at its own resolution, in px, and the question's line for it.
@@ -95,14 +97,8 @@ const LOGO = 'app-icon-logo.png';
 const MIDDLE_TOLERANCE = 0.01;
 // The first row's words for the question box, with its definition.
 const FIRST_ASK = `${QUESTION_BOX} asks "${ASK_2000}"`;
-
-// The Download, Share and Copy buttons on Export, and Download corners in the Corner shots
-// sheet.
-const downloadButton = page => page.locator('#btnDownload');
 const shareButton = page => page.locator('#btnShare');
 const copyButton = page => page.locator('#btnCopy');
-const downloadCorners = page => page.locator('#btnCornerDownload');
-
 // The sizes selected on Export, by their labels.
 const selectedSizes = page => page.locator('#exportSize .segment[aria-pressed="true"]')
   .allTextContents();

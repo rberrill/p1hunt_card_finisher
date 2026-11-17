@@ -13,6 +13,7 @@ const {
   handFor,
   openOptions,
   cornerOnPage,
+  waitForDetection,
 } = require('./support/app.js');
 const { toastNow } = require('./support/start-and-session.js');
 const { installShareStandIn, selectedChoices } = require('./support/export.js');
@@ -78,11 +79,6 @@ const HOOK_PARTS = ['EngineWorker', 'Detector', 'draw', 'Session', 'resumeSessio
 // The number of times detection has run for the open photo.
 function detectionRuns(page) {
   return page.evaluate(() => window.__straightener.app.detection.running);
-}
-
-// Waits until no detection is running: the last run has cleared its message.
-function waitForDetection(page) {
-  return page.waitForFunction(() => window.__straightener.app.detection.message === '');
 }
 
 // Waits until a detection run after the first `runsBefore` has started and finished.

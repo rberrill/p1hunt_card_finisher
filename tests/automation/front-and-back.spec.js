@@ -20,6 +20,8 @@ const {
   samplePath,
   readSavedImage,
   root,
+  stepNow,
+  questionCard,
 } = require('./support/app.js');
 const {
   PORTRAIT_PAIR,
@@ -65,7 +67,16 @@ const {
   slowStorageWrites,
   waitInPage,
 } = require('./support/front-and-back.js');
-const { installShareStandIn, dragQualityTo } = require('./support/export.js');
+const {
+  installShareStandIn,
+  dragQualityTo,
+  waitForExportEnd,
+  shareLabel,
+} = require('./support/export.js');
+const { typeAngle, angleText } = require('./support/rotate.js');
+const { levelsDot } = require('./support/levels.js');
+const { selectedPreset } = require('./support/crop.js');
+const { fixturePath } = require('./support/edits-files.js');
 
 const FRONT = PORTRAIT_PAIR.front;
 const BACK = PORTRAIT_PAIR.back;
@@ -73,14 +84,12 @@ const BACK = PORTRAIT_PAIR.back;
 const OTHER_PHOTO = 'IMG_9136.JPEG';
 // A logo: the app's own icon.
 const LOGO = path.join(root, 'icons', 'icon.svg');
-// A file in tests/fixtures/, by its name.
-const fixture = name => path.join(root, 'tests', 'fixtures', name);
 // A line of text named like a photo, so no browser can read it as an image.
-const NOT_A_PHOTO = fixture('not-a-photo.JPEG');
+const NOT_A_PHOTO = fixturePath('not-a-photo.JPEG');
 // A line of text, which Overlay's Add logo refuses.
-const NOT_A_LOGO = fixture('notes.txt');
+const NOT_A_LOGO = fixturePath('notes.txt');
 // Edits saved from the front on its own, turned 3°, its square 1:1 box dragged by hand.
-const SQUARE_CROP_EDITS = fixture('pair-front-square-crop-edits.json');
+const SQUARE_CROP_EDITS = fixturePath('pair-front-square-crop-edits.json');
 // The 3:4 preset's id: presets are named landscape-first, and read 3:4 for an upright card.
 const THREE_BY_FOUR = '4:3';
 // An upright 3:4 box's width over its height.
@@ -170,23 +179,6 @@ async function startWithFront(page, testInfo, photo = FRONT) {
   return handFor(page, testInfo);
 }
 
-// The angle as the line above the Straighten ruler shows it.
-const angleText = page => page.locator('#rotateAngleText');
-
-// Types an angle on the Rotate step: taps the angle, types `text`, taps Done.
-async function typeAngle(page, hand, text) {
-  await hand.tap(page.locator('#rotateAngle'));
-  await page.locator('#rotateAngleField').waitFor({ state: 'visible' });
-  await page.keyboard.type(text);
-  await hand.tap(page.locator('#btnAngleDone'));
-}
-
-// The step the app is on.
-const currentStep = page => page.evaluate(() => window.__straightener.app.tab);
-
-// The white dot on the Levels tab that marks unapplied Levels changes.
-const levelsDot = page => page.locator('[data-step="levels"]:visible .step-tab-mark');
-
 // Expects Levels' Discard and Apply both to be greyed out ('disabled') or both live
 // ('enabled'). They are always shown; only whether they answer a tap changes.
 async function expectLevelsButtons(page, wanted) {
@@ -253,9 +245,6 @@ async function expectSameImage(page, firstFile, secondFile) {
   expect(second.corners).toEqual(first.corners);
 }
 
-// The selected crop preset chip on the Crop step.
-const selectedPreset = page => page.locator('#cropPresets .preset-chip[aria-pressed="true"]');
-
 // Expects the crop box to be 5:7 upright (portrait) or 7:5 lying down (landscape).
 async function expectCardCrop(page, orient) {
   const box = await cropBox(page);
@@ -264,9 +253,6 @@ async function expectCardCrop(page, orient) {
   const aspect = Math.min(box.width, box.height) / Math.max(box.width, box.height);
   expect(Math.abs(aspect - CARD_ASPECT)).toBeLessThan(CARD_ASPECT * ASPECT_TOLERANCE);
 }
-
-// The question card (Unpair, New photo, Upscale to N px?).
-const questionCard = page => page.locator('#pairPrompt');
 
 // Taps one of the question card's buttons by its label.
 function answerCard(page, hand, label) {
@@ -505,20 +491,20 @@ test('PAIR-05.1 Switching sides stays on the step you are on [phone]', async ({
   const hand = await makePair(page, testInfo);
   await goToStep(page, 'crop', hand);
   await check('the back\'s Crop step', async () => {
-    expect(await currentStep(page)).toBe('crop');
+    expect(await stepNow(page)).toBe('crop');
   });
   await switchTo(page, hand, 'front');
   await check('the front opens on the Crop step', async () => {
-    expect(await currentStep(page)).toBe('crop');
+    expect(await stepNow(page)).toBe('crop');
     expect((await editState(page)).source.name).toBe(FRONT);
   });
   await goToStep(page, 'levels', hand);
   await check('the front\'s Levels step', async () => {
-    expect(await currentStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
   });
   await switchTo(page, hand, 'back');
   await check('the back opens on the Levels step', async () => {
-    expect(await currentStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
     expect((await editState(page)).source.name).toBe(BACK);
   });
 });
@@ -564,7 +550,7 @@ test('PAIR-07.1 Each side keeps its own edits, Levels changes and selected corne
   const selectedCorner = () => page.evaluate(() => window.__straightener.app.selected);
   await switchTo(page, hand, 'front');
   await check('the front opens on Perspective; the top-left corner is selected', async () => {
-    expect(await currentStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     expect(await selectedCorner()).toBe(0);
   });
   await hand.tap(page.locator('#btnNextHandle'));
@@ -591,7 +577,7 @@ test('PAIR-07.1 Each side keeps its own edits, Levels changes and selected corne
   await switchTo(page, hand, 'back');
   await check('the back opens on Levels with no dot; Discard and Apply are greyed out; Undo is '
     + 'greyed out', async () => {
-    expect(await currentStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
     await expect(levelsDot(page)).toBeHidden();
     await expectLevelsButtons(page, 'disabled');
     await expect(page.locator('#btnUndo')).toBeDisabled();
@@ -673,7 +659,7 @@ test('PAIR-07.3 Each side keeps its own detection results [phone]', async ({
   await switchTo(page, hand, 'front');
   await check('the front opens on Perspective: Candidate reads 1/3 and the line Confidence 99%',
     async () => {
-      expect(await currentStep(page)).toBe('perspective');
+      expect(await stepNow(page)).toBe('perspective');
       expect(await candidateReadout(page)).toEqual({
         candidate: '1/3',
         confidence: 'Confidence 99%',
@@ -703,7 +689,7 @@ test('PAIR-08.1 A switch turns off Tap to find card, Preview and an armed pick [
   });
   await switchTo(page, hand, 'front');
   await check('the front opens on Perspective; "Tap the card in the photo." has gone', async () => {
-    expect(await currentStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(armedText).toBeHidden();
     expect(await page.evaluate(() => window.__straightener.app.findMode)).toBe(false);
   });
@@ -719,7 +705,7 @@ test('PAIR-08.1 A switch turns off Tap to find card, Preview and an armed pick [
   });
   await goToStep(page, 'levels', hand);
   await check('the back\'s Levels step', async () => {
-    expect(await currentStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
   });
   const pickWhite = page.locator('#levelsPicks .segment[data-value="white"]');
   await hand.tap(pickWhite);
@@ -758,7 +744,7 @@ test('PAIR-08.2 A switch ends the before-levels comparison [desktop]', async ({
   await switchTo(page, hand, 'front');
   await check('the front opens on Levels with no Before levels badge', async () => {
     expect((await editState(page)).source.name).toBe(FRONT);
-    expect(await currentStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
     expect(await isComparing(page)).toBe(false);
   });
   const frontBefore = await page.evaluate(() => ({
@@ -803,7 +789,7 @@ test('PAIR-08.3 A switch clears Overlay\'s file message [phone]', async ({
   });
   await switchTo(page, hand, 'front');
   await check('the front opens on Overlay; the message has gone', async () => {
-    expect(await currentStep(page)).toBe('overlay');
+    expect(await stepNow(page)).toBe('overlay');
     expect((await editState(page)).source.name).toBe(FRONT);
     await expect(message).toBeHidden();
   });
@@ -813,9 +799,6 @@ test('PAIR-08.3 A switch clears Overlay\'s file message [phone]', async ({
     await expect(message).toBeHidden();
   });
 });
-
-// The red save button's label on Export: 'Share', or 'Share now' after a refused share.
-const shareLabel = page => page.locator('#btnShare .action-label');
 
 test('PAIR-08.4 A switch drops a share waiting for Share now [phone]', async ({
   page,
@@ -835,7 +818,7 @@ test('PAIR-08.4 A switch drops a share waiting for Share now [phone]', async ({
   });
   await switchTo(page, hand, 'front');
   await check('the front opens on Export; the button reads Share again', async () => {
-    expect(await currentStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     expect((await editState(page)).source.name).toBe(FRONT);
     await expect(shareLabel(page)).toHaveText('Share');
   });
@@ -1077,7 +1060,7 @@ test('PAIR-12.1 Unpair leaves a single photo, and Resume brings it back [phone] 
   });
   await resume(page, hand, BACK, null);
   await check('the back opens on its own, on Crop, under 5:7 card', async () => {
-    expect(await currentStep(page)).toBe('crop');
+    expect(await stepNow(page)).toBe('crop');
     await expect(selectedPreset(page)).toHaveText('5:7 card');
     await expect(page.locator('#sideSwitch')).toBeHidden();
   });
@@ -1179,7 +1162,7 @@ test('PAIR-14.1 New photo ends the pair and opens the photo on its own [phone]',
   await answerCard(page, hand, 'New photo');
   await waitForPhoto(page, OTHER_PHOTO);
   await check('IMG_9136.JPEG opens on Perspective; Front / Back and Unpair have gone', async () => {
-    expect(await currentStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(page.locator('#sideSwitch')).toBeHidden();
     await expect(page.locator('#btnUnpair')).toBeHidden();
   });
@@ -1229,7 +1212,7 @@ test('PAIR-15.1 Replace back opens the new photo as the back, with fresh edits [
   await answerCard(page, hand, 'Replace back');
   await waitForSide(page, 'back', OTHER_PHOTO);
   await check('IMG_9136.JPEG opens on Perspective as the back; Undo is greyed out', async () => {
-    expect(await currentStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#btnUndo')).toBeDisabled();
   });
@@ -1316,7 +1299,7 @@ test('PAIR-18.1 Undo can\'t take a side out of the 5:7 lock [phone]', async ({
   });
   await switchTo(page, hand, 'front');
   await check('the front opens on Perspective, the step the back was on', async () => {
-    expect(await currentStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
   });
   await goToStep(page, 'crop', hand);
   await check('5:7 card is selected', async () => {
@@ -1466,7 +1449,7 @@ test('PAIR-21.1 Size, Format and Separately chosen on one side are the other sid
     await check('the front\'s Export: Size 1080, Format WebP and Separately are selected',
       async () => {
         expect((await editState(page)).source.name).toBe(FRONT);
-        expect(await currentStep(page)).toBe('export');
+        expect(await stepNow(page)).toBe('export');
         await expectSeparately(page);
         await expectExportSettings(page, { size: '1080', format: 'webp' });
       });
@@ -1501,7 +1484,7 @@ test('PAIR-21.2 The options\' settings changed on one side are the other side\'s
     await switchTo(page, hand, 'front');
     await check('the front opens on Export', async () => {
       expect((await editState(page)).source.name).toBe(FRONT);
-      expect(await currentStep(page)).toBe('export');
+      expect(await stepNow(page)).toBe('export');
     });
     await openOptions(page, hand, 'export');
     await check('the front\'s options read 50%, Bicubic, Black', async () => {
@@ -1874,7 +1857,7 @@ test('PAIR-28.1 Separately saves the front exactly as its own export [phone] [we
   });
   await goToStep(page, 'export', hand);
   await check('the Export step', async () => {
-    expect(await currentStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
   });
   await chooseSize(page, hand, '0');
   await check('Original is selected', async () => {
@@ -1898,7 +1881,7 @@ test('PAIR-28.1 Separately saves the front exactly as its own export [phone] [we
   });
   await goToStep(page, 'export', hand);
   await check('the back\'s Export step, Size Original', async () => {
-    expect(await currentStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     await expectExportSettings(page, { size: '0' });
   });
   await chooseOutput(page, hand, 'separately');
@@ -2087,7 +2070,7 @@ test('PAIR-34.1 Next card shows while both sides and the output choice are as ex
   });
   await switchTo(page, hand, 'front');
   await check('the front\'s Export: Next card still shows', async () => {
-    expect(await currentStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     await expect(nextCard).toBeVisible();
   });
   await chooseOutput(page, hand, 'separately');
@@ -2100,7 +2083,7 @@ test('PAIR-34.1 Next card shows while both sides and the output choice are as ex
   });
   await goToStep(page, 'rotate', hand);
   await check('the front\'s Rotate step; the angle reads 0.0°', async () => {
-    expect(await currentStep(page)).toBe('rotate');
+    expect(await stepNow(page)).toBe('rotate');
     await expect(angleText(page)).toHaveText('0.0°');
   });
   await typeAngle(page, hand, '2');
@@ -2112,11 +2095,6 @@ test('PAIR-34.1 Next card shows while both sides and the output choice are as ex
     await expect(nextCard).toBeHidden();
   });
 });
-
-// Waits until no export is running.
-function waitForExportEnd(page) {
-  return page.waitForFunction(() => !window.__straightener.app.exporting);
-}
 
 test('PAIR-35.1 A pair\'s export never holds two full-size photos at once [phone]', async ({
   page,
@@ -2282,7 +2260,7 @@ test('PAIR-37.2 Separately warns when the side not on screen is scaled down [pho
   });
   await switchTo(page, hand, 'front');
   await check('the front opens on Perspective, with Front in white', async () => {
-    expect(await currentStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(sideButton(page, 'front')).toHaveAttribute('aria-pressed', 'true');
   });
   await goToStep(page, 'export', hand);
@@ -2332,7 +2310,7 @@ test('PAIR-37.3 When the other side\'s corners are crossed, the line says which 
   });
   // A known defect: plain value comparisons, so the case fails at once rather than waiting.
   const afterSwitch = {
-    step: await currentStep(page),
+    step: await stepNow(page),
     photo: (await editState(page)).source.name,
     isOpeningShown: await shownToast(page).isVisible(),
   };
@@ -2380,12 +2358,12 @@ test('PAIR-38.1 The Together preview, for a person to judge [phone]', async ({
   await switchTo(page, hand, 'front');
   await check('the front opens on the Overlay step, with no logo', async () => {
     expect((await editState(page)).source.name).toBe(FRONT);
-    expect(await currentStep(page)).toBe('overlay');
+    expect(await stepNow(page)).toBe('overlay');
     expect((await editState(page)).overlay).toBeNull();
   });
   await goToStep(page, 'levels', hand);
   await check('the front\'s Levels step', async () => {
-    expect(await currentStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
   });
   await hand.tap(page.locator('#toolAutoLevels'));
   await check('the front\'s whites turn brighter, and a white dot shows on the Levels tab',
@@ -2527,7 +2505,7 @@ test('PAIR-40.1 Resume brings back the waiting side\'s edits, Levels changes, lo
     });
   await switchTo(page, hand, 'back');
   await check('the back opens on Levels, with no dot on the tab', async () => {
-    expect(await currentStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
     await expect(levelsDot(page)).toBeHidden();
   });
   await waitUntilPairStored(page);
@@ -2537,13 +2515,13 @@ test('PAIR-40.1 Resume brings back the waiting side\'s edits, Levels changes, lo
   });
   await resume(page, hand, BACK, 'back');
   await check('the back opens on Levels, with Back in white', async () => {
-    expect(await currentStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
     await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
   });
   await switchTo(page, hand, 'front');
   await check('the front opens on Levels: Discard and Apply are not greyed out, and the dot is '
     + 'on the Levels tab', async () => {
-    expect(await currentStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
     await expectLevelsButtons(page, 'enabled');
     await expect(levelsDot(page)).toBeVisible();
   });
@@ -2570,12 +2548,12 @@ test('PAIR-41.1 Resume opens the side that was open, and the waiting side withou
   });
   await switchTo(page, hand, 'back');
   await check('the back opens on Rotate', async () => {
-    expect(await currentStep(page)).toBe('rotate');
+    expect(await stepNow(page)).toBe('rotate');
     expect((await editState(page)).source.name).toBe(BACK);
   });
   await goToStep(page, 'export', hand);
   await check('the back\'s Export step', async () => {
-    expect(await currentStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
   });
   await chooseSize(page, hand, '0');
   await check('Original is selected', async () => {
@@ -2604,7 +2582,7 @@ test('PAIR-41.1 Resume opens the side that was open, and the waiting side withou
   });
   await resume(page, hand, BACK, 'back');
   await check('the back opens on Export, with Back in white', async () => {
-    expect(await currentStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
   });
   const reads = await page.evaluate(() => window.testReads);
@@ -2615,7 +2593,7 @@ test('PAIR-41.1 Resume opens the side that was open, and the waiting side withou
   });
   await switchTo(page, hand, 'front');
   await check('the front opens on Export; Undo is greyed out', async () => {
-    expect(await currentStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     await expect(page.locator('#btnUndo')).toBeDisabled();
   });
   await goToStep(page, 'rotate', hand);
@@ -2680,7 +2658,7 @@ test('PAIR-43.1 The first switch to a resumed side finds its card but leaves its
   const candidate = page.locator('#toolCandidate');
   await switchTo(page, hand, 'front');
   await check('the front opens on Perspective; Candidate can be tapped', async () => {
-    expect(await currentStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(candidate).toBeEnabled();
   });
   const start = await cornerOnPage(page, 0);
@@ -2702,13 +2680,13 @@ test('PAIR-43.1 The first switch to a resumed side finds its card but leaves its
   });
   await resume(page, hand, BACK, 'back');
   await check('the back opens on Perspective, with Back in white', async () => {
-    expect(await currentStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
   });
   await switchTo(page, hand, 'front');
   await check('the front opens on Perspective; Candidate can be tapped again; the top-left '
     + 'handle is still 40 px left of the card\'s corner; Undo is greyed out', async () => {
-    expect(await currentStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(candidate).toBeEnabled();
     expect((await editState(page)).corners).toEqual(draggedCorners);
     await expect(page.locator('#btnUndo')).toBeDisabled();

@@ -18,6 +18,8 @@ const {
   openOptions,
   closeOptions,
   readSavedImage,
+  stepNow,
+  backgroundOf,
 } = require('./support/app.js');
 const {
   pickWith,
@@ -164,16 +166,6 @@ async function startWithPhoto(page, testInfo, photo = PHOTO) {
   return hand;
 }
 
-// The background color of a control, as the browser computes it ('rgb(r, g, b)').
-function backgroundOf(locator) {
-  return locator.evaluate(element => getComputedStyle(element).backgroundColor);
-}
-
-// The step that is open.
-function openStep(page) {
-  return page.evaluate(() => window.__straightener.app.tab);
-}
-
 // The Levels tab's white dot, which marks a Levels change waiting to be applied.
 function levelsMark(page) {
   return page.locator('[data-step="levels"]:visible .step-tab-mark');
@@ -218,7 +210,7 @@ test('STA-02.1 Open photo asks for one image and opens it [phone] [webkit]', asy
   });
   await waitForPhoto(page, PHOTO);
   await check('the photo opens on Perspective, with its corner handles on the card', async () => {
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     const found = await page.evaluate(() => {
       const app = window.__straightener.app;
       const best = app.detection.candidates[0];
@@ -245,7 +237,7 @@ test('STA-02.2 The same photo can be chosen twice in a row [phone] [webkit]', as
   await check('the same photo opens again from the start: upright, on Perspective, Undo off',
     async () => {
       expect((await editState(page)).rotation.quarter).toBe(0);
-      expect(await openStep(page)).toBe('perspective');
+      expect(await stepNow(page)).toBe('perspective');
       await expect(page.locator('#btnUndo')).toBeDisabled();
     });
 });
@@ -295,7 +287,7 @@ test('STA-03.2 On a wide screen, the steps and Fit are greyed out [desktop]', as
   await page.mouse.click(rotate.x, rotate.y);
   await check('clicking Rotate does nothing: the start screen stays, the panel empty', async () => {
     await expect(page.locator('#empty')).toBeVisible();
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     expect(await visibleSections()).toBe(0);
   });
 });
@@ -577,7 +569,7 @@ test('STA-07.1 Resume brings back the edits and the step [phone] [webkit]', asyn
   await resumeAs(page, hand, PHOTO);
   await check('the photo opens on Crop, on its side, with "Resumed where you left off."',
     async () => {
-      expect(await openStep(page)).toBe('crop');
+      expect(await stepNow(page)).toBe('crop');
       expect((await editState(page)).rotation.quarter).toBe(1);
       const toast = await toastNow(page);
       expect(toast.text).toBe('Resumed where you left off.');
@@ -608,7 +600,7 @@ test('STA-07.2 Resume brings back an unapplied Levels change [phone] [webkit]', 
   await resumeAs(page, hand, PHOTO);
   await check('it opens on Levels with Discard and Apply on and the dot: the change still waits',
     async () => {
-      expect(await openStep(page)).toBe('levels');
+      expect(await stepNow(page)).toBe('levels');
       await expect(page.locator('#btnDiscardLevels')).toBeEnabled();
       await expect(page.locator('#btnApplyLevels')).toBeEnabled();
       await expect(levelsMark(page)).toBeVisible();
@@ -646,7 +638,7 @@ test('STA-07.3 Resume brings back Next card after an export [phone] [webkit]', a
   });
   await resumeAs(page, hand, PHOTO);
   await check('the photo opens on Export with Next card showing', async () => {
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     await expect(nextCard).toBeVisible();
   });
 });
@@ -660,7 +652,7 @@ test('STA-07.4 A pair comes back as a pair [phone] [webkit]', async ({
   await addBack(page, hand, BACK);
   const segment = side => page.locator(`#sideSwitch .segment[data-value="${side}"]`);
   await check('the back opens on Perspective; Front and Back show, Back selected', async () => {
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(page.locator('#sideSwitch')).toBeVisible();
     await expect(segment('back')).toHaveAttribute('aria-pressed', 'true');
   });
@@ -671,7 +663,7 @@ test('STA-07.4 A pair comes back as a pair [phone] [webkit]', async ({
   await resumeAs(page, hand, BACK);
   await check('the back opens on Perspective, Front | Back with Back selected, and Unpair',
     async () => {
-      expect(await openStep(page)).toBe('perspective');
+      expect(await stepNow(page)).toBe('perspective');
       await expect(page.locator('#sideSwitch')).toBeVisible();
       await expect(segment('back')).toHaveAttribute('aria-pressed', 'true');
       await expect(page.locator('#btnUnpair')).toBeVisible();
@@ -711,7 +703,7 @@ test('STA-08.1 A size mismatch says the photo was opened fresh [phone]', async (
   await check('the photo opens upright on Perspective: the saved turn was not applied',
     async () => {
       expect((await editState(page)).rotation.quarter).toBe(0);
-      expect(await openStep(page)).toBe('perspective');
+      expect(await stepNow(page)).toBe('perspective');
     });
   // A plain reading, not a retrying one: the message comes with the photo or not at all.
   const toast = await toastNow(page);
@@ -732,7 +724,7 @@ test('STA-08.2 After a size mismatch the fresh edits replace the saved ones [pho
   await resumeAs(page, hand, PHOTO);
   await check('the photo opens upright on Perspective, Undo greyed out', async () => {
     expect((await editState(page)).rotation.quarter).toBe(0);
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(page.locator('#btnUndo')).toBeDisabled();
   });
   await waitForSaved(page, { width: PHOTO_WIDTH, quarter: 0 });
@@ -827,7 +819,7 @@ async function answerAndSaveOrFail(page, hand, answer = 'No') {
 async function goToStepAndSee(page, hand, check, step, control, description) {
   await goToStep(page, step, hand);
   await check(description, async () => {
-    expect(await openStep(page)).toBe(step);
+    expect(await stepNow(page)).toBe(step);
     await expect(control).toBeVisible();
   });
 }
@@ -859,7 +851,7 @@ test('STA-10.1 Resume brings the logo back [phone] [webkit]', async ({
   });
   await resumeAs(page, hand, PHOTO);
   await check('the photo opens on the Export step', async () => {
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
   });
   await tapAndSeeQuestion(page, hand, check, download,
     'the question box asks "Upscale to 2000 px?"');
@@ -892,7 +884,7 @@ test('STA-10.2 Remove and Undo after a resume bring the logo back [phone] [webki
   });
   await resumeAs(page, hand, PHOTO);
   await check('the photo opens on the Overlay step, with the logo', async () => {
-    expect(await openStep(page)).toBe('overlay');
+    expect(await stepNow(page)).toBe('overlay');
     expect((await editState(page)).overlay.id).toBe(logo);
   });
   await hand.tap(page.locator('#toolOverlayRemove'));
@@ -953,7 +945,7 @@ test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [w
   });
   await resumeAs(page, hand, PHOTO);
   await check('the photo opens on the Export step', async () => {
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
   });
   await tapAndSeeQuestion(page, hand, check, download,
     'the question box asks "Upscale to 2000 px?"');
@@ -1009,11 +1001,11 @@ test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webki
   const editsFile = await saveTheEdits(page, hand);
   await check('a file named IMG_9136-edits.json is saved; the Export step shows', async () => {
     expect(editsFile.suggestedFilename()).toBe('IMG_9136-edits.json');
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
   });
   await goToStep(page, 'overlay', hand);
   await check('the Overlay step shows, with the logo', async () => {
-    expect(await openStep(page)).toBe('overlay');
+    expect(await stepNow(page)).toBe('overlay');
     expect((await editState(page)).overlay.id).toBe(pngLogo);
   });
   await page.waitForTimeout(LOGO_GAP_MS);
@@ -1039,7 +1031,7 @@ test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webki
   });
   await resumeAs(page, hand, PHOTO);
   await check('the photo opens on the Export step', async () => {
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
   });
   await tapAndSeeQuestion(page, hand, check, page.locator('#btnDownload'),
     'a question box asks "Upscale to 2000 px?"');
@@ -1675,7 +1667,7 @@ test('STA-18.1 A new photo opens on Perspective with nothing to undo [phone]', a
   const hand = await startWithPhoto(page, testInfo);
   await goToStep(page, 'rotate', hand);
   await check('the Rotate step shows', async () => {
-    expect(await openStep(page)).toBe('rotate');
+    expect(await stepNow(page)).toBe('rotate');
   });
   const turn = page.locator('#toolRotateRight');
   await hand.tap(turn);
@@ -1694,7 +1686,7 @@ test('STA-18.1 A new photo opens on Perspective with nothing to undo [phone]', a
   await openSecondPhoto(page, hand);
   await check('IMG_9075.JPEG opens upright on Perspective, Undo and Redo greyed out', async () => {
     expect((await editState(page)).rotation.quarter).toBe(0);
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(page.locator('#btnUndo')).toBeDisabled();
     await expect(page.locator('#btnRedo')).toBeDisabled();
   });
@@ -1707,7 +1699,7 @@ test('STA-18.2 A Levels change left unapplied does not carry over [phone]', asyn
   const hand = await startWithPhoto(page, testInfo);
   await goToStep(page, 'levels', hand);
   await check('the Levels step shows', async () => {
-    expect(await openStep(page)).toBe('levels');
+    expect(await stepNow(page)).toBe('levels');
   });
   await hand.tap(page.locator('#toolAutoLevels'));
   await check('Discard and Apply are no longer greyed out, and a white dot sits on the Levels tab',
@@ -1718,7 +1710,7 @@ test('STA-18.2 A Levels change left unapplied does not carry over [phone]', asyn
     });
   await openSecondPhoto(page, hand);
   await check('IMG_9075.JPEG opens on Perspective; no dot on the Levels tab', async () => {
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(levelsMark(page)).toBeHidden();
   });
   await goToStep(page, 'levels', hand);
@@ -1749,7 +1741,7 @@ test('STA-18.3 A new photo is not marked as exported [phone]', async ({
   await pickWith(page, hand, nextCard, SECOND_PHOTO);
   await waitForPhoto(page, SECOND_PHOTO);
   await check('Next card opens IMG_9075.JPEG on the Perspective step', async () => {
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
   });
   await goToStep(page, 'export', hand);
   await check('on Export, no Next card: the new photo has not been exported', async () => {
@@ -1896,7 +1888,7 @@ test('STA-18.9 Snap and Flatten go back to their start after a reload [phone]', 
   await resumeAs(page, hand, PHOTO);
   await check('it opens on Perspective with Nudge selected, the line NUDGE, and Snap Off',
     async () => {
-      expect(await openStep(page)).toBe('perspective');
+      expect(await stepNow(page)).toBe('perspective');
       await expect(page.locator('#toolNudge')).toHaveAttribute('aria-pressed', 'true');
       await expect(page.locator('#perspectiveLine')).toContainText('Nudge');
       await expect(page.locator('#toolSnap')).toHaveAttribute('aria-pressed', 'false');
@@ -1949,7 +1941,7 @@ test('STA-18.11 Pick white is not left armed for a new photo [phone]', async ({
     });
   await openSecondPhoto(page, hand);
   await check('IMG_9075.JPEG opens on the Perspective step', async () => {
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
   });
   await goToStep(page, 'levels', hand);
   await check('on Levels, Pick white is not selected; the line reads "Pick white, or try Auto"',
@@ -2025,7 +2017,7 @@ test('STA-19.2 The next photo starts from the crop size used last, after a reloa
   await startOverWithSecondPhoto(page, hand, 'crop');
   await check('IMG_9075.JPEG opens on the Perspective step', async () => {
     expect((await editState(page)).source.name).toBe(SECOND_PHOTO);
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
   });
   await goToStep(page, 'crop', hand);
   await check('on Crop, 4:5 is selected', async () => {
@@ -2071,7 +2063,7 @@ test('STA-19.3 The next photo starts from the export settings used last, after a
   await startOverWithSecondPhoto(page, hand, 'export');
   await check('IMG_9075.JPEG opens on the Perspective step', async () => {
     expect((await editState(page)).source.name).toBe(SECOND_PHOTO);
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
   });
   await goToStep(page, 'export', hand);
   await check('on Export, 1080 and WebP are selected', async () => {
@@ -2183,7 +2175,7 @@ test('STA-22.2 A file that isn\'t an image leaves the open photo as it was [phon
   const hand = await startWithPhoto(page, testInfo);
   await goToStep(page, 'rotate', hand);
   await check('the Rotate step shows', async () => {
-    expect(await openStep(page)).toBe('rotate');
+    expect(await stepNow(page)).toBe('rotate');
   });
   await hand.tap(page.locator('#toolRotateRight'));
   await check('the photo lies on its side and Undo is on', async () => {
@@ -2198,7 +2190,7 @@ test('STA-22.2 A file that isn\'t an image leaves the open photo as it was [phon
       const state = await editState(page);
       expect(state.source.name).toBe(PHOTO);
       expect(state.rotation.quarter).toBe(1);
-      expect(await openStep(page)).toBe('rotate');
+      expect(await stepNow(page)).toBe('rotate');
       await expect(page.locator('#btnUndo')).toBeEnabled();
     });
 });
@@ -2228,7 +2220,7 @@ test('STA-22.3 After a failed open, the open photo\'s edits are still kept for R
   // A plain reading, not a retrying one: the resumed edits are what they are.
   const resumed = await editState(page);
   await check('it opens on Rotate, lying on its side: the turn was kept', async () => {
-    expect(await openStep(page)).toBe('rotate');
+    expect(await stepNow(page)).toBe('rotate');
     expect(resumed.rotation.quarter).toBe(1);
   });
 });
@@ -2287,7 +2279,7 @@ test('STA-24.2 A 48 MP photo is worked on from smaller copies [phone] [webkit]',
   await waitForPhoto(page, BIG_PHOTO);
   await check('it opens on Perspective, handles on the card; copies of 2048, 720 and 1000 px',
     async () => {
-      expect(await openStep(page)).toBe('perspective');
+      expect(await stepNow(page)).toBe('perspective');
       const found = await page.evaluate(() => {
         const app = window.__straightener.app;
         const best = app.detection.candidates[0];
@@ -2330,7 +2322,7 @@ test('STA-25.1 Cancelling Open keeps the photo and its edits [phone] [webkit]', 
   const hand = await startWithPhoto(page, testInfo);
   await goToStep(page, 'rotate', hand);
   await check('the Rotate step shows', async () => {
-    expect(await openStep(page)).toBe('rotate');
+    expect(await stepNow(page)).toBe('rotate');
   });
   await hand.tap(page.locator('#toolRotateRight'));
   await check('the photo lies on its side and Undo is on', async () => {
@@ -2351,7 +2343,7 @@ test('STA-25.1 Cancelling Open keeps the photo and its edits [phone] [webkit]', 
       );
       expect(isSamePhoto).toBe(true);
       expect((await editState(page)).rotation.quarter).toBe(1);
-      expect(await openStep(page)).toBe('rotate');
+      expect(await stepNow(page)).toBe('rotate');
       await expect(page.locator('#btnUndo')).toBeEnabled();
       expect((await toastNow(page)).isShown).toBe(false);
     });
@@ -2377,7 +2369,7 @@ test('STA-25.2 Cancelling Next card keeps the exported photo [phone]', async ({
   });
   await check('cancelled: IMG_9136.JPEG still open on Export, with Next card', async () => {
     expect((await editState(page)).source.name).toBe(PHOTO);
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     await expect(nextCard).toBeVisible();
   });
 });
@@ -2395,14 +2387,14 @@ test('STA-25.3 Cancelling Add back leaves the photo unpaired [phone]', async ({
   });
   await check('cancelled: still on Export, Add back showing, no Front or Back', async () => {
     expect((await editState(page)).source.name).toBe(FRONT);
-    expect(await openStep(page)).toBe('export');
+    expect(await stepNow(page)).toBe('export');
     await expect(addBackButton).toBeVisible();
     await expect(page.locator('#sideSwitch')).toBeHidden();
   });
   await pickWith(page, hand, page.locator('#btnOpen'), FRONT);
   await waitForPhoto(page, FRONT);
   await check('Open opens it as a new photo on Perspective, with no Front or Back', async () => {
-    expect(await openStep(page)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
     await expect(page.locator('#sideSwitch')).toBeHidden();
     expect(await page.evaluate(() => !!window.__straightener.app.pair)).toBe(false);
   });

@@ -14,6 +14,7 @@ const {
   middleOf,
   openOptions,
   waitForStill,
+  stepNow,
 } = require('./support/app.js');
 const { choiceButton, selectedChoices, waitForQuestion } = require('./support/export.js');
 const {
@@ -21,6 +22,7 @@ const {
   handleOnPage,
   tapAt,
   zoomNow,
+  handleName,
 } = require('./support/perspective.js');
 const { startOnLevels, levelsNow, pickButton, armedPick } = require('./support/levels.js');
 const { presetChip, cropHandleOnPage } = require('./support/crop.js');
@@ -58,12 +60,6 @@ const NOTHING_HAPPENS_MS = 500;
 const EDGE_DRAG_PX = 60;
 // How close two crop shapes (width / height) must be.
 const SHAPE_TOLERANCE = 0.01;
-
-// The line above Perspective's controls that names the selected handle.
-const handleName = page => page.locator('#perspectiveLine .line-value');
-
-// The open step's name.
-const stepNow = page => page.evaluate(() => window.__straightener.app.tab);
 
 // The selected handle's number (0 to 7).
 const selectedHandle = page => page.evaluate(() => window.__straightener.app.selected);

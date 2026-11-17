@@ -7,7 +7,14 @@
 // name. Each test reads the app's state only to check a result.
 'use strict';
 const { test, expect } = require('./support/case.js');
-const { openApp, goToStep, handFor, editState } = require('./support/app.js');
+const {
+  openApp,
+  goToStep,
+  handFor,
+  editState,
+  stepNow,
+  isQuestionUp,
+} = require('./support/app.js');
 const { waitForQuestion } = require('./support/export.js');
 const {
   makePair,
@@ -77,13 +84,6 @@ const openPhotoName = page => page.evaluate(() => {
   const state = window.__straightener.app.state;
   return state ? state.source.name : '';
 });
-
-// The open step's name.
-const stepNow = page => page.evaluate(() => window.__straightener.app.tab);
-
-// Whether the question box is up now.
-const isQuestionUp = page => page.evaluate(() => window.CF.isAlertOpen(
-  document.getElementById('pairPrompt')));
 
 // When the last undo step was recorded, on the page's clock in ms: a logo added a moment
 // after another is recorded at its own time even when the two are merged into one step.
