@@ -268,8 +268,10 @@ function hasGps(bytes) {
   report(photos.length && !located.length, 'Privacy: sample photos carry no GPS location',
     located.length ? located.join(', ') : `${photos.length} photos checked`);
 
-  // Other people's packages and a test run's output are gitignored, so they are never published.
-  const NOT_PUBLISHED = /^tests\/(?:node_modules|runs|test-results|playwright-report)$/;
+  // Other people's packages, a test run's output and the agents' worktrees are gitignored, so
+  // they are never published.
+  const NOT_PUBLISHED =
+    /^(?:tests\/(?:node_modules|runs|test-results|playwright-report)|\.claude\/worktrees)$/;
   const walk = folder => {
     if (!fs.existsSync(path.join(root, folder))) return [];
     return fs.readdirSync(path.join(root, folder), { withFileTypes: true })
