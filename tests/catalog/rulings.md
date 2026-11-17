@@ -9,7 +9,7 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R1 | Typed angle empty/garbage + Done sets 0° | FIX: keep the old angle, no undo step (like cancel) |
 | R2 | Arrow keys/Tab move hidden corners during Preview | FIX: keys do nothing while Preview is on |
 | R3 | Debug overlay switch re-detects and moves hand-placed corners | FIX: leaves corners alone; only draws |
-| R4 | Reset crop → 1:1 and remembers 1:1 | FIX: reset to the remembered preset; remembered preset unchanged |
+| R4 | Reset crop → 1:1 and remembers 1:1 | FIX: reset to the remembered preset; remembered preset unchanged. On a side kept after Unpair, whose crop is still the pair's 5:7, Reset crop also goes to the remembered preset (Rich, 2026-11-17) |
 | R5 | Undo of an export setting rewrites the remembered setting | AS-IS |
 | R6 | Candidate n/3 + confidence stale after Undo/Reset/drag | FIX: clear number+confidence when hand-moved; Undo/Reset restore the right number |
 | R7 | Low confidence / Nothing detected never clears | FIX: clears after first corner move (drag or nudge) |
