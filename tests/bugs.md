@@ -15,7 +15,7 @@ Whoever opens a row gives it a severity (Rich, 2026-11-17). The definitions are 
 | Medium (3) | Impacts functionality within a primary or secondary flow but does not prevent the user from completing it. A reasonable workaround exists, or the impact is limited to specific scenarios or conditions |
 | Low (4) | Minimal impact on functionality or on completing a flow: cosmetic issues, minor inconsistencies, formatting errors, wording |
 
-Which flows are primary is Claude's reading, for Rich to correct: the **primary flows** are the journeys in `tests/catalog/journeys.md` (finishing a card on the phone: open a photo, straighten it, crop, correct the color, add a logo, then share or download it, from a Safari tab or the home screen icon). Everything else is a **secondary flow**: front and back pairs, corner shots, edits files, resuming a session, the wide-screen layout and its keyboard, developer links.
+Which flows are primary (Claude's reading, confirmed by Rich, 2026-11-17): the **primary flows** are the journeys in `tests/catalog/journeys.md` (finishing a card on the phone: open a photo, straighten it, crop, correct the color, add a logo, then share or download it, from a Safari tab or the home screen icon). Everything else is a **secondary flow**: front and back pairs, corner shots, edits files, resuming a session, the wide-screen layout and its keyboard, developer links.
 
 ## Decision
 
