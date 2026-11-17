@@ -6,8 +6,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { openApp, openPhoto, goToStep, handFor, samplePath } = require('./app.js');
-const { sendTouch } = require('./perspective.js');
+const { openApp, openPhoto, goToStep, handFor } = require('./app.js');
+const { sendTouch, openPicture, fixturePicture } = require('./perspective.js');
 
 // The photo the pick cases use: a graded card in a clear slab on a white background. Its white
 // background and the card's dark background are both large, even patches.
@@ -49,12 +49,22 @@ const TAP_MS = 300;
 const PRESS_FINGER_ID = 31;
 // How long to wait between polls of the comparison while holding, in ms.
 const POLL_MS = 2;
+// How long waitForSavedDraft waits for the save, and between its looks, in ms.
+const SAVE_WAIT_MS = 5000;
+const SAVE_POLL_MS = 50;
+// How many even moves slideBy makes.
+const SLIDE_STEPS = 10;
+// A device pixel of the badge's box whose brightness (0 to 255) differs by more than this
+// between two readings has changed.
+const BADGE_PIXEL_CHANGE = 40;
 
 // Opens the app (at `address`, which may carry settings from a link) with a photo and goes to
-// the Levels step. Returns the hand for this target.
-async function startOnLevels(page, testInfo, { photo = LEVELS_PHOTO, address } = {}) {
+// the Levels step. `photo` is a sample from samples/; `picture`, when given instead, is a file
+// in tests/fixtures/. Returns the hand for this target.
+async function startOnLevels(page, testInfo, { photo = LEVELS_PHOTO, picture, address } = {}) {
   await openApp(page, address);
-  await openPhoto(page, photo);
+  if (picture) await openPicture(page, fixturePicture(picture));
+  else await openPhoto(page, photo);
   const hand = handFor(page, testInfo);
   await goToStep(page, 'levels', hand);
   return hand;
@@ -70,6 +80,35 @@ function spotOnPage(page, spot) {
     const box = document.getElementById('view').getBoundingClientRect();
     return { x: box.left + x, y: box.top + y };
   }, spot);
+}
+
+// Where a point of the photo (source px, [x, y]) is on the page, in CSS px.
+function sourceOnPage(page, sourcePoint) {
+  return page.evaluate(([sourceX, sourceY]) => {
+    const geometry = window.__straightener.app.geometry;
+    const world = window.CF.Mat3.apply(geometry.sourceToRotated, sourceX, sourceY);
+    const [x, y] = window.CF.toScreen(window.CF.currentView(), world);
+    const box = document.getElementById('view').getBoundingClientRect();
+    return { x: box.left + x, y: box.top + y };
+  }, sourcePoint);
+}
+
+// The color drawn on the photo area at a point of the page: [red, green, blue] (0 to 255), the
+// mean of the 3 x 3 device pixels around it.
+function screenColorAt(page, point) {
+  return page.evaluate(({ x, y }) => {
+    const canvas = document.getElementById('view');
+    const box = canvas.getBoundingClientRect();
+    const scale = canvas.width / box.width;
+    const left = Math.round((x - box.left) * scale) - 1;
+    const top = Math.round((y - box.top) * scale) - 1;
+    const pixels = canvas.getContext('2d').getImageData(left, top, 3, 3).data;
+    const sums = [0, 0, 0];
+    for (let i = 0; i < pixels.length; i += 4) {
+      for (let channel = 0; channel < 3; channel++) sums[channel] += pixels[i + channel];
+    }
+    return sums.map(sum => sum / (pixels.length / 4));
+  }, point);
 }
 
 // The photo point (source px) under a point of the page.
@@ -118,6 +157,25 @@ async function swatchColor(page, which) {
   return match ? match.slice(1).map(Number) : null;
 }
 
+// The color a color patch is filled with: [red, green, blue] (0 to 255), or null while it is
+// dashed and empty. which: 'white' or 'black'. It is read from the patch's own fill on screen,
+// not from its tooltip.
+async function patchFill(page, which) {
+  const id = which === 'white' ? '#swatchWhite' : '#swatchBlack';
+  return page.locator(id).evaluate(el => {
+    if (!el.classList.contains('is-set')) return null;
+    const channels = getComputedStyle(el).backgroundColor.match(/[\d.]+/g) || [];
+    return channels.slice(0, 3).map(Number);
+  });
+}
+
+// True when a color patch is dashed and empty, as it is before a point is set.
+function isPatchEmpty(page, which) {
+  const id = which === 'white' ? '#swatchWhite' : '#swatchBlack';
+  return page.locator(id).evaluate(el => !el.classList.contains('is-set')
+    && getComputedStyle(el).borderStyle === 'dashed');
+}
+
 // Taps Pick white or Pick black, then taps a spot of the framed picture. hand: from handFor.
 async function pickSpot(page, hand, which, spot) {
   await hand.tap(pickButton(page, which));
@@ -144,6 +202,22 @@ async function pressPhoto(page, hand, point) {
 // Lifts the finger or the mouse button pressPhoto put down.
 function releasePhoto(page, hand, point) {
   return hand.isTouch ? sendTouch(page, '#view', 'pointerup', point) : page.mouse.up();
+}
+
+// Slides the finger (dispatched) or the mouse button that pressPhoto put down on `start` by
+// `dx` CSS px to the right, in SLIDE_STEPS even moves spread over durationMs, without lifting.
+// After each move it calls onStep(stepIndex), when given, so a case can read the screen part-way.
+// Returns the point it ends on, for releasePhoto.
+async function slideBy(page, hand, start, dx, durationMs, onStep = null) {
+  let point = start;
+  for (let i = 1; i <= SLIDE_STEPS; i++) {
+    await page.waitForTimeout(durationMs / SLIDE_STEPS);
+    point = { x: start.x + dx * i / SLIDE_STEPS, y: start.y };
+    if (hand.isTouch) await sendTouch(page, '#view', 'pointermove', point);
+    else await page.mouse.move(point.x, point.y);
+    if (onStep) await onStep(i);
+  }
+  return point;
 }
 
 // Presses the photo and holds it still until the comparison shows (or, when it never does,
@@ -178,6 +252,33 @@ function badgeShown(page) {
     }
     return textPixels >= needed;
   }, { box: BADGE_BOX, textMin: BADGE_TEXT_MIN, needed: BADGE_TEXT_PIXELS });
+}
+
+// The brightness (0 to 255) of each device pixel in the Before levels badge's box at the top
+// left of the photo area. On a wide screen the picture or the dimmed photo around it can show
+// there too, so a case compares two readings (badgeBoxChange) instead of looking for white text.
+function badgeBoxPixels(page) {
+  return page.evaluate(box => {
+    const canvas = document.getElementById('view');
+    const scale = canvas.width / canvas.getBoundingClientRect().width;
+    const pixels = canvas.getContext('2d').getImageData(
+      Math.round(box.x * scale),
+      Math.round(box.y * scale),
+      Math.round(box.width * scale),
+      Math.round(box.height * scale),
+    ).data;
+    const brightness = [];
+    for (let i = 0; i < pixels.length; i += 4) {
+      brightness.push((pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3);
+    }
+    return brightness;
+  }, BADGE_BOX);
+}
+
+// How many device pixels of the badge's box changed between two readings of badgeBoxPixels.
+function badgeBoxChange(first, second) {
+  return first.filter((value, index) => Math.abs(value - second[index]) > BADGE_PIXEL_CHANGE)
+    .length;
 }
 
 // Waits until the photo area has been drawn twice more, so a change asked for is on screen.
@@ -327,12 +428,12 @@ function pressThenTap(page, point) {
   });
 }
 
-// The color of a square patch of an image file, worked out in the page the way the app's
-// dropper averages one (CardEngine.meanColor): the patch runs from center − radius to center +
-// radius (rounded outward, kept inside the image); with trim, only the share (1 − 2·trim) of its
-// pixels closest in brightness to the patch's median brightness count; the mean is taken in
-// linear light. Returns [red, green, blue] (0 to 255, not rounded). It is worked out here from
-// the file, not by the app, so a case can compare the two.
+// The color of a square patch of an image file, worked out in the page: the patch runs from
+// center − radius to center + radius (rounded outward, kept inside the image); with trim, only
+// the share (1 − 2·trim) of its pixels closest in brightness to the patch's median brightness
+// count, so a speck in a flat area doesn't sway the reading; the mean is taken in linear light.
+// Returns [red, green, blue] (0 to 255, not rounded). The cases use it to read a saved file at a
+// flat spot, and the plain mean (trim 0) of a fixture's patch.
 async function fileRegionColor(page, file, center, radiusPx, trim = 0) {
   const type = MIME_TYPES[path.extname(file).toLowerCase()] || 'image/jpeg';
   const base64 = fs.readFileSync(file).toString('base64');
@@ -379,10 +480,22 @@ async function fileRegionColor(page, file, center, radiusPx, trim = 0) {
   }, { data: base64, mimeType: type, point: center, radius: radiusPx, trimShare: trim });
 }
 
-// The color a pick at a photo point (source px) should read from the sample photo `name`, with
-// a patch of radiusPx photo px and the trim the dropper uses (CONFIG.levels.sampleTrim, 0.25).
-function expectedPick(page, name, sourcePoint, radiusPx, trim = 0.25) {
-  return fileRegionColor(page, samplePath(name), sourcePoint, radiusPx, trim);
+// Waits until the edits saved on the device hold the unapplied draft the app holds now. A
+// save from an earlier change (Auto's draft before Apply, say) has a draft too, so waiting for
+// any draft could let a reload restore that one instead.
+async function waitForSavedDraft(page) {
+  const endMs = Date.now() + SAVE_WAIT_MS;
+  for (;;) {
+    const isSaved = await page.evaluate(async () => {
+      const app = window.__straightener.app;
+      const record = await window.__straightener.Session.peek();
+      const wanted = app.levelsPending ? JSON.stringify(app.levelsDraft) : 'null';
+      return !!record && JSON.stringify(record.draft || null) === wanted;
+    });
+    if (isSaved) return;
+    if (Date.now() > endMs) throw new Error(`Waited ${SAVE_WAIT_MS} ms for the draft's save`);
+    await page.waitForTimeout(SAVE_POLL_MS);
+  }
 }
 
 // Where a photo point (source px) lands in the saved file, in its px.
@@ -407,50 +520,37 @@ function viewNow(page) {
   });
 }
 
-// A plain white picture with nothing in it, drawn in the page: { name, mimeType, buffer },
-// ready for setInputFiles. Every pixel is 255, which Auto leaves out as clipped.
-async function whitePicture(page, width = 1200, height = 1600) {
-  const base64 = await page.evaluate(async ({ pictureWidth, pictureHeight }) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = pictureWidth;
-    canvas.height = pictureHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, pictureWidth, pictureHeight);
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    let text = '';
-    for (const byte of bytes) text += String.fromCharCode(byte);
-    return btoa(text);
-  }, { pictureWidth: width, pictureHeight: height });
-  return { name: 'white.png', mimeType: 'image/png', buffer: Buffer.from(base64, 'base64') };
-}
-
 module.exports = {
   LEVELS_PHOTO,
   SPOTS,
   startOnLevels,
   spotOnPage,
+  sourceOnPage,
+  screenColorAt,
   photoPointAt,
   pickButton,
   armedPick,
   levelsDot,
   levelsNow,
   swatchColor,
+  patchFill,
+  isPatchEmpty,
   pickSpot,
   tapPoint,
   pressPhoto,
   releasePhoto,
+  slideBy,
   holdPhoto,
   badgeShown,
+  badgeBoxPixels,
+  badgeBoxChange,
   afterDraw,
   labelSurround,
   badgeFadeSeries,
   pressThenTap,
   fileRegionColor,
-  expectedPick,
+  waitForSavedDraft,
   outputPointOf,
   viewZoom,
   viewNow,
-  whitePicture,
 };
