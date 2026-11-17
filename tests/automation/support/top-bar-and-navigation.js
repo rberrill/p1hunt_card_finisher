@@ -1,16 +1,23 @@
 // Helpers for the top bar and navigation cases (tests/automation/top-bar-and-navigation.spec.js):
 // starting on a step, the options tab and its sheet (open, closed, where its top edge is, how
-// far it travels), a finger held on a tab while it drags, the tab's arrow, and where things are
-// on the page. Like app.js, they drive the app as a person would and read its state only
-// through window.__straightener and CF, to check a result.
+// far it travels), a finger held on a tab while it drags, the tab's arrow, where things are on
+// the page, the question box before a save, a swipe that scrolls, and the nudge magnifier.
+// Like app.js, they drive the app as a person would and read its state only through
+// window.__straightener and CF, to check a result.
 'use strict';
 const { openApp, openPhoto, goToStep, handFor } = require('./app.js');
 const { sendTouch } = require('./perspective.js');
+const { waitInPage } = require('./front-and-back.js');
 
 // The photo most cases use: it detects the same in Chromium and WebKit.
 const PHOTO = '01_chrome_flat_black.JPEG';
 // How many moves a held drag on a tab is split into, so the app sees a drag and not a jump.
 const HELD_MOVES = 8;
+// A finger swipe (swipeFrom): this many moves, this many ms apart (about a 0.2 s swipe).
+const SWIPE_MOVES = 10;
+const SWIPE_MOVE_MS = 16;
+// How long to wait between two looks at a scrolling element, in ms.
+const SCROLL_SETTLE_MS = 100;
 
 // Opens the app with a photo (PHOTO unless `photo` names another) and goes to `step`
 // (Perspective, where every photo opens, unless it names another). Returns the hand for this
@@ -189,6 +196,71 @@ function topBarBoxes(page) {
   });
 }
 
+// Taps `button` (Download, or Download corners) and waits until the question box is up. Returns
+// its question, as the screen shows it. The question box is the layer #pairPrompt.
+async function tapUntilAsked(page, hand, button) {
+  await hand.tap(page.locator(button));
+  const question = page.locator('#pairPrompt');
+  await question.locator('.alert-title').waitFor({ state: 'visible' });
+  await waitInPage(page, () => window.CF.isAlertOpen(document.getElementById('pairPrompt')));
+  return (await question.locator('.alert-title').textContent()).trim();
+}
+
+// Taps `answer` in the question box and waits for the file it saves. Returns the download.
+async function answerAndSave(page, hand, answer) {
+  const downloading = page.waitForEvent('download');
+  await hand.tap(page.locator('#pairPrompt').getByRole('button', { name: answer, exact: true }));
+  return downloading;
+}
+
+// Swipes one finger `dy` CSS px (negative is up) from the middle of the element `selector`
+// names, and waits until what it scrolled has stopped. The touches go through the browser's
+// own input (the DevTools protocol's Input.dispatchTouchEvent), so the browser scrolls as it
+// does for a real finger; Playwright's touchscreen can only tap. Chromium only.
+async function swipeFrom(page, selector, dy) {
+  const box = await page.locator(selector).boundingBox();
+  const x = Math.round(box.x + box.width / 2);
+  const fromY = Math.round(box.y + box.height / 2);
+  const client = await page.context().newCDPSession(page);
+  // Sends one touch event of `type` with the finger at (x, y); a touchEnd has no finger left.
+  const touch = (type, y) => client.send('Input.dispatchTouchEvent', {
+    type,
+    touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+  });
+  await touch('touchStart', fromY);
+  for (let i = 1; i <= SWIPE_MOVES; i++) {
+    await touch('touchMove', Math.round(fromY + dy * i / SWIPE_MOVES));
+    await page.waitForTimeout(SWIPE_MOVE_MS);
+  }
+  await touch('touchEnd', fromY + dy);
+  await client.detach();
+  await waitForScrollStill(page, selector);
+}
+
+// Waits until the scroll position of the element `selector` names has stopped changing: it
+// may glide on after the finger lifts.
+async function waitForScrollStill(page, selector) {
+  const scrollTop = () => page.locator(selector).evaluate(el => el.scrollTop);
+  let last = -1;
+  for (;;) {
+    await page.waitForTimeout(SCROLL_SETTLE_MS);
+    const now = await scrollTop();
+    if (now === last) return;
+    last = now;
+  }
+}
+
+// True while Perspective's nudge magnifier is drawn: the round magnifier over the selected
+// corner that a nudge brings up for a few seconds (drawn on the photo, so read from the app).
+function isNudgeMagnifierUp(page) {
+  return page.evaluate(() => {
+    const app = window.__straightener.app;
+    return app.tab === 'perspective'
+      && app.selected >= 0
+      && app.nudgeLoupeUntil > performance.now();
+  });
+}
+
 module.exports = {
   PHOTO,
   startOn,
@@ -210,4 +282,9 @@ module.exports = {
   viewNow,
   quarterTurns,
   topBarBoxes,
+  tapUntilAsked,
+  answerAndSave,
+  swipeFrom,
+  waitForScrollStill,
+  isNudgeMagnifierUp,
 };
