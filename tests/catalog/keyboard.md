@@ -66,12 +66,10 @@ Shift+Ctrl+Z (Shift+Cmd+Z on a Mac), or Ctrl+Y (Cmd+Y), redoes, as **Redo** does
 - Changed: none
 - Anchors: `CONFIG.keys.redo`, `CONFIG.keys.redoAlt`, `#btnRedo`, `"Redo (Shift+Ctrl/Cmd+Z)"`
 - Source: `js/app/input.js` (`onKeyDown`, `keyMatches`)
-- Ruling: R32. The undo and redo keys do nothing while an export is running. The app differs today.
-- Flag: to confirm. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z, though Ctrl/Cmd+Y also works.
+- Ruling: R32. The undo and redo keys do nothing while an export is running. The app differs today. R66. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z. The app already does this.
 - Cases: 2
 
 ### KEY-02.1 Shift+Ctrl+Z and Ctrl+Y redo   [auto: desktop]
-Flag: to confirm. Written to today's behavior: the tooltip names only Shift+Ctrl/Cmd+Z.
 
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
@@ -372,12 +370,10 @@ On Perspective, while the photo has the keyboard focus, Tab and Shift+Tab step t
 - Changed: none
 - Anchors: `key:Tab`, `#view`, `.is-keyboard-focus`
 - Source: `js/app/input.js` (`onPhotoKey`, `stepHandleByTab`, `onCanvasFocus`)
-- Ruling: R2. While Preview is on, the keys do nothing to the handles. The app differs today.
-- Flag: to confirm. The wide keyboard help says Tab selects the next handle without saying the photo must have focus first; on a fresh page Tab goes to the top bar. The code means a Tab into the photo with no handle selected to select the first handle, and a Shift+Tab the last, but a photo always has a handle selected, so Tab and Shift+Tab into the photo keep the handle selected before.
+- Ruling: R2. While Preview is on, the keys do nothing to the handles. The app differs today. R54. Tab or Shift+Tab into the photo keeps the handle selected before, and the keyboard help needn't say the photo needs the focus first. The app already does this.
 - Cases: 3
 
 ### KEY-08.1 Tab steps through the eight handles once the photo has the focus   [auto: desktop]
-Flag: to confirm. Written to today's behavior: from a fresh page, Tab reaches the photo only after the top bar.
 
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
@@ -420,7 +416,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### KEY-08.3 Shift+Tab steps back through the handles and leaves before the first   [auto: desktop]
-Flag: to confirm. Written to today's behavior: Tab into the photo keeps the handle selected before; it doesn't start again at the first.
 
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
@@ -504,12 +499,10 @@ On Perspective, the arrow keys move the selected handle by 1 photo pixel, or 10 
 - Changed: none
 - Anchors: `key:ArrowLeft`, `key:ArrowUp`, `CONFIG.keys.nudge`, `CONFIG.keys.nudgeShift`
 - Source: `js/app/input.js` (`onPhotoKey`, `moveHandleBy`)
-- Ruling: R2. While Preview is on, the keys do nothing to the handles. The app differs today.
-- Flag: to confirm. An arrow key moves a corner by 1 photo pixel with no magnifier, while the on-screen arrows move it by 1 screen pixel and show the magnifier.
+- Ruling: R2. While Preview is on, the keys do nothing to the handles. The app differs today. R67. An arrow key moves a corner 1 photo pixel (10 with Shift) with no magnifier; the on-screen arrows move it 1 screen pixel and show the magnifier. The app already does this.
 - Cases: 2
 
 ### KEY-10.1 The arrow keys move the selected handle; a side moves straight; one undo step   [auto: desktop]
-Flag: to confirm. Written to today's behavior: the keys move whole photo pixels, with no magnifier.
 
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
@@ -693,11 +686,10 @@ On the phone layout, Escape closes an open options sheet.
 - Changed: none
 - Anchors: `key:Escape`, `.sheet-layer`
 - Source: `js/app/input.js` (`onKeyDown`), `js/app/shell.js` (`closeSheets`)
-- Flag: to confirm. Escape closes a sheet on the phone layout only, and never disarms **Tap to find card** or a Levels pick.
+- Ruling: R69. Escape closes a phone sheet and nothing else: not **Tap to find card**, not a Levels pick. The app already does this.
 - Cases: 1
 
 ### KEY-15.1 In the phone layout, Escape closes an options sheet but leaves a pick armed   [auto: phone]
-Flag: to confirm. Written to today's behavior: Escape closes the sheet but leaves **Pick white** armed.
 It runs at phone size, though it needs a keyboard: the options sheets are only in the phone layout (on a wide screen the options are always open in the side panel, with nothing to close).
 
 Before you start:

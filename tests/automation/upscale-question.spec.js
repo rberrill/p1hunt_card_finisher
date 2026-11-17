@@ -7,7 +7,12 @@
 // No test opens a real share sheet: the page gets a stand-in (support/export.js).
 'use strict';
 const { test, expect } = require('./support/case.js');
-const { goToStep } = require('./support/app.js');
+const {
+  goToStep,
+  finishedMessage,
+  copiedMessage,
+  ruledCopiedMessage,
+} = require('./support/app.js');
 const {
   waitForShares,
   waitForExportEnd,
@@ -70,8 +75,11 @@ const SEPARATELY_TEXT = 'The front is 748 × 1047 px and the back 785 × 1100 px
   + 'resolution.';
 const FRONT_PX = [748, 1047];
 // The same line at 1080, where the back's file is held to 1080 px.
-const SEPARATELY_1080_TEXT = 'The front is 748 × 1047 px and the back 771 × 1080 px at the '
-  + 'photos’ resolution.';
+// Ruling R50's words name only the front, the side Yes would upscale; today the app names the
+// back as well, which UPS-06.2 also accepts (MSG-77.2 holds the words).
+const SEPARATELY_1080_TEXT = 'The front is 748 × 1047 px at the photo’s resolution.';
+const SEPARATELY_1080_EITHER = new RegExp('^The front is 748 × 1047 px (at the photo’s|and the '
+  + 'back 771 × 1080 px at the photos’) resolution\\.$');
 // A link that caps a saved image's area at 2.5 MP: over the Together image (1.74 MP), under it
 // fitted to 2000 px (2.78 MP).
 const AREA_CAP_LINK = 'index.html?maxOutputArea=2500000';
@@ -156,7 +164,9 @@ test('UPS-02.1 Yes saves the photo at the chosen size [phone] [webkit]', async (
     + '"Exported 2000 × 2000 px in"', async () => {
     expect(await isQuestionUp(page)).toBe(false);
     await expectSize(page, saved.file, SIZE_PX);
-    await expect.poll(() => toastMessage(page)).toMatch(/^Exported 2000 × 2000 px in /);
+    // Today's words or ruling R79's: MSG-22.1 holds the words.
+    const finished = finishedMessage('photo', '2000 × 2000 px');
+    await expect.poll(() => toastMessage(page)).toMatch(finished);
   });
 });
 
@@ -266,7 +276,9 @@ test('UPS-03.1 No saves the photo at its own size [phone]', async ({ page, check
     + `message begins "Exported ${CROP_PX} × ${CROP_PX} px in"`, async () => {
     expect(await isQuestionUp(page)).toBe(false);
     await expectSize(page, saved.file, CROP_PX);
-    await expect.poll(() => toastMessage(page)).toMatch(/^Exported 1074 × 1074 px in /);
+    // Today's words or ruling R79's: MSG-22.1 holds the words.
+    const finished = finishedMessage('photo', '1074 × 1074 px');
+    await expect.poll(() => toastMessage(page)).toMatch(finished);
   });
 });
 
@@ -430,7 +442,7 @@ test('UPS-06.2 A side already at the size is saved the same after Yes as after N
     await chooseAndCheck(page, hand, check, 'exportSize', '1080');
     await askAndCheck(page, hand, check, downloadButton(page),
       `${QUESTION_BOX} asks "${ASK_1080}" and reads "${SEPARATELY_1080_TEXT}"`, ASK_1080,
-      SEPARATELY_1080_TEXT);
+      SEPARATELY_1080_EITHER);
     const [frontNo, backNo] = await answerAndCollect(page, hand, 'No', 2);
     await check('two files are saved: the front 748 × 1047 px, the back 1080 px tall', async () => {
       expect(await imageSize(page, frontNo.file)).toEqual(FRONT_PX);
@@ -454,11 +466,11 @@ test('UPS-07.1 For the sheet it names the sheet\'s size, and Yes saves a 2000 px
   await askAndCheck(page, hand, check, downloadCorners(page),
     `${FIRST_ASK} and reads "${SHEET_TEXT}"`, ASK_2000, SHEET_TEXT);
   const [saved] = await answerAndCollect(page, hand, 'Yes');
-  await check('one file of exactly 2000 × 2000 px is saved; a message begins "Saved the corner '
+  await check('one file of exactly 2000 × 2000 px is saved; a message begins "Corner sheet '
     + 'sheet at 2000 px in"', async () => {
     await expectSize(page, saved.file, SIZE_PX);
     await expect.poll(() => toastMessage(page))
-      .toMatch(/^Saved the corner sheet at 2000 px in /);
+      .toMatch(finishedMessage('cornerSheet'));
   });
 });
 
@@ -623,9 +635,10 @@ test('UPS-10.2 Copy after Yes puts the enlarged photo on the clipboard [phone]',
   const hand = await startOnExport(page, testInfo);
   await askAndCheck(page, hand, check, copyButton(page), FIRST_ASK, ASK_2000);
   await hand.tap(questionButton(page, 'Yes'));
-  await check('a message reads "Copied to clipboard (PNG)."; the clipboard holds a PNG of '
+  await check(`a message reads "${ruledCopiedMessage()}"; the clipboard holds a PNG of `
     + '2000 × 2000 px', async () => {
-    await expect.poll(() => toastMessage(page)).toBe('Copied to clipboard (PNG).');
+    // Today's words or ruling R79's: MSG-29.1 holds the words.
+    await expect.poll(() => toastMessage(page)).toMatch(copiedMessage());
     const copied = await readClipboardImage(page);
     expect(copied.types).toContain('image/png');
     expect([copied.width, copied.height]).toEqual([SIZE_PX, SIZE_PX]);

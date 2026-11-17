@@ -227,7 +227,7 @@ Amber-marked notes under the size line explain an output you might not expect: *
 - Changed: none
 - Anchors: `#exportMessage`, "Levels has unapplied changes; export uses the applied levels.", "Clamped to fit the ", "JPEG has no transparency; empty areas will be white."
 - Source: `js/app/export-controls.js` (`exportNotes`, `buildNote`, `syncExportReadouts`); `css/app.css` (the phone rules for the Export notes)
-- Ruling: R15. The clamp note reads 16.7 MP, rounded down. The app differs today. R14. For a pair saved Separately, the clamp note shows when either side is clamped and names the side when it isn't the one on screen. The app differs today. Rich approved the words (wording.md, 16 November 2026): "Scaled down to fit the 16.7 MP limit."; for the side not on screen, "The front is scaled down to fit the 16.7 MP limit." (or "The back…"); for both, "Both sides are scaled down to fit the 16.7 MP limit."
+- Ruling: R15. The clamp note reads 16.7 MP, rounded down. The app differs today. R14. For a pair saved Separately, the clamp note shows when either side is clamped and names the side when it isn't the one on screen. The app differs today. Rich approved the words (wording.md, 16 November 2026): "Scaled down to fit the 16.7 MP limit."; for the side not on screen, "The front is scaled down to fit the 16.7 MP limit." (or "The back…"); for both, "Both sides are scaled down to fit the 16.7 MP limit." R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
 - Cases: 4
 
 The note about the size limit is called the clamp note here. EXP-06.1 and EXP-06.2 are about which notes show and in what order, and pass with the clamp note in today's words ("Clamped to fit the 16.8 MP canvas limit.") or the approved ones; EXP-06.3 and EXP-06.4 check the approved words.
@@ -309,7 +309,7 @@ Before you start:
 | 3 | Choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** and **Back** show in the top bar, with **Back** selected |
 | 4 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | **Together** and **Separately** show beside the size line |
 | 5 | Tap **Separately** | **Separately** is selected |
-| 6 | Look under the size line | One amber note reads "The front is scaled down to fit the N MP limit.", the approved words, with N the limit the app gives (the approved words say 16.7; this case's link lowers the limit to 1 MP, and which number the note then gives is for Rich) |
+| 6 | Look under the size line | One amber note reads "The front is scaled down to fit the 1 MP limit.", the approved words with the limit in force, which this case's link lowers to 1 MP (ruling R47) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -364,6 +364,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 2
 
 ### EXP-08.1 Share hands the share sheet the finished photo   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.2 holds the words.
 Script only
 Stand-in: no person can see the size of the file a share sheet is handed, and no case uses a desktop browser's own share sheet, so the script gives the page a stand-in share sheet that records each file it is handed and finishes the share at once. EXP-08.2 and EXP-09.1 are the same on a real iPhone.
 
@@ -381,7 +382,7 @@ The share sheet is the system's panel of ways to send or save a file (AirDrop, M
 | 1 | Look at the row of three buttons under the size line (the line under the **Size** and **Format** choices) | **Share** is the first, in red, with its tooltip "Share or save the image (Save Image puts it in Photos)" |
 | 2 | Tap **Share** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | The share sheet is handed one file, IMG_9136-straight.jpg: a JPEG of 1400 × 1400 px |
-| 4 | Look at the message over the photo, once the stand-in has finished the share | It begins "Exported 1400 × 1400 px in" |
+| 4 | Look at the message over the photo, once the stand-in has finished the share | It begins "Photo shared: 1400 × 1400 px in" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -419,6 +420,7 @@ On an iPhone, **Save Image** in the share sheet puts the photo in Photos.
 - Cases: 1
 
 ### EXP-09.1 Save Image puts the photo in Photos   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.2 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP the Share button is hidden)
@@ -435,7 +437,7 @@ The size of the saved photo is read back in the app itself: the source line in *
 | 3 | Tap the **×** at the options' top right | The options go down |
 | 4 | Tap **Share** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 5 | Tap **No** | The share sheet rises, showing the straightened card |
-| 6 | Tap **Save Image** | The share sheet closes; a message over the photo begins "Exported 1400 × 1400 px in", and **Next card** shows in white |
+| 6 | Tap **Save Image** | The share sheet closes; a message over the photo begins "Photo shared: 1400 × 1400 px in", and **Next card** shows in white |
 | 7 | Tap **Next card** | The iPhone offers where to choose a photo from |
 | 8 | Choose the newest photo in the photo library | The straightened, square card opens in the app, on the Perspective step |
 | 9 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export controls show |
@@ -501,6 +503,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 3
 
 ### EXP-11.1 Download saves the photo as a plain download   [auto: phone, webkit]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: a phone-width or a wide window, in a browser that can share files (Safari on an iPhone over HTTPS, or, for the script, a desktop browser given a stand-in share sheet), with downloads saved to a folder you can open
 - Build: the build under test
@@ -512,7 +515,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Look at the row of buttons under the size line | **Download** shows, grey, beside the red **Share** |
 | 2 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 3 | Tap **No** | A file named IMG_9136-straight.jpg is saved, and a message over the photo begins "Exported 1400 × 1400 px in"; no share sheet opens |
+| 3 | Tap **No** | A file named IMG_9136-straight.jpg is saved, and a message over the photo begins "Photo downloaded: 1400 × 1400 px in"; no share sheet opens |
 | 4 | Open the saved file | It is a JPEG of 1400 × 1400 px showing the straightened card |
 
 Pass: every row's result is seen.
@@ -534,6 +537,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-11.3 On an iPhone, Download saves the photo to Files   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -549,7 +553,7 @@ Find the download: in what the iPhone offers, choose to browse files (not the ph
 | --- | --- | --- |
 | 1 | Tap **Download** (grey, beside the red **Share**) | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **No** | Safari asks whether to download IMG_9136-straight.jpg |
-| 3 | Tap **Download** in Safari's question | A message over the photo begins "Exported 1400 × 1400 px in"; no share sheet opens |
+| 3 | Tap **Download** in Safari's question | A message over the photo begins "Photo downloaded: 1400 × 1400 px in"; no share sheet opens |
 | 4 | Tap **Open** (the folder at the top left) | The iPhone offers where to choose a photo from |
 | 5 | Find the download | IMG_9136-straight.jpg is there |
 | 6 | Tap IMG_9136-straight.jpg | The straightened, square card opens in the app, on the Perspective step |
@@ -574,6 +578,7 @@ On a fail, record: the row number, what you saw instead, a screenshot (press the
 - Cases: 2
 
 ### EXP-12.1 Copy puts a PNG on the clipboard though JPEG is chosen   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Before you start:
 - Device and browser: a computer, Chrome or Edge; a phone-width or a wide window (the script runs this in Chromium only: Playwright's WebKit can't read the clipboard back)
 - Build: the build under test
@@ -586,13 +591,14 @@ Before you start:
 | --- | --- | --- |
 | 1 | Look at the row of buttons under the size line | **Copy** shows, last in the row |
 | 2 | Tap **Copy** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 3 | Tap **No** | A message over the photo reads "Copied to clipboard (PNG)." |
+| 3 | Tap **No** | A message over the photo reads "Photo copied (PNG)." |
 | 4 | Paste into the image editor | A PNG image of 1400 × 1400 px: the straightened card |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-12.2 With JPEG and a Transparent fill, Copy's empty areas are white   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Before you start:
 - Device and browser: a computer, Chrome or Edge; a phone-width or a wide window (the script runs this in Chromium only)
 - Build: the build under test
@@ -610,7 +616,7 @@ Set the fill to Transparent: open **Export options** (on a phone, tap the option
 | 2 | Tap **Export** in the step tabs | The Export controls show, with **JPEG** selected |
 | 3 | Set the fill to Transparent | The note "JPEG has no transparency; empty areas will be white." shows under the size line (the line under the **Size** and **Format** choices) |
 | 4 | Tap **Copy** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 5 | Tap **No** | A message over the photo reads "Copied to clipboard (PNG)." |
+| 5 | Tap **No** | A message over the photo reads "Photo copied (PNG)." |
 | 6 | Paste into the image editor and look at the corners | The two corners the tilt left empty are solid white, and nothing in the image is see-through |
 
 Pass: every row's result is seen.
@@ -730,6 +736,7 @@ If the browser refuses to share because the tap was too long ago (a slow export)
 - Cases: 3
 
 ### EXP-15.1 A refused share leaves Share now, which shares the same file   [auto: phone]
+The words before "Tap Share now…" are the finished message's, which ruling R79 rewords (BUG-290); R79 doesn't say how the message reads while the share waits, so this case reads only the size, the time and the sentence added.
 Script only
 Stand-in: Safari refuses a share that starts too long after the tap, but an export of a sample photo is too quick for that, and no case uses a desktop browser's own share sheet; the script gives the page a stand-in share sheet that refuses the first share as Safari does, records each file it is handed, and finishes every later share at once.
 
@@ -743,7 +750,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | The share is refused; a message over the photo reads "Exported 1400 × 1400 px in N s. Tap Share now to open the share sheet." (N is the time it took); the red button reads **Share now** |
+| 2 | Tap **No** | The share is refused; a message over the photo gives the saved size, 1400 × 1400 px, and the time it took, then reads "Tap Share now to open the share sheet."; the red button reads **Share now** |
 | 3 | Tap **Share now** | The share sheet is handed IMG_9136-straight.jpg, the very file it was handed before: no new export starts |
 | 4 | Look at the red button, once the stand-in has finished the share | It reads **Share** again |
 
@@ -774,6 +781,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-15.3 On an iPhone, a slow export leaves Share now, which opens the share sheet   [phone]
+The words before "Tap Share now…" are the finished message's, which ruling R79 rewords (BUG-290); R79 doesn't say how the message reads while the share waits, so this case reads only the size, the time and the sentence added.
 Waiting on find-out Q-09: which photo is slow enough to save at **Original** that Safari refuses the share. The photo below is filled in from Rich's answer; until then the case can't be run.
 
 Before you start:
@@ -786,7 +794,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo); no share sheet rises |
-| 2 | Wait for the line to finish | A message over the photo reads "Exported W × H px in N s. Tap Share now to open the share sheet." (W × H the saved size, N the time it took); the red button reads **Share now** |
+| 2 | Wait for the line to finish | A message over the photo gives the saved size (W × H px) and the time it took, then reads "Tap Share now to open the share sheet."; the red button reads **Share now** |
 | 3 | Tap **Share now** | The share sheet rises at once, with no red line first: nothing is rendered again |
 | 4 | Tap **Save Image** | The share sheet closes; the red button reads **Share** again, and **Next card** shows in white |
 
@@ -1053,11 +1061,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#btnNextCard`, "Next card shows once these edits are exported."
 - Source: `js/app/export-controls.js` (`syncNextCard`, `bindExport`); `js/app/export.js` (`markExported`)
-- Flag: to confirm. The tip says Next card shows once the edits are exported, but it is also held back while Share now waits.
+- Ruling: R62. The Next card tip need not mention the wait while **Share now** is pending. The app already does this.
 - Cases: 2
 
 ### EXP-21.1 Next card shows once the edits are exported, and opens the picker   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
@@ -1081,7 +1088,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-21.2 A waiting Share now holds Next card back, even for exported edits   [auto: phone]
-Flag: to confirm. Written to today's behavior: the tip "Next card shows once these edits are exported." doesn't mention this.
 
 Script only
 Stand-in: as for EXP-15.1, a stand-in share sheet that refuses the first share, as Safari does after a slow export, and finishes every later share at once.
@@ -1161,6 +1167,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-22.3 A finished Copy counts as exported   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Before you start:
 - Device and browser: a computer, Chrome or Edge; a phone-width or a wide window (the script runs this in Chromium only, which lets it allow the clipboard)
 - Build: the build under test
@@ -1171,7 +1178,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Copy** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | A message reads "Copied to clipboard (PNG)."; **Next card** shows in white |
+| 2 | Tap **No** | A message reads "Photo copied (PNG)."; **Next card** shows in white |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1559,11 +1566,10 @@ On a fail, record: the row number, what you saw instead, a screenshot, and both 
 - Changed: none
 - Anchors: `#exportResetRow`, "Reset export settings", `CONFIG.export.quality`
 - Source: `js/app/export-controls.js` (`buildExportResetRow`); `js/app/shell.js` (`resetStep`)
-- Flag: to confirm. It leaves Together | Separately and the corner-shots output as they are, and in a pair it resets both sides.
+- Ruling: R63. **Reset export settings** leaves Together / Separately and the corner-shots output as they are, and in a pair resets both sides. The app already does this.
 - Cases: 1
 
 ### EXP-29.1 Reset export settings puts five settings back in one undo step   [auto: phone]
-Flag: to confirm. Written to today's behavior: the corner shots' **4 photos** | **1 sheet** choice is left as it is.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1808,6 +1814,7 @@ A 48 MP photo saves at **Original** and at **3000** on an iPhone without the pag
 - Cases: 1
 
 ### EXP-35.1 A 48 MP photo saves at Original and at 3000 on an iPhone   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.2 holds the words.
 Waiting on find-out Q-02: which iPhone models take 48 MP photos, and the size the source line gives for one. The device and row 3's size are filled in from Rich's answer.
 
 Before you start:
@@ -1826,9 +1833,9 @@ Before you start:
 | 3 | Tap the options tab (the tab with an up arrow on the top edge of the controls) | Near the end of **Export options**, the source line begins "Source" and gives 48 MP or more, such as "(48.8 MP)" |
 | 4 | Tap the **×** at the options' top right | The options go down |
 | 5 | Tap **Original** | The size line (the line under the size and format choices) reads Output N × N px · JPEG, with N more than 3000 |
-| 6 | Share and save | A thin red line runs along the top edge of the controls, the share sheet rises, and after **Save Image** a message over the photo begins "Exported N × N px in", with the same N; the photo is still on screen, on the Export step: the page didn't reload |
+| 6 | Share and save | A thin red line runs along the top edge of the controls, the share sheet rises, and after **Save Image** a message over the photo begins "Photo shared: N × N px in", with the same N; the photo is still on screen, on the Export step: the page didn't reload |
 | 7 | Tap **3000** | The size line reads Output 3000 × 3000 px · JPEG |
-| 8 | Share and save | No question box; after **Save Image** a message begins "Exported 3000 × 3000 px in"; the photo is still on screen, on the Export step |
+| 8 | Share and save | No question box; after **Save Image** a message begins "Photo shared: 3000 × 3000 px in"; the photo is still on screen, on the Export step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screen recording (Control Center, the Screen Recording button).
@@ -1953,13 +1960,13 @@ When the browser can't encode the chosen format (WebP in Safari), the file is sa
 - Changed: none
 - Anchors: " isn’t supported by this browser, so it was saved as "
 - Source: `js/app/export.js` (`extensionFor`, `fallbackNote`, `toastSaved`)
-- Flag: to confirm. The fallback sentence says what happened but gives no next step.
+- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
 - Cases: 2
 
 Playwright's WebKit can save WebP (a probe on 16 November 2026: its canvas encoded image/webp), so only a real iPhone shows the fallback; EXP-38.2 proves the app's side with a browser made unable to save WebP.
 
 ### EXP-38.1 On an iPhone, WebP is saved as a PNG and the message says so   [phone]
-Flag: to confirm. Written to today's behavior: the sentence gives no next step.
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the sentence added, and MSG-22.1 holds the words.
 
 Before you start:
 - Device and browser: an iPhone, Safari
@@ -1972,13 +1979,13 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **WebP** | **WebP** is selected; the size line (the line under the size and format choices) reads Output 1080 × 1080 px · WEBP |
 | 2 | Tap **Download** (beside the red **Share**) | Safari asks whether to download IMG_9136-straight.png: a .png name, not .webp |
-| 3 | Tap **Download** in Safari's question | A message over the photo reads "Exported 1080 × 1080 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." (N is the time it took) |
+| 3 | Tap **Download** in Safari's question | A message over the photo reads "Photo downloaded: 1080 × 1080 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." (N is the time it took) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ### EXP-38.2 Where WebP can't be saved, Download saves a PNG and says so   [auto: phone]
-Flag: to confirm. Written to today's behavior: the sentence gives no next step.
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the sentence added, and MSG-22.1 holds the words.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a browser that can't save WebP (Safari, or, for the script, a browser whose WebP saving is taken away so that it hands back a PNG, as Safari does), with downloads saved to a folder you can open
@@ -1991,7 +1998,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **WebP** | **WebP** is selected; the size line reads Output 1080 × 1080 px · WEBP |
 | 2 | Tap **Download** | A file named IMG_9136-straight.png is saved |
-| 3 | Look at the message over the photo | It reads "Exported 1080 × 1080 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." (N is the time it took), marked as a warning |
+| 3 | Look at the message over the photo | It reads "Photo downloaded: 1080 × 1080 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." (N is the time it took), marked as a warning |
 | 4 | Open the saved file | It is a PNG of 1080 × 1080 px |
 
 Pass: every row's result is seen.

@@ -13,8 +13,8 @@ Each view of the photo starts fitted to the photo area, with 24 px of space arou
 - Changed: none
 - Anchors: `#view`, `#btnFit`
 - Source: `js/app/view.js` (`fitView`, `currentView`)
-- Flag: to confirm. Rotate and Crop share one view but ask for different space around it, so the fitted size on Crop depends on which of the two was opened first.
-- Cases: 2
+- Ruling: R90. Crop fits its own way, whatever step was opened before it. The app differs today.
+- Cases: 3
 
 ### VIEW-01.1 The photo opens fitted, with 24 px around it   [auto: phone]
 Before you start:
@@ -34,8 +34,8 @@ The photo area is the space between the top bar and the controls (the block of b
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### VIEW-01.2 Crop opened first leaves 36 px, and Rotate then keeps it   [auto: phone]
-Flag: to confirm. Written to today's behavior: Rotate and Crop share one view, so the space around the photo depends on which of the two was opened first.
+### VIEW-01.2 Crop opened first leaves 36 px, and Rotate then fits its own 24 px   [auto: phone]
+Written to ruling R90; it fails until that is built (BUG-295).
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -49,7 +49,27 @@ The photo area is the space between the top bar and the controls (the block of b
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom) | The photo is 36 px from the photo area's edges on its tighter side |
-| 2 | Tap **Rotate** in the step tabs | The photo is still 36 px from the edges, not 24 |
+| 2 | Tap **Rotate** in the step tabs | The straightened photo is 24 px from the edges on its tighter side, and centered on the other |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### VIEW-01.3 Rotate opened first leaves 24 px, and Crop then fits its own 36 px   [auto: phone]
+Written to ruling R90; it fails until that is built (BUG-295).
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo just opened, on the Perspective step
+
+The photo area is the space between the top bar and the controls (the block of buttons and sliders under the photo).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom) | The straightened photo is 24 px from the photo area's edges on its tighter side |
+| 2 | Tap **Crop** in the step tabs | The photo is 36 px from the edges on its tighter side, and centered on the other |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -65,7 +85,7 @@ Zoom and pan are kept separately for four views: Perspective's photo; the correc
 - Changed: none
 - Anchors: `#view`, `#btnFit`
 - Source: `js/app/view.js` (`currentView`, `togetherView`, `viewKey`); `js/app/pair.js` (`setPairOutput`)
-- Flag: to confirm. A pair's joined preview loses its zoom each time **Together** or **Separately** is chosen.
+- Ruling: R53. A pair's joined preview is fitted again when **Together** or **Separately** is chosen: the picture changes shape. The app already does this.
 - Cases: 2
 
 ### VIEW-02.1 Perspective keeps its zoom; Rotate and Crop share theirs   [auto: phone]
@@ -88,7 +108,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-02.2 A pair's joined preview is fitted again each time Together is chosen   [auto: phone]
-Flag: to confirm. Written to today's behavior: the joined preview's zoom is dropped when **Separately** or **Together** is chosen.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch
@@ -118,7 +137,7 @@ A view that is still fitted refits when the window changes size and after edits;
 - Changed: none
 - Anchors: `#view`, `#btnFit`
 - Source: `js/app/view.js` (`resizeCanvas`, `currentView`); `js/app/state.js` (`stateChanged`); `js/app/shell.js` (`setTab`)
-- Flag: to confirm. Zoom on Levels, Overlay and Export is dropped each time one of them is opened, while Perspective's and Rotate and Crop's zoom is kept.
+- Ruling: R91. Zoom is kept on Perspective and on Rotate and Crop, and dropped on Levels, Overlay and Export. The app already does this.
 - Cases: 3
 
 ### VIEW-03.1 A fitted photo refits when the window changes size; a zoomed one stays   [auto: desktop]
@@ -156,7 +175,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-03.3 Levels' zoom is dropped when the step is opened again; Perspective's is kept   [auto: phone]
-Flag: to confirm. Written to today's behavior: zoom on Levels, Overlay and Export is dropped each time one of them is opened, while Perspective's and Rotate and Crop's zoom is kept.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch
@@ -188,7 +206,7 @@ Two fingers on the photo zoom and pan it together, held at the point between the
 - Changed: none
 - Anchors: `#view`
 - Source: `js/app/input.js` (`onPointerDown`, `startPinch`, `pinchView`, `onPointerMove`)
-- Flag: to confirm. On Overlay the photo can't be zoomed or panned at all, and with no logo placed every touch and the wheel do nothing.
+- Ruling: R84. On Overlay the photo is locked: with no logo placed, every touch and the wheel do nothing. The app already does this.
 - Cases: 2
 
 ### VIEW-04.1 Two fingers zoom the photo about the point between them   [auto: phone, webkit]
@@ -207,7 +225,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-04.2 On Overlay with no logo, two fingers do nothing   [auto: phone]
-Flag: to confirm. Written to today's behavior: on Overlay the photo can't be zoomed or panned, and with no logo placed a touch does nothing.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch
@@ -340,7 +357,7 @@ The mouse wheel zooms about the cursor (faster with Ctrl held, which is what a t
 - Changed: none
 - Anchors: `#view`
 - Source: `js/app/input.js` (`onWheel`); `js/app/view.js` (`zoomAt`); `js/app/main.js` (`bindCanvasInput`)
-- Flag: to confirm. On Overlay the photo can't be zoomed or panned at all, and with no logo placed every touch and the wheel do nothing.
+- Ruling: R84. On Overlay the photo is locked: with no logo placed, every touch and the wheel do nothing. The app already does this.
 - Cases: 2
 
 ### VIEW-07.1 The wheel zooms about the cursor, faster with Ctrl, and the page doesn't scroll   [auto: desktop]
@@ -360,7 +377,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-07.2 On Overlay with no logo, the wheel does nothing   [auto: desktop]
-Flag: to confirm. Written to today's behavior: on Overlay the photo can't be zoomed or panned, and with no logo placed the wheel does nothing.
 
 Before you start:
 - Device and browser: a wide window, 1280 × 800 px, with a mouse wheel
@@ -421,7 +437,7 @@ Dragging an empty part of the photo moves it.
 - Changed: none
 - Anchors: `#view`
 - Source: `js/app/input.js` (`panGesture`, `onPointerMove`)
-- Flag: to confirm. On Overlay the photo can't be zoomed or panned at all, and with no logo placed every touch and the wheel do nothing.
+- Ruling: R84. On Overlay the photo is locked: with no logo placed, every touch and the wheel do nothing. The app already does this.
 - Cases: 2
 
 ### VIEW-09.1 Dragging an empty part of the photo moves it   [auto: phone, webkit]
@@ -440,7 +456,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-09.2 On Overlay with no logo, a drag does nothing   [auto: phone]
-Flag: to confirm. Written to today's behavior: on Overlay the photo can't be zoomed or panned, and with no logo placed a touch does nothing.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch
@@ -709,7 +724,7 @@ While the corners cross or fold inward, every step after Perspective (and Perspe
 - Changed: none
 - Anchors: "Fix the corners in Perspective first.", "Fix the corners of both sides in Perspective first.", `#view`
 - Source: `js/app/view.js` (`draw`, `drawTogether`, `drawMessage`)
-- Flag: to confirm. With **Preview** on, the message tells the user to go to Perspective while they are already on it.
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app differs today.
 - Cases: 3
 
 ### VIEW-14.1 With the corners crossed, the later steps show a message, for a person to judge   [eye]
@@ -728,8 +743,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### VIEW-14.2 Preview with the corners crossed sends you to Perspective, for a person to judge   [eye]
-Flag: to confirm. Written to today's behavior: with **Preview** on, the message tells the user to go to Perspective while they are already on it.
+### VIEW-14.2 Preview with the corners crossed asks to fix them, for a person to judge   [eye]
+Written to ruling R82, in the wording Rich approved; it fails until that is built (BUG-292). The script reads the words drawn; the judge looks at how they look.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch
@@ -741,7 +756,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring past the bottom-right one, and let go | The outline crosses itself |
-| 2 | Tap **Preview** | No photo; in the middle of the photo area, in grey, "Fix the corners in Perspective first." |
+| 2 | Tap **Preview** | No photo; in the middle of the photo area, in grey, "Fix the corners first." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

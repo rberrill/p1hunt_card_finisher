@@ -154,6 +154,7 @@ From tapping **Download** with Size **1080** to the file being saved. The finish
 - Cases: 1
 
 ### PERF-04.1 An export at Size 1080   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the time it gives, and MSG-22.1 holds the words.
 Limit (ruling R44): 500 ms (0.5 s), three times the median of five runs on the development PC (163 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, on a computer whose file browser shows a picture's size
@@ -162,12 +163,12 @@ Before you start:
 - Photo: IMG_9136-15MP.JPEG, the 15.2 MP copy of IMG_9136.JPEG that PERF-01.1 describes (its 1:1 crop, about 3080 px, is over every Size but Original, so no Upscale question is asked)
 - Starting screen: the photo open, on the Export step
 
-The finished message shows over the bottom of the photo when the file is saved: "Exported W × H px in N s.", where N is the time from the tap on **Download** to the file, in seconds to a tenth.
+The finished message shows over the bottom of the photo when the file is saved: "Photo downloaded: W × H px in N s.", where N is the time from the tap on **Download** to the file, in seconds to a tenth.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **1080** under Size | **1080** has the solid white fill |
-| 2 | Tap **Download** | No question box comes up; IMG_9136-15MP-straight.jpg is saved; the finished message reads "Exported 1080 × 1080 px in N s." |
+| 2 | Tap **Download** | No question box comes up; IMG_9136-15MP-straight.jpg is saved; the finished message reads "Photo downloaded: 1080 × 1080 px in N s." |
 | 3 | In the file browser, read the saved file's size (on Windows: right-click it, **Properties**, **Details**, Dimensions) | 1080 × 1080 |
 | 4 | Compare the finished message's N with the limit in seconds | N is at most 0.5 |
 
@@ -189,6 +190,7 @@ From tapping **Download** with Size **2000** (the default) to the file being sav
 - Cases: 1
 
 ### PERF-05.1 An export at Size 2000   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the time it gives, and MSG-22.1 holds the words.
 Limit (ruling R44): 950 ms (0.95 s), three times the median of five runs on the development PC (308 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, on a computer whose file browser shows a picture's size
@@ -197,12 +199,12 @@ Before you start:
 - Photo: IMG_9136-15MP.JPEG, the 15.2 MP copy of IMG_9136.JPEG that PERF-01.1 describes
 - Starting screen: the photo open, on the Export step
 
-The finished message shows over the bottom of the photo when the file is saved: "Exported W × H px in N s.", where N is the time from the tap on **Download** to the file, in seconds to a tenth.
+The finished message shows over the bottom of the photo when the file is saved: "Photo downloaded: W × H px in N s.", where N is the time from the tap on **Download** to the file, in seconds to a tenth.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **2000** under Size | **2000** has the solid white fill |
-| 2 | Tap **Download** | No question box comes up; IMG_9136-15MP-straight.jpg is saved; the finished message reads "Exported 2000 × 2000 px in N s." |
+| 2 | Tap **Download** | No question box comes up; IMG_9136-15MP-straight.jpg is saved; the finished message reads "Photo downloaded: 2000 × 2000 px in N s." |
 | 3 | In the file browser, read the saved file's size (on Windows: right-click it, **Properties**, **Details**, Dimensions) | 2000 × 2000 |
 | 4 | Compare the finished message's N with the limit in seconds | N is at most 0.95 |
 
@@ -224,6 +226,7 @@ From tapping **Download** with Size **3000** to the file being saved. The finish
 - Cases: 1
 
 ### PERF-06.1 An export at Size 3000   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the time it gives, and MSG-22.1 holds the words.
 Limit (ruling R44): 1,650 ms (1.65 s), three times the median of five runs on the development PC (544 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, on a computer whose file browser shows a picture's size
@@ -232,12 +235,12 @@ Before you start:
 - Photo: IMG_9136-15MP.JPEG, the 15.2 MP copy of IMG_9136.JPEG that PERF-01.1 describes
 - Starting screen: the photo open, on the Export step
 
-The finished message shows over the bottom of the photo when the file is saved: "Exported W × H px in N s.", where N is the time from the tap on **Download** to the file, in seconds to a tenth.
+The finished message shows over the bottom of the photo when the file is saved: "Photo downloaded: W × H px in N s.", where N is the time from the tap on **Download** to the file, in seconds to a tenth.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **3000** under Size | **3000** has the solid white fill |
-| 2 | Tap **Download** | No question box comes up; IMG_9136-15MP-straight.jpg is saved; the finished message reads "Exported 3000 × 3000 px in N s." |
+| 2 | Tap **Download** | No question box comes up; IMG_9136-15MP-straight.jpg is saved; the finished message reads "Photo downloaded: 3000 × 3000 px in N s." |
 | 3 | In the file browser, read the saved file's size (on Windows: right-click it, **Properties**, **Details**, Dimensions) | 3000 × 3000 |
 | 4 | Compare the finished message's N with the limit in seconds | N is at most 1.65 |
 
@@ -259,6 +262,7 @@ From tapping **Download** with Size **Original** to the file being saved, at the
 - Cases: 1
 
 ### PERF-07.1 An export at Size Original   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the time it gives, and MSG-22.1 holds the words.
 Limit (ruling R44): 1,650 ms (1.65 s), three times the median of five runs on the development PC (548 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, on a computer whose file browser shows a picture's size
@@ -267,12 +271,12 @@ Before you start:
 - Photo: IMG_9136-15MP.JPEG, the 15.2 MP copy of IMG_9136.JPEG that PERF-01.1 describes
 - Starting screen: the photo open, on the Export step
 
-The finished message shows over the bottom of the photo when the file is saved: "Exported W × H px in N s.", where N is the time from the tap on **Download** to the file, in seconds to a tenth. The size line is the line on Export that gives the saved picture's size in px and its format.
+The finished message shows over the bottom of the photo when the file is saved: "Photo downloaded: W × H px in N s.", where N is the time from the tap on **Download** to the file, in seconds to a tenth. The size line is the line on Export that gives the saved picture's size in px and its format.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Original** under Size | **Original** has the solid white fill; the size line reads "Output W × H px · JPEG", with W and H each over 3,000 (the crop at the photo's full resolution, about 3080 × 3080) |
-| 2 | Tap **Download** | No question box comes up; IMG_9136-15MP-straight.jpg is saved; the finished message reads "Exported W × H px in N s.", with the size line's W × H |
+| 2 | Tap **Download** | No question box comes up; IMG_9136-15MP-straight.jpg is saved; the finished message reads "Photo downloaded: W × H px in N s.", with the size line's W × H |
 | 3 | In the file browser, read the saved file's size (on Windows: right-click it, **Properties**, **Details**, Dimensions) | The size line's W × H |
 | 4 | Compare the finished message's N with the limit in seconds | N is at most 1.65 |
 
@@ -294,6 +298,7 @@ From answering **Yes** to the Upscale question to the enlarged, sharpened file b
 - Cases: 1
 
 ### PERF-08.1 An upscaled export   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the time it gives, and MSG-22.1 holds the words.
 Limit (ruling R44): 4,750 ms (4.75 s), three times the median of five runs on the development PC (1,576 ms).
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, on a computer whose file browser shows a picture's size
@@ -302,12 +307,12 @@ Before you start:
 - Photo: IMG_9136.JPEG from samples/ (its 1:1 crop is 1400 × 1400 px)
 - Starting screen: the photo open, on the Export step, **2000** selected under Size (the default)
 
-The finished message shows over the bottom of the photo when the file is saved: "Exported W × H px in N s.", where N is the time from the tap on **Yes** to the file, in seconds to a tenth. This case times the enlarging and sharpening; UPS-02.2 proves the sharpening itself.
+The finished message shows over the bottom of the photo when the file is saved: "Photo downloaded: W × H px in N s.", where N is the time from the tap on **Yes** to the file, in seconds to a tenth. This case times the enlarging and sharpening; UPS-02.2 proves the sharpening itself.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **Yes** | IMG_9136-straight.jpg is saved; the finished message reads "Exported 2000 × 2000 px in N s." |
+| 2 | Tap **Yes** | IMG_9136-straight.jpg is saved; the finished message reads "Photo downloaded: 2000 × 2000 px in N s." |
 | 3 | In the file browser, read the saved file's size (on Windows: right-click it, **Properties**, **Details**, Dimensions) | 2000 × 2000 |
 | 4 | Compare the finished message's N with the limit in seconds | N is at most 4.75 |
 
@@ -329,6 +334,7 @@ On an iPhone, from tapping **Share** with Size **Original** to the share sheet o
 - Cases: 2
 
 ### PERF-09.1 A Share at Original on a real iPhone, timed   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the time it gives, and MSG-22.2 holds the words.
 Limit: none yet. This case measures the time on a real iPhone, and Rich sets the limit from it.
 Before you start:
 - Device and browser: an iPhone, Safari
@@ -337,18 +343,19 @@ Before you start:
 - Photo: IMG_9136.JPEG from your photos (copied from samples/)
 - Starting screen: the photo open, on the Export step
 
-The size line is the line on Export that gives the saved picture's size in px and its format. The finished message shows over the bottom of the photo once the picture is shared: "Exported W × H px in N s.", where N is the time from the tap on **Share** to the share sheet being asked to open, in seconds to a tenth.
+The size line is the line on Export that gives the saved picture's size in px and its format. The finished message shows over the bottom of the photo once the picture is shared: "Photo shared: W × H px in N s.", where N is the time from the tap on **Share** to the share sheet being asked to open, in seconds to a tenth.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Original** under Size | **Original** has the solid white fill; the size line reads "Output W × H px · JPEG" |
 | 2 | Tap **Share** | The iPhone's share sheet rises from the bottom of the screen |
-| 3 | Tap **Save Image** in the share sheet | The share sheet closes; the finished message reads "Exported W × H px in N s.", with the size line's W × H |
+| 3 | Tap **Save Image** in the share sheet | The share sheet closes; the finished message reads "Photo shared: W × H px in N s.", with the size line's W × H |
 
 Pass: every row's result is seen. Write down N, and the iPhone's model and iOS version: Rich sets the limit from it.
 On a fail, record: the row number, a screen recording (Control Center, the Screen Recording button).
 
 ### PERF-09.2 A Share at Original that needs Share now, timed   [phone]
+The words before "Tap Share now…" are the finished message's, which ruling R79 rewords (BUG-290); R79 doesn't say how the message reads while the share waits, so this case reads only the size, the time and the sentence added.
 Waiting on find-out Q-09: which photo makes Safari refuse the share after a slow save, so that the red **Share** button turns to **Share now**. The case names that photo once Rich has found it; until then it can't be run.
 Limit: none yet. This case measures the time on a real iPhone, and Rich sets the limit from it.
 Before you start:
@@ -358,12 +365,12 @@ Before you start:
 - Photo: the photo find-out Q-09 names, in your photos
 - Starting screen: the photo open, on the Export step
 
-The size line is the line on Export that gives the saved picture's size in px and its format. Here the finished message shows over the bottom of the photo when the picture is ready, before the share sheet: "Exported W × H px in N s. Tap Share now to open the share sheet.", where N is the time from the tap on **Share**, in seconds to a tenth.
+The size line is the line on Export that gives the saved picture's size in px and its format. Here the finished message shows over the bottom of the photo when the picture is ready, before the share sheet: it gives the size (W × H px) and the time, N s, then reads "Tap Share now to open the share sheet.", where N is the time from the tap on **Share**, in seconds to a tenth.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Original** under Size | **Original** has the solid white fill; the size line reads "Output W × H px · JPEG" |
-| 2 | Tap **Share** | A thin red line on the top edge of the controls grows from left to right; then the red button reads **Share now**, and the finished message reads "Exported W × H px in N s. Tap Share now to open the share sheet.", with the size line's W × H |
+| 2 | Tap **Share** | A thin red line on the top edge of the controls grows from left to right; then the red button reads **Share now**, and the finished message gives the size line's W × H and the time, then reads "Tap Share now to open the share sheet." |
 | 3 | Tap **Share now** | The iPhone's share sheet rises from the bottom of the screen |
 | 4 | Tap **Save Image** in the share sheet | The share sheet closes; **Share now** reads **Share** again |
 

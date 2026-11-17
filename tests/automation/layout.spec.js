@@ -16,6 +16,7 @@ const {
   closeOptions,
   waitForStill,
   hasWhiteFill,
+  finishedMessage,
 } = require('./support/app.js');
 const {
   startWith,
@@ -673,16 +674,19 @@ test('LAY-10.5 Under reduced motion the export\'s progress line still moves [pho
   });
   await recordProgress(page, EXPORT_PROGRESS_ID);
   await answerForFile(page, hand, 'Yes', downloading);
-  await expect(page.locator('#toast')).toContainText('Exported 2000 × 2000 px');
+  // Today's words or ruling R79's: MSG-22.1 holds the words.
+  const finished = finishedMessage('photo', '2000 × 2000 px');
+  await expect(page.locator('#toast .toast-text')).toHaveText(finished);
   const changes = await progressRecorded(page);
   await check('a thin red line on the top edge of the controls grows from left to right in '
-    + 'several steps, then goes; a message begins "Exported 2000 × 2000 px"', async () => {
+    + 'several steps, then goes; a message begins "Photo downloaded: 2000 × 2000 px"',
+  async () => {
     const shown = changes.filter(change => !change.isHidden).map(change => change.scale);
     const between = [...new Set(shown.filter(scale => scale > 0 && scale < 1))];
     expect(between.length).toBeGreaterThanOrEqual(PROGRESS_STEPS_MIN);
     expect(shown).toEqual([...shown].sort((first, second) => first - second));
     expect(changes[changes.length - 1].isHidden).toBe(true);
-    await expect(page.locator('#toast')).toContainText('Exported 2000 × 2000 px');
+    await expect(page.locator('#toast .toast-text')).toHaveText(finished);
   });
 });
 

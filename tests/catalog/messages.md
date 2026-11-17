@@ -19,15 +19,19 @@ Short messages appear as a pill over the bottom edge of the photo, one at a time
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo on the device, so the reload offers to resume it
 - Photo: IMG_9075.JPEG from samples/
-- Starting screen: the photo open, on the Levels step
+- Starting screen: the photo opened with **Open photo**, **Levels** tapped in the step tabs, two seconds' wait so it is kept on the device, then the page reloaded: the start screen offers **Resume**
+
+"Resumed where you left off." is the information message these rows use: it shows once **Resume** has reopened the photo, and stays 3 seconds.
+
+Rows 2 and 3 come within those 3 seconds.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto** | "Auto set white and black points. Check them, then Apply." shows over the photo |
+| 1 | Tap **Resume** | The photo opens on the Levels step, and "Resumed where you left off." shows over the photo |
 | 2 | Tap **Pick black** | **Pick black** is selected (a white fill); the message is still up |
-| 3 | Tap the white background just left of the slab, halfway down | "That spot is too light to be a black point. Pick something dark, or skip the black point." takes its place at once, the first fading out beneath it; one message shows |
+| 3 | At once, tap the white background just left of the slab, halfway down | "That spot is too light to be a black point. Pick something dark, or skip the black point." takes its place at once, the first fading out beneath it; one message shows |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -65,17 +69,17 @@ A message stays 3 seconds when it is information, 5 seconds when it is a warning
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo on the device, so the reload offers to resume it
 - Photo: IMG_9075.JPEG from samples/
+- Starting screen: the photo opened with **Open photo**, **Levels** tapped in the step tabs, two seconds' wait so it is kept on the device, then the page reloaded: the start screen offers **Resume**
 - File: notes.json from tests/fixtures/ (a line of text, not JSON)
-- Starting screen: the photo open, on the Levels step
 - A stopwatch. Each time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
 
 Load notes.json: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, EXPORT OPTIONS, tap **Load edits**; choose notes.json in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto** and time the message | "Auto set white and black points. Check them, then Apply." stays 3 s |
+| 1 | Tap **Resume**, and time the message that shows once the photo is open | "Resumed where you left off." stays 3 s |
 | 2 | Tap **Pick black** | **Pick black** is selected (a white fill) |
 | 3 | Tap the white background just left of the slab, halfway down, and time the message | "That spot is too light to be a black point. Pick something dark, or skip the black point." stays 5 s |
 | 4 | Tap **Export** in the step tabs (the six tabs along the bottom) | The Export step's controls show |
@@ -101,16 +105,16 @@ Information is a white pill with no icon; a warning is amber with a triangle; an
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo on the device, so the reload offers to resume it
 - Photo: IMG_9075.JPEG from samples/
+- Starting screen: the photo opened with **Open photo**, **Levels** tapped in the step tabs, two seconds' wait so it is kept on the device, then the page reloaded: the start screen offers **Resume**
 - File: notes.json from tests/fixtures/ (a line of text, not JSON)
-- Starting screen: the photo open, on the Levels step
 
 Load notes.json: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, EXPORT OPTIONS, tap **Load edits**; choose notes.json in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto** | "Auto set white and black points. Check them, then Apply." is a white pill with no icon |
+| 1 | Tap **Resume** | Once the photo is open, "Resumed where you left off." is a white pill with no icon |
 | 2 | Tap **Pick black** | **Pick black** is selected (a white fill) |
 | 3 | Tap the white background just left of the slab, halfway down | "That spot is too light to be a black point. Pick something dark, or skip the black point." is amber, led by a triangle |
 | 4 | Tap **Export** in the step tabs (the six tabs along the bottom) | The Export step's controls show |
@@ -123,16 +127,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo on the device, so the reload offers to resume it
 - Photo: IMG_9075.JPEG from samples/
+- Starting screen: the photo opened with **Open photo**, **Levels** tapped in the step tabs, two seconds' wait so it is kept on the device, then the page reloaded: the start screen offers **Resume**
 - File: notes.json from tests/fixtures/ (a line of text, not JSON)
-- Starting screen: the photo open, on the Levels step
 
 Load notes.json: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, EXPORT OPTIONS, tap **Load edits**; choose notes.json in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto** | a white pill with dark bold text and no icon, over the photo's bottom edge |
+| 1 | Tap **Resume** | Once the photo is open, a white pill with dark bold text and no icon, over the photo's bottom edge |
 | 2 | Tap **Pick black** | **Pick black** is selected (a white fill) |
 | 3 | Tap the white background just left of the slab, halfway down | an amber pill led by a dark triangle with an exclamation mark, its text readable against the amber |
 | 4 | Tap **Export** in the step tabs (the six tabs along the bottom) | The Export step's controls show |
@@ -159,13 +163,15 @@ Touches pass through a message to the photo beneath it. A long message is cut to
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo on the device, so the reload offers to resume it
 - Photo: IMG_9075.JPEG from samples/
-- Starting screen: the photo open, on the Levels step
+- Starting screen: the photo opened with **Open photo**, **Levels** tapped in the step tabs, two seconds' wait so it is kept on the device, then the page reloaded: the start screen offers **Resume**
+
+"Resumed where you left off." is the information message these rows use: it shows once **Resume** has reopened the photo, and stays 3 seconds.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto** | the message covers the point the drag starts from |
+| 1 | Tap **Resume** | Once the photo is open, "Resumed where you left off." shows over the photo: the message covers the point the drag starts from |
 | 2 | At once, drag from the middle of the message 60 px to the right | the photo moves 60 px to the right, as a drag on the photo does |
 
 Pass: every row's result is seen.
@@ -196,13 +202,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo on the device, so the reload offers to resume it
 - Photo: IMG_9075.JPEG from samples/
-- Starting screen: the photo open, on the Levels step; a screen reader on
+- Starting screen: the photo opened with **Open photo**, **Levels** tapped in the step tabs, two seconds' wait so it is kept on the device, then the page reloaded: the start screen offers **Resume**; a screen reader on
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto** | the screen reader reads "Auto set white and black points. Check them, then Apply." once it has finished what it was saying, without cutting it off |
+| 1 | Tap **Resume** | Once the photo is open, the screen reader reads "Resumed where you left off." once it has finished what it was saying, without cutting it off |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -249,11 +255,10 @@ An information message, "Loading…", appears when any photo starts opening (Ope
 - Changed: none
 - Anchors: "Loading…"
 - Source: `js/app/state.js` (`openFile`)
-- Flag: to confirm. Three different words say the app is busy: "Loading…" here, "Opening the front…" for a side switch and "Detecting…" on Perspective.
+- Ruling: R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this.
 - Cases: 1
 
 ### MSG-06.1 "Loading…" shows while a photo opens   [auto: phone]
-Flag: to confirm. Written to what the app does today: three different words say the app is busy ("Loading…", "Opening the front…", "Detecting…").
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -386,19 +391,18 @@ A warning, for 5 seconds, when a detection the user started finds nothing: "No c
 - Changed: none
 - Anchors: "No card-shaped edges found.", "Drag the corners into place, or tap to find card and tap the card again."
 - Source: `js/app/state.js` (`runDetect`); `js/app/perspective.js` (`bindPerspective`); `js/app/debug-panel.js` (`toggleDebugPanel`, `buildDebugPanel`)
-- Ruling: R3. Turning on **Debug overlay** only draws; it runs no detection and leaves the corners alone. The app differs today.
-- Flag: to confirm. The row above the controls says "Nothing detected. Drag the corners into place." at the same time, so one condition shows in two wordings; the message also says "tap" on a desktop.
+- Ruling: R3. Turning on **Debug overlay** only draws; it runs no detection and leaves the corners alone. The app differs today. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today. R78. A message may say "Tap" on a wide screen. The app already does this.
 - Cases: 2
 
-### MSG-10.1 A search that finds no card says so; opening the picture doesn't   [auto: phone]
-Flag: to confirm. Written to what the app does today: the line above the controls says "Nothing detected. Drag the corners into place." at the same time, and the message says "tap" on a desktop too.
+### MSG-10.1 A search that finds no card says so in the line alone   [auto: phone]
+Written to ruling R77; it fails until that is built (BUG-289).
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
 - Starting screen: the start screen
-- A stopwatch. The time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
 
 Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
 
@@ -406,14 +410,15 @@ Arm Tap to find card: tap the options tab (the small tab with an up arrow on the
 | --- | --- | --- |
 | 1 | Tap **Open photo** on the start screen and choose plain-grey.png | The picture opens on the Perspective step; the line above the controls reads "Nothing detected. Drag the corners into place."; no message shows over the picture |
 | 2 | Arm Tap to find card | the line above the controls reads "Tap the card in the photo." |
-| 3 | Tap the middle of the picture | an amber warning reads "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again." |
-| 4 | Time the message | it stays 5 s |
+| 3 | Tap the middle of the picture | the line above the controls reads "Nothing detected. Drag the corners into place." |
+| 4 | Wait five seconds | No message has shown over the picture since the tap |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### MSG-10.2 Re-detect in the tuning panel says when it finds no card   [auto: desktop]
-Flag: to confirm. Written to what the app does today: the line above the controls says "Nothing detected. Drag the corners into place." at the same time.
+### MSG-10.2 Re-detect in the tuning panel that finds no card shows no message   [auto: desktop]
+Written to ruling R77; it fails until that is built (BUG-289).
+
 Before you start:
 - Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
 - Build: the build under test
@@ -424,7 +429,8 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **Open photo** on the start screen and choose plain-grey.png | The picture opens; the Detection tuning panel still shows; no message shows over the picture |
-| 2 | Click **Re-detect** in the tuning panel | an amber warning reads "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again." |
+| 2 | Click **Re-detect** in the tuning panel | The search runs again and ends; the line above the controls still reads "Nothing detected. Drag the corners into place." |
+| 3 | Wait five seconds | No message has shown over the picture since the click |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -588,11 +594,10 @@ A warning, for 5 seconds, when **Auto** on Levels finds no white point, or the c
 - Changed: none
 - Anchors: "Couldn’t estimate levels from this image.", `#toolAutoLevels`
 - Source: `js/app/levels.js` (`autoLevelsDraft`, `renderSmall`)
-- Flag: to confirm. The message gives no next step.
+- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
 - Cases: 1
 
 ### MSG-15.1 Auto with nothing to go on   [auto: phone]
-Flag: to confirm. Written to what the app does today: the message gives no next step.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -618,11 +623,12 @@ An information message when **Auto** finds both points: "Auto set white and blac
 - Changed: none
 - Anchors: "Auto set white and black points. Check them, then Apply.", `#toolAutoLevels`
 - Source: `js/app/levels.js` (`autoLevelsDraft`)
-- Flag: to confirm. Auto confirms itself with a message, while arming a pick shows none by design.
+- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app differs today.
 - Cases: 1
 
-### MSG-16.1 Auto sets both points   [auto: phone]
-Flag: to confirm. Written to what the app does today: Auto confirms itself with a message, while arming a pick shows none.
+### MSG-16.1 Auto sets both points, with no message   [auto: phone]
+Written to ruling R73; it fails until that is built (BUG-286).
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -632,7 +638,8 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto** | a white message reads "Auto set white and black points. Check them, then Apply." |
+| 1 | Tap **Auto** | The color patches of **Pick white** and **Pick black** (the small marks at their left that show the color picked) are filled: Auto set both points |
+| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -648,11 +655,12 @@ An information message when **Auto** finds a white point but no clear black: "Au
 - Changed: none
 - Anchors: "Auto set the white point (no clear black). Check it, then Apply.", `#toolAutoLevels`
 - Source: `js/app/levels.js` (`autoLevelsDraft`)
-- Flag: to confirm. Auto confirms itself with a message, while arming a pick shows none by design.
+- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app differs today.
 - Cases: 1
 
-### MSG-17.1 Auto sets the white point only   [auto: phone]
-Flag: to confirm. Written to what the app does today: Auto confirms itself with a message, while arming a pick shows none.
+### MSG-17.1 Auto sets the white point only, with no message   [auto: phone]
+Written to ruling R73; it fails until that is built (BUG-286).
+
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -662,7 +670,8 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto** | a white message reads "Auto set the white point (no clear black). Check it, then Apply." |
+| 1 | Tap **Auto** | The color patch of **Pick white** (the small mark at its left that shows the color picked) is filled, and the one of **Pick black** is still dashed and empty: Auto set the white point only |
+| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -800,9 +809,11 @@ An information message after a single photo's **Download**, or after **Share** f
 - Changed: none
 - Anchors: "Exported ", `#btnDownload`, `#btnShare`
 - Source: `js/app/export.js` (`deliverExport`, `toastSaved`)
-- Cases: 1
+- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s." (tests/catalog/wording.md): "Photo downloaded: W × H px in N s." or "Photo shared: W × H px in N s.". The app differs today.
+- Cases: 2
 
 ### MSG-22.1 A single photo's Download says what it saved   [auto: phone]
+Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -814,10 +825,28 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **No** | One file is saved: 01_chrome_flat_black-straight.jpg, 1074 × 1074 px |
-| 3 | Read the message over the photo | A white message reads "Exported 1074 × 1074 px in N s.", N the seconds the export took, to one decimal place |
+| 3 | Read the message over the photo | A white message reads "Photo downloaded: 1074 × 1074 px in N s.", N the seconds the export took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-22.2 A single photo's Share says what it shared   [auto: phone]
+Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
+Script only
+Stand-in: no case uses a desktop browser's own share sheet (Rich, 2026-11-15); the page gets a stand-in share sheet that takes the file and closes at once, as **Save Image** does on an iPhone.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo open, on the Export step, with **2000** selected
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Share** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **No** | The share sheet is handed one file, 01_chrome_flat_black-straight.jpg |
+| 3 | Read the message over the photo | A white message reads "Photo shared: 1074 × 1074 px in N s.", N the seconds the export took, to one decimal place |
 
 ## MSG-23 "Exported the Together image in … s."
 
@@ -830,9 +859,12 @@ An information message after a pair's **Download** or **Share** with **Together*
 - Changed: none
 - Anchors: "the Together image", `#pairOutput`
 - Source: `js/app/pair.js` (`deliverPair`); `js/app/export.js` (`toastSaved`)
+- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s." (tests/catalog/wording.md): "Front and back downloaded: …" or "Front and back shared: …", the size the joined image's. The app differs today.
 - Cases: 1
 
 ### MSG-23.1 A pair's Together Download says so   [auto: phone]
+Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
+The approved words give the size as SIZE without saying how a pair writes it; the case checks the words before and after it.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -844,7 +876,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **No** | One file is saved: 14_front_portrait_raw_white-pair.jpg, 1583 × 1100 px |
-| 3 | Read the message over the photo | A white message reads "Exported the Together image in N s.", N the seconds the export took, to one decimal place |
+| 3 | Read the message over the photo | A white message begins "Front and back downloaded: ", gives the size, and ends "in N s.", N the seconds the export took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -860,9 +892,12 @@ An information message after a pair's **Download** or **Share** with **Separatel
 - Changed: none
 - Anchors: "the front and back", `#pairOutput`
 - Source: `js/app/pair.js` (`deliverPair`); `js/app/export.js` (`toastSaved`)
+- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s." (tests/catalog/wording.md): "Front and back downloaded: …" or "Front and back shared: …". The app differs today.
 - Cases: 1
 
 ### MSG-24.1 A pair's Separately Download says so   [auto: phone]
+Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
+The approved words give the size as SIZE without saying how two files write it; the case checks the words before and after it.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -875,7 +910,7 @@ Before you start:
 | 1 | Tap **Separately** | **Separately** is selected (a white fill) |
 | 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | Two files are saved: 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
-| 4 | Read the message over the photo | A white message reads "Exported the front and back in N s.", N the seconds the export took, to one decimal place |
+| 4 | Read the message over the photo | A white message begins "Front and back downloaded: ", gives the size, and ends "in N s.", N the seconds the export took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -891,11 +926,12 @@ An information message after **Download corners** or **Share corners** with **1 
 - Changed: none
 - Anchors: "the corner sheet", `#btnCornerDownload`, `#btnCornerShare`, `CONFIG.cornerShots.upscaleTargetPx`
 - Source: `js/app/corner-shots.js` (`deliverCornerShots`); `js/app/export.js` (`toastSaved`)
-- Flag: to confirm. Corner shots say "Saved", while the main export and a pair say "Exported".
+- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s.": here "Corner sheet downloaded: …" or "Corner sheet shared: …". The app differs today.
 - Cases: 1
 
 ### MSG-25.1 Download corners with 1 sheet says so   [auto: phone]
-Flag: to confirm. Written to what the app does today: corner shots say "Saved", while the main export and a pair say "Exported".
+Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
+The approved words give the size as SIZE without saying how a sheet writes it; the case checks the words before and after it.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -909,7 +945,7 @@ Before you start:
 | 1 | Tap **Corner shots** | The Corner shots sheet rises |
 | 2 | Tap **1 sheet** | **1 sheet** is selected (a white fill) |
 | 3 | Tap **Download corners** | One file is saved: 01_chrome_flat_black-corners.jpg; no question box asks first |
-| 4 | Read the message | A white message reads "Saved the corner sheet in N s.", N the seconds it took, to one decimal place |
+| 4 | Read the message | A white message begins "Corner sheet downloaded: ", gives the size, and ends "in N s.", N the seconds it took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -925,11 +961,12 @@ An information message after **Download corners** or **Share corners** with **4 
 - Changed: none
 - Anchors: " corner shots", `#btnCornerDownload`, `#btnCornerShare`, `CONFIG.cornerShots.upscaleTargetPx`
 - Source: `js/app/corner-shots.js` (`deliverCornerShots`); `js/app/export.js` (`toastSaved`)
-- Flag: to confirm. Corner shots say "Saved", while the main export and a pair say "Exported".
+- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s.": here "4 corner photos downloaded: …" or "4 corner photos shared: …". The app differs today.
 - Cases: 1
 
 ### MSG-26.1 Download corners with 4 photos says so   [auto: phone]
-Flag: to confirm. Written to what the app does today: corner shots say "Saved", while the main export and a pair say "Exported".
+Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
+The approved words give the size as SIZE without saying how four photos write it; the case checks the words before and after it.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -943,7 +980,7 @@ Before you start:
 | 1 | Tap **Corner shots** | The Corner shots sheet rises |
 | 2 | Tap **4 photos** | **4 photos** is selected (a white fill) |
 | 3 | Tap **Download corners** | Four files are saved: 01_chrome_flat_black-corner-tl.jpg, -corner-tr.jpg, -corner-bl.jpg and -corner-br.jpg |
-| 4 | Read the message | A white message reads "Saved 4 corner shots in N s.", N the seconds it took, to one decimal place |
+| 4 | Read the message | A white message begins "4 corner photos downloaded: ", gives the size, and ends "in N s.", N the seconds it took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -959,11 +996,11 @@ When the browser saves another format than the one chosen (Safari has no WebP en
 - Changed: none
 - Anchors: " isn’t supported by this browser, so it was saved as ", `#exportFormat`
 - Source: `js/app/export.js` (`fallbackNote`, `toastSaved`)
-- Flag: to confirm. The sentence says what happened after the fact and gives no next step.
+- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
 - Cases: 2
 
 ### MSG-27.1 A format the browser couldn't save is named   [auto: phone]
-Flag: to confirm. Written to what the app does today: the sentence says what happened after the fact and gives no next step.
+The first sentence is the finished message (MSG-22) in ruling R79's words. Until R79 is built (BUG-290) it reads "Exported 1074 × 1074 px in N s.", which this case also accepts: its subject is the sentence added, and MSG-22.1 holds the words.
 Script only
 Stand-in: Chromium can save WebP, so the script makes it hand back a PNG when asked for WebP, as Safari does. On a real iPhone, where Safari can't save WebP, this is MSG-27.2.
 
@@ -980,14 +1017,14 @@ Before you start:
 | 1 | Tap **WebP** | **WebP** is selected (a white fill) |
 | 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | One file is saved, and it is a PNG: 01_chrome_flat_black-straight.png |
-| 4 | Read the message over the photo | An amber warning reads "Exported 1074 × 1074 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." |
+| 4 | Read the message over the photo | An amber warning reads "Photo downloaded: 1074 × 1074 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." |
 | 5 | Time the message | It stays 6 s |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-27.2 On an iPhone, a WebP export is saved as PNG and the message says so   [phone]
-Flag: to confirm. Written to what the app does today: the sentence says what happened after the fact and gives no next step.
+The first sentence is the finished message (MSG-22) in ruling R79's words. Until R79 is built (BUG-290) it reads "Exported 1074 × 1074 px in N s.", which this case also accepts: its subject is the sentence added, and MSG-22.1 holds the words.
 
 Before you start:
 - Device and browser: an iPhone, Safari
@@ -1000,7 +1037,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **WebP** | **WebP** is selected (a white fill) |
 | 2 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 3 | Tap **No** | An amber message over the photo reads "Exported 1074 × 1074 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG.", N the seconds the export took; Safari asks whether to download 01_chrome_flat_black-straight.png: the name ends .png, not .webp |
+| 3 | Tap **No** | An amber message over the photo reads "Photo downloaded: 1074 × 1074 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG.", N the seconds the export took; Safari asks whether to download 01_chrome_flat_black-straight.png: the name ends .png, not .webp |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
@@ -1016,11 +1053,11 @@ When the browser refuses to share because the tap was too long ago (a slow expor
 - Changed: none
 - Anchors: "Tap Share now to open the share sheet.", `#btnShare`, `#btnCornerShare`
 - Source: `js/app/export.js` (`toastSaved`, `sharePending`); `js/app/corner-shots.js` (`shareCornerShots`)
-- Flag: to confirm. The message says "Tap" on a desktop too.
+- Ruling: R78. A message may say "Tap" on a wide screen. The app already does this.
 - Cases: 2
 
 ### MSG-28.1 A refused share says to tap Share now   [auto: phone]
-Flag: to confirm. Written to what the app does today: the message says "Tap" on a desktop too.
+The words before "Tap Share now…" are the finished message's (MSG-22), which ruling R79 rewords; R79 doesn't say how the message reads while the share waits, so this case reads only the size, the time and the sentence added.
 Script only
 Stand-in: Safari refuses a share that starts too long after the tap, but an export of a sample photo is too quick for that, and no case uses a desktop browser's own share sheet; the script gives the page a stand-in share sheet that refuses the first share as Safari does and finishes every later one at once. On a real iPhone this is MSG-28.2.
 
@@ -1034,14 +1071,14 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | A white message reads "Exported 1074 × 1074 px in N s. Tap Share now to open the share sheet."; the red button reads **Share now** |
+| 2 | Tap **No** | A white message gives the saved size, 1074 × 1074 px, and the seconds it took, then reads "Tap Share now to open the share sheet."; the red button reads **Share now** |
 | 3 | Tap **Share now** | The message goes at once, well before its 6 s are up |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-28.2 On an iPhone, a slow export says to tap Share now   [phone]
-Flag: to confirm. Written to what the app does today: the message says "Tap" on a desktop too.
+The words before "Tap Share now…" are the finished message's (MSG-22), which ruling R79 rewords; R79 doesn't say how the message reads while the share waits, so this case reads only the size, the time and the sentence added.
 Waiting on find-out Q-09: which photo is slow enough to save at **Original** that Safari refuses the share. The photo below is filled in from Rich's answer; until then the case can't be run.
 
 Before you start:
@@ -1055,7 +1092,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo); no share sheet rises |
-| 2 | Wait for the line to finish | A white message over the photo reads "Exported W × H px in N s. Tap Share now to open the share sheet." (W × H the saved size, N the seconds it took); the red button reads **Share now** |
+| 2 | Wait for the line to finish | A white message over the photo gives the saved size (W × H px) and the seconds it took, then reads "Tap Share now to open the share sheet."; the red button reads **Share now** |
 | 3 | Within 3 s of the message showing, tap **Share now** | The message goes at once; the share sheet rises |
 | 4 | Tap the **×** at the share sheet's top right | The share sheet closes; no message is over the photo |
 
@@ -1073,9 +1110,11 @@ An information message after **Copy** puts a single photo, or a pair's Together 
 - Changed: none
 - Anchors: "Copied to clipboard (PNG).", `#btnCopy`
 - Source: `js/app/export.js` (`runExport`); `js/app/pair.js` (`runPairExport`)
-- Cases: 1
+- Ruling: R79. Copy reads "Photo copied (PNG).", and for a pair's joined image "Front and back copied (PNG)." (approved wording, tests/catalog/wording.md). The app differs today.
+- Cases: 2
 
 ### MSG-29.1 Copy says what it put on the clipboard   [auto: phone]
+Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -1086,10 +1125,25 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Copy** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | A white message reads "Copied to clipboard (PNG)."; the clipboard holds a 1074 × 1074 px picture |
+| 2 | Tap **No** | A white message reads "Photo copied (PNG)."; the clipboard holds a 1074 × 1074 px picture |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-29.2 A pair's Copy says it copied the front and back   [auto: phone]
+Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, with **Together** selected; the page allowed to use the clipboard
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Original** | **Original** is selected (a white fill): at the photos' own resolution no question box asks first |
+| 2 | Tap **Copy** | A white message reads "Front and back copied (PNG)." |
 
 ## MSG-30 "Copy failed: …"
 
@@ -1338,11 +1392,11 @@ An error message, for 6 seconds, when the edits file was saved for a photo of an
 - Changed: none
 - Anchors: "These edits are for a ", " photo; this one is "
 - Source: `js/app/export.js` (`loadEdits`)
-- Flag: to confirm. This message writes sizes as "W×H" with no spaces; every other message and readout writes "W × H".
+- Ruling: R58. Every message writes sizes "W × H" and "N px", with spaces. The app differs today.
 - Cases: 1
 
 ### MSG-37.1 Edits for a photo of another size   [auto: phone]
-Flag: to confirm. Written to what the app does today: the sizes are written "W×H" with no spaces.
+Written to ruling R58; it fails until that is built (BUG-282).
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -1358,7 +1412,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file 01_chrome_flat_black-turned-edits.json | A red message reads "These edits are for a 1536×2048 photo; this one is 1498×2098." |
+| 1 | Load the edits file 01_chrome_flat_black-turned-edits.json | A red message reads "These edits are for a 1536 × 2048 photo; this one is 1498 × 2098." |
 | 2 | Look at the photo | It is still upright: nothing was applied |
 
 Pass: every row's result is seen.
@@ -1375,13 +1429,11 @@ A warning, for 5 seconds, when the edits file's photo name differs but the size 
 - Changed: none
 - Anchors: "Edits were saved for “", "Applied anyway — sizes match.", "another photo"
 - Source: `js/app/export.js` (`loadEdits`); `js/app/core.js` (`shortText`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Overlay left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's one-problem case is written to today's wording.
-- Flag: to confirm. This message uses an em dash where most messages use two sentences.
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Logo left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
 - Cases: 2
 
 ### MSG-38.1 Edits saved for a file of another name   [auto: phone]
-Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
-Flag: to confirm. Written to what the app does today: the message uses an em dash where most use two sentences.
+Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -1397,7 +1449,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file 01_chrome_flat_black-another-name-edits.json | One amber message shows, and no other comes after it; it reads "Edits were saved for “another-card.JPEG”. Applied anyway — sizes match." |
+| 1 | Load the edits file 01_chrome_flat_black-another-name-edits.json | One amber message shows, and no other comes after it; its lines read "Edits loaded." and "Saved for “another-card.JPEG”; sizes match.", in that order |
 | 2 | Look at the photo | It is turned a quarter clockwise: the edits were applied |
 
 Pass: every row's result is seen.
@@ -1405,7 +1457,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-38.2 Three problems in one edits file make one warning   [auto: phone]
 Written to ruling R12, in the wording Rich approved; it fails until that is built (BUG-190).
-Flag: to confirm. The entry's flag, an em dash in today's message, doesn't reach this case: the approved lines have none.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -1422,7 +1473,7 @@ The named actions:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Load the edits file 01_chrome_flat_black-three-problems-edits.json | One amber message shows, and no other comes after it |
-| 2 | Read the message | Its lines read "Edits loaded.", "Saved for “another-card.JPEG”; sizes match.", "Reset, not valid: crop." and "Overlay left out; it couldn’t be read.", in that order |
+| 2 | Read the message | Its lines read "Edits loaded.", "Saved for “another-card.JPEG”; sizes match.", "Reset, not valid: crop." and "Logo left out; it couldn’t be read.", in that order |
 | 3 | Look at the photo | It is turned a quarter clockwise, with no logo: the rest was applied |
 
 Pass: every row's result is seen.
@@ -1439,11 +1490,11 @@ A warning, for 6 seconds, when some fields of the edits file weren't valid and f
 - Changed: none
 - Anchors: "Some settings in these edits weren’t valid and were reset: "
 - Source: `js/app/export.js` (`loadEdits`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Overlay left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's one-problem case is written to today's wording.
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Logo left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
 - Cases: 1
 
 ### MSG-39.1 Settings in the edits file that were reset   [auto: phone]
-Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -1459,7 +1510,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file 01_chrome_flat_black-crop-as-words-edits.json | An amber message reads "Some settings in these edits weren’t valid and were reset: crop." |
+| 1 | Load the edits file 01_chrome_flat_black-crop-as-words-edits.json | One amber message shows; its lines read "Edits loaded." and "Reset, not valid: crop.", in that order |
 | 2 | Look at the photo | It is turned a quarter clockwise: the rest of the file was applied |
 
 Pass: every row's result is seen.
@@ -1476,11 +1527,11 @@ A warning, for 5 seconds, when the logo inside the edits file is missing or unus
 - Changed: none
 - Anchors: "The overlay in these edits couldn’t be read, so it was left out."
 - Source: `js/app/export.js` (`loadEdits`); `js/app/overlay.js` (`overlayFromEdits`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Overlay left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's one-problem case is written to today's wording.
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Logo left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today. R59. The logo's line says "Logo" (approved wording). The app differs today.
 - Cases: 1
 
 ### MSG-40.1 A logo in the edits file that can't be read   [auto: phone]
-Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -1496,7 +1547,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file 01_chrome_flat_black-gif-logo-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 1 | Load the edits file 01_chrome_flat_black-gif-logo-edits.json | One amber message shows; its lines read "Edits loaded." and "Logo left out; it couldn’t be read.", in that order |
 | 2 | Look at the photo | It is turned a quarter clockwise, with no logo: the rest was applied |
 
 Pass: every row's result is seen.
@@ -1542,11 +1593,11 @@ A warning, for 5 seconds, when **Copy CONFIG** can't reach the clipboard and pri
 - Changed: none
 - Anchors: "Clipboard blocked — CONFIG printed to the console.", `#debugCopy`
 - Source: `js/app/debug-panel.js` (`buildDebugPanel`)
-- Flag: to confirm. This message uses an em dash where most messages use two sentences.
+- Ruling: R60. The blocked-clipboard message is two sentences, in the same words: "Clipboard blocked. CONFIG printed to the console." The app differs today.
 - Cases: 1
 
 ### MSG-42.1 Copy CONFIG with the clipboard blocked   [auto: desktop]
-Flag: to confirm. Written to what the app does today: the message uses an em dash where most use two sentences.
+Written to ruling R60; it fails until that is built (BUG-284).
 Script only
 Stand-in: a person can't make the browser refuse the clipboard to the page on purpose, so the script makes every clipboard write fail, as a browser that blocks the page does.
 
@@ -1559,7 +1610,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **Copy CONFIG** in the tuning panel | An amber warning reads "Clipboard blocked — CONFIG printed to the console." |
+| 1 | Click **Copy CONFIG** in the tuning panel | An amber warning reads "Clipboard blocked. CONFIG printed to the console." |
 | 2 | Read the console | It holds the settings, starting "const CONFIG = " |
 
 Pass: every row's result is seen.
@@ -1576,11 +1627,11 @@ A warning, for 5 seconds, when a logo is added but the browser won't store it fo
 - Changed: none
 - Anchors: "This overlay works on this photo, but it can’t be saved in this browser."
 - Source: `js/app/overlay.js` (`saveToBrowser`)
-- Flag: to confirm. The message says "overlay" where the buttons say "logo", and it gives no next step.
+- Ruling: R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today. R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
 - Cases: 1
 
 ### MSG-43.1 A logo the browser won't keep   [auto: phone]
-Flag: to confirm. Written to what the app does today: the message says "overlay" where the buttons say "logo", and gives no next step.
+Written to ruling R59; it fails until that is built (BUG-283).
 Script only
 Stand-in: a person can't make the browser refuse to store one thing on purpose, so the script makes the device refuse to store the logo, as a full disk would.
 
@@ -1593,7 +1644,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose icon.svg | The logo goes on the middle of the photo; an amber warning reads "This overlay works on this photo, but it can’t be saved in this browser." |
+| 1 | Tap **Add logo** and choose icon.svg | The logo goes on the middle of the photo; an amber warning reads "This logo works on this photo, but it can’t be saved in this browser." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1609,11 +1660,10 @@ An information message while the other side of a pair is decoded after a tap on 
 - Changed: none
 - Anchors: "Opening the ", `#sideSwitch`
 - Source: `js/app/pair.js` (`switchSide`)
-- Flag: to confirm. Three different words say the app is busy: "Loading…", "Opening the front…" here and "Detecting…" on Perspective.
+- Ruling: R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this.
 - Cases: 1
 
 ### MSG-44.1 "Opening the front…" while the front opens   [auto: phone]
-Flag: to confirm. Written to what the app does today: three different words say the app is busy.
 Script only
 Stand-in: a front opens in tens of milliseconds, too fast to read the message, so the script holds its opening until row 1 is seen.
 
@@ -1727,11 +1777,10 @@ A warning, for 8 seconds, when the open side's photo can't be decoded again afte
 - Changed: none
 - Anchors: "The photo isn’t loaded after the last export. ", "Tap Front or Back to switch sides, then switch back."
 - Source: `js/app/pair.js` (`runPairExport`, `reloadOpenPhoto`); `js/app/export.js` (`renderWarped`)
-- Flag: to confirm. The message says "Tap" on a desktop too.
+- Ruling: R78. A message may say "Tap" on a wide screen. The app already does this. R49. A message whose fix the app knows keeps its advice. The app already does this.
 - Cases: 1
 
 ### MSG-47.1 The photo isn't loaded after a pair's export   [auto: phone]
-Flag: to confirm. Written to what the app does today: the message says "Tap" on a desktop too.
 Script only
 Stand-in: the back can be read again after an export on any device a person has to hand, so the script makes every read of the back fail after the export, as under memory pressure on an iPhone.
 
@@ -1794,8 +1843,7 @@ An error message, for 5 seconds, when **Share corners** or **Download corners** 
 - Changed: none
 - Anchors: "The card is too small for corner shots.", `#btnCornerShare`, `#btnCornerDownload`
 - Source: `js/app/corner-shots.js` (`saveCornerShots`, `renderAndSave`); `js/engine.js` (`cornerShots`)
-- Ruling: R20. When corner shots can't be made, both save buttons are dimmed and the size line ends "· the card is too small" when that is the reason, "· fix the corners in Perspective first" for any other (wording approved by Rich, tests/catalog/wording.md). The app differs today.
-- Flag: to confirm. This error stays 5 seconds, while every other error stays 6.
+- Ruling: R20. When corner shots can't be made, both save buttons are dimmed and the size line ends "· the card is too small" when that is the reason, "· fix the corners in Perspective first" for any other (wording approved by Rich, tests/catalog/wording.md). The app differs today. R80. This error stays 6 seconds, as other errors do. The app differs today (the time is set in `saveCornerShots` and `renderAndSave`). No case times it: once R20 is built both save buttons are dimmed whenever the engine refuses, so no control can raise the message.
 - Cases: 1
 
 ### MSG-49.1 Corner shots that can't be made can't be saved   [auto: phone]
@@ -1952,16 +2000,16 @@ For the engine's remaining faults the row above Perspective's controls shows, wi
 - Changed: none
 - Anchors: "Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty.", "Transform is not invertible."
 - Source: `js/app/perspective.js` (`perspectiveStatus`); `js/engine.js` (`Quad.validate`, `computeGeometry`)
-- Flag: to confirm. These state a fault with no action to take, and "Could not" is written out where other messages say "Couldn’t".
+- Ruling: R81. The screen shows "Fix the corners in Perspective first." (on Perspective itself, "Fix the corners first.", R82) in place of the engine's words, which go to the console. The app differs today.
 - Cases: 1
 
 ### MSG-54.1 The engine's other corner faults   [auto: phone]
-Flag: to confirm. Written to what the app does today: these state a fault with no action to take, and "Could not" is written out.
+Written to rulings R81 and R82; it fails until they are built (BUG-291, BUG-292). The case is on Perspective, so the line reads R82's "Fix the corners first."
 Script only
 Stand-in: no control brings these faults about, so the script makes the engine report each in turn.
 
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a phone-width window (390 × 844), touch, with the browser's developer tools open on the Console
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
@@ -1969,10 +2017,10 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Have the engine report "Corners are missing or invalid." | The line above the controls reads "Corners are missing or invalid." with a red error icon |
-| 2 | Have the engine report "Could not solve the perspective for these corners." | The line above the controls reads "Could not solve the perspective for these corners." with a red error icon |
-| 3 | Have the engine report "Crop is empty." | The line above the controls reads "Crop is empty." with a red error icon |
-| 4 | Have the engine report "Transform is not invertible." | The line above the controls reads "Transform is not invertible." with a red error icon |
+| 1 | Have the engine report "Corners are missing or invalid." | The line above the controls reads "Fix the corners first." with a red error icon; the Console holds "Corners are missing or invalid." |
+| 2 | Have the engine report "Could not solve the perspective for these corners." | The line above the controls reads "Fix the corners first." with a red error icon; the Console holds "Could not solve the perspective for these corners." |
+| 3 | Have the engine report "Crop is empty." | The line above the controls reads "Fix the corners first." with a red error icon; the Console holds "Crop is empty." |
+| 4 | Have the engine report "Transform is not invertible." | The line above the controls reads "Fix the corners first." with a red error icon; the Console holds "Transform is not invertible." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1988,11 +2036,10 @@ While a detection runs, the row above Perspective's controls reads "Detecting…
 - Changed: none
 - Anchors: "Detecting…", `#perspectiveStatus`
 - Source: `js/app/state.js` (`runDetect`); `js/app/perspective.js` (`perspectiveStatus`)
-- Flag: to confirm. The line takes the row though there is nothing to act on, and three different words say the app is busy ("Loading…", "Opening the front…", "Detecting…").
+- Ruling: R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this.
 - Cases: 1
 
 ### MSG-55.1 "Detecting…" while a search runs   [auto: phone]
-Flag: to confirm. Written to what the app does today: the line takes the row though there is nothing to act on.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -2048,12 +2095,10 @@ After a detection run finds no card, the row above Perspective's controls reads 
 - Changed: none
 - Anchors: "Nothing detected. Drag the corners into place.", `#perspectiveStatus`
 - Source: `js/app/perspective.js` (`perspectiveStatus`)
-- Ruling: R7. The warning clears after the first corner move, by drag or nudge. The app differs today.
-- Flag: to confirm. After a search the user started, the message "No card-shaped edges found…" shows at the same time, so one condition shows in two wordings.
+- Ruling: R7. The warning clears after the first corner move, by drag or nudge. The app differs today. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today.
 - Cases: 1
 
 ### MSG-57.1 Nothing detected   [auto: phone]
-Flag: to confirm. Written to what the app does today: after a search the user started, "No card-shaped edges found…" shows at the same time.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -2080,13 +2125,14 @@ When the perspective-corrected frame would be larger than the 12000 px cap, the 
 - Changed: none
 - Anchors: "Corrected frame clamped to ", "px on the long side.", `CONFIG.maxOutputPx`
 - Source: `js/app/perspective.js` (`perspectiveStatus`)
-- Flag: to confirm. The line takes the row though there is nothing to act on, and writes "12000px" with no space where everything else writes "2000 px".
+- Ruling: R76. The line goes; the fact goes to the console. The app differs today.
 - Cases: 1
 
-### MSG-58.1 A corrected frame over the cap   [auto: phone]
-Flag: to confirm. Written to what the app does today: "1000px" has no space, and the line takes the row though there is nothing to act on.
+### MSG-58.1 A corrected frame over the cap is noted in the console only   [auto: phone]
+Written to ruling R76; it fails until that is built (BUG-288). The console's words are not set by the ruling: the case looks for a line that gives the cap.
+
 Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
+- Device and browser: a phone-width window (390 × 844), touch, with the browser's developer tools open on the Console
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
@@ -2094,7 +2140,8 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the line above the controls | the line above the controls reads "Corrected frame clamped to 1000px on the long side." with a grey information icon |
+| 1 | Read the line above the controls | It holds no message about the corrected frame: it doesn't read "Corrected frame clamped to 1000px on the long side." |
+| 2 | Read the Console | A line says the corrected frame was clamped (or capped) to 1000 px on its long side |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2138,11 +2185,11 @@ On Overlay, when the logo file is larger than the limit, the row above the contr
 - Changed: none
 - Anchors: " MB. The overlay limit is ", `#overlayStatus`, `CONFIG.overlay.maxBytes`
 - Source: `js/app/overlay.js` (`addOverlayFile`, `setMessage`, `syncOverlay`)
-- Flag: to confirm. The message says "overlay" where the buttons say "logo".
+- Ruling: R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today.
 - Cases: 1
 
 ### MSG-60.1 A logo file over the size limit   [auto: phone]
-Flag: to confirm. Written to what the app does today: the message says "overlay" where the buttons say "logo".
+Written to ruling R59; it fails until that is built (BUG-283).
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -2154,7 +2201,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Add logo** and choose big-logo.png | The line above the controls reads "That file is 6.0 MB. The overlay limit is 5 MB." with a red error icon |
+| 1 | Tap **Add logo** and choose big-logo.png | The line above the controls reads "That file is 6.0 MB. The logo limit is 5 MB." with a red error icon |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2422,12 +2469,10 @@ On Overlay with no logo placed and no file error, the row above the controls rea
 - Changed: none
 - Anchors: "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.", `#overlayHintLine`, `CONFIG.overlay.maxBytes`
 - Source: `js/app/overlay.js` (`buildOverlayControls`, `syncOverlay`)
-- Ruling: R11. With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are dimmed and this row reads "Fix the corners in Perspective first." The app differs today.
-- Flag: to confirm. The hint always says 5 MB, though a link can lower the limit, which the size error (MSG-60) does follow.
+- Ruling: R11. With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are dimmed and this row reads "Fix the corners in Perspective first." The app differs today. R83. The hint gives the logo size limit in force, which a link can lower. The app differs today.
 - Cases: 1
 
 ### MSG-70.1 Overlay's hint with no logo placed   [auto: phone]
-Flag: to confirm. Written to what the app does today: the hint always says 5 MB, though a link can lower the limit.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -2482,8 +2527,7 @@ Under Export's size line, with an amber warning mark, when the output (or a pair
 - Changed: none
 - Anchors: "Clamped to fit the ", " MP canvas limit.", `#exportMessage`, `CONFIG.maxOutputArea`
 - Source: `js/app/export-controls.js` (`exportNotes`, `syncExportReadouts`); `js/app/pair.js` (`pairReadout`, `togetherLayout`)
-- Ruling: R14 and R15. The note reads "Scaled down to fit the 16.7 MP limit." (16.7 MP, rounded down). For a pair saved Separately it shows when either side is scaled down, and names the side when it is not the one on screen: "The front is scaled down to fit the 16.7 MP limit." (or "The back…"), or "Both sides are scaled down to fit the 16.7 MP limit." (wording approved by Rich, tests/catalog/wording.md). The app differs today.
-- Flag: to confirm. The note informs but gives no next step.
+- Ruling: R14 and R15. The note reads "Scaled down to fit the 16.7 MP limit." (16.7 MP, rounded down). For a pair saved Separately it shows when either side is scaled down, and names the side when it is not the one on screen: "The front is scaled down to fit the 16.7 MP limit." (or "The back…"), or "Both sides are scaled down to fit the 16.7 MP limit." (wording approved by Rich, tests/catalog/wording.md). The app differs today. R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
 - Cases: 2
 
 ### MSG-72.1 The canvas-limit note says 16.7 MP   [auto: phone]
@@ -2517,7 +2561,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Original** | **Original** is selected (a white fill) |
 | 2 | Tap **Separately** | **Separately** is selected (a white fill) |
-| 3 | Read the note under the size line | With the back on screen, one amber note reads "The front is scaled down to fit the N MP limit.", the approved words, with N the limit the app gives (the approved words say 16.7; this case's link lowers the limit to 1 MP, and which number the note then gives is for Rich) |
+| 3 | Read the note under the size line | With the back on screen, one amber note reads "The front is scaled down to fit the 1 MP limit.", the approved words with the limit in force, which this case's link lowers to 1 MP (ruling R47) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2653,7 +2697,8 @@ For a pair with **Separately** chosen, when either side's file would be under th
 - Changed: none
 - Anchors: "The front is ", " px and the back ", `#pairPrompt`
 - Source: `js/app/pair.js` (`pairUpscaleOffer`, `exportPair`); `js/app/export.js` (`askUpscale`)
-- Cases: 1
+- Ruling: R50. The question names only the side **Yes** would upscale ("The front is W × H px at the photo’s resolution.", approved wording, tests/catalog/wording.md); both sides only when both are under the size. The app differs today: it names both whenever either is under.
+- Cases: 2
 
 ### MSG-77.1 The Upscale question for a pair saved Separately   [auto: phone]
 Before you start:
@@ -2670,6 +2715,24 @@ Before you start:
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-77.2 With one side over the size, the question names only the other   [auto: phone]
+Written to ruling R50, in the wording Rich approved; it fails until that is built (BUG-280).
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, with **Together** and **2000** selected
+
+At **1080** the front's card, 748 × 1047 px, is under the size; the back's, 785 × 1100 px, is over it and is scaled down, so **Yes** would upscale the front only.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Separately** | **Separately** is selected (a white fill) |
+| 2 | Tap **1080** | **1080** is selected (a white fill) |
+| 3 | Tap **Download** | The question box asks "Upscale to 1080 px?" and reads "The front is 748 × 1047 px at the photo’s resolution.": the back isn't named |
 
 ## MSG-78 The Upscale question for corner shots
 
@@ -2742,11 +2805,10 @@ Open, drop or paste while a pair is open asks, in the question box, "New photo" 
 - Changed: none
 - Anchors: "End the pair, or replace the side you’re on?", "Replace ", `#pairPrompt`, `#btnPromptSecond`
 - Source: `js/app/pair.js` (`receivePhoto`, `showPrompt`)
-- Flag: to confirm. The question box's title and its first button both read "New photo".
+- Ruling: R65. The New photo question's title and its first button both read **New photo**. The app already does this.
 - Cases: 1
 
 ### MSG-80.1 The New photo question box   [auto: phone]
-Flag: to confirm. Written to what the app does today: the question box's title and its first button both read "New photo".
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -2773,11 +2835,10 @@ When the corners are invalid, "Fix the corners in Perspective first." is drawn i
 - Changed: none
 - Anchors: "Fix the corners in Perspective first."
 - Source: `js/app/view.js` (`draw`, `drawMessage`)
-- Flag: to confirm. It also shows on Perspective itself while **Preview** is on.
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app differs today.
 - Cases: 1
 
 ### MSG-81.1 "Fix the corners in Perspective first." on the photo, for a person to judge   [eye]
-Flag: to confirm. Written to what the app does today: the text also shows on Perspective while **Preview** is on.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -2943,7 +3004,7 @@ Levels' sheet, titled "Levels tips", is its tips: three paragraphs on picking wh
 - Changed: none
 - Anchors: `#levelsSheet`, "Levels tips", "Hold the photo to compare with no levels. Clear, then Apply, removes levels."
 - Source: `js/app/levels.js` (`buildLevelsSheet`)
-- Flag: to confirm. A wide screen shows two tips headings on Levels, "Levels tips" and "Tips and keys".
+- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app differs today.
 - Cases: 1
 
 ### MSG-86.1 Levels' tips   [auto: phone]
@@ -2992,20 +3053,20 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-88 Export's tips
 
-**Tips** in "Export options" opens four paragraphs: "Share’s Save Image puts the photo in Photos.", what **Original** does, "Next card shows once these edits are exported." and what an edits file is.
+**Tips** in "Export options" opens three paragraphs: "Share’s Save Image puts the photo in Photos.", what **Original** does, and "Next card shows once these edits are exported." Today a fourth says what an edits file is; ruling R61 takes it away, since the hint under **Save edits** and **Load edits** says it (MSG-89).
 
 - Risk: low
 - Check: script
-- Layout: both. A wide screen lists the tips always open under "Tips" and leaves out the first and the fourth.
+- Layout: both. A wide screen lists the tips always open under "Tips" and leaves out the first (and the fourth, while there is one).
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#exportTips`, "Share’s Save Image puts the photo in Photos.", "Next card shows once these edits are exported."
 - Source: `js/app/export-controls.js` (`buildExportControls`); `js/app/parts/sheet.js` (`buildTipsRow`, `buildTipHint`)
-- Flag: to confirm. The tip says **Next card** shows once the edits are exported, but it is also held back while **Share now** waits; and the fourth tip nearly repeats the Edits hint (MSG-89).
+- Ruling: R62. The Next card tip need not mention the wait while **Share now** is pending. The app already does this. R61. Export's last tip, which nearly repeats the hint under **Save edits** and **Load edits**, goes; the hint stays. The app differs today.
 - Cases: 1
 
 ### MSG-88.1 Export's tips   [auto: phone]
-Flag: to confirm. Written to what the app does today: Next card is also held back while **Share now** waits, and the fourth tip nearly repeats the Edits hint.
+Written to ruling R61; it fails until that is built (BUG-285).
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -3017,7 +3078,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | EXPORT OPTIONS rise from the bottom |
-| 2 | Tap **Tips** | Four paragraphs open in place, in this order: "Share’s Save Image puts the photo in Photos.", "Original keeps the crop at the photo’s own resolution and never upscales.", "Next card shows once these edits are exported." and "An edits file is small. Re-open the same photo, load it, and the export is identical." |
+| 2 | Tap **Tips** | Three paragraphs open in place, in this order: "Share’s Save Image puts the photo in Photos.", "Original keeps the crop at the photo’s own resolution and never upscales." and "Next card shows once these edits are exported."; none says "An edits file is small." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -3033,7 +3094,7 @@ The Corner shots sheet says "Close-ups of the card’s four corners, at the phot
 - Changed: none
 - Anchors: "Close-ups of the card’s four corners", "A small JSON file. Re-open the same photo, load it, and the export is identical.", `#editsPairHint`
 - Source: `js/app/corner-shots.js` (`buildCornerShotsControls`); `js/app/export-controls.js` (`buildEditsGroup`); `js/app/pair.js` (`syncPair`)
-- Flag: to confirm. The Edits hint nearly repeats Export's fourth tip.
+- Ruling: R61. The hint under **Save edits** and **Load edits** stays; Export's last tip, which nearly repeats it, goes. The app differs today.
 - Cases: 3
 
 ### MSG-89.1 The Corner shots sheet's hint   [auto: phone]
@@ -3067,7 +3128,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-89.3 With a pair open, the edits hint says which side it saves   [auto: phone]
-Flag: to confirm. Written to what the app does today: the Edits hint nearly repeats Export's fourth tip.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -3094,11 +3154,10 @@ Under the heading "Tips and keys", each step except Export adds one paragraph of
 - Changed: none
 - Anchors: `.sheet-keys`, "Tips and keys", "F fits; 1 to 6 change step.", "Shift keeps the aspect in Free."
 - Source: `js/app/parts/sheet.js` (`buildTipsRow`); `js/app/levels.js` (`buildLevelsSheet`); `js/app/perspective.js` (`buildPerspectiveSheet`); `js/app/overlay.js` (`buildOverlayControls`)
-- Flag: to confirm. Perspective's help says "Tab selects the next handle" without saying the photo must have the keyboard focus first, and "arrows" means the on-screen pad in one tip and the keys in the next line.
+- Ruling: R54. The help line needn't say the photo needs the focus first. R68. Perspective's help may say "arrows" for the on-screen pad and for the keys. The app already does this.
 - Cases: 1
 
 ### MSG-90.1 Keyboard help on a wide screen   [auto: desktop]
-Flag: to confirm. Written to what the app does today: Perspective's help says "Tab selects the next handle" without saying the photo needs the focus, and "arrows" means two things.
 
 Before you start:
 - Device and browser: a wide window (1280 × 800), a mouse and keyboard
@@ -3127,7 +3186,7 @@ Every control without visible text has a name a screen reader announces: **Open 
 - Changed: none
 - Anchors: `#btnOpen`, `#btnFit`, "Fit to screen (F)", "Redo (Shift+Ctrl/Cmd+Z)"
 - Source: `js/app/parts/top-bar.js` (`buildTopBar`, `buildIconButton`); `js/app/parts/adjustment-line.js` (`buildControlArea`); `js/app/parts/sheet.js` (`buildSheet`); `js/app/perspective.js` (`buildNudgeRow`); `js/app/corner-shots.js` (`buildThumbnails`); `js/app/debug-panel.js` (`buildDebugPanel`)
-- Flag: to confirm. Redo's tooltip names only Shift+Ctrl/Cmd+Z, though Ctrl/Cmd+Y also works.
+- Ruling: R66. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z. The app already does this.
 - Cases: 4
 
 ### MSG-91.1 Controls without words have names for screen readers   [auto: phone]
@@ -3149,7 +3208,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-91.2 Tooltips on a wide screen   [auto: desktop]
-Flag: to confirm. Written to what the app does today: Redo's tooltip names only Shift+Ctrl/Cmd+Z, though Ctrl/Cmd+Y also works.
 Before you start:
 - Device and browser: a wide window (1280 × 800), a mouse and keyboard
 - Build: the build under test

@@ -18,6 +18,7 @@ const {
   hasWhiteFill,
   stepNow,
   nextFrames: waitForThumbnails,
+  finishedMessage,
 } = require('./support/app.js');
 const {
   installShareStandIn,
@@ -599,11 +600,12 @@ test('CNR-05.2 Share corners hands the share sheet the corner sheet [phone]', as
     expect(await isRed(downloadCorners(page))).toBe(false);
   });
   await shareCornersOnce(page, hand, 1);
-  await check(`the share sheet is handed one JPEG file, ${SHEET_NAME}; a message begins "Saved `
-    + 'the corner sheet in"', async () => {
+  await check(`the share sheet is handed one JPEG file, ${SHEET_NAME}; a message begins "Corner `
+    + 'sheet shared: "', async () => {
     const [share] = await sharesSoFar(page);
     expect(share.files.map(file => [file.name, file.type])).toEqual([[SHEET_NAME, 'image/jpeg']]);
-    await expect.poll(() => toastMessage(page)).toMatch(/^Saved the corner sheet in /);
+    // Today's words or ruling R79's: MSG-25.1 holds the words.
+    await expect.poll(() => toastMessage(page)).toMatch(finishedMessage('cornerSheet'));
   });
 });
 
@@ -655,11 +657,12 @@ test('CNR-06.1 Download corners saves the corner sheet as a plain download [phon
     });
     const saved = await saveCorners(page, hand);
     await check(`one file is saved, a JPEG of ${SHEET_PX} × ${SHEET_PX} px; a message begins `
-      + '"Saved the corner sheet in"', async () => {
+      + '"Corner sheet downloaded: "', async () => {
       expect(saved).toHaveLength(1);
       expect([...fs.readFileSync(saved[0].file).subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
       expect(await imageSize(page, saved[0].file)).toEqual([SHEET_PX, SHEET_PX]);
-      await expect.poll(() => toastMessage(page)).toMatch(/^Saved the corner sheet in /);
+      // Today's words or ruling R79's: MSG-25.1 holds the words.
+      await expect.poll(() => toastMessage(page)).toMatch(finishedMessage('cornerSheet'));
     });
   });
 
@@ -1091,12 +1094,13 @@ test('CNR-11.1 One tap of Download corners saves four files, a quarter of a seco
   const starts = await downloadStarts(page);
   const gaps = starts.slice(1).map((start, index) => start - starts[index]);
   await check('four files arrive, in the order top-left, top-right, bottom-right, bottom-left, '
-    + `each at least ${DOWNLOAD_GAP_MIN_MS} ms after the one before; a message begins "Saved 4 `
-    + 'corner shots in"', async () => {
+    + `each at least ${DOWNLOAD_GAP_MIN_MS} ms after the one before; a message begins "4 corner `
+    + 'photos downloaded: "', async () => {
     expect(saved.map(file => file.name)).toEqual(SHOT_LABELS.map(label => shotName(label)));
     expect(starts).toHaveLength(4);
     expect(Math.min(...gaps)).toBeGreaterThanOrEqual(DOWNLOAD_GAP_MIN_MS);
-    await expect.poll(() => toastMessage(page)).toMatch(/^Saved 4 corner shots in /);
+    // Today's words or ruling R79's: MSG-26.1 holds the words.
+    await expect.poll(() => toastMessage(page)).toMatch(finishedMessage('cornerPhotos'));
   });
 });
 

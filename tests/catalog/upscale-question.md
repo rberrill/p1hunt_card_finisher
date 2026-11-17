@@ -57,6 +57,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 EXP-36.2 (in `export.md`) shows that an upscale is bicubic whatever Interpolation says.
 
 ### UPS-02.1 Yes saves the photo at the chosen size   [auto: phone, webkit]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: any; a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -67,7 +68,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **Yes** | The question box closes and a file of 2000 × 2000 px is saved; a message begins "Exported 2000 × 2000 px in" |
+| 2 | Tap **Yes** | The question box closes and a file of 2000 × 2000 px is saved; a message begins "Photo downloaded: 2000 × 2000 px in" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.
@@ -133,6 +134,7 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the s
 - Cases: 3
 
 ### UPS-03.1 No saves the photo at its own size   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: any; a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -143,7 +145,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | The question box closes and a file of 1074 × 1074 px is saved; a message begins "Exported 1074 × 1074 px in" |
+| 2 | Tap **No** | The question box closes and a file of 1074 × 1074 px is saved; a message begins "Photo downloaded: 1074 × 1074 px in" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.
@@ -320,6 +322,7 @@ For a pair saved **Separately**, it is asked when either side's file is under th
 - Changed: none
 - Anchors: `#pairOutput`, "The front is ", " px and the back "
 - Source: `js/app/pair.js` (`pairUpscaleOffer`, `encodeSeparately`, `renderSideInto`)
+- Ruling: R50. The question names only the side **Yes** would upscale ("The front is W × H px at the photo’s resolution.", approved wording, tests/catalog/wording.md); both sides only when both are under the size. The app differs today: it names both whenever either is under.
 - Cases: 2
 
 ### UPS-06.1 Separately names both sides, and Yes gives each the size   [auto: phone]
@@ -339,6 +342,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved files.
 
 ### UPS-06.2 A side already at the size is saved the same after Yes as after No   [auto: phone]
+The question's words are ruling R50's. Until R50 is built (BUG-280) the app names the back as well ("The front is 748 × 1047 px and the back 771 × 1080 px at the photos’ resolution."), which this case also accepts: its subject is the saved files, and MSG-77.2 holds the words.
 Before you start:
 - Device and browser: a phone-width window, with downloads saved to a folder you can open and a way to compare two files byte for byte
 - Build: the build under test
@@ -349,7 +353,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **1080** | **1080** is selected (white) |
-| 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 1080 px?" and reads "The front is 748 × 1047 px and the back 771 × 1080 px at the photos’ resolution.": the front, 1047 px tall, is under 1080 px; the back is not |
+| 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 1080 px?" and reads "The front is 748 × 1047 px at the photo’s resolution.": the front, 1047 px tall, is under 1080 px; the back is not |
 | 3 | Tap **No** | Two files are saved: the front 748 × 1047 px, the back 1080 px tall |
 | 4 | Tap **Download** | The question box asks "Upscale to 1080 px?" again |
 | 5 | Tap **Yes** | Two more files are saved: the front now 1080 px tall; the back byte for byte the same as after **No** |
@@ -371,6 +375,7 @@ For corner shots it is asked when the file (the sheet, or each photo) would be u
 - Cases: 4
 
 ### UPS-07.1 For the sheet it names the sheet's size, and Yes saves a 2000 px sheet   [auto: phone, webkit]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet at 2000 px in N s."), which this case also accepts: it reads only that the save finished, and MSG-25.1 holds the words.
 Before you start:
 - Device and browser: any; a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -382,7 +387,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Corner shots** in the bottom row of buttons | The Corner shots sheet rises, with **1 sheet** selected (white) |
 | 2 | Tap **Download corners** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" and reads "The sheet is 314 px at the photo’s resolution." |
-| 3 | Tap **Yes** | One file of exactly 2000 × 2000 px is saved; a message begins "Saved the corner sheet at 2000 px in" |
+| 3 | Tap **Yes** | One file of exactly 2000 × 2000 px is saved; a message begins "Corner sheet downloaded: " |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.
@@ -567,6 +572,7 @@ After **Yes** or **No**, **Copy** still reaches the clipboard within the tap tha
 - Cases: 2
 
 ### UPS-10.1 On an iPhone, Copy after Yes or No reaches the clipboard   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Waiting on find-out Q-03: where iOS shows a picture's pixel size. Rows 4 and 9 gain the steps that read the pasted picture's size (2000 × 2000 px after **Yes**, 1074 × 1074 px after **No**) once Rich has seen where it shows.
 
 Before you start:
@@ -581,12 +587,12 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Copy** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **Yes** | The question box closes; a message reads "Copied to clipboard (PNG)." and no message about permission shows |
+| 2 | Tap **Yes** | The question box closes; a message reads "Photo copied (PNG)." and no message about permission shows |
 | 3 | Paste into a new note | The straightened card is pasted into the note |
 | 4 | (Waiting on Q-03) Read the pasted picture's size | 2000 × 2000 px |
 | 5 | Go back to Safari | The app shows, on the Export step |
 | 6 | Tap **Copy** | The question box asks "Upscale to 2000 px?" |
-| 7 | Tap **No** | The question box closes; a message reads "Copied to clipboard (PNG)." |
+| 7 | Tap **No** | The question box closes; a message reads "Photo copied (PNG)." |
 | 8 | Paste into a new note | The straightened card is pasted into the note |
 | 9 | (Waiting on Q-03) Read the pasted picture's size | 1074 × 1074 px |
 
@@ -594,6 +600,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ### UPS-10.2 Copy after Yes puts the enlarged photo on the clipboard   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Before you start:
 - Device and browser: a phone-width window, in a browser that lets the case read the clipboard back (the automated case runs in Chromium only)
 - Build: the build under test
@@ -604,7 +611,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Copy** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **Yes** | A message reads "Copied to clipboard (PNG)."; the clipboard holds a PNG of 2000 × 2000 px |
+| 2 | Tap **Yes** | A message reads "Photo copied (PNG)."; the clipboard holds a PNG of 2000 × 2000 px |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

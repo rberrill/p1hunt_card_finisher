@@ -82,7 +82,11 @@ const GIF_LOGO = 'logo.gif';
 const HINT = 'Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.';
 const NOT_SUPPORTED = 'That file type isn’t supported. Use PNG, WebP, JPG or SVG.';
 const CANT_READ = 'Couldn’t read that image. Try another PNG, WebP, JPG or SVG file.';
-const CANT_SAVE = 'This overlay works on this photo, but it can’t be saved in this browser.';
+// The warning for a logo the browser won't keep, in ruling R59's words ("logo"), and the
+// pattern a case that isn't about the words reads it with: R59's words or today's.
+const CANT_SAVE = 'This logo works on this photo, but it can’t be saved in this browser.';
+const CANT_SAVE_EITHER = new RegExp('This (logo|overlay) works on this photo, but it can’t be '
+  + 'saved in this browser\\.');
 const FIX_CORNERS = 'Fix the corners in Perspective first.';
 // A new logo's width as a fraction of the crop's width (CardEngine.OVERLAY_DEFAULTS.width).
 const START_WIDTH = 0.25;
@@ -268,24 +272,30 @@ test('OVL-01.1 Add logo picks a file and places it [phone] [webkit]', async ({
   });
 });
 
-test('OVL-01.2 The hint still says 5 MB when a link lowers the limit [phone]', async ({
+test('OVL-01.2 The hint gives the lower limit a link sets [phone]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-293, BUG-283');
   const address = `index.html?overlay.maxBytes=${MEGABYTE}`;
   const hand = await startOnOverlay(page, testInfo, { address });
-  await check('the line above the controls reads "' + HINT + '"', async () => {
-    await expect(page.locator('#overlayHintLine')).toHaveText(HINT);
-  });
+  // Ruling R83: the hint gives the limit in force. A plain reading, so the known defect fails
+  // at once.
+  const hintWithLimit = HINT.replace('up to 5 MB.', 'up to 1 MB.');
+  await check(`the line above the controls reads "${hintWithLimit}": the limit the link set`,
+    async () => {
+      expect(await page.locator('#overlayHintLine').textContent()).toBe(hintWithLimit);
+    });
   const chooser = await chooseBadLogo(page, hand, page.locator('#btnOverlayAdd'),
     oversizedPng(2 * MEGABYTE));
   await check('the file picker opens', () => {
     expect(chooser).toBeTruthy();
   });
-  await check('a red message takes the line\'s place: "That file is 2.0 MB. The overlay limit is '
+  // Ruling R59: messages say "logo".
+  await check('a red message takes the line\'s place: "That file is 2.0 MB. The logo limit is '
     + '1 MB."; no logo is on the photo', async () => {
     await expect(page.locator('#overlayStatus')).toHaveText(
-      'That file is 2.0 MB. The overlay limit is 1 MB.');
+      'That file is 2.0 MB. The logo limit is 1 MB.');
     await expect(page.locator('#overlayStatus')).toHaveClass(/is-error/);
     await expect(page.locator('#overlayHintLine')).toBeHidden();
     expect(await logoId(page)).toBeNull();
@@ -1133,10 +1143,11 @@ test('OVL-14.2 A file over 5 MB is refused and the logo stays [phone]', async ({
   const logo = await addDisc(page, hand);
   const before = await logoPlacement(page);
   await chooseBadLogo(page, hand, page.locator('#toolOverlayReplace'), oversizedPng());
-  await check('a red message takes OPACITY\'s place: "That file is 6.0 MB. The overlay limit is '
+  // Ruling R59's words, or today's ("overlay limit"): MSG-60.1 holds the words.
+  await check('a red message takes OPACITY\'s place: "That file is 6.0 MB. The logo limit is '
     + '5 MB."; the disc stays as it was', async () => {
     await expect(page.locator('#overlayStatus')).toHaveText(
-      'That file is 6.0 MB. The overlay limit is 5 MB.');
+      /^That file is 6\.0 MB\. The (logo|overlay) limit is 5 MB\.$/);
     await expect(page.locator('#overlayOpacityLine')).toBeHidden();
     expect(await logoId(page)).toBe(logo);
     expect(await logoPlacement(page)).toEqual(before);
@@ -1936,7 +1947,7 @@ test('OVL-28.2 A logo the browser won\'t keep still goes on the photo [phone]', 
   await check('the disc shows on the photo; an amber warning reads "' + CANT_SAVE + '"',
     async () => {
       expectBlue(await colorOnPage(page, inDisc(await logoOnPage(page))));
-      await expect(page.locator('#toast')).toContainText(CANT_SAVE);
+      await expect(page.locator('#toast')).toContainText(CANT_SAVE_EITHER);
       expect((await toastNow(page)).kind).toBe('warn');
     });
   await hand.tap(page.locator('#toolOverlayRemove'));

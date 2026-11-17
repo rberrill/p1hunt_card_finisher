@@ -106,8 +106,6 @@ const HINTS = {
   compare: 'Hold the photo to compare',
 };
 // The pop-ups and warnings the cases expect, word for word.
-const AUTO_BOTH = 'Auto set white and black points. Check them, then Apply.';
-const AUTO_WHITE_ONLY = 'Auto set the white point (no clear black). Check it, then Apply.';
 const AUTO_FAILED = 'Couldn’t estimate levels from this image.';
 const OUTSIDE_PHOTO = 'That spot is outside the photo.';
 const TOO_LIGHT_FOR_BLACK = 'That spot is too light to be a black point. '
@@ -866,7 +864,7 @@ test('LEV-13.2 The W on a white spot has a dark outline [phone]', async ({
   });
 });
 
-test('LEV-14.1 Auto sets both points, says so, and removes the pick marks [phone]', async ({
+test('LEV-14.1 Auto sets both points and removes the pick marks [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -881,16 +879,14 @@ test('LEV-14.1 Auto sets both points, says so, and removes the pick marks [phone
     expect((await levelsNow(page)).draft.whiteAt).not.toBeNull();
   });
   await hand.tap(page.locator('#toolAutoLevels'));
-  await check(`a pop-up reads "${AUTO_BOTH}"`, async () => {
-    expect(await toastNow(page)).toEqual({ text: AUTO_BOTH, kind: '', isShown: true });
+  await check('both color patches are filled', async () => {
+    await expect.poll(() => patchFill(page, 'black')).not.toBeNull();
+    expect(await patchFill(page, 'white')).not.toBeNull();
   });
-  await check('both color patches are filled; Apply is no longer greyed out; the W ring has gone',
-    async () => {
-      expect(await patchFill(page, 'white')).not.toBeNull();
-      expect(await patchFill(page, 'black')).not.toBeNull();
-      await expect(page.locator('#btnApplyLevels')).toBeEnabled();
-      expect((await levelsNow(page)).draft.whiteAt).toBeNull();
-    });
+  await check('Apply is no longer greyed out; the W ring has gone', async () => {
+    await expect(page.locator('#btnApplyLevels')).toBeEnabled();
+    expect((await levelsNow(page)).draft.whiteAt).toBeNull();
+  });
 });
 
 test('LEV-14.2 With no clear black, Auto sets the white point only [phone]', async ({
@@ -899,12 +895,10 @@ test('LEV-14.2 With no clear black, Auto sets the white point only [phone]', asy
 }, testInfo) => {
   const hand = await startOnLevels(page, testInfo, { photo: NO_BLACK_PHOTO });
   await hand.tap(page.locator('#toolAutoLevels'));
-  await check(`a pop-up reads "${AUTO_WHITE_ONLY}"`, async () => {
-    expect(await toastNow(page)).toEqual({ text: AUTO_WHITE_ONLY, kind: '', isShown: true });
+  await check('the color patch of Pick white is filled', async () => {
+    await expect.poll(() => patchFill(page, 'white')).not.toBeNull();
   });
-  await check('the color patch of Pick white is filled; the one of Pick black is still dashed '
-    + 'and empty', async () => {
-    expect(await patchFill(page, 'white')).not.toBeNull();
+  await check('the color patch of Pick black is still dashed and empty', async () => {
     expect(await isPatchEmpty(page, 'black')).toBe(true);
   });
 });
@@ -1611,10 +1605,8 @@ test('LEV-23.2 On a wide screen the tips are followed by the keyboard help [desk
 }, testInfo) => {
   await startOnLevels(page, testInfo);
   const sheet = page.locator('#levelsSheet');
-  await check('LEVELS TIPS with the three tips of LEV-23.1, then TIPS AND KEYS with "Hold C, or '
-    + 'press and hold the photo, to compare."', async () => {
-    await expect(sheet.locator('.sheet-title')).toBeVisible();
-    await expect(sheet.locator('.sheet-title')).toHaveText('Levels tips');
+  await check('the three tips of LEV-23.1, then "Hold C, or press and hold the photo, to '
+    + 'compare." under the heading TIPS AND KEYS', async () => {
     await expect(sheet.getByText('Tips and keys')).toBeVisible();
     expect(await shownHints(page)).toEqual([...LEVELS_TIPS, LEVELS_KEY_HELP]);
   });

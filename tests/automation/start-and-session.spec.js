@@ -296,11 +296,18 @@ test('STA-03.3 The backtick key opens the tuning panel over the start screen [de
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-281');
   await startOnStartScreen(page, testInfo);
   await page.keyboard.press('Backquote');
-  await check('the detection tuning panel opens over the start screen', async () => {
+  await check('the detection tuning panel opens over the start screen, and leaves Open photo '
+    + 'clear: no part of the panel is over the button', async () => {
     await expect(page.locator('#debugPanel')).toBeVisible();
     await expect(page.locator('#empty')).toBeVisible();
+    const panel = await page.locator('#debugPanel').boundingBox();
+    const open = await page.locator('#btnOpenEmpty').boundingBox();
+    const isApartSideways = panel.x + panel.width <= open.x || open.x + open.width <= panel.x;
+    const isApartUpDown = panel.y + panel.height <= open.y || open.y + open.height <= panel.y;
+    expect(isApartSideways || isApartUpDown).toBe(true);
   });
   await page.keyboard.press('Backquote');
   await check('the backtick again closes it; the start screen is as it was', async () => {

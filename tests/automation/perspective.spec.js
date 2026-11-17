@@ -1586,8 +1586,9 @@ test('PER-25.2 Preview with crossed corners, for a person to judge [phone]', asy
   await crossTheCorners(page, hand);
   await check.eye('the outline crosses itself, red and dashed');
   await hand.tap(page.locator('#toolPreview'));
+  // Ruling R82's words; the judge fails this until it is built (BUG-292).
   await check.eye('the photo area is empty except for grey text in its middle: "Fix the corners '
-    + 'in Perspective first."');
+    + 'first."');
   await check(`the line reads "${CROSSED}"`, async () => {
     await expectStatus(page, CROSSED);
   });
@@ -1680,10 +1681,11 @@ test('PER-26.3 While Preview is on, the arrow keys and Tab do nothing [desktop]'
   });
 });
 
-test('PER-27.1 Preview stays on after a change of step [phone]', async ({
+test('PER-27.1 Preview turns off at a change of step [phone]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-294');
   const hand = await startOnPerspective(page, testInfo);
   await hand.tap(page.locator('#toolPreview'));
   await check('Preview reads On', async () => {
@@ -1694,10 +1696,14 @@ test('PER-27.1 Preview stays on after a change of step [phone]', async ({
     await expect(page.locator('#rotateArea')).toBeVisible();
   });
   await goToStep(page, 'perspective', hand);
-  await check('Preview still reads On, the line reads PREVIEW, with no handles', async () => {
-    await expect(previewState(page)).toHaveText('On');
-    await expect(page.locator('#perspectivePreviewLine .line-label')).toHaveText('Preview');
-    expect(await page.evaluate(() => window.__straightener.app.previewMode)).toBe(true);
+  // A plain reading, so the known defect fails at once.
+  const isPreviewOn = await page.evaluate(() => window.__straightener.app.previewMode);
+  await check('Preview reads Off, the line reads NUDGE, and the photo shows with its outline and '
+    + 'handles', async () => {
+    expect(isPreviewOn).toBe(false);
+    await expect(previewState(page)).toHaveText('Off');
+    await expect(page.locator('#perspectiveLine .line-label')).toHaveText('Nudge');
+    expect(await isHandleAt(page, await handleOnPage(page, TOP_LEFT))).toBe(true);
   });
 });
 
@@ -1751,21 +1757,12 @@ test('PER-27.4 Preview shows the applied levels, not an unapplied draft [phone]'
   check,
 }, testInfo) => {
   const hand = await startOnPerspective(page, testInfo);
-  await hand.tap(page.locator('#toolPreview'));
-  await waitForStill(page);
-  const colorsBefore = await middleColor(page);
-  await check('the corrected card shows; note its colors', async () => {
-    await expect(previewState(page)).toHaveText('On');
-  });
+  const colorsBefore = await previewColorsThenOff(page, hand, check);
   const apply = page.locator('#btnApplyLevels');
   const levelsMark = page.locator('[data-step="levels"]:visible .step-tab-mark');
-  await goToStep(page, 'levels', hand);
+  await goToLevelsForAuto(page, hand, check);
   await waitForStill(page);
   const levelsBefore = await middleColor(page);
-  await check('the Levels step shows, with Auto among its buttons', async () => {
-    await expect(page.locator('#levelsArea')).toBeVisible();
-    await expect(page.locator('#toolAutoLevels')).toBeVisible();
-  });
   await hand.tap(page.locator('#toolAutoLevels'));
   await check('the photo brightens: an unapplied draft, with Apply lit in the line above the '
     + 'controls and a white dot on the Levels tab', async () => {
@@ -1774,15 +1771,24 @@ test('PER-27.4 Preview shows the applied levels, not an unapplied draft [phone]'
     await expect(apply).toBeEnabled();
     await expect(levelsMark).toBeVisible();
   });
-  await goToStep(page, 'perspective', hand);
-  await waitForStill(page);
+  await backToPerspectiveThenPreview(page, hand, check);
   await check('the corrected card shows with the colors noted in row 1, not the draft\'s',
     async () => {
       expect(colorChange(await middleColor(page), colorsBefore)).toBeLessThan(LEVELS_CHANGE_MIN);
     });
-  await goToStep(page, 'levels', hand);
-  await check('the Levels step shows, with Apply lit', async () => {
-    await expect(page.locator('#levelsArea')).toBeVisible();
+});
+
+test('PER-27.5 Preview shows levels once they are applied [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnPerspective(page, testInfo);
+  const colorsBefore = await previewColorsThenOff(page, hand, check);
+  const apply = page.locator('#btnApplyLevels');
+  const levelsMark = page.locator('[data-step="levels"]:visible .step-tab-mark');
+  await goToLevelsForAuto(page, hand, check);
+  await hand.tap(page.locator('#toolAutoLevels'));
+  await check('Apply is lit in the line above the controls', async () => {
     await expect(apply).toBeEnabled();
   });
   await hand.tap(apply);
@@ -1790,16 +1796,50 @@ test('PER-27.4 Preview shows the applied levels, not an unapplied draft [phone]'
     await expect(levelsMark).toBeHidden();
     await expect(apply).toBeDisabled();
   });
-  await goToStep(page, 'perspective', hand);
-  await check('the corrected card now shows the applied, brighter colors', async () => {
+  await backToPerspectiveThenPreview(page, hand, check);
+  await check('the corrected card shows the applied, brighter colors', async () => {
     await expect.poll(async () => colorChange(await middleColor(page), colorsBefore))
       .toBeGreaterThan(LEVELS_CHANGE_MIN);
   });
 });
 
+// PER-27.4 and PER-27.5's rows 1 and 2: Preview on, its colors noted, then off again so the
+// step change that follows doesn't depend on ruling R88. Returns the colors.
+async function previewColorsThenOff(page, hand, check) {
+  await hand.tap(page.locator('#toolPreview'));
+  await waitForStill(page);
+  const colors = await middleColor(page);
+  await check('the corrected card shows; note its colors', async () => {
+    await expect(previewState(page)).toHaveText('On');
+  });
+  await hand.tap(page.locator('#toolPreview'));
+  await check('it reads Off; the outline and handles show', async () => {
+    await expect(previewState(page)).toHaveText('Off');
+    expect(await isHandleAt(page, await handleOnPage(page, TOP_LEFT))).toBe(true);
+  });
+  return colors;
+}
+
+// PER-27.4 and PER-27.5's step to Levels.
+async function goToLevelsForAuto(page, hand, check) {
+  await goToStep(page, 'levels', hand);
+  await check('the Levels step shows, with Auto among its buttons', async () => {
+    await expect(page.locator('#levelsArea')).toBeVisible();
+    await expect(page.locator('#toolAutoLevels')).toBeVisible();
+  });
+}
+
+// PER-27.4 and PER-27.5's way back: Perspective, where Preview reads Off, then Preview on.
+async function backToPerspectiveThenPreview(page, hand, check) {
+  await goToStep(page, 'perspective', hand);
+  await check('the Perspective step shows, Preview reading Off', async () => {
+    await expect(previewState(page)).toHaveText('Off');
+  });
+  await hand.tap(page.locator('#toolPreview'));
+  await waitForStill(page);
+}
+
 const FIND_PROMPT = 'Tap the card in the photo.';
-const NO_CARD_FOUND = 'No card-shaped edges found. Drag the corners into place, or tap to find '
-  + 'card and tap the card again.';
 
 // True while the app lays out for a phone (the options open as a sheet over the photo).
 function isPhoneLayout(page) {
@@ -1949,7 +1989,7 @@ test('PER-29.2 A long, still press on the card finds it too [phone]', async ({
   await findAfterDrag(page, check, testInfo, LONG_PRESS_MS);
 });
 
-test('PER-29.3 A find tap on a picture with no card leaves the corners, with a pop-up [phone]',
+test('PER-29.3 A find tap on a picture with no card leaves the corners [phone]',
   async ({ page, check }, testInfo) => {
     const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
     const corners = await cornersNow(page);
@@ -1963,10 +2003,7 @@ test('PER-29.3 A find tap on a picture with no card leaves the corners, with a p
     });
     await tapAt(page, hand, await cardMiddle(page));
     await waitForFind(page);
-    await check('a pop-up reads "No card-shaped edges found. …" and, at the same time, the line '
-      + `reads "${NOTHING_DETECTED}"`, async () => {
-      await expect(page.locator('#toast')).toHaveClass(/is-shown/);
-      await expect(page.locator('#toast')).toContainText(NO_CARD_FOUND);
+    await check(`the line above the controls reads "${NOTHING_DETECTED}"`, async () => {
       await expectStatus(page, NOTHING_DETECTED);
     });
     await check('the corners have not moved, and Undo is still greyed out', async () => {
@@ -2498,14 +2535,19 @@ test('PER-36.4 "Nothing detected" clears once a corner is nudged with an arrow [
     });
   });
 
-test('PER-36.5 A clamped corrected frame is reported in the line [phone]', async ({
+test('PER-36.5 A clamped corrected frame is not reported in the line [phone]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-288');
   await startOnPerspective(page, testInfo, { address: CLAMPED_LINK });
-  await check(`the line reads "${CLAMPED}"`, async () => {
-    await expectStatus(page, CLAMPED);
-  });
+  // A plain reading, so the known defect fails at once.
+  const isShown = await statusLine(page).isVisible();
+  const text = await statusLine(page).locator('.status-text').textContent();
+  await check(`it holds no message about the corrected frame: it doesn't read "${CLAMPED}"`,
+    () => {
+      expect(isShown && /Corrected frame/.test(text)).toBe(false);
+    });
 });
 
 test('PER-36.6 Low confidence takes the line over a clamped frame [phone]', async ({

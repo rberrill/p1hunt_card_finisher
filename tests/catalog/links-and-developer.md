@@ -241,9 +241,8 @@ The **Detection tuning** panel has a field for each number and on/off setting of
 - Changed: none
 - Anchors: `#debugPanel`, `"Detection tuning"`, `CONFIG.detect.cannyLow`
 - Source: `js/app/debug-panel.js` (`toggleDebugPanel`, `buildDebugPanel`), `css/app.css` (`#debugPanel`)
-- Ruling: R29. The tuning panel's fields may take values outside the safe ranges a link is held to; it is a tuning tool. The app already does this.
-- Flag: to confirm. On the phone with no photo open, the panel floats over the start screen and covers **Open photo**, so a photo can't be opened with a tap while it is open.
-- Cases: 4
+- Ruling: R29. The tuning panel's fields may take values outside the safe ranges a link is held to; it is a tuning tool. The app already does this. R51. On the start screen the tuning panel never covers **Open photo** or the Resume box. The app differs today.
+- Cases: 5
 
 ### DEV-06.1 The panel has a field per detection setting, and a change detects again   [auto: phone]
 Before you start:
@@ -264,7 +263,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DEV-06.2 Where the panel sits   [auto: both, webkit]
-Flag: to confirm. Written to what the app does today: on a phone with no photo open, the panel floats over the start screen and covers **Open photo**.
+Written to ruling R51; it fails until that is built (BUG-281). Where the panel sits on the start screen of a wide window is left to the fix, as long as it leaves **Open photo** clear: today it sits as it will once a photo is open, and covers the button's right end.
 
 Before you start:
 - Device and browser: a computer, a phone-width window (390 × 844 px) or a wide one (1280 × 800 px)
@@ -275,8 +274,8 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the screen | On a phone, the panel floats over the start screen and covers **Open photo**. On a wide screen, it is 64 px from the top, and its right edge is 388 px from the window's right edge (where the 380 px side panel will be, less 8 px) |
-| 2 | Drag IMG_9136.JPEG from the file browser onto the start screen, above the tuning panel, and let go | The photo opens. On a phone, the panel spans the window less 8 px each side, its bottom 8 px above the controls, at most 40% of the window's height. On a wide screen, it is 64 px from the top and 8 px left of the 380 px side panel |
+| 1 | Look at the screen | The panel shows and leaves **Open photo** clear: no part of the panel is over the button |
+| 2 | Drag IMG_9136.JPEG from the file browser onto the start screen, away from the tuning panel, and let go | The photo opens. On a phone, the panel spans the window less 8 px each side, its bottom 8 px above the controls, at most 40% of the window's height. On a wide screen, it is 64 px from the top and 8 px left of the 380 px side panel |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, the panel's position, a screenshot.
@@ -318,6 +317,24 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, the count of detection runs.
 
+### DEV-06.5 On a phone, the panel leaves the Resume box clear   [auto: phone]
+Written to ruling R51; it fails until that is built (BUG-281).
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo on the device, so opening the build again offers to resume it
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: IMG_9136.JPEG opened with **Open photo**, then two seconds' wait, so it is kept on the device
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Go to the build's address with `?debug=1` added to it (index.html?debug=1) | The start screen offers "Resume IMG_9136.JPEG?" with **Resume** and **Start fresh**, and the **Detection tuning** panel shows |
+| 2 | Look at the Resume box | No part of the tuning panel is over **Resume** or **Start fresh** |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, the panel's position, a screenshot.
+
 ## DEV-07 The tuning panel's buttons
 
 The panel has a close button (tooltip **Close tuning**), **Copy CONFIG**, which copies all the settings to the clipboard (or prints them in the console if the clipboard is blocked), and **Re-detect**, which runs detection again.
@@ -329,7 +346,7 @@ The panel has a close button (tooltip **Close tuning**), **Copy CONFIG**, which 
 - Changed: none
 - Anchors: `#debugClose`, `#debugCopy`, `#debugRun`, `"Clipboard blocked — CONFIG printed to the console."`
 - Source: `js/app/debug-panel.js` (`buildDebugPanel`)
-- Flag: to confirm. The blocked-clipboard message joins its two parts with a dash, where the app's other messages use two sentences.
+- Ruling: R60. The blocked-clipboard message is two sentences, in the same words: "Clipboard blocked. CONFIG printed to the console." The app differs today.
 - Cases: 3
 
 ### DEV-07.1 Re-detect runs detection, and Close tuning closes the panel   [auto: phone]
@@ -366,8 +383,8 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DEV-07.3 With the clipboard blocked, CONFIG goes to the console   [auto: phone]
 Script only
+The message is in ruling R60's words. Until R60 is built (BUG-284) the app joins its two parts with a dash, which this case also accepts: its subject is the settings going to the console, and MSG-42.1 holds the words.
 Stand-in: a person can't make the browser refuse the clipboard to the page on purpose, so the script makes every clipboard write fail, as a browser that blocks the page does.
-Flag: to confirm. Written to what the app does today: the message joins its two parts with a dash.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
@@ -378,7 +395,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Copy CONFIG** | An amber message reads "Clipboard blocked — CONFIG printed to the console." |
+| 1 | Tap **Copy CONFIG** | An amber message reads "Clipboard blocked. CONFIG printed to the console." |
 | 2 | Look at the Console | It holds `const CONFIG = {` and the settings |
 
 Pass: every row's result is seen.

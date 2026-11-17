@@ -140,11 +140,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#levelsPicks`, "Pick white", "Tap something white"
 - Source: `js/app/levels.js` (`buildPickRow`, `armDropper`, `levelsHint`, `syncLevels`)
-- Flag: to confirm. Escape never disarms the color picker.
+- Ruling: R69. Escape closes a phone sheet and nothing else: not **Tap to find card**, not a Levels pick. The app already does this.
 - Cases: 2
 
 ### LEV-05.1 Pick white arms the picker, and a second tap disarms it   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -162,7 +161,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-05.2 Escape leaves Pick white armed   [auto: desktop]
-Flag: to confirm. Written to today's behavior: Escape does not disarm the picker.
 
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window
@@ -257,12 +255,10 @@ With a pick armed, a press on the photo aims, and the color is taken where the f
 - Changed: none
 - Anchors: "Tap something white", "Tap something black", `CONFIG.levels.sampleRadiusPx`
 - Source: `js/app/input.js` (`stepGesture`, `onPointerMove`, `endGesture`); `js/app/levels.js` (`pickAt`)
-- Ruling: R8. A second finger cancels the pick and leaves the color picker armed. The app differs today.
-- Flag: to confirm. While a pick is armed one finger can't pan, and the color is taken where the finger lifts, not where it pressed.
+- Ruling: R8. A second finger cancels the pick and leaves the color picker armed. The app differs today. R72. While a pick is armed one finger can't pan, and the color is taken where the finger lifts. The app already does this.
 - Cases: 2
 
 ### LEV-08.1 The color is taken where the finger lifts, and the photo does not move   [auto: phone, webkit]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: a phone, in its own browser
@@ -364,11 +360,10 @@ A pick reads a small square patch of the full-resolution photo under the point (
 - Changed: none
 - Anchors: `CONFIG.levels.sampleRadiusPx`, `CONFIG.levels.sampleTrim`
 - Source: `js/app/levels.js` (`pickAt`); `js/engine.js` (`meanColor`)
-- Flag: to confirm. The rule is the code's (the half of the pixels nearest the median brightness, from `CONFIG.levels.sampleTrim` 0.25 on each side); Rich has not ruled on it. It is not the same as leaving out the darkest and the brightest quarter: on a patch 6 parts grey and 4 parts white it reads pure grey, where a quarter off each end would keep some white.
+- Ruling: R55. A pick reads the half of the tapped patch's pixels nearest its median brightness (Claude's design, accepted by Rich). The app already does this.
 - Cases: 2
 
 ### LEV-10.1 A pick reads the half of its patch nearest the middle brightness   [auto: desktop]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: a computer with a mouse; a wide window, 1280 × 800 px
@@ -389,7 +384,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-10.2 A pick reads at least 4 photo pixels around the point   [auto: desktop]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: a computer with a mouse; a wide window, 1280 × 800 px
@@ -611,7 +605,7 @@ On a fail, record: the row number, what you saw instead, the screenshot.
 
 ## LEV-14 Auto
 
-**Auto** estimates the white and black points from the framed photo into the draft and removes the pick marks; with no clear black it sets the white point only. A pop-up says which it set.
+**Auto** estimates the white and black points from the framed photo into the draft and removes the pick marks; with no clear black it sets the white point only. Today a pop-up says which it set; ruling R73 takes it away (MSG-16 and MSG-17 hold that).
 
 - Risk: medium
 - Check: script
@@ -620,11 +614,11 @@ On a fail, record: the row number, what you saw instead, the screenshot.
 - Changed: none
 - Anchors: `#toolAutoLevels`, "Auto set white and black points. Check them, then Apply.", "Auto set the white point (no clear black). Check it, then Apply.", `CONFIG.levels.autoBlackMaxSpread`
 - Source: `js/app/levels.js` (`autoLevelsDraft`, `renderSmall`); `js/engine.js` (`autoLevels`)
-- Flag: to confirm. Auto shows a pop-up when it works, though arming a pick shows none; when it fails, "Couldn’t estimate levels from this image." gives no next step.
+- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app differs today. R64. The failure message, "Couldn’t estimate levels from this image.", explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
 - Cases: 3
 
-### LEV-14.1 Auto sets both points, says so, and removes the pick marks   [auto: phone]
-Flag: to confirm. Written to today's behavior: a pop-up for Auto, none for a pick.
+### LEV-14.1 Auto sets both points and removes the pick marks   [auto: phone]
+Whether Auto shows a pop-up is MSG-16.1's (ruling R73); this case doesn't look at it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -639,14 +633,14 @@ The color patch is the small mark at the left of **Pick white** or **Pick black*
 | --- | --- | --- |
 | 1 | Tap **Pick white** | No pop-up |
 | 2 | Tap the white background just left of the slab, halfway down | The color patch of **Pick white** is filled and a W ring marks the spot |
-| 3 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | A pop-up reads "Auto set white and black points. Check them, then Apply." |
-| 4 | Look at the color patches, **Apply** and the photo | Both color patches are filled; **Apply** is no longer greyed out (shown dim and not answering a tap); the W ring has gone |
+| 3 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | Both color patches are filled |
+| 4 | Look at **Apply** and the photo | **Apply** is no longer greyed out (shown dim and not answering a tap); the W ring has gone |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-14.2 With no clear black, Auto sets the white point only   [auto: phone]
-Flag: to confirm. Written to today's behavior.
+Whether Auto shows a pop-up is MSG-17.1's (ruling R73); this case doesn't look at it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -657,14 +651,13 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | A pop-up reads "Auto set the white point (no clear black). Check it, then Apply." |
-| 2 | Look at the color patches (the small marks at the left of **Pick white** and **Pick black** that show the color picked) | The color patch of **Pick white** is filled; the one of **Pick black** is still dashed and empty |
+| 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | The color patch (the small mark at the left of **Pick white** that shows the color picked) of **Pick white** is filled |
+| 2 | Look at the color patch of **Pick black** | It is still dashed and empty |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-14.3 Auto on a picture with nothing to go on warns, with no next step   [auto: phone]
-Flag: to confirm. Written to today's behavior: the warning says what went wrong but not what to do.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -877,12 +870,10 @@ While comparing, a badge reading **Before levels** shows at the top left of the 
 - Changed: none
 - Anchors: "Before levels"
 - Source: `js/app/levels.js` (`drawCompareBadge`, `drawLevelsOverlay`, `setCompare`)
-- Ruling: R9. With no draft and no applied levels there is no comparison, so no badge. The app differs today.
-- Flag: to confirm. The badge fades in over 80 ms even when the device asks for reduced motion.
+- Ruling: R9. With no draft and no applied levels there is no comparison, so no badge. The app differs today. R71. Under reduced motion the **Before levels** badge still fades, the snap rings don't, and one fade is 60 ms. The app already does this.
 - Cases: 3
 
 ### LEV-17.1 The Before levels badge, for a person to judge   [eye]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -904,7 +895,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Script only
 Stand-in: the script asks the browser for reduced motion and records the badge's brightness at every frame as it appears. The fade lasts 80 ms, too short for a person to see whether it is there.
 
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: a phone-width window with touch, 390 × 844 px, with reduced motion asked for
@@ -1193,11 +1183,10 @@ The options sheet, titled **Levels tips**, holds only the tips: no options, no T
 - Changed: none
 - Anchors: `#levelsSheet`, "Levels tips", "Tips and keys"
 - Source: `js/app/levels.js` (`buildLevelsSheet`)
-- Flag: to confirm. On a wide screen the Levels section shows two tips headings, "Levels tips" and "Tips and keys".
+- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app differs today.
 - Cases: 2
 
 ### LEV-23.1 The options sheet is the tips alone   [auto: phone]
-Flag: to confirm. Written to today's behavior; the two headings show only on a wide screen (LEV-23.2).
 
 Before you start:
 - Device and browser: any; a phone-width window
@@ -1214,7 +1203,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-23.2 On a wide screen the tips are followed by the keyboard help   [auto: desktop]
-Flag: to confirm. Written to today's behavior: two headings.
+How many headings show over them is TOP-32.2's (ruling R74); this case looks at the order only.
 
 Before you start:
 - Device and browser: a computer; a wide window
@@ -1225,7 +1214,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the side panel under the controls | LEVELS TIPS with the three tips of LEV-23.1, then TIPS AND KEYS with "Hold C, or press and hold the photo, to compare." |
+| 1 | Look at the side panel under the controls | The three tips of LEV-23.1, then "Hold C, or press and hold the photo, to compare." under the heading TIPS AND KEYS |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

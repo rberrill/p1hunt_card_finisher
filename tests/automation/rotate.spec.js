@@ -539,13 +539,27 @@ test('ROT-06.3 Done on an empty box keeps the angle [phone]', async ({
   });
 });
 
-// Checks the result that ends each ROT-07 case: the box has closed without saving; the angle
-// still reads 0.0° and Undo is still greyed out.
+// Checks the result that ends ROT-07.1: the box has closed without saving; the angle still
+// reads 0.0° and Undo is still greyed out.
 async function checkClosedUnsaved(page, check, description) {
   await check(description, async () => {
     await expect(angleField(page)).toBeHidden();
     await expect(angleText(page)).toHaveText('0.0°');
     await expect(page.locator('#btnUndo')).toBeDisabled();
+  });
+}
+
+// Checks a ROT-07 row written to ruling R92: the box has closed and the typed angle is saved,
+// so the angle reads `angle` ('9.0°') and, when isUndoChecked, Undo is lit. Plain readings, so
+// the known defect fails at once.
+async function checkClosedSaved(page, check, description, angle, isUndoChecked = true) {
+  const isOpen = await angleField(page).isVisible();
+  const shown = await angleText(page).textContent();
+  const isUndoLit = await page.locator('#btnUndo').isEnabled();
+  await check(description, () => {
+    expect(isOpen).toBe(false);
+    expect(shown).toBe(angle);
+    if (isUndoChecked) expect(isUndoLit).toBe(true);
   });
 }
 
@@ -561,22 +575,24 @@ test('ROT-07.1 Escape closes the box without saving [desktop]', async ({
     'the box closes; the angle reads 0.0°; Undo is still greyed out');
 });
 
-test('ROT-07.2 A tap on the photo closes the box without saving [phone] [webkit]', async ({
+test('ROT-07.2 A tap on the photo closes the box and saves the angle [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-296');
   const hand = await startOnRotate(page, testInfo);
   await tapAngleStep(page, hand, check, '0.0');
   await typeStep(page, check, '9');
   await hand.tap(page.locator('#view'));
-  await checkClosedUnsaved(page, check,
-    'the box closes; the angle reads 0.0°; Undo is still greyed out');
+  await checkClosedSaved(page, check, 'the box closes; the angle reads 9.0°; Undo is lit',
+    '9.0°');
 });
 
-test('ROT-07.3 Choosing Flip or Straighten closes the box without saving [phone]', async ({
+test('ROT-07.3 Choosing Flip or Straighten closes the box and saves the angle [phone]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-296');
   const hand = await startOnRotate(page, testInfo);
   await tapAngleStep(page, hand, check, '0.0');
   await typeStep(page, check, '9');
@@ -588,21 +604,20 @@ test('ROT-07.3 Choosing Flip or Straighten closes the box without saving [phone]
     await expect(line.locator('.line-readout')).toHaveText('as you see it on screen');
   });
   await hand.tap(page.locator('#toolStraighten'));
-  await check('the line reads STRAIGHTEN and 0.0°', async () => {
-    await expect(page.locator('#rotateStraightenLine')).toBeVisible();
-    await expect(angleText(page)).toHaveText('0.0°');
-  });
-  await tapAngleStep(page, hand, check, '0.0', 'the text box opens, with 0.0 in it, selected');
-  await typeStep(page, check, '9');
+  await page.locator('#rotateStraightenLine').waitFor({ state: 'visible' });
+  await checkClosedSaved(page, check, 'the line reads STRAIGHTEN and 9.0°: the angle typed before '
+    + 'Flip was saved; Undo is lit', '9.0°');
+  await tapAngleStep(page, hand, check, '9.0', 'the text box opens, with 9.0 in it, selected');
+  await typeStep(page, check, '3');
   await hand.tap(page.locator('#toolStraighten'));
-  await checkClosedUnsaved(page, check,
-    'the box closes; the angle reads 0.0°; Undo is still greyed out');
+  await checkClosedSaved(page, check, 'the box closes; the angle reads 3.0°', '3.0°', false);
 });
 
-test('ROT-07.4 Leaving the step closes the box without saving [phone]', async ({
+test('ROT-07.4 Leaving the step closes the box and saves the angle [phone]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-296');
   const hand = await startOnRotate(page, testInfo);
   await tapAngleStep(page, hand, check, '0.0');
   await typeStep(page, check, '9');
@@ -611,8 +626,8 @@ test('ROT-07.4 Leaving the step closes the box without saving [phone]', async ({
     await expect(page.locator('#cropArea')).toBeVisible();
   });
   await goToStep(page, 'rotate', hand);
-  await checkClosedUnsaved(page, check,
-    'the box is closed; the angle reads 0.0°; Undo is still greyed out');
+  await checkClosedSaved(page, check, 'the box is closed; the angle reads 9.0°; Undo is lit',
+    '9.0°');
 });
 
 test('ROT-08.1 The box accepts a hyphen or a true minus sign [desktop]', async ({

@@ -328,9 +328,9 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## ROT-07 Close the box without saving
+## ROT-07 Close the box
 
-Escape, a tap anywhere else, choosing **Straighten** or **Flip**, or leaving the step closes the text box without saving.
+Escape closes the text box without saving. A tap anywhere else, choosing **Straighten** or **Flip**, or leaving the step closes it and, by ruling R92, saves the typed angle as **Done** does (today these throw it away).
 
 - Risk: low
 - Check: script
@@ -339,11 +339,10 @@ Escape, a tap anywhere else, choosing **Straighten** or **Flip**, or leaving the
 - Changed: none
 - Anchors: `key:Escape`, `#rotateAngleField`
 - Source: `js/app/rotate.js` (`bindTyping`, `setRotateMode`, `syncRotate`, `stopTyping`)
-- Flag: to confirm. Tapping away from the box throws the typed angle away; only Done or Enter save it.
+- Ruling: R92. A tap away from a typed angle saves it, as **Done** and Enter do; Escape still closes the box without saving. The app differs today.
 - Cases: 4
 
 ### ROT-07.1 Escape closes the box without saving   [auto: desktop]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window
@@ -361,8 +360,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-07.2 A tap on the photo closes the box without saving   [auto: phone, webkit]
-Flag: to confirm. Written to today's behavior: the typed 9 is thrown away.
+### ROT-07.2 A tap on the photo closes the box and saves the angle   [auto: phone, webkit]
+Written to ruling R92; it fails until that is built (BUG-296).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -375,13 +374,13 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap the angle (**0.0°**) | A text box takes the angle's place, with 0.0 in it, selected |
 | 2 | Type 9 | The box shows 9 |
-| 3 | Tap the middle of the photo | The box closes; the angle reads 0.0°; **Undo** is still greyed out |
+| 3 | Tap the middle of the photo | The box closes; the angle reads 9.0°; **Undo** is lit |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-07.3 Choosing Flip or Straighten closes the box without saving   [auto: phone]
-Flag: to confirm. Written to today's behavior: the typed 9 is thrown away.
+### ROT-07.3 Choosing Flip or Straighten closes the box and saves the angle   [auto: phone]
+Written to ruling R92; it fails until that is built (BUG-296).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -395,16 +394,16 @@ Before you start:
 | 1 | Tap the angle (**0.0°**) | A text box takes the angle's place, with 0.0 in it, selected |
 | 2 | Type 9 | The box shows 9 |
 | 3 | Tap **Flip** in the row of tools (the bottom row of buttons under the photo, or in the panel at the right on a wide screen: **Straighten**, **Flip**, **90° left**, **90° right**, **Fill frame**) | The line above the controls (the one line of text at the top of the controls, the block of buttons and sliders under the photo; on a wide screen, in the panel at the right) reads FLIP and "as you see it on screen" |
-| 4 | Tap **Straighten** in the row of tools | The line reads STRAIGHTEN and 0.0° |
-| 5 | Tap the angle (**0.0°**) | The text box opens, with 0.0 in it, selected |
-| 6 | Type 9 | The box shows 9 |
-| 7 | Tap **Straighten** in the row of tools | The box closes; the angle reads 0.0°; **Undo** is still greyed out |
+| 4 | Tap **Straighten** in the row of tools | The line reads STRAIGHTEN and 9.0°: the angle typed before **Flip** was saved; **Undo** is lit |
+| 5 | Tap the angle (**9.0°**) | The text box opens, with 9.0 in it, selected |
+| 6 | Type 3 | The box shows 3 |
+| 7 | Tap **Straighten** in the row of tools | The box closes; the angle reads 3.0° |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-07.4 Leaving the step closes the box without saving   [auto: phone]
-Flag: to confirm. Written to today's behavior: the typed 9 is thrown away.
+### ROT-07.4 Leaving the step closes the box and saves the angle   [auto: phone]
+Written to ruling R92; it fails until that is built (BUG-296).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -418,7 +417,7 @@ Before you start:
 | 1 | Tap the angle (**0.0°**) | A text box takes the angle's place, with 0.0 in it, selected |
 | 2 | Type 9 | The box shows 9 |
 | 3 | Tap **Crop** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Crop step shows |
-| 4 | Tap **Rotate** in the step tabs | The box is closed; the angle reads 0.0°; **Undo** is still greyed out |
+| 4 | Tap **Rotate** in the step tabs | The box is closed; the angle reads 9.0°; **Undo** is lit |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -568,11 +567,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#btnRotateReset`, "Angle to 0°"
 - Source: `js/app/rotate.js` (`buildStraightenLine`, `bindRotate`, `syncRotate`)
-- Flag: to confirm. This Reset sets only the angle, while **Reset rotation** in the options sheet also clears turns, flips and Fill frame; neither changes Grid.
+- Ruling: R93. **Reset** beside the angle clears only the angle; **Reset rotation** clears the whole step (turns, angle, flips and Fill frame); neither changes Grid. The app already does this.
 - Cases: 1
 
 ### ROT-10.1 Reset sets the angle to 0° as one undo step   [auto: phone]
-Flag: to confirm. Written to today's behavior: Reset leaves the quarter turn.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -724,11 +722,10 @@ A flip mirrors the picture exactly as it looks on screen: it reverses the sign o
 - Changed: none
 - Anchors: `#btnFlipHorizontal`, `#btnFlipVertical`, "Flip mirrors the photo as you see it on screen."
 - Source: `js/app/rotate.js` (`flip`)
-- Flag: to confirm. A flip changes the sign of the angle shown: 3.0° reads −3.0° after **Horizontal**.
+- Ruling: R94. A flip changes the sign of the angle shown. The app already does this.
 - Cases: 4
 
 ### ROT-15.1 Horizontal mirrors a tilted, turned photo as seen   [auto: phone]
-Flag: to confirm. Written to today's behavior: the angle shown changes sign.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -752,7 +749,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-15.2 Vertical mirrors a tilted, turned photo as seen   [auto: phone]
-Flag: to confirm. Written to today's behavior: the angle shown changes sign.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1070,11 +1066,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#rotateResetRow`, "Reset rotation"
 - Source: `js/app/rotate.js` (`buildResetRow`); `js/app/shell.js` (`bindControls`, `resetStep`)
-- Flag: to confirm. **Reset rotation** clears turns, flips and Fill frame as well as the angle, while **Reset** beside the angle clears only the angle; neither changes Grid.
+- Ruling: R93. **Reset** beside the angle clears only the angle; **Reset rotation** clears the whole step (turns, angle, flips and Fill frame); neither changes Grid. The app already does this.
 - Cases: 2
 
 ### ROT-22.1 Reset rotation clears turns, angle, flips and Fill frame in one step   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -1100,7 +1095,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-22.2 Reset rotation leaves Grid as it is   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1129,11 +1123,10 @@ The Straighten or Flip mode and **Grid** stay as set when another photo is opene
 - Changed: none
 - Anchors: `#toolStraighten`, `#toolFlip`, `#rotateGrid`
 - Source: `js/app/rotate.js` (`setRotateMode`, `bindRotate`); `js/app/core.js` (the `app` object's defaults)
-- Flag: to confirm. They survive opening a new photo but not a reload.
+- Ruling: R89. Snap, Grid, **Debug overlay** and the Perspective and Rotate modes carry over to a new photo, but not over a reload. The app already does this.
 - Cases: 2
 
 ### ROT-23.1 Flip and Grid stay as set for the next photo   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1156,7 +1149,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-23.2 Flip and Grid are not kept after a reload   [auto: phone, webkit]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window

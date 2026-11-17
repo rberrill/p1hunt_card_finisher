@@ -30,6 +30,68 @@ const CROSS_PAST_PX = 60;
 // The full path of a sample photo.
 const samplePath = name => path.join(root, 'samples', name);
 
+// The lines of ruling R12's one Load edits warning, in the words Rich approved
+// (tests/catalog/wording.md). R48: they apply to every load with a problem; R59: the logo's
+// line says "Logo".
+const RULED_EDITS_LINES = {
+  loaded: 'Edits loaded.',
+  logoLeftOut: 'Logo left out; it couldn’t be read.',
+  savedFor: name => `Saved for “${name}”; sizes match.`,
+  reset: fields => `Reset, not valid: ${fields}.`,
+};
+
+// What a finished save is called, in today's words and in ruling R79's ("THING ACTION: SIZE in
+// N s.", tests/catalog/wording.md), by the kind of save: a single photo, a pair's Together
+// image or its two files, the corner sheet, or the four corner photos. Today's words name the
+// size only for a single photo; R79's name it for every kind, in words not yet approved beyond
+// a single photo's "W × H px", so its pattern takes any size there.
+const FINISHED_WORDS = {
+  photo: { today: 'Exported ', ruled: 'Photo' },
+  together: { today: 'Exported the Together image', ruled: 'Front and back' },
+  separately: { today: 'Exported the front and back', ruled: 'Front and back' },
+  cornerSheet: { today: 'Saved the corner sheet(?: at \\d+ px)?', ruled: 'Corner sheet' },
+  cornerPhotos: { today: 'Saved 4 corner shots(?: at \\d+ px)?', ruled: '4 corner photos' },
+};
+
+// A text made safe to put in a regular expression as it is.
+const asPattern = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Ruling R79's finished message, exactly: "THING ACTION: SIZE in N s." kind: a key of
+// FINISHED_WORDS; action: 'downloaded' or 'shared'; size: the size the message must give
+// ('1074 × 1074 px'), or null for any. The seconds are its first group. Only the one case
+// that owns each kind of message holds the app to these words (and is marked as a known
+// defect until R79 is built); every other case reads the message with finishedMessage.
+function ruledFinishedMessage(kind, action, size = null) {
+  const sizeText = size === null ? '.+' : asPattern(size);
+  const thing = asPattern(FINISHED_WORDS[kind].ruled);
+  return new RegExp(`^${thing} ${action}: ${sizeText} in (\\d+\\.\\d) s\\.$`);
+}
+
+// A finished message in today's words or ruling R79's, for a case that reads only the size or
+// the time from it: it passes before and after R79 is built. kind: a key of FINISHED_WORDS;
+// size: for a single photo, the size it must give ('2000 × 2000 px'), or null for any. The
+// seconds are its first group. It matches the start of the message, so a note may follow.
+function finishedMessage(kind, size = null) {
+  const words = FINISHED_WORDS[kind];
+  const sizeText = size === null ? '.+?' : asPattern(size);
+  const today = kind === 'photo' ? `${words.today}${sizeText}` : words.today;
+  const ruled = `${asPattern(words.ruled)} (?:downloaded|shared): ${sizeText}`;
+  return new RegExp(`^(?:${today}|${ruled}) in (\\d+\\.\\d) s\\.`);
+}
+
+// Copy's message in today's words ("Copied to clipboard (PNG).") or ruling R79's ("Photo
+// copied (PNG)." for a single photo, "Front and back copied (PNG)." for a pair), for a case
+// that only needs to know the copy finished. isPair: true for a pair's joined image.
+function copiedMessage(isPair = false) {
+  const thing = isPair ? 'Front and back' : 'Photo';
+  return new RegExp(`^(?:Copied to clipboard|${thing} copied) \\(PNG\\)\\.$`);
+}
+
+// Ruling R79's Copy message, exactly. isPair: true for a pair's joined image.
+function ruledCopiedMessage(isPair = false) {
+  return `${isPair ? 'Front and back' : 'Photo'} copied (PNG).`;
+}
+
 // Opens the app and waits until its test hook is there.
 async function openApp(page, address = 'index.html') {
   await page.goto(address);
@@ -444,6 +506,11 @@ async function answerQuestion(page, answer) {
 module.exports = {
   root,
   samplePath,
+  RULED_EDITS_LINES,
+  ruledFinishedMessage,
+  finishedMessage,
+  copiedMessage,
+  ruledCopiedMessage,
   openApp,
   openPhoto,
   goToStep,

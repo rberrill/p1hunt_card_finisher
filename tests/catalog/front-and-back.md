@@ -660,11 +660,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#pairPrompt`, "End the pair, or replace the side you’re on?", `#btnPromptFirst`, `#btnPromptSecond`
 - Source: `js/app/pair.js` (`receivePhoto`, `showPrompt`), `js/app/main.js` (`bindPhotoInput`)
-- Flag: to confirm. The question box's title and its first button both read **New photo**.
+- Ruling: R65. The New photo question's title and its first button both read **New photo**. The app already does this.
 - Cases: 1
 
 ### PAIR-13.1 Open while paired asks: New photo, or replace the side you are on   [auto: phone]
-Flag: to confirm. Written to today's behavior: the question box's title and its first button both read New photo.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -936,11 +935,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#toolSwap`
 - Source: `js/app/pair.js` (`swapPair`, `lockOtherCrop`), `js/app/crop.js` (`bindCrop`)
-- Flag: to confirm. Swap is an undo step for a single photo but not in a pair, so Undo after a pair's Swap doesn't turn the crop back.
+- Ruling: Rich's settled decision (front and back pairs): **Swap** is an undo step for a single photo but not in a pair. The app already does this.
 - Cases: 1
 
 ### PAIR-20.1 Swap turns both sides, and Undo doesn't turn them back   [auto: phone]
-Flag: to confirm. Written to today's behavior: Undo after a pair's Swap undoes the edit before it, not the Swap.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -977,7 +975,7 @@ The export settings (**Size**, **Format**, **Quality**, **Interpolation** and **
 - Changed: none
 - Anchors: `#exportSize`, `#exportFormat`, `#quality`, `#interp`, `#fill`
 - Source: `js/app/pair.js` (`applyPairRules`), `js/app/shell.js` (`resetStep`)
-- Flag: to confirm. **Reset export settings** on one side resets both sides' export settings, and leaves Together / Separately as it was.
+- Ruling: R63. **Reset export settings** leaves Together / Separately and the corner-shots output as they are, and in a pair resets both sides. The app already does this.
 - Cases: 3
 
 ### PAIR-21.1 Size, Format and Separately chosen on one side are the other side's too   [auto: phone]
@@ -1022,7 +1020,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PAIR-21.3 Reset export settings on one side resets both, and keeps Separately   [auto: phone]
-Flag: to confirm. Written to today's behavior: Reset export settings on one side resets both sides, and leaves Separately chosen.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1257,7 +1254,7 @@ A Together image larger than the browser's canvas limits scales both sides down 
 - Changed: none
 - Anchors: `CONFIG.maxOutputArea`, `CONFIG.maxOutputPx`
 - Source: `js/app/pair.js` (`togetherLayout`), `js/engine.js` (`pairLayout`, `pairScale`), `js/app/export-controls.js` (`exportNotes`)
-- Ruling: R15. The note reads "Scaled down to fit the N MP limit." (approved wording; N the limit in millions of pixels, rounded down to a tenth). The app differs today.
+- Ruling: R15. The note reads "Scaled down to fit the N MP limit." (approved wording; N the limit in millions of pixels, rounded down to a tenth). The app differs today. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
 - Cases: 1
 
 ### PAIR-27.1 A Together image over the canvas limit scales both cards down alike   [auto: phone, webkit]
@@ -1273,7 +1270,7 @@ Written to ruling R15, in the words Rich approved; it fails until R15 is built (
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Separately** | The size line gives the front's and the back's sizes, each under 1,000,000 pixels, with no note |
-| 2 | Tap **Together** | The size line gives one size of at most 1,000,000 pixels, with the shape (width over height) of the two cards side by side; a note reads "Scaled down to fit the N MP limit.", the approved words, with N the limit the app gives (the approved words say 16.7; this case's link lowers the limit to 1 MP, and which number the note then gives is for Rich) |
+| 2 | Tap **Together** | The size line gives one size of at most 1,000,000 pixels, with the shape (width over height) of the two cards side by side; a note reads "Scaled down to fit the 1 MP limit.", the approved words with the limit in force, which this case's link lowers to 1 MP (ruling R47) |
 | 3 | Tap **Download** | One file, at the size the line gave |
 | 4 | Look at it | Both cards are in it, shrunk by the same factor: each keeps its shape, and the gap between them is white |
 
@@ -1382,6 +1379,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 1
 
 ### PAIR-30.1 Download saves one file for Together and two, a moment apart, for Separately   [auto: phone, webkit]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported the Together image in N s." and "Exported the front and back in N s."), which this case also accepts: it reads only that each save finished, and MSG-23.1 and MSG-24.1 holds the words.
 Script only
 Stand-in: nothing is replaced; the two files are a quarter of a second apart, too close to time by eye, so the script notes when each download starts. On a real iPhone, PAIR-31.1.
 
@@ -1394,9 +1392,9 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** (with **Together** selected) | One file arrives; a message reads "Exported the Together image in N s." (N, a number of seconds) |
+| 1 | Tap **Download** (with **Together** selected) | One file arrives; a message begins "Front and back downloaded: " and ends "in N s." (N, a number of seconds) |
 | 2 | Tap **Separately** | **Separately** is selected |
-| 3 | Tap **Download** | Two files arrive, the second at least a quarter of a second after the first; a message reads "Exported the front and back in N s." |
+| 3 | Tap **Download** | Two files arrive, the second at least a quarter of a second after the first; a message begins "Front and back downloaded: " and ends "in N s." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1415,6 +1413,7 @@ On an iPhone, both of Separately's downloads arrive.
 - Cases: 1
 
 ### PAIR-31.1 Both of Separately's downloads arrive on an iPhone   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported the front and back in N s."), which this case also accepts: it reads only that the save finished, and MSG-24.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -1428,7 +1427,7 @@ Accept Safari's downloads (a named action): each time Safari asks whether to dow
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** (grey, beside the red **Share**) | A message over the photo begins "Exported the front and back in" |
+| 1 | Tap **Download** (grey, beside the red **Share**) | A message over the photo begins "Front and back downloaded: " |
 | 2 | Accept Safari's downloads | Safari asks nothing more |
 | 3 | Look at the app | The pair is still open on Export, with **Next card** in white in the bottom row |
 | 4 | Open the Files app and go to the downloads folder | Two new files are there: 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
@@ -1451,6 +1450,7 @@ On a fail, record: the row number, what you saw instead, how many times Safari a
 - Cases: 2
 
 ### PAIR-32.1 Share opens one share sheet with the pair's file or files   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported the Together image in N s." and "Exported the front and back in N s."), which this case also accepts: it reads only that each share finished, and MSG-23.1 and MSG-24.1 holds the words.
 Waiting on find-out Q-08: what the top of the iPhone's share sheet shows for shared pictures (a small picture of each, their names). Rows 1 and 4 gain those words once Rich has seen it on the phone.
 
 Before you start:
@@ -1465,10 +1465,10 @@ At **Original** no question box asks to upscale. The share sheet is the iPhone's
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo), then the share sheet rises from the bottom of the screen |
-| 2 | Tap **Save Image** | The share sheet closes; a message over the photo begins "Exported the Together image in" |
+| 2 | Tap **Save Image** | The share sheet closes; a message over the photo begins "Front and back shared: " |
 | 3 | Tap **Separately** | **Separately** is selected (white) |
 | 4 | Tap **Share** | One share sheet rises |
-| 5 | Tap **Save 2 Images** | The share sheet closes; a message begins "Exported the front and back in" |
+| 5 | Tap **Save 2 Images** | The share sheet closes; a message begins "Front and back shared: " |
 | 6 | Open the Photos app | The three newest pictures are the joined image (the front on the left, the back on the right), then the front alone and the back alone |
 
 Pass: every row's result is seen.
@@ -1509,6 +1509,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 1
 
 ### PAIR-33.1 Copy puts the Together image on the clipboard, and hides for Separately   [auto: phone]
+The message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.2 holds the words.
 Before you start:
 - Device and browser: a phone-width window, in a browser that can copy images on a secure page
 - Build: the build under test
@@ -1520,7 +1521,7 @@ The automated test puts a stand-in for the clipboard in the page, which records 
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Copy** (with **Together** selected) | A message reads "Copied to clipboard (PNG)." |
+| 1 | Tap **Copy** (with **Together** selected) | A message reads "Front and back copied (PNG)." |
 | 2 | Paste the clipboard into an app that takes images | A PNG image the size the size line gives: the two cards side by side |
 | 3 | Tap **Separately** | **Copy** is no longer in the save row |
 | 4 | Tap **Together** | **Copy** is back |
@@ -1600,6 +1601,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PAIR-35.2 A pair of the iPhone's largest photos exports without the page reloading   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported the Together image in N s." and "Exported the front and back in N s."), which this case also accepts: it reads only that each save finished, and MSG-23.1 and MSG-24.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -1613,10 +1615,10 @@ Accept Safari's downloads (a named action): each time Safari asks whether to dow
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** (grey, beside the red **Share**) | A thin red line runs along the top edge of the controls (the block of buttons under the photo), then a message over the photo begins "Exported the Together image in"; the page did not reload or go blank |
+| 1 | Tap **Download** (grey, beside the red **Share**) | A thin red line runs along the top edge of the controls (the block of buttons under the photo), then a message over the photo begins "Front and back downloaded: "; the page did not reload or go blank |
 | 2 | Accept Safari's downloads | Safari asks nothing more; the back is on screen, on Export, with **Next card** in white in the bottom row and no amber warning |
 | 3 | Tap **Separately** | **Separately** is selected (white) |
-| 4 | Tap **Download** | The red line runs again, then a message begins "Exported the front and back in"; the page did not reload or go blank |
+| 4 | Tap **Download** | The red line runs again, then a message begins "Front and back downloaded: "; the page did not reload or go blank |
 | 5 | Accept Safari's downloads | Safari asks nothing more; the back is on screen, on Export, with **Next card** in white and no amber warning |
 
 Pass: every row's result is seen.
@@ -1669,7 +1671,7 @@ On Export the size line reads **W × H px · FORMAT** for Together, and **front 
 - Changed: none
 - Anchors: `#exportReadout`, `#exportMessage`, `#pairOutput`
 - Source: `js/app/export-controls.js` (`syncExportReadout`, `exportNotes`), `js/app/pair.js` (`pairReadout`, `togetherLayout`)
-- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen: "The back is scaled down to fit the 16.7 MP limit." (or "The front…"; "Both sides are scaled down to fit the 16.7 MP limit." when both are; approved wording). R26. When the waiting side's corners are invalid, the line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"; approved wording) and Share, Download and Copy are dimmed. The app differs today.
+- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen: "The back is scaled down to fit the 16.7 MP limit." (or "The front…"; "Both sides are scaled down to fit the 16.7 MP limit." when both are; approved wording). R26. When the waiting side's corners are invalid, the line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"; approved wording) and Share, Download and Copy are dimmed. The app differs today. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
 - Cases: 3
 
 ### PAIR-37.1 The size line gives the joined size, or the front's and the back's   [auto: phone]
@@ -1709,7 +1711,7 @@ Each card on its own is under 1 MP at **Original** (PAIR-27.1). Rows 1 and 2 dra
 | 3 | Tap **Front** in the top bar | The front opens on Perspective, with **Front** in white |
 | 4 | Tap **Export** in the step tabs | The Export step, with **Together** selected |
 | 5 | Tap Size **Original** | **Original** is selected |
-| 6 | Tap **Separately** | **Separately** is selected, and beside it one note reads "The back is scaled down to fit the N MP limit.", the approved words, with N the limit the app gives (the approved words say 16.7; this case's link lowers the limit to 1 MP, and which number the note then gives is for Rich) |
+| 6 | Tap **Separately** | **Separately** is selected, and beside it one note reads "The back is scaled down to fit the 1 MP limit.", the approved words with the limit in force, which this case's link lowers to 1 MP (ruling R47) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

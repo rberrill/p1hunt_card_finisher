@@ -15,7 +15,7 @@ Tap **Add logo** (red) to pick a PNG, WebP, JPEG or SVG file to place on the pho
 - Changed: none
 - Anchors: `#btnOverlayAdd`, `#overlayInput`, "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB."
 - Source: `js/app/overlay.js` (`buildAddRow`, `bindOverlayControls`, `addOverlayFile`); `index.html` (the logo's file input)
-- Flag: to confirm. The hint above the button always says "up to 5 MB", while the error for a file that is too big uses the real limit, which a link can lower.
+- Ruling: R83. The hint gives the logo size limit in force, which a link can lower. The app differs today.
 - Cases: 3
 
 ### OVL-01.1 Add logo picks a file and places it   [auto: phone, webkit]
@@ -36,8 +36,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### OVL-01.2 The hint still says 5 MB when a link lowers the limit   [auto: phone]
-Flag: to confirm. Written to today's behavior: the hint gives 5 MB while the message for a file that is too big gives the real limit.
+### OVL-01.2 The hint gives the lower limit a link sets   [auto: phone]
+Written to rulings R83 and R59; it fails until both are built (BUG-293, BUG-283).
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -49,9 +49,9 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls (the one line of text at the top of the block of buttons under the photo) | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." |
+| 1 | Look at the line above the controls (the one line of text at the top of the block of buttons under the photo) | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 1 MB.": the limit the link set |
 | 2 | Tap **Add logo** | The file picker opens |
-| 3 | Choose big-logo.png | A red message takes the line's place: "That file is 2.0 MB. The overlay limit is 1 MB."; no logo is on the photo |
+| 3 | Choose big-logo.png | A red message takes the line's place: "That file is 2.0 MB. The logo limit is 1 MB."; no logo is on the photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -763,6 +763,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-14.2 A file over 5 MB is refused and the logo stays   [auto: phone]
+The message is in ruling R59's words. Until R59 is built (BUG-283) the app writes "overlay" where they say "logo", which this case also accepts: its subject is the refusal, and MSG-60.1 holds the words.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -775,7 +776,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Replace with big-logo.png | A red message takes OPACITY's place: "That file is 6.0 MB. The overlay limit is 5 MB."; the disc stays as it was |
+| 1 | Replace with big-logo.png | A red message takes OPACITY's place: "That file is 6.0 MB. The logo limit is 5 MB."; the disc stays as it was |
 | 2 | Tap **Move right** (the right arrow in the left-hand pad) | The disc moves; the message has gone and OPACITY shows again |
 
 Pass: every row's result is seen.
@@ -834,7 +835,7 @@ On the Overlay step the photo is locked: every press, pinch and wheel turn acts 
 - Changed: none
 - Anchors: "On this step the photo stays framed as set in Crop."
 - Source: `js/app/input.js` (`onPointerDown`, `onWheel`); `js/app/overlay.js` (`overlayPointerDown`)
-- Flag: to confirm. With no logo placed, every touch and the wheel do nothing on this step.
+- Ruling: R84. On Overlay the photo is locked: with no logo placed, every touch and the wheel do nothing. The app already does this.
 - Cases: 3
 
 ### OVL-15.1 A drag and a pinch on the photo move the logo, not the photo   [auto: phone, webkit]
@@ -855,7 +856,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-15.2 With no logo placed, a drag and a pinch do nothing   [auto: phone]
-Flag: to confirm. Written to today's behavior: with no logo, touches on the photo do nothing on this step.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag and pinch with fingers)
@@ -873,7 +873,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-15.3 The mouse wheel never zooms the photo here   [auto: desktop]
-Flag: to confirm. Written to today's behavior: with no logo, the wheel does nothing on this step.
 
 Before you start:
 - Device and browser: a computer with a mouse; a wide window, 1280 × 800 px
@@ -1190,7 +1189,7 @@ The rings fade out while a gesture runs and back in after it; a tapped ring ligh
 - Changed: none
 - Anchors: none
 - Source: `js/app/overlay.js` (`aimRings`, `ringAlphaAt`, `areRingsWanted`, `drawnPlacement`, `litSpotAt`)
-- Flag: to confirm. Under reduced motion the rings appear and go with no fade, while the Levels compare badge keeps its short fade.
+- Ruling: R71. Under reduced motion the **Before levels** badge still fades, the snap rings don't, and one fade is 60 ms. The app already does this.
 - Cases: 4
 
 ### OVL-22.1 The rings fade during a drag, for a person to judge   [eye]
@@ -1216,7 +1215,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Script only
 Stand-in: the script sets the browser to reduce motion and reads the picture the app draws in the frame right after the tap; a person can't see a single frame (about a sixtieth of a second).
 
-Flag: to confirm. Written to today's behavior: the logo jumps, and the rings appear and go with no fade (not checked here), while the Levels compare badge keeps its short fade.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser set to reduce motion
@@ -1485,7 +1483,7 @@ Adding a logo by the button, a drop or a paste makes it the saved logo. While th
 - Changed: none
 - Anchors: `CONFIG.session.saveDelayMs`, "This overlay works on this photo, but it can’t be saved in this browser."
 - Source: `js/app/overlay.js` (`addOverlayFile`, `saveToBrowser`, `overlayStateChanged`)
-- Flag: to confirm. When the logo can't be stored, the message says so but gives no next step.
+- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today.
 - Cases: 4
 
 ### OVL-28.1 A change to the saved logo's place is kept in the browser   [auto: phone, webkit]
@@ -1515,10 +1513,10 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-28.2 A logo the browser won't keep still goes on the photo   [auto: phone]
+The message is in ruling R59's words. Until R59 is built (BUG-283) the app writes "overlay" where they say "logo", which this case also accepts: its subject is the logo staying on the photo, and MSG-43.1 holds the words.
 Script only
 Stand-in: the script makes the browser refuse to store the saved logo, as a full storage would; a person can't make a browser's storage refuse on demand.
 
-Flag: to confirm. Written to today's behavior: the warning says the logo can't be saved but gives no next step.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser refusing to store the saved logo
@@ -1532,7 +1530,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Add blue-disc.png | The disc shows on the photo; an amber warning reads "This overlay works on this photo, but it can’t be saved in this browser." |
+| 1 | Add blue-disc.png | The disc shows on the photo; an amber warning reads "This logo works on this photo, but it can’t be saved in this browser." |
 | 2 | Tap **Remove** in the row of tools (the bottom row of buttons under the photo) | **Add logo** shows, with no **Use saved overlay** |
 
 Pass: every row's result is seen.

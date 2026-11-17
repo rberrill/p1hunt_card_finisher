@@ -22,6 +22,9 @@ const {
   root,
   stepNow,
   questionCard,
+  finishedMessage,
+  copiedMessage,
+  ruledCopiedMessage,
 } = require('./support/app.js');
 const {
   PORTRAIT_PAIR,
@@ -129,11 +132,10 @@ const UNREADABLE_MESSAGE = 'Couldn’t read that file as an image.';
 const EXPORT_WAIT_MESSAGE = 'Wait for the export to finish, then open the photo.';
 // Ruling R13's approved words for a photo opened while a side opens (tests/catalog/wording.md).
 const SIDE_WAIT_MESSAGE = 'Wait for the other side to open, then open the photo.';
-// Rulings R14 and R15's approved clamp notes, with the limit's number left to the app: these
-// cases lower the limit with a link, and whether the note then gives 16.7 or the lowered limit
-// is for Rich to say (as EXP-06.4).
-const APPROVED_CLAMP_NOTE = /^Scaled down to fit the [\d.]+ MP limit\.$/;
-const APPROVED_BACK_CLAMP_NOTE = /^The back is scaled down to fit the [\d.]+ MP limit\.$/;
+// Rulings R14 and R15's approved clamp notes. These cases lower the limit to 1 MP with a
+// link, and the note gives the limit in force (R47).
+const APPROVED_CLAMP_NOTE = 'Scaled down to fit the 1 MP limit.';
+const APPROVED_BACK_CLAMP_NOTE = 'The back is scaled down to fit the 1 MP limit.';
 // Ruling R26's approved size line when the back, not on screen, has invalid corners.
 const FIX_BACK_MESSAGE = 'Fix the back’s corners in Perspective first.';
 const STEPS = ['perspective', 'rotate', 'crop', 'levels', 'overlay', 'export'];
@@ -1825,12 +1827,12 @@ test('PAIR-27.1 A Together image over the canvas limit scales both cards down al
   await page.locator('#exportMessage').waitFor({ state: 'visible' });
   const note = await page.locator('#exportMessage').textContent();
   await check('one size of at most 1 MP, the shape of the two cards side by side; a note reads '
-    + '"Scaled down to fit the N MP limit."', async () => {
+    + `"${APPROVED_CLAMP_NOTE}"`, async () => {
     expect(joined[0] * joined[1]).toBeLessThanOrEqual(LOW_AREA);
     expect(full.width * full.height).toBeGreaterThan(LOW_AREA);
     const shapeChange = Math.abs(joined[0] / joined[1] - full.width / full.height);
     expect(shapeChange).toBeLessThan(full.width / full.height * SHAPE_TOLERANCE);
-    expect(note).toMatch(APPROVED_CLAMP_NOTE);
+    expect(note).toBe(APPROVED_CLAMP_NOTE);
   });
   const [saved] = await downloadAll(page, hand, 1);
   const scale = joined[1] / full.height;
@@ -1977,9 +1979,11 @@ test('PAIR-30.1 Download saves one file for Together and two, a moment apart, fo
   await goToStep(page, 'export', hand);
   await chooseSize(page, hand, '0');
   const together = await downloadAll(page, hand, 1);
-  await check('one file arrives; "Exported the Together image in N s."', async () => {
+  await check('one file arrives; a message begins "Front and back downloaded: " and ends "in N '
+    + 's."', async () => {
     expect(together).toHaveLength(1);
-    await expect(shownToast(page)).toHaveText(/^Exported the Together image in \d+\.\d s\.$/);
+    // Today's words or ruling R79's: MSG-23.1 holds the words.
+    await expect(shownToast(page)).toHaveText(finishedMessage('together'));
   });
   await chooseOutput(page, hand, 'separately');
   await check('Separately is selected', async () => {
@@ -1988,12 +1992,13 @@ test('PAIR-30.1 Download saves one file for Together and two, a moment apart, fo
   await noteDownloadStarts(page);
   const separately = await downloadAll(page, hand, 2);
   const starts = await downloadStarts(page);
-  await check('two files, a quarter of a second apart; "Exported the front and back in N s."',
-    async () => {
+  await check('two files, a quarter of a second apart; a message begins "Front and back '
+    + 'downloaded: " and ends "in N s."', async () => {
       expect(separately).toHaveLength(2);
       expect(starts).toHaveLength(2);
       expect(starts[1] - starts[0]).toBeGreaterThanOrEqual(DOWNLOAD_GAP_MIN_MS);
-      await expect(shownToast(page)).toHaveText(/^Exported the front and back in \d+\.\d s\.$/);
+      // Today's words or ruling R79's: MSG-24.1 holds the words.
+      await expect(shownToast(page)).toHaveText(finishedMessage('separately'));
     });
 });
 
@@ -2037,8 +2042,8 @@ test('PAIR-33.1 Copy puts the Together image on the clipboard, and hides for Sep
   await chooseSize(page, hand, '0');
   const [joined] = await readoutSizes(page);
   await hand.tap(page.locator('#btnCopy'));
-  await check('"Copied to clipboard (PNG)."', async () => {
-    await expect(shownToast(page)).toHaveText('Copied to clipboard (PNG).');
+  await check(`a message reads "${ruledCopiedMessage(true)}"`, async () => {
+    await expect(shownToast(page)).toHaveText(copiedMessage(true));
   });
   await check('a PNG image the size the size line gives', async () => {
     const copied = await copiedImage(page);
@@ -2278,15 +2283,15 @@ test('PAIR-37.2 Separately warns when the side not on screen is scaled down [pho
   // A known defect: plain value comparisons, so the case fails at once rather than waiting.
   const isNoteShown = await page.locator('#exportMessage').isVisible();
   const note = await page.locator('#exportMessage').textContent();
-  await check('Separately is selected, and beside it one note reads "The back is scaled down to '
-    + 'fit the N MP limit."', async () => {
+  await check('Separately is selected, and beside it one note reads '
+    + `"${APPROVED_BACK_CLAMP_NOTE}"`, async () => {
     await expectSeparately(page);
     expect(frontSize[0] * frontSize[1], 'the front is under the limit').toBeLessThan(LOW_AREA);
     const backScaled = backSize[0] * backSize[1];
     expect(backScaled, 'the back is scaled to the limit').toBeLessThanOrEqual(LOW_AREA);
     expect(backScaled, 'the back is scaled to the limit').toBeGreaterThan(LOW_AREA * AREA_FILL_MIN);
     expect(isNoteShown, 'a note shows').toBe(true);
-    expect(note).toMatch(APPROVED_BACK_CLAMP_NOTE);
+    expect(note).toBe(APPROVED_BACK_CLAMP_NOTE);
   });
 });
 

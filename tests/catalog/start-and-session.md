@@ -89,7 +89,7 @@ Before a photo is open, nothing that needs a photo is offered.
 - Changed: none
 - Anchors: `#topBarHost`, `#tabBarHost`, `#panel`, `#btnFit`
 - Source: `css/app.css` (the shell's phone and wide blocks); `js/app/shell.js` (`syncUI`, `syncFitButton`)
-- Flag: to confirm. With no photo open, the backtick key still opens the detection tuning panel, which floats over the start screen.
+- Ruling: R51. On the start screen the tuning panel never covers **Open photo** or the Resume box. The app differs today. The backtick key may still open it with no photo open.
 - Cases: 3
 
 ### STA-03.1 On a phone, nothing but the start screen shows   [auto: phone]
@@ -126,7 +126,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-03.3 The backtick key opens the tuning panel over the start screen   [auto: desktop]
-Flag: to confirm. Written to today's behavior: the tuning panel opens with no photo open.
+Written to ruling R51: the panel may open with no photo open, and never covers **Open photo**. It fails until that is built (BUG-281): today the panel covers the button's right end.
 
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window, 1280 × 800 px
@@ -137,7 +137,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Press the backtick key (`` ` ``, left of 1) | The detection tuning panel opens, floating over the start screen |
+| 1 | Press the backtick key (`` ` ``, left of 1) | The detection tuning panel opens, floating over the start screen, and leaves **Open photo** clear: no part of the panel is over the button |
 | 2 | Press the backtick key again | The tuning panel closes; the start screen is as it was |
 
 Pass: every row's result is seen.
@@ -1103,7 +1103,7 @@ A newly opened photo starts on Perspective with fresh edits. The undo history, e
 - Changed: none
 - Anchors: `#btnUndo`, `#btnFindCard`, `#toolCandidate`, `#levelsPicks`
 - Source: `js/app/state.js` (`openFile`, `resetPhotoState`); `js/app/shell.js` (`setTab`)
-- Flag: to confirm. **Snap**, **Grid**, **Debug overlay** and the chosen mode on Perspective (Nudge or Flatten) and Rotate (Straighten or Flip) carry over to a new photo, but not over a reload.
+- Ruling: R89. Snap, Grid, **Debug overlay** and the Perspective and Rotate modes carry over to a new photo, but not over a reload. The app already does this.
 - Cases: 11
 
 ### STA-18.1 A new photo opens on Perspective with nothing to undo   [auto: phone]
@@ -1231,7 +1231,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-18.8 Snap and Flatten stay as set for a new photo   [auto: phone]
-Flag: to confirm. Written to today's behavior: the tools' settings carry over to the next photo.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1250,7 +1249,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-18.9 Snap and Flatten go back to their start after a reload   [auto: phone]
-Flag: to confirm. Written to today's behavior: the tools' settings are not saved with the edits.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window
@@ -1579,6 +1577,7 @@ A 48 MP iPhone photo opens and stays usable: the screen works from smaller copie
 - Cases: 2
 
 ### STA-24.1 A 48 MP photo from the camera stays usable on an iPhone   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: an iPhone whose main camera takes 48 MP photos, Safari. Which iPhones do, and at which camera setting, is find-out item Q-02; until it is answered, row 6 confirms the photo is 48 MP
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -1597,7 +1596,7 @@ Accept Safari's downloads (a named action): each time Safari asks whether to dow
 | 5 | Tap **Export** in the step tabs (the six tabs along the bottom, Perspective to Export) | The Export step shows **Download** |
 | 6 | Tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Export options rise; the line near their foot starts "Source" and gives between 47 and 49 MP |
 | 7 | Tap the **×** at the top right of Export options | They close; **Download** shows |
-| 8 | Tap **Download** | No question box; a message over the photo begins "Exported 2000 × 2000 px" |
+| 8 | Tap **Download** | No question box; a message over the photo begins "Photo downloaded: 2000 × 2000 px" |
 | 9 | Accept Safari's downloads | Safari asks nothing more; the photo is still on screen, on Export; the page did not reload or go blank |
 
 Pass: every row's result is seen.

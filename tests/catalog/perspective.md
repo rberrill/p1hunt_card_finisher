@@ -545,11 +545,10 @@ Double tap a handle to zoom to 6 times the fitted size, centered on that handle.
 - Changed: none
 - Anchors: `CONFIG.handleZoom`, "Double tap a handle to zoom in on it"
 - Source: `js/app/input.js` (`checkHandleDoubleTap`, `zoomToHandle`, `onPointerUp`)
-- Flag: to confirm. The second tap only has to land on the same handle within 350 ms, a longer window than the 300 ms each tap may last, with no limit on how far it is from the first.
+- Ruling: R56. A handle's double tap has a 0.35 s window and no distance limit. The app already does this.
 - Cases: 2
 
 ### PER-11.1 A double tap on a handle zooms in on it, and another zooms back out   [auto: phone, webkit]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width window (tap with a finger) or a wide window (click with the mouse)
@@ -567,7 +566,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-11.2 On an iPhone, a double tap on a handle zooms the photo, not the page   [phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: an iPhone, Safari
@@ -643,12 +641,10 @@ At the right of that line, **Confidence** and a percentage say how sure detectio
 - Changed: none
 - Anchors: "Confidence", `#perspectiveLine`
 - Source: `js/app/perspective.js` (`syncPerspectiveReadouts`)
-- Ruling: R6. Once the corners are moved by hand the confidence is cleared; Undo and Reset perspective bring back the right one. R7. "Nothing detected" clears after the first corner move, so only then can the empty confidence be seen. The app differs today on both.
-- Flag: to confirm. Any message in that line, and Preview, hides the confidence, so it is not always on screen.
+- Ruling: R6. Once the corners are moved by hand the confidence is cleared; Undo and Reset perspective bring back the right one. R7. "Nothing detected" clears after the first corner move, so only then can the empty confidence be seen. The app differs today on both. R85. A message in the line above the controls, and Preview, hide Perspective's confidence figure. The app already does this.
 - Cases: 4
 
 ### PER-13.1 Confidence shows at the right of the line, except in Preview   [auto: phone]
-Flag: to confirm. Written to today's behavior: Preview hides the confidence.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -736,7 +732,7 @@ Four arrow buttons move the selected handle one screen pixel per press, and neve
 - Changed: none
 - Anchors: `#perspectiveNudge`, "Nudge the selected handle", "Nudge left"
 - Source: `js/app/perspective.js` (`buildNudgeRow`, `bindHandleNudge`); `js/app/parts/nudge-pad.js` (`bindNudgePad`); `js/app/input.js` (`moveHandleBy`)
-- Flag: to confirm. The on-screen arrows move one screen pixel and show the magnifier, while the keyboard's arrow keys move one photo pixel (10 with Shift) and show none.
+- Ruling: R67. An arrow key moves a corner 1 photo pixel (10 with Shift) with no magnifier; the on-screen arrows move it 1 screen pixel and show the magnifier. The app already does this.
 - Cases: 2
 
 ### PER-14.1 Each arrow button moves the handle one screen pixel, never less than one photo pixel   [auto: phone]
@@ -762,7 +758,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-14.2 The keyboard's arrow keys move one photo pixel, or ten with Shift, with no magnifier   [auto: desktop]
-Flag: to confirm. Written to today's behavior: the keys and the on-screen arrows move by different amounts, and only the on-screen arrows show the magnifier.
 
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
@@ -979,11 +974,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#toolFlatten`, `#perspectiveFlattenRow`
 - Source: `js/app/perspective.js` (`bindPerspectiveTools`, `syncPerspective`, `syncFlattenValue`)
-- Flag: to confirm. The **Flatten** button never shows its icon, because it always has a percentage to show.
+- Ruling: R86. **Flatten** never shows its icon, only its percentage. The app already does this.
 - Cases: 1
 
 ### PER-19.1 Flatten shows its line and slider, and its button shows the percentage   [auto: phone]
-Flag: to confirm. Written to today's behavior: the **Flatten** button shows 100% in place of an icon, even while it is not selected.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1288,7 +1282,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#toolPreview`, "Show the corrected card", "The corrected card. Handles are hidden.", "Pinch to zoom, drag to pan. Tap Preview again for the corners."
 - Source: `js/app/perspective.js` (`buildPerspectiveControls`, `bindPerspectiveTools`, `syncPerspective`, `syncPerspectiveReadouts`); `js/app/view.js` (`draw`)
-- Flag: to confirm. With the corners crossed, Preview shows "Fix the corners in Perspective first." although the user is already on Perspective.
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app differs today.
 - Cases: 2
 
 ### PER-25.1 Preview shows the corrected card and its two lines   [auto: phone]
@@ -1309,7 +1303,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-25.2 Preview with crossed corners, for a person to judge   [eye]
-Flag: to confirm. Written to today's behavior: the photo area asks to fix the corners in Perspective, the step already open.
+Written to ruling R82, in the wording Rich approved: on Perspective itself the words are "Fix the corners first." Until that is built (BUG-292) the photo area reads "Fix the corners in Perspective first.", and row 2 fails. VIEW-14.2's script reads the words.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
@@ -1321,7 +1315,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring to 40 px right of and 40 px below the top-right corner ring, and let go | The outline crosses itself and turns red and dashed |
-| 2 | Tap **Preview** | The photo area is empty except for grey text in its middle: "Fix the corners in Perspective first." |
+| 2 | Tap **Preview** | The photo area is empty except for grey text in its middle: "Fix the corners first." |
 | 3 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Corners cross or fold inward. Drag them back into a convex shape." |
 
 Pass: every row's result is seen.
@@ -1338,12 +1332,10 @@ While Preview is on, **Nudge** and **Flatten** are off, the arrow buttons and th
 - Changed: none
 - Anchors: `#toolPreview`, `#toolNudge`, `#toolFlatten`, `#perspectivePreviewRow`
 - Source: `js/app/perspective.js` (`syncPerspective`, `bindHandleNudge`); `js/app/input.js` (`stepGesture`, `hitsPhotoControl`)
-- Ruling: R2. The keyboard's arrow keys and Tab do nothing while Preview is on. The app differs today.
-- Flag: to confirm. While Preview is on both mode buttons are off, so the Nudge or Flatten mode can't change until Preview is turned off.
+- Ruling: R2. The keyboard's arrow keys and Tab do nothing while Preview is on. The app differs today. R87. While Preview is on, **Nudge** and **Flatten** are dimmed. The app already does this.
 - Cases: 4
 
 ### PER-26.1 While Preview is on, the modes are off and a drag moves the corrected card   [auto: phone, webkit]
-Flag: to confirm. Written to today's behavior: **Nudge** and **Flatten** are both greyed out while Preview is on.
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -1421,7 +1413,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-27 Preview's levels, and when it turns off
 
-Preview shows the applied levels, not an unapplied Levels draft. It stays on when you change step, and turns off for a new photo or a switch to the other side of a pair.
+Preview shows the applied levels, not an unapplied Levels draft. It turns off for a new photo, a switch to the other side of a pair and, by ruling R88, a change of step (today it stays on then).
 
 - Risk: low
 - Check: script
@@ -1430,11 +1422,11 @@ Preview shows the applied levels, not an unapplied Levels draft. It stays on whe
 - Changed: none
 - Anchors: `#toolPreview`
 - Source: `js/app/levels.js` (`levelsShown`, `previewCanvas`); `js/app/state.js` (`resetPhotoState`); `js/app/pair.js` (`applySide`)
-- Flag: to confirm. Preview stays on across step changes, although Tap to find card, the color picker and compare are all cleared then.
-- Cases: 4
+- Ruling: R88. A step change turns **Preview** off. The app differs today.
+- Cases: 5
 
-### PER-27.1 Preview stays on after a change of step   [auto: phone]
-Flag: to confirm. Written to today's behavior.
+### PER-27.1 Preview turns off at a change of step   [auto: phone]
+Written to ruling R88; it fails until that is built (BUG-294).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1447,7 +1439,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Preview** | It reads On; the corrected card shows |
 | 2 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Rotate step shows |
-| 3 | Tap **Perspective** in the step tabs | **Preview** still reads On, the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads PREVIEW, and the corrected card shows with no handles |
+| 3 | Tap **Perspective** in the step tabs | **Preview** reads Off, the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads NUDGE, and the photo shows with its outline and handles |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1493,15 +1485,39 @@ Before you start:
 - Starting screen: the photo open, on the Perspective step, no levels applied
 - Browser data: none for this site (a private window, or the site's data cleared)
 
+Preview is turned off before each change of step, so the case doesn't depend on whether a step change turns it off (PER-27.1).
+
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Preview** | The corrected card shows; note its colors |
-| 2 | Tap **Levels** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Levels step shows, with **Auto** among its buttons |
-| 3 | Tap **Auto** | The photo brightens: an unapplied draft, with **Apply** lit in the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) and a white dot on the **Levels** tab |
-| 4 | Tap **Perspective** in the step tabs | The corrected card shows with the colors noted in row 1, not the draft's |
-| 5 | Tap **Levels** in the step tabs | The Levels step shows, with **Apply** lit |
-| 6 | Tap **Apply** | The white dot on the **Levels** tab has gone, and **Apply** is greyed out |
-| 7 | Tap **Perspective** in the step tabs | The corrected card now shows the applied, brighter colors |
+| 2 | Tap **Preview** again | It reads Off; the outline and handles show |
+| 3 | Tap **Levels** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Levels step shows, with **Auto** among its buttons |
+| 4 | Tap **Auto** | The photo brightens: an unapplied draft, with **Apply** lit in the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) and a white dot on the **Levels** tab |
+| 5 | Tap **Perspective** in the step tabs | The Perspective step shows, **Preview** reading Off |
+| 6 | Tap **Preview** | The corrected card shows with the colors noted in row 1, not the draft's |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-27.5 Preview shows levels once they are applied   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Perspective step, no levels applied
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+Preview is turned off before each change of step, so the case doesn't depend on whether a step change turns it off (PER-27.1).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Preview** | The corrected card shows; note its colors |
+| 2 | Tap **Preview** again | It reads Off; the outline and handles show |
+| 3 | Tap **Levels** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Levels step shows, with **Auto** among its buttons |
+| 4 | Tap **Auto** | **Apply** is lit in the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) |
+| 5 | Tap **Apply** | The white dot on the **Levels** tab has gone, and **Apply** is greyed out |
+| 6 | Tap **Perspective** in the step tabs | The Perspective step shows, **Preview** reading Off |
+| 7 | Tap **Preview** | The corrected card shows the applied, brighter colors |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1517,7 +1533,7 @@ In the options sheet, **Tap to find card** (with "then tap the card" under it) a
 - Changed: none
 - Anchors: `#btnFindCard`, "Tap to find card", "then tap the card", "Tap the card in the photo."
 - Source: `js/app/perspective.js` (`buildPerspectiveSheet`, `bindPerspective`, `syncPerspective`, `perspectiveStatus`); `js/app/shell.js` (`closeSheets`)
-- Flag: to confirm. Escape closes the sheet on a phone but never disarms Tap to find card.
+- Ruling: R69. Escape closes a phone sheet and nothing else: not **Tap to find card**, not a Levels pick. The app already does this.
 - Cases: 2
 
 ### PER-28.1 Tap to find card arms and disarms   [auto: both]
@@ -1539,7 +1555,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-28.2 Escape closes the options but leaves Tap to find card armed   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: a phone-width window with a keyboard (an iPad with a keyboard, or a computer's window made narrow)
@@ -1569,7 +1584,7 @@ While armed, a still tap on the photo, however long it is held, searches for the
 - Changed: none
 - Anchors: `#btnFindCard`, `CONFIG.detect.seedMissFactor`, "No card-shaped edges found. "
 - Source: `js/app/input.js` (`stepGesture`, `onPointerUp`); `js/app/state.js` (`findCardAt`, `runDetect`)
-- Flag: to confirm. On a photo with no card, the pop-up "No card-shaped edges found…" and the line "Nothing detected. Drag the corners into place." show at the same time.
+- Ruling: R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today.
 - Cases: 5
 
 ### PER-29.1 A tap on the card finds it, as one undo step, and disarms   [auto: phone, webkit]
@@ -1609,8 +1624,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-29.3 A find tap on a picture with no card leaves the corners, with a pop-up   [auto: phone]
-Flag: to confirm. Written to today's behavior: the pop-up and the line's own message show at the same time.
+### PER-29.3 A find tap on a picture with no card leaves the corners   [auto: phone]
+Whether a pop-up shows as well is MSG-10.1's (ruling R77); this case doesn't look at it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1623,7 +1638,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
 | 2 | Tap **Tap to find card** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Tap the card in the photo." |
-| 3 | Tap the middle of the picture once, without moving | A pop-up over the picture's bottom edge reads "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again." and, at the same time, the line above the controls reads "Nothing detected. Drag the corners into place." |
+| 3 | Tap the middle of the picture once, without moving | The line above the controls reads "Nothing detected. Drag the corners into place." |
 | 4 | Look at the outline and at **Undo** | The corners have not moved, and **Undo** is still greyed out |
 
 Pass: every row's result is seen.
@@ -1970,8 +1985,7 @@ The line above the controls shows at most one message, in this order: Tap to fin
 - Changed: none
 - Anchors: `#perspectiveStatus`, "Detecting…", "Low confidence (", "Corrected frame clamped to "
 - Source: `js/app/perspective.js` (`perspectiveStatus`, `asSentences`, `syncPerspectiveReadouts`)
-- Ruling: R7. "Low confidence" and "Nothing detected" clear after the first corner move, by drag or with the arrow buttons. The app differs today.
-- Flag: to confirm. Messages the user can't act on take the line, such as "Detecting…" and "Corrected frame clamped to 12000px on the long side." (written without a space before px).
+- Ruling: R7. "Low confidence" and "Nothing detected" clear after the first corner move, by drag or with the arrow buttons. The app differs today. R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this. R76. "Corrected frame clamped to 12000px on the long side." goes from the line; the fact goes to the console. The app differs today.
 - Cases: 9
 
 None of the sample photos is found with low confidence, so the cases that need it open the app with a link setting that counts any confidence under 100% as low, and the ones that need a clamped frame with a setting that lowers the largest corrected frame to 1000 px. Low confidence needs a card found and "Nothing detected" needs none, so those two never compete for the line.
@@ -2046,8 +2060,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-36.5 A clamped corrected frame is reported in the line   [auto: phone]
-Flag: to confirm. Written to today's behavior: the message is one the user can't act on, and it has no space before px.
+### PER-36.5 A clamped corrected frame is not reported in the line   [auto: phone]
+Written to ruling R76; it fails until that is built (BUG-288).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -2058,7 +2072,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Corrected frame clamped to 1000px on the long side." |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It holds no message about the corrected frame: it doesn't read "Corrected frame clamped to 1000px on the long side." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2140,11 +2154,10 @@ The Nudge or Flatten mode, **Snap** and **Debug overlay** stay as set when anoth
 - Changed: none
 - Anchors: `#toolNudge`, `#toolSnap`, `#debugOverlay`
 - Source: `js/app/perspective.js` (`bindPerspectiveTools`, `bindPerspective`); `js/app/core.js` (the `app` object's defaults)
-- Flag: to confirm. They survive opening a new photo but not a reload.
+- Ruling: R89. Snap, Grid, **Debug overlay** and the Perspective and Rotate modes carry over to a new photo, but not over a reload. The app already does this.
 - Cases: 2
 
 ### PER-37.1 Flatten, Snap and Debug overlay stay as set for the next photo   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -2168,7 +2181,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-37.2 Flatten, Snap and Debug overlay are not kept after a reload   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window

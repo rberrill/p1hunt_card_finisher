@@ -16,6 +16,7 @@ const {
   goToStep,
   handFor,
   readSavedImage,
+  finishedMessage,
 } = require('./support/app.js');
 const {
   pickWith,
@@ -112,10 +113,11 @@ function msFromLine(messages, start) {
   return Number(lines[0].text.slice(start.length).replace(' ms', ''));
 }
 
-// The pattern of the finished message for a saved picture `width` × `height` px; its one group
-// is the time, in seconds to a tenth.
+// The pattern of the finished message for a saved picture `width` × `height` px, in today's
+// words ("Exported W × H px in N s.") or ruling R79's ("Photo downloaded: W × H px in N s.");
+// its one group is the time, in seconds to a tenth. MSG-22.1 holds the words.
 function exportedPattern(width, height) {
-  return new RegExp(`^Exported ${width} × ${height} px in (\\d+\\.\\d) s\\.$`);
+  return finishedMessage('photo', `${width} × ${height} px`);
 }
 
 // Waits for the finished message of a picture `width` × `height` px and returns its time in
@@ -159,7 +161,7 @@ async function timeExportAt(page, check, testInfo, size, what, sidePx) {
   const savedImage = await readSavedImage(page, saved.file);
   const durationMs = await exportedMs(page, wantedPx[0], wantedPx[1]);
   await check(`IMG_9136-15MP-straight.jpg is saved, ${wantedPx.join(' × ')} px, with no `
-    + `question first; the message reads "Exported ${wantedPx.join(' × ')} px in N s."`,
+    + `question first; the message reads "Photo downloaded: ${wantedPx.join(' × ')} px in N s."`,
     async () => {
       expect(saved.question).toBe('');
       expect(saved.name).toBe('IMG_9136-15MP-straight.jpg');
@@ -251,7 +253,7 @@ test('PERF-08.1 An upscaled export [phone]', async ({ page, check }, testInfo) =
   const savedImage = await readSavedImage(page, saved.file);
   const durationMs = await exportedMs(page, 2000, 2000);
   await check('IMG_9136-straight.jpg is saved, enlarged to 2000 × 2000 px; the message reads '
-    + '"Exported 2000 × 2000 px in N s."', async () => {
+    + '"Photo downloaded: 2000 × 2000 px in N s."', async () => {
     expect(saved.name).toBe('IMG_9136-straight.jpg');
     expect([savedImage.width, savedImage.height]).toEqual([2000, 2000]);
   });

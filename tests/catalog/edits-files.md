@@ -336,11 +336,11 @@ Edits saved for a photo whose pixel size differs from the open photo's are refus
 - Changed: none
 - Anchors: "These edits are for a "
 - Source: `js/app/export.js` (`loadEdits`)
-- Flag: to confirm. The message writes the sizes with no spaces (4032×3024), where the rest of the app writes 4032 × 3024.
+- Ruling: R58. Every message writes sizes "W × H" and "N px", with spaces. The app differs today.
 - Cases: 1
 
 ### EDT-06.1 Edits for a photo of another size are refused, naming both sizes   [auto: phone]
-Flag: to confirm. Written to today's behavior: the message writes the sizes with no spaces.
+Written to ruling R58; it fails until that is built (BUG-282).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -356,7 +356,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-turned-edits.json | A red message reads "These edits are for a 1498×2098 photo; this one is 1536×2048." |
+| 1 | Load the edits file IMG_9136-turned-edits.json | A red message reads "These edits are for a 1498 × 2098 photo; this one is 1536 × 2048." |
 | 2 | Look at the photo, **Undo** and **Redo** | Nothing has changed: the photo is upright, and **Undo** and **Redo** are still greyed out |
 
 Pass: every row's result is seen.
@@ -373,12 +373,11 @@ Edits saved for a photo with another name but the same pixel size are applied, w
 - Changed: none
 - Anchors: "Edits were saved for “", "Applied anyway — sizes match."
 - Source: `js/app/export.js` (`loadEdits`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md).
-- Flag: to confirm. The message joins its two parts with a dash ("Applied anyway — sizes match."), where other messages use two sentences.
+- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md). R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today. The line for this file is "Saved for “NAME”; sizes match."
 - Cases: 2
 
 ### EDT-07.1 Edits for another photo of the same size are applied with a warning   [auto: phone]
-Flag: to confirm. Written to today's behavior: the message joins its two parts with a dash.
+Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -394,7 +393,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-turned-edits.json | An amber message reads "Edits were saved for “IMG_9136.JPEG”. Applied anyway — sizes match." |
+| 1 | Load the edits file IMG_9136-turned-edits.json | One amber message shows; its lines read "Edits loaded." and "Saved for “IMG_9136.JPEG”; sizes match.", in that order |
 | 2 | Look at the photo | It is turned a quarter clockwise: the edits were applied |
 
 Pass: every row's result is seen.
@@ -435,10 +434,11 @@ Settings in the file that are not valid are reset to their defaults and named in
 - Changed: none
 - Anchors: "Some settings in these edits weren’t valid and were reset: "
 - Source: `js/app/export.js` (`loadEdits`), `js/app/state.js` (`cleanState`), `js/engine.js` (`sanitizeState`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md). R42. One damaged value resets its whole settings group (one bad Quality resets every export setting), and the warning names the group: a damaged file is untrusted. The app already does this.
+- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md). R42. One damaged value resets its whole settings group (one bad Quality resets every export setting), and the warning names the group: a damaged file is untrusted. The app already does this. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
 - Cases: 2
 
 ### EDT-08.1 A damaged setting is reset and named; the rest is applied   [auto: phone]
+Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -454,7 +454,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-quality-7-edits.json | An amber message reads "Some settings in these edits weren’t valid and were reset: export." |
+| 1 | Load the edits file IMG_9136-quality-7-edits.json | One amber message shows; its lines read "Edits loaded." and "Reset, not valid: export.", in that order |
 | 2 | Look at the photo | It is turned a quarter clockwise: the rest of the file was applied |
 | 3 | Open Export options | **Quality** reads 92%: the export settings are back to their defaults |
 
@@ -480,7 +480,7 @@ The named actions:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Load the edits file IMG_9136-quality-7-gif-logo-edits.json | One amber message shows, and no other message comes after it |
-| 2 | Read the message | Its lines read "Edits loaded.", "Reset, not valid: export." and "Overlay left out; it couldn’t be read.", in that order |
+| 2 | Read the message | Its lines read "Edits loaded.", "Reset, not valid: export." and "Logo left out; it couldn’t be read.", in that order |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
@@ -496,12 +496,11 @@ A logo in the file must be a known image type and at most 5 MB (or the lower lim
 - Changed: none
 - Anchors: "The overlay in these edits couldn’t be read, so it was left out.", `CONFIG.overlay.maxBytes`
 - Source: `js/app/overlay.js` (`overlayFromEdits`), `js/app/export.js` (`loadEdits`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md).
-- Flag: to confirm. The warning says "overlay" where the Overlay step's buttons say "logo".
+- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md). R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today. R59. The logo's line reads "Logo left out; it couldn’t be read." (approved wording). The app differs today.
 - Cases: 6
 
 ### EDT-09.1 A logo of a type a logo can't be is left out with a warning   [auto: phone]
-Flag: to confirm. Written to today's behavior: the warning says "overlay".
+Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -518,14 +517,14 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-gif-logo-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 1 | Load the edits file IMG_9136-gif-logo-edits.json | One amber message shows; its lines read "Edits loaded." and "Logo left out; it couldn’t be read.", in that order |
 | 2 | Look at the photo | It is turned a quarter clockwise, with no logo: the rest was applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-09.2 A logo over 5 MB is left out with a warning   [auto: phone]
-Flag: to confirm. Written to today's behavior: the warning says "overlay".
+Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -542,14 +541,14 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-big-logo-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 1 | Load the edits file IMG_9136-big-logo-edits.json | One amber message shows; its lines read "Edits loaded." and "Logo left out; it couldn’t be read.", in that order |
 | 2 | Look at the photo | It is turned a quarter clockwise, with no logo: the rest was applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-09.3 A link's lower logo limit leaves a larger logo out   [auto: phone]
-Flag: to confirm. Written to today's behavior: the warning says "overlay".
+Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -574,7 +573,7 @@ The named actions:
 | 5 | Tap **Start fresh** | The offer to resume goes |
 | 6 | Tap **Open photo** and choose IMG_9136.JPEG | The photo opens, with no logo |
 | 7 | Tap **Export** in the step tabs | The Export step shows |
-| 8 | Load the edits file IMG_9136-edits.json (the one saved in row 3) | An amber message reads "The overlay in these edits couldn’t be read, so it was left out."; no logo shows |
+| 8 | Load the edits file IMG_9136-edits.json (the one saved in row 3) | One amber message shows, its lines reading "Edits loaded." and "Logo left out; it couldn’t be read.", in that order; no logo shows |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -604,7 +603,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-09.5 A logo placement with no picture, the logo not loaded, is left out   [auto: phone]
-Flag: to confirm. Written to today's behavior: the warning says "overlay".
+Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -621,7 +620,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-logo-placement-only-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 1 | Load the edits file IMG_9136-logo-placement-only-edits.json | One amber message shows; its lines read "Edits loaded." and "Logo left out; it couldn’t be read.", in that order |
 | 2 | Look at the photo | No logo shows on it |
 
 Pass: every row's result is seen.
@@ -646,7 +645,7 @@ The named actions:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Load the edits file IMG_9136-quality-7-gif-logo-edits.json | One amber message shows, and no other message comes after it |
-| 2 | Read the message | Its lines read "Edits loaded.", "Saved for “IMG_9136.JPEG”; sizes match.", "Reset, not valid: export." and "Overlay left out; it couldn’t be read.", in that order |
+| 2 | Read the message | Its lines read "Edits loaded.", "Saved for “IMG_9136.JPEG”; sizes match.", "Reset, not valid: export." and "Logo left out; it couldn’t be read.", in that order |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
@@ -925,11 +924,10 @@ Export's options sheet has an **Edits** heading with **Save edits** and **Load e
 - Changed: none
 - Anchors: `#exportSheet`, `#exportEditsRow`, `#editsPairHint`, "Export options"
 - Source: `js/app/export-controls.js` (`buildEditsGroup`, `buildEditsButton`), `js/app/pair.js` (`syncPair`)
-- Flag: to confirm. The hint says nearly the same as Export's last tip ("An edits file is small. Re-open the same photo, load it, and the export is identical."), and on a phone both show.
+- Ruling: R61. The hint under **Save edits** and **Load edits** stays; Export's last tip, which nearly repeats it, goes. The app differs today.
 - Cases: 2
 
 ### EDT-15.1 Export options group Save edits and Load edits under Edits, with a hint   [auto: both]
-Flag: to confirm. Written to today's behavior: the hint repeats most of Export's last tip.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window

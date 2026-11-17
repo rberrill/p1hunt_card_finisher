@@ -20,6 +20,7 @@ const {
   editState,
   handFor,
   openOptions,
+  RULED_EDITS_LINES,
 } = require('./support/app.js');
 const {
   pickWith,
@@ -31,7 +32,12 @@ const {
   storedRecord,
 } = require('./support/start-and-session.js');
 const { loadEdits, recordMessages, messagesSoFar } = require('./support/edits-drop-keys.js');
-const { fixtureFile, fixturePath, fixtureEdits } = require('./support/edits-files.js');
+const {
+  fixtureFile,
+  fixturePath,
+  fixtureEdits,
+  toastShownText,
+} = require('./support/edits-files.js');
 const { choiceButton, selectedChoices } = require('./support/export.js');
 const { presetChip, chipLabels, selectedChips } = require('./support/crop.js');
 const { fixtureLogo, chooseLogo, chooseBadLogo } = require('./support/overlay.js');
@@ -67,21 +73,21 @@ const IMAGE_RULE = 'img-src \'self\' blob: data:';
 // The Upscale question for the default Size.
 const UPSCALE_QUESTION = 'Upscale to 2000 px?';
 // The edits-file messages, word for word.
-const RESET_WARNING = 'Some settings in these edits weren’t valid and were reset: ';
 const TOO_LARGE = 'That file is too large to be a Card Finisher edits file.';
 const NOT_JSON = 'That file isn’t valid JSON.';
 const NOT_EDITS = 'That isn’t a Card Finisher edits file.';
-const LOGO_LEFT_OUT = 'The overlay in these edits couldn’t be read, so it was left out.';
-const SAVED_FOR = 'Edits were saved for “';
 // The message a photo shows while it opens.
 const LOADING = 'Loading…';
-const SIZES_MATCH = '”. Applied anyway — sizes match.';
 // The logo messages and the Overlay step's hint, word for word.
 const NO_SIZE = 'That SVG has no width, height or viewBox, so it can’t be sized. '
   + 'Re-export it with a size.';
 const CANT_READ = 'Couldn’t read that image. Try another PNG, WebP, JPG or SVG file.';
-const LOGO_HINT = 'Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.';
-const LOWERED_LIMIT_MESSAGE = 'That file is 0.1 MB. The overlay limit is 0.0625 MB.';
+// Ruling R83: the hint gives the limit in force. The words before it, and the limit a link of
+// 65536 bytes sets, in the units the refusal uses or in KB.
+const LOGO_HINT_START = 'Add a logo or watermark: PNG, WebP, JPG or SVG, up to ';
+const LOWERED_LIMIT_IN_HINT = /^(0\.0625 MB|64 KB)\.$/;
+// Ruling R59: messages say "logo".
+const LOWERED_LIMIT_MESSAGE = 'That file is 0.1 MB. The logo limit is 0.0625 MB.';
 // The files in tests/fixtures/ the cases name (each described in its case).
 const TURNED = 'IMG_9136-turned-edits.json';
 const LEVELS_AS_WORDS = 'IMG_9136-levels-as-words-edits.json';
@@ -130,6 +136,15 @@ async function messageAfter(page, before) {
   { timeout: WAIT_MS });
   const messages = (await messagesSoFar(page)).slice(before);
   return messages.find(message => message.text !== LOADING);
+}
+
+// Waits for the message a loaded edits file shows after the first `before` messages, and
+// checks it in a case written to rulings R12 and R48: one amber message whose lines are
+// `lines`, in order. Plain readings, so the known defect fails at once.
+async function expectLoadWarning(page, before, lines) {
+  const shown = await messageAfter(page, before);
+  expect(shown.kind).toBe('warn');
+  expect(await toastShownText(page)).toBe(lines.join(' '));
 }
 
 // Runs one verdict with `check`, then drops any security policy refusal its screenshot
@@ -326,14 +341,16 @@ test('SEC-05.1 A malformed field is reset and named, the rest is applied [phone]
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-190');
   await recordMessages(page);
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'export', hand);
   const before = await messageCount(page);
   await loadEdits(page, hand, fixtureFile(LEVELS_AS_WORDS));
-  const shown = await messageAfter(page, before);
-  await check(`an amber message reads "${RESET_WARNING}levels."`, async () => {
-    expect(shown).toEqual({ text: `${RESET_WARNING}levels.`, kind: 'warn' });
+  const lines = [RULED_EDITS_LINES.loaded, RULED_EDITS_LINES.reset('levels')];
+  await check(`one amber message shows; its lines read "${lines[0]}" and "${lines[1]}", in that `
+    + 'order', async () => {
+    await expectLoadWarning(page, before, lines);
   });
   await check('the photo is turned a quarter right: the file\'s other edits were applied',
     async () => {
@@ -398,16 +415,18 @@ function bigLogoEditsFile() {
 
 test('SEC-07.1 An edits file\'s logo of the wrong type or over 5 MB is left out [phone]',
   async ({ page, check }, testInfo) => {
+    test.fail(true, 'BUG-190');
     await recordMessages(page);
     const hand = await startWith(page, testInfo);
     await goToStep(page, 'export', hand);
     const files = [fixtureFile(GIF_LOGO), bigLogoEditsFile()];
+    const lines = [RULED_EDITS_LINES.loaded, RULED_EDITS_LINES.logoLeftOut];
     for (const file of files) {
       const count = await messageCount(page);
       await loadEdits(page, hand, file);
-      const shown = await messageAfter(page, count);
-      await check(`loading ${file.name}: an amber message reads "${LOGO_LEFT_OUT}"`, async () => {
-        expect(shown).toEqual({ text: LOGO_LEFT_OUT, kind: 'warn' });
+      await check(`loading ${file.name}: one amber message shows, its lines reading "${lines[0]}" `
+        + `and "${lines[1]}", in that order`, async () => {
+        await expectLoadWarning(page, count, lines);
       });
       await check('the photo is turned a quarter right, with no logo on it', async () => {
         expect(await quarterAfterLoad(page, 1)).toBe(1);
@@ -558,14 +577,18 @@ test('SEC-10.2 An SVG logo\'s script never runs [phone] [webkit]', async ({
     });
 });
 
-test('SEC-10.3 With a lower limit from a link, the refusal names it [phone]', async ({
+test('SEC-10.3 With a lower limit from a link, the hint and the refusal name it [phone]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-293, BUG-283');
   const hand = await startWith(page, testInfo, { address: 'index.html?overlay.maxBytes=65536' });
   await goToStep(page, 'overlay', hand);
-  await check(`the line above the controls reads "${LOGO_HINT}"`, async () => {
-    await expect(page.locator('#overlayHintLine')).toHaveText(LOGO_HINT);
+  await check(`the line above the controls reads "${LOGO_HINT_START.trim()}" and then the limit `
+    + 'the link set, 0.0625 MB (64 KB), not 5 MB', async () => {
+    const hint = await page.locator('#overlayHintLine').textContent();
+    expect(hint.startsWith(LOGO_HINT_START)).toBe(true);
+    expect(hint.slice(LOGO_HINT_START.length)).toMatch(LOWERED_LIMIT_IN_HINT);
   });
   await chooseBadLogo(page, hand, page.locator('#btnOverlayAdd'), fixtureLogo(NOISY_LOGO));
   await check(`the line reads "${LOWERED_LIMIT_MESSAGE}" in red`, async () => {
@@ -635,20 +658,21 @@ test('SEC-11.1 A photo\'s name with markup shows as text on the Resume card, cut
 
 test('SEC-11.2 An edits file\'s name with markup shows as text in the warning, cut to 60 '
   + '[phone]', async ({ page, check }, testInfo) => {
+  test.fail(true, 'BUG-190');
   await recordMessages(page);
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'export', hand);
   const before = await messageCount(page);
   await loadEdits(page, hand, fixtureFile(MARKUP_NAME));
-  const shown = await messageAfter(page, before);
   const name = fixtureEdits(MARKUP_NAME).source.name;
   const cut = `${name.slice(0, SHORT_NAME_LENGTH - 1)}…`;
-  await check(`an amber message reads "${SAVED_FOR}${cut}${SIZES_MATCH}"; nothing in it is bold, `
-    + 'and no picture shows', async () => {
-    expect(shown).toEqual({ text: `${SAVED_FOR}${cut}${SIZES_MATCH}`, kind: 'warn' });
-    const toastChildren = await page.locator('#toast .toast-text')
-      .evaluate(el => el.children.length);
-    expect(toastChildren).toBe(0);
+  const lines = [RULED_EDITS_LINES.loaded, RULED_EDITS_LINES.savedFor(cut)];
+  await check(`one amber message shows; its lines read "${lines[0]}" and "${lines[1]}"; nothing `
+    + 'in it is bold, and no picture shows', async () => {
+    await expectLoadWarning(page, before, lines);
+    // The lines may be elements of their own; none may be one the name's markup made.
+    const markup = await page.locator('#toast .toast-text').locator('b, img').count();
+    expect(markup).toBe(0);
   });
   await check('window.testRan is undefined: nothing the name holds has run', async () => {
     expect(await page.evaluate(() => window.testRan)).toBeUndefined();

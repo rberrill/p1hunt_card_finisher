@@ -181,7 +181,7 @@ A reload forgets Snap, Grid, **Debug overlay**, the chosen mode on Perspective a
 - Changed: none
 - Anchors: `#debugOverlay`, `#rotateGrid`, `#btnUndo`
 - Source: `js/app/core.js` (`app`), `js/app/state.js` (`History`), `js/app/adapters.js` (`Session.snapshot`)
-- Flag: to confirm. Snap, Grid, **Debug overlay** and the Perspective and Rotate modes carry over to a new photo opened in the same visit, but not across a reload.
+- Ruling: R89. Snap, Grid, **Debug overlay** and the Perspective and Rotate modes carry over to a new photo, but not over a reload. The app already does this.
 - Cases: 4
 
 That Snap and Flatten go back to their start after a reload is STA-18.9, and that they stay as set for a new photo, STA-18.8.
@@ -214,7 +214,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STO-04.2 Grid and Debug overlay carry over to a new photo in the same visit   [auto: phone]
-Flag: to confirm. Written to what the app does today: these settings last for the visit, not for one photo.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px

@@ -13,7 +13,7 @@ The layout is chosen by the window's width alone: 760 px and narrower is the pho
 - Changed: none
 - Anchors: `#tabBarHost`, `#topBarSteps`, `.sheet-layer`, `#panel`
 - Source: `js/app/main.js` (`init`), `js/app/shell.js` (`placeLayout`, `closeSheets`)
-- Flag: to confirm. A phone turned to landscape that is wider than 760 px (such as 844 × 390) gets the wide layout, with the side panel and no step tabs along the bottom.
+- Ruling: R70. A phone on its side wider than 760 px gets the wide layout. The app already does this.
 - Cases: 3
 
 ### LAY-01.1 760 px and narrower is the phone layout, wider the wide one   [auto: desktop, webkit]
@@ -50,7 +50,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LAY-01.3 A phone turned sideways, 844 px wide, gets the wide layout   [auto: desktop]
-Flag: to confirm. Written to what the app does today: the layout follows the width alone, so a phone on its side shows the side panel and no step tabs along the bottom.
 Before you start:
 - Device and browser: a desktop browser's responsive mode at 844 × 390 px (an iPhone on its side)
 - Build: the build under test
@@ -423,7 +422,7 @@ When the device asks for reduced motion, animations stop and only fades are kept
 - Changed: none
 - Anchors: `.sheet-layer`, `.segment-thumb`, `.ruler-pointer`, `.progress-line`, `"Before levels"`
 - Source: `css/app.css` (the reduced motion block and each part's own), `js/app/parts/adjustment-line.js` (`isMotionReduced`), `js/app/parts/progress-line.js` (`updateProgressLine`), `js/app/overlay.js` (`aimRings`, `overlaySpotTap`)
-- Flag: to confirm. Under reduced motion the **Before levels** badge still fades in over 80 ms while the Overlay step's snap rings appear at once, and one transition (60 ms) is shorter than the 80 ms the motion rules set as the floor.
+- Ruling: R71. Under reduced motion the **Before levels** badge still fades, the snap rings don't, and one fade is 60 ms. The app already does this.
 - Cases: 5
 
 That the logo jumps to a tapped ring under reduced motion is OVL-22.2; that the **Before levels** badge keeps its fade is LEV-17.2; that a question box only fades is QCD-09.1.
@@ -508,6 +507,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, the knob's size, a screenshot.
 
 ### LAY-10.5 Under reduced motion the export's progress line still moves   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only that the save finished, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open
 - Build: the build under test, opened with `?export.bandPx=65536` (index.html?export.bandPx=65536), which makes the app save the picture in small bands of rows, so a save takes about a second
@@ -518,7 +518,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **Yes** | A thin red line on the top edge of the controls (the block of buttons under the photo) grows from left to right in several steps, then goes; a message over the photo begins "Exported 2000 × 2000 px" |
+| 2 | Tap **Yes** | A thin red line on the top edge of the controls (the block of buttons under the photo) grows from left to right in several steps, then goes; a message over the photo begins "Photo downloaded: 2000 × 2000 px" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, a screen recording.
@@ -534,12 +534,10 @@ The app's agreed colors: the P1Hunt red (#e5322d) on its main actions, a solid w
 - Changed: none
 - Anchors: `CONFIG.theme.accent`, `CONFIG.theme.warn`, `CONFIG.theme.ink`, `CONFIG.theme.page`
 - Source: `css/app.css` (`:root`), `js/config.js` (`CONFIG.theme`), `js/app/core.js` (the theme written to the page at load)
-- Ruling: R43. The brand lines are guidance for new design, and a design Rich has agreed stands; so no case here holds the app to the brand lines (the checkerboard behind the saved logo's thumbnail is drawn with a gradient function, and stands). The app already does this.
-- Flag: to confirm. `CONFIG.theme` still holds six colors of the old layout whose page colors are no longer used, and some comments still say "one red" after the brand rule changed.
+- Ruling: R43. The brand lines are guidance for new design, and a design Rich has agreed stands; so no case here holds the app to the brand lines (the checkerboard behind the saved logo's thumbnail is drawn with a gradient function, and stands). The app already does this. The six colors of the old layout left in the settings, and the comments that still say "one red", are code to tidy in the fix pass, not a behavior: no case checks them.
 - Cases: 2
 
 ### LAY-11.1 The brand's colors, for a person to judge   [eye]
-Flag: to confirm. The settings still hold six colors of the old layout that the page no longer uses, and some comments still say "one red"; neither shows on screen, so this case judges what does.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -678,11 +676,10 @@ Turning the phone to landscape and back to portrait brings the layout back as it
 - Changed: none
 - Anchors: `#tabBarHost`, `#topBarSteps`, `#view`, `.control-area`
 - Source: `js/app/main.js` (`init`), `js/app/shell.js` (`placeLayout`), `js/app/view.js` (`resizeCanvas`)
-- Flag: to confirm. A phone in landscape wider than 760 px gets the wide layout, with the side panel and no step tabs along the bottom.
+- Ruling: R70. A phone on its side wider than 760 px gets the wide layout. The app already does this.
 - Cases: 2
 
 ### LAY-14.1 Sideways and back, the layout is as it was   [auto: phone, webkit]
-Flag: to confirm. Written to what the app does today: sideways, at 844 px wide, the phone shows the wide layout.
 Before you start:
 - Device and browser: a desktop browser's responsive mode at 390 × 844 px
 - Build: the build under test
@@ -699,7 +696,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, the heights measured, a screenshot.
 
 ### LAY-14.2 Turning a real iPhone and back restores the layout   [phone]
-Flag: to confirm. Written to what the app does today: an iPhone on its side wider than 760 px shows the wide layout.
 Before you start:
 - Device and browser: an iPhone with Face ID (any iPhone but an SE: on its side it is more than 760 px wide), Safari, with rotation lock off
 - Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/

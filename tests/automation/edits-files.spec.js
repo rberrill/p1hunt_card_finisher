@@ -84,13 +84,15 @@ const NOISY_LOGO = 'noisy-logo.png';
 const TOO_LARGE = 'That file is too large to be a Card Finisher edits file.';
 const NOT_JSON = 'That file isn’t valid JSON.';
 const NOT_EDITS = 'That isn’t a Card Finisher edits file.';
-const LOGO_LEFT_OUT = 'The overlay in these edits couldn’t be read, so it was left out.';
 // The lines of ruling R12's one warning, in the wording Rich approved (tests/catalog/
-// wording.md).
+// wording.md). R48: they apply to a load with one problem too; R59: the logo's line.
 const LOADED_LINE = 'Edits loaded.';
 const SAVED_FOR_LINE = 'Saved for “IMG_9136.JPEG”; sizes match.';
 const RESET_LINE = 'Reset, not valid: export.';
-const LOGO_LINE = 'Overlay left out; it couldn’t be read.';
+const LOGO_LINE = 'Logo left out; it couldn’t be read.';
+// The row of the cases whose one problem is the logo.
+const LOGO_LINE_ROW = `one amber message shows; its lines read "${LOADED_LINE}" and `
+  + `"${LOGO_LINE}", in that order`;
 // The edits file limit (CONFIG.export.editsMaxBytes), and a logo of 5.5 MB: over the logo
 // limit of 5 MB (CONFIG.overlay.maxBytes) and, written into a file, still under 8 MB.
 const EDITS_MAX_BYTES = 8 * 1024 * 1024;
@@ -412,10 +414,12 @@ test('EDT-05.3 JSON that isn\'t an edits file is refused [phone]', async ({
 
 test('EDT-06.1 Edits for a photo of another size are refused, naming both sizes [phone]',
   async ({ page, check }, testInfo) => {
+    test.fail(true, 'BUG-282');
     const hand = await startOn(page, testInfo, { photo: OTHER_SIZE_PHOTO });
     const before = await editsAndHistory(page);
     await loadFixture(page, hand, TURNED);
-    const expected = 'These edits are for a 1498×2098 photo; this one is 1536×2048.';
+    // Ruling R58: sizes are written "W × H".
+    const expected = 'These edits are for a 1498 × 2098 photo; this one is 1536 × 2048.';
     await check(`a red message reads "${expected}"`, async () => {
       expect(await waitForToast(page)).toEqual({ text: expected, kind: 'error', isShown: true });
     });
@@ -427,16 +431,26 @@ test('EDT-06.1 Edits for a photo of another size are refused, naming both sizes 
 
 test('EDT-07.1 Edits for another photo of the same size are applied with a warning [phone]',
   async ({ page, check }, testInfo) => {
+    test.fail(true, 'BUG-190');
     const hand = await startOn(page, testInfo, { photo: SAME_SIZE_PHOTO });
     await loadFixture(page, hand, TURNED);
-    const expected = 'Edits were saved for “IMG_9136.JPEG”. Applied anyway — sizes match.';
-    await check(`an amber message reads "${expected}"`, async () => {
-      expect(await waitForToast(page)).toEqual({ text: expected, kind: 'warn', isShown: true });
+    await check(`one amber message shows; its lines read "${LOADED_LINE}" and `
+      + `"${SAVED_FOR_LINE}", in that order`, async () => {
+      await expectLoadWarning(page, [LOADED_LINE, SAVED_FOR_LINE]);
     });
     await check('it is turned a quarter clockwise: the edits were applied', async () => {
       await waitForEdits(page, { quarter: 1 });
     });
   });
+
+// The row of a case written to rulings R12 and R48 for a load with one problem: one amber
+// message is up, and its lines are `lines`, in order. It reads plain values, so the known
+// defect fails at once.
+async function expectLoadWarning(page, lines) {
+  const toast = await waitForToast(page);
+  expect(toast.kind).toBe('warn');
+  expect(await toastShownText(page)).toBe(lines.join(' '));
+}
 
 // The body of the cases written to ruling R12: loads the fixture `name` into the open photo
 // and expects one amber message whose lines are `lines`, in order. Both checks compare plain
@@ -470,11 +484,12 @@ test('EDT-08.1 A damaged setting is reset and named; the rest is applied [phone]
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-190');
   const hand = await startOn(page, testInfo);
   await loadFixture(page, hand, QUALITY_7);
-  const expected = 'Some settings in these edits weren’t valid and were reset: export.';
-  await check(`an amber message reads "${expected}"`, async () => {
-    expect(await waitForToast(page)).toEqual({ text: expected, kind: 'warn', isShown: true });
+  await check(`one amber message shows; its lines read "${LOADED_LINE}" and "${RESET_LINE}", in `
+    + 'that order', async () => {
+    await expectLoadWarning(page, [LOADED_LINE, RESET_LINE]);
   });
   await check('it is turned a quarter clockwise: the rest of the file was applied', async () => {
     await waitForEdits(page, { quarter: 1 });
@@ -500,10 +515,11 @@ test('EDT-09.1 A logo of a type a logo can\'t be is left out with a warning [pho
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-190');
   const hand = await startOn(page, testInfo);
   await loadFixture(page, hand, GIF_LOGO);
-  await check(`an amber message reads "${LOGO_LEFT_OUT}"`, async () => {
-    expect(await waitForToast(page)).toEqual({ text: LOGO_LEFT_OUT, kind: 'warn', isShown: true });
+  await check(LOGO_LINE_ROW, async () => {
+    await expectLoadWarning(page, [LOADED_LINE, LOGO_LINE]);
   });
   await check('it is turned a quarter clockwise, with no logo: the rest was applied', async () => {
     await waitForEdits(page, { quarter: 1, hasLogo: false });
@@ -517,6 +533,7 @@ test('EDT-09.2 A logo over 5 MB is left out with a warning [phone]', async ({
 }, testInfo) => {
   // The case's file, made from the fixture as the case says: the logo's type changed to PNG
   // and its data replaced by 5.5 MB of zero bytes, which its size alone refuses.
+  test.fail(true, 'BUG-190');
   const edits = fixtureEdits(GIF_LOGO);
   edits.overlayImage.type = 'image/png';
   edits.overlayImage.data = Buffer.alloc(OVER_LOGO_LIMIT_BYTES).toString('base64');
@@ -524,8 +541,8 @@ test('EDT-09.2 A logo over 5 MB is left out with a warning [phone]', async ({
   expect(fs.statSync(file).size).toBeLessThan(EDITS_MAX_BYTES);
   const hand = await startOn(page, testInfo);
   await loadEdits(page, hand, file);
-  await check(`an amber message reads "${LOGO_LEFT_OUT}"`, async () => {
-    expect(await waitForToast(page)).toEqual({ text: LOGO_LEFT_OUT, kind: 'warn', isShown: true });
+  await check(LOGO_LINE_ROW, async () => {
+    await expectLoadWarning(page, [LOADED_LINE, LOGO_LINE]);
   });
   await check('it is turned a quarter clockwise, with no logo: the rest was applied', async () => {
     await waitForEdits(page, { quarter: 1, hasLogo: false });
@@ -537,6 +554,7 @@ test('EDT-09.3 A link\'s lower logo limit leaves a larger logo out [phone]', asy
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-190');
   const hand = await startOn(page, testInfo, { step: 'overlay' });
   await chooseLogo(page, hand, page.locator('#btnOverlayAdd'), fixtureLogo(NOISY_LOGO));
   await check('the logo shows on the photo', async () => {
@@ -570,8 +588,9 @@ test('EDT-09.3 A link\'s lower logo limit leaves a larger logo out [phone]', asy
     expect(await stepNow(page)).toBe('export');
   });
   await loadEdits(page, hand, saved.file);
-  await check(`an amber message reads "${LOGO_LEFT_OUT}"; no logo shows`, async () => {
-    expect(await waitForToast(page)).toEqual({ text: LOGO_LEFT_OUT, kind: 'warn', isShown: true });
+  await check(`one amber message shows, its lines reading "${LOADED_LINE}" and "${LOGO_LINE}", `
+    + 'in that order; no logo shows', async () => {
+    await expectLoadWarning(page, [LOADED_LINE, LOGO_LINE]);
     expect((await editState(page)).overlay).toBeNull();
   });
 });
@@ -601,14 +620,11 @@ test('EDT-09.4 A logo placement with no picture keeps a logo the app already has
 
 test('EDT-09.5 A logo placement with no picture, the logo not loaded, is left out [phone]',
   async ({ page, check }, testInfo) => {
+    test.fail(true, 'BUG-190');
     const hand = await startOn(page, testInfo);
     await loadFixture(page, hand, PLACEMENT_ONLY);
-    await check(`an amber message reads "${LOGO_LEFT_OUT}"`, async () => {
-      expect(await waitForToast(page)).toEqual({
-        text: LOGO_LEFT_OUT,
-        kind: 'warn',
-        isShown: true,
-      });
+    await check(LOGO_LINE_ROW, async () => {
+      await expectLoadWarning(page, [LOADED_LINE, LOGO_LINE]);
     });
     await check('no logo shows on it', async () => {
       expect((await editState(page)).overlay).toBeNull();

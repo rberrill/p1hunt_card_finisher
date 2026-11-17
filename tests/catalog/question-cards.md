@@ -18,7 +18,7 @@ Every question shows in the same box over the photo: a title, one line of text, 
 - Changed: none
 - Anchors: `#pairPrompt`, `#btnPromptFirst`, `#btnPromptSecond`, `#btnPromptCancel`
 - Source: `js/app/parts/alert-card.js` (`buildAlertCard`, `updateAlertCard`, `showAlert`); `js/app/pair.js` (`promptCard`, `showPrompt`)
-- Flag: to confirm. The New photo question's title and its first choice both read "New photo".
+- Ruling: R65. The New photo question's title and its first button both read **New photo**. The app already does this.
 - Cases: 2
 
 ### QCD-01.1 The Upscale question: a title, a line, two choices side by side and Cancel beneath   [auto: phone]
@@ -38,7 +38,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### QCD-01.2 The pair's questions come in the same question box   [auto: phone]
-Flag: to confirm. Written to today's behavior: the New photo question's title and its first choice both read "New photo".
 
 Before you start:
 - Device and browser: a phone-width window

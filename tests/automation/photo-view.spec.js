@@ -221,18 +221,29 @@ test('VIEW-01.1 The photo opens fitted, with 24 px around it [phone]', async ({
     + 'centered', () => expectFitted(page, FIT_GAP_PX));
 });
 
-test('VIEW-01.2 Crop opened first leaves 36 px, and Rotate then keeps it [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startOn(page, testInfo);
-  await goToStep(page, 'crop', hand);
-  await check('on Crop the photo is 36 px from the edges on its tighter side',
-    () => expectFitted(page, CROP_GAP_PX));
-  await goToStep(page, 'rotate', hand);
-  await check('on Rotate it is still 36 px from the edges, not 24',
-    () => expectFitted(page, CROP_GAP_PX));
-});
+test('VIEW-01.2 Crop opened first leaves 36 px, and Rotate then fits its own 24 px [phone]',
+  async ({ page, check }, testInfo) => {
+    test.fail(true, 'BUG-295');
+    const hand = await startOn(page, testInfo);
+    await goToStep(page, 'crop', hand);
+    await check('on Crop the photo is 36 px from the edges on its tighter side',
+      () => expectFitted(page, CROP_GAP_PX));
+    await goToStep(page, 'rotate', hand);
+    await check('on Rotate the straightened photo is 24 px from the edges on its tighter side, '
+      + 'and centered on the other', () => expectFitted(page, FIT_GAP_PX));
+  });
+
+test('VIEW-01.3 Rotate opened first leaves 24 px, and Crop then fits its own 36 px [phone]',
+  async ({ page, check }, testInfo) => {
+    test.fail(true, 'BUG-295');
+    const hand = await startOn(page, testInfo);
+    await goToStep(page, 'rotate', hand);
+    await check('on Rotate the straightened photo is 24 px from the edges on its tighter side',
+      () => expectFitted(page, FIT_GAP_PX));
+    await goToStep(page, 'crop', hand);
+    await check('on Crop the photo is 36 px from the edges on its tighter side, and centered on '
+      + 'the other', () => expectFitted(page, CROP_GAP_PX));
+  });
 
 test('VIEW-02.1 Perspective keeps its zoom; Rotate and Crop share theirs [phone]', async ({
   page,
@@ -966,12 +977,28 @@ test('VIEW-13.1 Rotate shows the whole frame; Levels shows only the crop, for a 
   await check.eye('only the square inside the crop shows, filling the width of the photo area');
 });
 
-// Records that the photo area shows no photo, only the stage and a line of text.
-async function checkMessageOnly(page, check, description) {
+// Records, in the page, every line of text drawn on a canvas from the moment it opens, in
+// window.testDrawnTexts: the words in the photo area are drawn, so no element holds them.
+function recordDrawnText(page) {
+  return page.addInitScript(() => {
+    window.testDrawnTexts = [];
+    const fillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function recordFillText(text, ...rest) {
+      window.testDrawnTexts.push(String(text));
+      return fillText.call(this, text, ...rest);
+    };
+  });
+}
+
+// Records that the photo area shows no photo, only the stage and a line of text. drawnText:
+// the words the line must be, read from recordDrawnText's list, or null not to read them.
+async function checkMessageOnly(page, check, description, drawnText = null) {
   await waitForStill(page);
+  const lastDrawn = await page.evaluate(() => (window.testDrawnTexts || []).slice(-1)[0]);
   await check(description, async () => {
     expect(await page.evaluate(() => window.CF.currentView())).toBeNull();
     expect(await stageShare(page)).toBeGreaterThan(MESSAGE_ONLY_SHARE);
+    if (drawnText !== null) expect(lastDrawn).toBe(drawnText);
   });
   await check.eye(`${description}: the words are grey, centered in the photo area`);
 }
@@ -988,16 +1015,19 @@ test('VIEW-14.1 With the corners crossed, the later steps show a message, for a 
     'on Rotate, no photo, only "Fix the corners in Perspective first."');
 });
 
-test('VIEW-14.2 Preview with the corners crossed sends you to Perspective, for a person to '
-  + 'judge [phone]', async ({ page, check }, testInfo) => {
+test('VIEW-14.2 Preview with the corners crossed asks to fix them, for a person to judge '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  test.fail(true, 'BUG-292');
+  await recordDrawnText(page);
   const hand = await startOn(page, testInfo);
   await crossTheCorners(page, hand);
   await check('the outline crosses itself', async () => {
     expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(false);
   });
   await hand.tap(page.locator('#toolPreview'));
-  await checkMessageOnly(page, check,
-    'with Preview on, no photo, only "Fix the corners in Perspective first."');
+  // Ruling R82: on Perspective itself the words are these.
+  await checkMessageOnly(page, check, 'with Preview on, no photo, only "Fix the corners first."',
+    'Fix the corners first.');
 });
 
 test('VIEW-14.3 A pair\'s joined preview with one side\'s corners crossed, for a person to '

@@ -278,6 +278,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 4
 
 ### CNR-05.1 Share corners opens the iPhone's share sheet with the sheet, or all four photos   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet in N s." and "Saved 4 corner shots in N s."), which this case also accepts: it reads only that a save finished, and MSG-25.1 and MSG-26.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test on the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP **Share corners** is hidden)
@@ -292,17 +293,18 @@ The Upscale question is asked at every save in this case: the sheet is 314 px an
 | 1 | Tap **Corner shots** in the bottom row of buttons | The Corner shots sheet rises, with **Share corners** in red and **Download corners** beside it |
 | 2 | Tap **Share corners** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | A thin red line runs along the sheet's top edge, then the share sheet rises with one picture, the 2 × 2 sheet of corners |
-| 4 | Tap **Save Image** | The share sheet closes; a message begins "Saved the corner sheet in" |
+| 4 | Tap **Save Image** | The share sheet closes; a message begins "Corner sheet shared: " |
 | 5 | Tap **4 photos** | **4 photos** is selected (white) |
 | 6 | Tap **Share corners** | The question box asks "Upscale to 2000 px?" |
 | 7 | Tap **No** | The share sheet rises with four pictures, one per corner |
-| 8 | Tap **Save 4 Images** | The share sheet closes; a message begins "Saved 4 corner shots in" |
+| 8 | Tap **Save 4 Images** | The share sheet closes; a message begins "4 corner photos shared: " |
 | 9 | Open the Photos app | The four corner pictures are the newest in the library, after the sheet |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ### CNR-05.2 Share corners hands the share sheet the corner sheet   [auto: phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet in N s."), which this case also accepts: it reads only that the save finished, and MSG-25.1 holds the words.
 Script only
 Stand-in: a script stands in for the share sheet and records the files it is handed; no case uses a desktop browser's own share sheet (the iPhone's is CNR-05.1).
 
@@ -316,7 +318,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Corner shots** in the bottom row of buttons | **Share corners** shows in red, and **Download corners** beside it is not red |
-| 2 | Tap **Share corners** | The share sheet is handed one JPEG file, 01_chrome_flat_black-corners.jpg; a message begins "Saved the corner sheet in" |
+| 2 | Tap **Share corners** | The share sheet is handed one JPEG file, 01_chrome_flat_black-corners.jpg; a message begins "Corner sheet shared: " |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -375,6 +377,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 3
 
 ### CNR-06.1 Download corners saves the corner sheet as a plain download   [auto: phone, webkit]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet in N s."), which this case also accepts: it reads only that the save finished, and MSG-25.1 holds the words.
 Before you start:
 - Device and browser: any; a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test, opened with `?cornerShots.upscaleTargetPx=0` (index.html?cornerShots.upscaleTargetPx=0)
@@ -385,7 +388,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Corner shots** in the bottom row of buttons | **Download corners** shows |
-| 2 | Tap **Download corners** | One file is saved, a JPEG of 314 × 314 px; a message begins "Saved the corner sheet in" |
+| 2 | Tap **Download corners** | One file is saved, a JPEG of 314 × 314 px; a message begins "Corner sheet downloaded: " |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.
@@ -409,6 +412,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CNR-06.3 On an iPhone, Download corners saves the sheet to Files   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet in N s."), which this case also accepts: it reads only that the save finished, and MSG-25.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test on the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -422,7 +426,7 @@ The Upscale question is asked in this case: the sheet is 314 px, under 2000 px. 
 | --- | --- | --- |
 | 1 | Tap **Corner shots** in the bottom row of buttons | The Corner shots sheet rises, with **1 sheet** selected and **Download corners** shown |
 | 2 | Tap **Download corners** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 3 | Tap **No** | A message begins "Saved the corner sheet in"; Safari asks whether to download 01_chrome_flat_black-corners.jpg |
+| 3 | Tap **No** | A message begins "Corner sheet downloaded: "; Safari asks whether to download 01_chrome_flat_black-corners.jpg |
 | 4 | Tap **Download** in Safari's question | Safari's question closes |
 | 5 | Open the Files app and go to the downloads folder | 01_chrome_flat_black-corners.jpg is there |
 | 6 | Tap 01_chrome_flat_black-corners.jpg | It opens: one square picture of the card's four corners, two over two |
@@ -719,6 +723,7 @@ With **4 photos**, **Download corners** saves four files, 250 ms apart, and **Sh
 - Cases: 3
 
 ### CNR-11.1 One tap of Download corners saves four files, a quarter of a second apart   [auto: phone, webkit]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved 4 corner shots in N s."), which this case also accepts: it reads only that the save finished, and MSG-26.1 holds the words.
 Script only
 Stand-in: nothing is replaced; the files are a quarter of a second apart, too close to time by eye, so the script notes when each download starts.
 
@@ -733,7 +738,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Corner shots** in the bottom row of buttons | The Corner shots sheet rises, with **1 sheet** selected |
 | 2 | Tap **4 photos** | **4 photos** is selected |
-| 3 | Tap **Download corners** once | Four files arrive, in the order top-left, top-right, bottom-right, bottom-left, each at least 200 ms after the one before (they are started 250 ms apart); a message begins "Saved 4 corner shots in" |
+| 3 | Tap **Download corners** once | Four files arrive, in the order top-left, top-right, bottom-right, bottom-left, each at least 200 ms after the one before (they are started 250 ms apart); a message begins "4 corner photos downloaded: " |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved files.
@@ -759,6 +764,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CNR-11.3 On an iPhone, Download corners saves all four photos to Files   [phone]
+The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved 4 corner shots in N s."), which this case also accepts: it reads only that the save finished, and MSG-26.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test on the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -775,7 +781,7 @@ Accept Safari's downloads (a named action): each time Safari asks whether to dow
 | 1 | Tap **Corner shots** in the bottom row of buttons | The Corner shots sheet rises |
 | 2 | Tap **4 photos** | **4 photos** is selected (white) |
 | 3 | Tap **Download corners** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 4 | Tap **No** | A message begins "Saved 4 corner shots in" |
+| 4 | Tap **No** | A message begins "4 corner photos downloaded: " |
 | 5 | Accept Safari's downloads | Safari asks nothing more |
 | 6 | Open the Files app and go to the downloads folder | Four new files are there: 01_chrome_flat_black-corner-tl.jpg, -corner-tr.jpg, -corner-br.jpg and -corner-bl.jpg |
 | 7 | Tap 01_chrome_flat_black-corner-tl.jpg | It opens: a square close-up of the card's top-left corner |

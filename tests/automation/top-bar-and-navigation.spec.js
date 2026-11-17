@@ -920,10 +920,11 @@ test('TOP-13.3 Changing step with a key closes the open options [phone]', async 
   });
 });
 
-test('TOP-13.4 Preview stays on across a step change [phone]', async ({
+test('TOP-13.4 Preview turns off at a step change [phone]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-294');
   const hand = await startOn(page, testInfo);
   const previewState = page.locator('#toolPreview .tool-state');
   const isPreviewDrawn = () => page.evaluate(() => window.__straightener.app.previewMode);
@@ -935,11 +936,13 @@ test('TOP-13.4 Preview stays on across a step change [phone]', async ({
   });
   await tapStep(page, hand, check, 'rotate', 'Rotate');
   await goToStep(page, 'perspective', hand);
-  await check('back on Perspective, Preview still reads On and the corrected card shows',
+  // A plain reading, so the known defect fails at once.
+  const isDrawn = await isPreviewDrawn();
+  await check('back on Perspective, Preview reads Off, and the photo shows with its corner rings',
     async () => {
-      await expect(previewState).toHaveText('On');
-      await expect(page.locator('#perspectivePreviewLine')).toBeVisible();
-      expect(await isPreviewDrawn()).toBe(true);
+      expect(isDrawn).toBe(false);
+      await expect(previewState).toHaveText('Off');
+      await expect(page.locator('#perspectivePreviewLine')).toBeHidden();
     });
 });
 
@@ -1902,16 +1905,18 @@ test('TOP-32.1 Keyboard help under Tips and keys; touch-only tips left out [desk
   });
 });
 
-test('TOP-32.2 Levels shows two tips headings on a wide screen [desktop]', async ({
+test('TOP-32.2 Levels shows one tips heading on a wide screen [desktop]', async ({
   page,
   check,
 }, testInfo) => {
+  test.fail(true, 'BUG-287');
   await startOn(page, testInfo, 'levels');
-  await check('LEVELS TIPS over the tips, then a second heading, TIPS AND KEYS, over the compare '
-    + 'key', async () => {
-    const headings = sheetOf(page, 'levels').locator('.sheet-title:visible, '
-      + '.sheet-heading:visible');
-    await expect(headings).toHaveText(['Levels tips', 'Tips and keys']);
+  // A plain reading of the headings, so the known defect fails at once.
+  const headings = await sheetOf(page, 'levels').locator('.sheet-title:visible, '
+    + '.sheet-heading:visible').allTextContents();
+  await check('one heading, TIPS AND KEYS, over the tips and then the compare key; no LEVELS '
+    + 'TIPS heading', async () => {
+    expect(headings.map(text => text.trim())).toEqual(['Tips and keys']);
     await expect(sheetOf(page, 'levels').locator('.sheet-keys .sheet-hint')).toHaveText(
       'Hold C, or press and hold the photo, to compare.',
     );

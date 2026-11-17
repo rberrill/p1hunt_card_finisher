@@ -14,6 +14,7 @@ const {
   openOptions,
   cornerOnPage,
   waitForDetection,
+  waitForEditsKept,
 } = require('./support/app.js');
 const { toastNow } = require('./support/start-and-session.js');
 const { installShareStandIn, selectedChoices } = require('./support/export.js');
@@ -38,7 +39,10 @@ const WORKER_TABLE = '[card-finisher] self-tests (Web Worker)';
 const SELF_TESTS = 'Self-tests: main ';
 // The tuning panel's messages after Copy CONFIG.
 const COPIED = 'CONFIG copied.';
-const CLIPBOARD_BLOCKED = 'Clipboard blocked — CONFIG printed to the console.';
+// The blocked-clipboard message in ruling R60's words, and today's (a dash for the full stop),
+// which DEV-07.3 also accepts: MSG-42.1 holds the words.
+const CLIPBOARD_BLOCKED = 'Clipboard blocked. CONFIG printed to the console.';
+const CLIPBOARD_BLOCKED_EITHER = /^Clipboard blocked(\.| —) CONFIG printed to the console\.$/;
 // How long a case waits for a message or a change, in ms.
 const WAIT_MS = 5000;
 // How long the panel waits after the last change to a field before detecting again, in ms
@@ -354,28 +358,23 @@ test('DEV-06.1 The panel has a field per detection setting, and a change detects
 
 test('DEV-06.2 Where the panel sits [both] [webkit]', async ({ page, check }, testInfo) => {
   const isPhone = testInfo.project.name.includes('phone');
+  test.fail(true, 'BUG-281');
   await openApp(page, 'index.html?debug=1');
   const startBoxes = await page.evaluate(() => {
     const open = document.getElementById('btnOpenEmpty').getBoundingClientRect();
     const onTop = document.elementFromPoint(open.left + open.width / 2, open.top + open.height / 2);
     return {
       panel: document.getElementById('debugPanel').getBoundingClientRect().toJSON(),
-      start: document.getElementById('empty').getBoundingClientRect().toJSON(),
+      open: open.toJSON(),
       isOpenCovered: !!onTop && !!onTop.closest('#debugPanel'),
-      width: innerWidth,
     };
   });
-  await check('on a phone, the panel floats over the start screen and covers Open photo; on a '
-    + 'wide screen, it is 64 px from the top, its right edge 388 px from the window\'s',
-  async () => {
-    const { panel, start, width } = startBoxes;
-    if (isPhone) {
-      expect(panel.top < start.bottom && panel.bottom > start.top).toBe(true);
-      expect(startBoxes.isOpenCovered).toBe(true);
-    } else {
-      expect(panel.top).toBe(PANEL_TOP_PX);
-      expect(width - panel.right).toBe(SIDE_PANEL_PX + PANEL_GAP_PX);
-    }
+  await check('the panel shows and leaves Open photo clear: no part of the panel is over the '
+    + 'button', () => {
+    const { panel, open } = startBoxes;
+    expect(panel.height).toBeGreaterThan(0);
+    expect(overlaps(panel, open)).toBe(false);
+    expect(startBoxes.isOpenCovered).toBe(false);
   });
   await dropPhoto(page, PHOTO);
   const boxes = await page.evaluate(() => {
@@ -403,6 +402,13 @@ test('DEV-06.2 Where the panel sits [both] [webkit]', async ({ page, check }, te
     }
   });
 });
+
+// True when two boxes ({ left, top, right, bottom }, CSS px) share any area.
+function overlaps(first, second) {
+  const isApartSideways = first.right <= second.left || second.right <= first.left;
+  const isApartUpDown = first.bottom <= second.top || second.bottom <= first.top;
+  return !isApartSideways && !isApartUpDown;
+}
 
 test('DEV-06.3 A field takes a value a link could not [phone]', async ({
   page,
@@ -437,6 +443,32 @@ test('DEV-06.4 Detection runs once, 0.35 s after the last change [phone]', async
   await page.waitForTimeout(PAST_REDETECT_MS);
   await check('detection has run exactly once more', async () => {
     expect(await detectionRuns(page)).toBe(runsBefore + 1);
+  });
+});
+
+test('DEV-06.5 On a phone, the panel leaves the Resume box clear [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  test.fail(true, 'BUG-281');
+  await startWith(page, testInfo);
+  await waitForEditsKept(page);
+  await openApp(page, 'index.html?debug=1');
+  await page.locator('#resume').waitFor({ state: 'visible' });
+  await check(`the start screen offers "Resume ${PHOTO}?" with Resume and Start fresh, and the `
+    + 'Detection tuning panel shows', async () => {
+    await expect(page.locator('#resume .resume-name')).toHaveText(`Resume ${PHOTO}?`);
+    await expect(page.locator('#btnResume')).toBeVisible();
+    await expect(page.locator('#btnFresh')).toBeVisible();
+    await expect(page.locator('#debugPanel')).toBeVisible();
+  });
+  const boxes = await page.evaluate(() => {
+    const box = id => document.getElementById(id).getBoundingClientRect().toJSON();
+    return { panel: box('debugPanel'), resume: box('btnResume'), fresh: box('btnFresh') };
+  });
+  await check('no part of the tuning panel is over Resume or Start fresh', () => {
+    expect(overlaps(boxes.panel, boxes.resume), 'Resume is covered').toBe(false);
+    expect(overlaps(boxes.panel, boxes.fresh), 'Start fresh is covered').toBe(false);
   });
 });
 
@@ -505,9 +537,11 @@ test('DEV-07.3 With the clipboard blocked, CONFIG goes to the console [phone]', 
   const messages = watchConsole(page);
   const hand = await startWith(page, testInfo, { address: 'index.html?debug=1' });
   await hand.tap(page.locator('#debugCopy'));
-  await waitForToastText(page, CLIPBOARD_BLOCKED);
+  await page.locator('#toast.is-shown').waitFor({ timeout: WAIT_MS });
   await check(`an amber message reads "${CLIPBOARD_BLOCKED}"`, async () => {
-    expect(await toastNow(page)).toEqual({ text: CLIPBOARD_BLOCKED, kind: 'warn', isShown: true });
+    const shown = await toastNow(page);
+    expect(shown.text).toMatch(CLIPBOARD_BLOCKED_EITHER);
+    expect({ kind: shown.kind, isShown: shown.isShown }).toEqual({ kind: 'warn', isShown: true });
   });
   await check('the Console holds "const CONFIG = {" and the settings', async () => {
     const printed = linesStarting(messages, 'const CONFIG = {');

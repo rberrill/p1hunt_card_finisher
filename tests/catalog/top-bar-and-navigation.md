@@ -113,8 +113,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#btnRedo`, "Redo (Shift+Ctrl/Cmd+Z)", `CONFIG.keys.redo`
 - Source: `js/app/parts/top-bar.js` (`buildTopBar`, `updateTopBar`); `js/app/shell.js` (`bindNavigation`, `syncUI`); `js/app/state.js` (`redo`)
-- Ruling: R17. While an export runs, **Redo** is dimmed with the save buttons. The app differs today.
-- Flag: to confirm. The tooltip names only Shift+Ctrl/Cmd+Z, though Ctrl/Cmd+Y also redoes.
+- Ruling: R17. While an export runs, **Redo** is dimmed with the save buttons. The app differs today. R66. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z. The app already does this.
 - Cases: 3
 
 ### TOP-03.1 Redo puts back what Undo took back, and is greyed out when there is none   [auto: phone]
@@ -159,7 +158,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-03.3 Ctrl+Y redoes too, though the tooltip names only Shift+Ctrl+Z   [auto: desktop]
-Flag: to confirm. Written to today's behavior: the tooltip names only Shift+Ctrl/Cmd+Z, though Ctrl/Cmd+Y also redoes.
 
 Before you start:
 - Device and browser: a wide window with a keyboard and a mouse
@@ -630,7 +628,7 @@ Changing step closes any open options sheet, disarms Levels' picker and compare 
 - Changed: none
 - Anchors: `.step-tab`, `#btnFindCard`, `.sheet-layer`
 - Source: `js/app/shell.js` (`setTab`, `closeSheets`)
-- Flag: to confirm. Perspective's **Preview** stays on across step changes, though Tap to find card, the picker and compare are cleared.
+- Ruling: R88. A step change turns **Preview** off. The app differs today.
 - Cases: 8
 
 ### TOP-13.1 Changing step cancels Tap to find card   [auto: phone]
@@ -690,8 +688,8 @@ It runs at a phone's width, with a keyboard, because only the phone layout has o
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### TOP-13.4 Preview stays on across a step change   [auto: phone]
-Flag: to confirm. Written to today's behavior: Perspective's **Preview** stays on when the step changes, though Tap to find card, the picker and compare are cleared.
+### TOP-13.4 Preview turns off at a step change   [auto: phone]
+Written to ruling R88; it fails until that is built (BUG-294).
 
 Before you start:
 - Device and browser: a phone-width window
@@ -706,7 +704,7 @@ The step tabs are the six tabs Perspective to Export along the bottom of the scr
 | --- | --- | --- |
 | 1 | Tap **Preview** | **Preview** reads On; the corrected card shows with no corner rings |
 | 2 | Tap **Rotate** in the step tabs | The Rotate step shows |
-| 3 | Tap **Perspective** in the step tabs | **Preview** still reads On, and the corrected card still shows |
+| 3 | Tap **Perspective** in the step tabs | **Preview** reads Off, and the photo shows with its corner rings |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -854,11 +852,10 @@ The top bar's controls run in a fixed order.
 - Changed: none
 - Anchors: `#btnOpen`, `#sideSwitch`, `#btnUnpair`, `#btnFit`
 - Source: `js/app/parts/top-bar.js` (`buildTopBar`); `css/app.css` (the shell's wide block)
-- Flag: to confirm. **Fit to screen** comes before **Undo** and **Redo** on a phone but after them on a wide screen.
+- Ruling: R95. **Fit to screen** comes before **Undo** and **Redo** on a phone, after them on a wide screen. The app already does this.
 - Cases: 1
 
 ### TOP-15.1 The top bar's order on a phone and on a wide screen   [auto: both]
-Flag: to confirm. Written to today's behavior: **Fit to screen** comes before **Undo** and **Redo** on a phone but after them on a wide screen.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1451,7 +1448,7 @@ Dragging down on an open sheet's tab or title, or tapping either, closes it.
 - Changed: none
 - Anchors: `.sheet-grabber`, `.sheet-header`
 - Source: `js/app/parts/sheet.js` (`buildSheet`, `bindSheetHandle`)
-- Flag: to confirm. A plain tap on an open sheet's title closes the sheet.
+- Ruling: R96. A tap on an open sheet's title closes it. The app already does this.
 - Cases: 2
 
 ### TOP-27.1 A drag down on the sheet's tab or title closes it   [auto: phone]
@@ -1473,7 +1470,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-27.2 A tap on the sheet's tab or title closes it   [auto: phone]
-Flag: to confirm. Written to today's behavior: a plain tap on an open sheet's title closes the sheet.
 
 Before you start:
 - Device and browser: a phone-width window
@@ -1663,7 +1659,7 @@ Each step's keyboard help sits in its own block under **Tips and keys** (just **
 - Changed: none
 - Anchors: "Tips and keys", `.sheet-keys`, `.is-phone-only`
 - Source: `js/app/parts/sheet.js` (`buildTipsRow`); `js/app/levels.js` (`buildLevelsSheet`); `css/app.css` (the shell's wide block)
-- Flag: to confirm. On a wide screen Levels shows two tips headings, "Levels tips" and "Tips and keys".
+- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app differs today.
 - Cases: 2
 
 ### TOP-32.1 Keyboard help under Tips and keys; touch-only tips left out   [auto: desktop]
@@ -1683,8 +1679,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### TOP-32.2 Levels shows two tips headings on a wide screen   [auto: desktop]
-Flag: to confirm. Written to today's behavior: on a wide screen Levels shows two tips headings, "Levels tips" and "Tips and keys".
+### TOP-32.2 Levels shows one tips heading on a wide screen   [auto: desktop]
+Written to ruling R74; it fails until that is built (BUG-287).
 
 Before you start:
 - Device and browser: a wide window, 1280 × 800 px
@@ -1695,7 +1691,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the side panel under Levels' controls | The heading LEVELS TIPS over the tips, then a second heading, TIPS AND KEYS, over "Hold C, or press and hold the photo, to compare." |
+| 1 | Look at the side panel under Levels' controls | One heading, TIPS AND KEYS, over the tips and then "Hold C, or press and hold the photo, to compare."; no LEVELS TIPS heading |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1711,7 +1707,7 @@ While a step has a message to show, it takes the place of the step's top line (t
 - Changed: none
 - Anchors: `#perspectiveStatus`, `#perspectiveStatusAction`, `#overlayStatus`, `.status-line`
 - Source: `js/app/parts/status.js` (`buildStatus`, `updateStatus`)
-- Flag: to confirm. Any message hides Perspective's confidence figure, and some messages give nothing to act on ("Detecting…", the clamp notice).
+- Ruling: R85. A message in the line above the controls, and Preview, hide Perspective's confidence figure. The app already does this. R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this.
 - Cases: 2
 
 ### TOP-33.1 A message takes the line's place, its icon colored by kind   [auto: phone]
@@ -1738,7 +1734,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-33.2 A message hides Perspective's confidence   [auto: phone]
-Flag: to confirm. Written to today's behavior: any message hides Perspective's confidence figure, even one that gives nothing to act on.
 
 Before you start:
 - Device and browser: a phone-width window
@@ -1851,7 +1846,7 @@ Tapping a mode tile lights it at once and swaps the controls above it with a sho
 - Changed: none
 - Anchors: `#toolNudge`, `#toolFlatten`, `.is-leaving`, `.is-arriving`
 - Source: `js/app/parts/adjustment-line.js` (`swapLine`, `fadeInControlArea`); `js/app/perspective.js` (`bindPerspectiveTools`); `js/app/rotate.js` (`setRotateMode`)
-- Flag: to confirm. With **Preview** on, Perspective's two mode tiles are dimmed, so the swap can't be reached then.
+- Ruling: R87. While Preview is on, **Nudge** and **Flatten** are dimmed. The app already does this.
 - Cases: 2
 
 ### TOP-36.1 A mode tap swaps the line with a short fade, for a person to judge   [eye]
@@ -1876,7 +1871,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-36.2 With Preview on, Nudge and Flatten are greyed out   [auto: phone]
-Flag: to confirm. Written to today's behavior: with **Preview** on, Perspective's two mode tiles are greyed out, so the line can't be swapped.
 
 Before you start:
 - Device and browser: a phone-width window

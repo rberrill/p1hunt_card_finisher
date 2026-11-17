@@ -26,6 +26,9 @@ const {
   savedSize,
   questionCard,
   questionButton,
+  finishedMessage,
+  copiedMessage,
+  ruledCopiedMessage,
 } = require('./support/app.js');
 const {
   installShareStandIn,
@@ -128,10 +131,9 @@ const CLAMP_NOTES = [
 ];
 // The approved clamp note (rulings R14 and R15, tests/catalog/wording.md).
 const APPROVED_CLAMP_NOTE = 'Scaled down to fit the 16.7 MP limit.';
-// The approved note for a pair saved Separately when the front, not on screen, is clamped,
-// with the limit's number left to the app: EXP-06.4 lowers the limit with a link, and whether
-// the note then gives 16.7 or the lowered limit is for Rich to say.
-const APPROVED_FRONT_CLAMP_NOTE = /^The front is scaled down to fit the [\d.]+ MP limit\.$/;
+// The approved note for a pair saved Separately when the front, not on screen, is clamped.
+// EXP-06.4 lowers the limit to 1 MP with a link, and the note gives the limit in force (R47).
+const APPROVED_FRONT_CLAMP_NOTE = 'The front is scaled down to fit the 1 MP limit.';
 // The clamp note in today's words or the approved ones, whatever the limit a link sets.
 const ANY_CLAMP_NOTE = new RegExp('^(Clamped to fit the [0-9.]+ MP canvas limit'
   + '|Scaled down to fit the [0-9.]+ MP limit)[.]$');
@@ -545,12 +547,10 @@ test('EXP-06.4 For a pair saved Separately, a clamp on the other side shows a no
     await check('Separately is selected', async () => {
       expect(await selectedChoices(page, 'pairOutput')).toEqual(['Separately']);
     });
-    await check('one amber note reads "The front is scaled down to fit the N MP limit."',
-      async () => {
-        const notes = await visibleNotes(page);
-        expect(notes).toHaveLength(1);
-        expect(notes[0]).toMatch(APPROVED_FRONT_CLAMP_NOTE);
-      });
+    await check(`one amber note reads "${APPROVED_FRONT_CLAMP_NOTE}"`, async () => {
+      const notes = await visibleNotes(page);
+      expect(notes).toEqual([APPROVED_FRONT_CLAMP_NOTE]);
+    });
   });
 
 // Expects the export note to be whole within its column and to cover none of the buttons of
@@ -601,8 +601,10 @@ test('EXP-07.1 A note covers no button, before and after an export [phone] [webk
   });
 });
 
-// The message Download and Share show once the file is saved: "Exported 1400 × 1400 px in N s."
-const EXPORTED_MESSAGE = new RegExp(`^Exported ${CROP_PX} × ${CROP_PX} px in \\d+\\.\\d s\\.`);
+// The message Download and Share show once the file is saved, giving 1400 × 1400 px: in today's
+// words ("Exported 1400 × 1400 px in N s.") or ruling R79's ("Photo downloaded: …", "Photo
+// shared: …"). These cases read only the size; MSG-22.1 and MSG-22.2 hold the words.
+const EXPORTED_MESSAGE = finishedMessage('photo', `${CROP_PX} × ${CROP_PX} px`);
 
 test('EXP-08.1 Share hands the share sheet the finished photo [phone]', async ({
   page,
@@ -629,7 +631,7 @@ test('EXP-08.1 Share hands the share sheet the finished photo [phone]', async ({
       ]);
       expect(await sharedImageSize(page)).toEqual({ width: CROP_PX, height: CROP_PX });
     });
-  await check('a message begins "Exported 1400 × 1400 px in"', async () => {
+  await check('a message begins "Photo shared: 1400 × 1400 px in"', async () => {
     await expect.poll(() => toastMessage(page)).toMatch(EXPORTED_MESSAGE);
   });
 });
@@ -675,7 +677,8 @@ test('EXP-11.1 Download saves the photo as a plain download [phone] [webkit]', a
   await checkAskedToUpscale(page, check);
   await hand.tap(questionButton(page, 'No'));
   const saved = await downloading;
-  await check('IMG_9136-straight.jpg is saved with the Exported message; no share sheet',
+  await check('IMG_9136-straight.jpg is saved, and a message begins "Photo downloaded: 1400 × '
+    + '1400 px in"; no share sheet',
     async () => {
       expect(saved.suggestedFilename()).toBe('IMG_9136-straight.jpg');
       await expect.poll(() => toastMessage(page)).toMatch(EXPORTED_MESSAGE);
@@ -728,8 +731,9 @@ test('EXP-12.1 Copy puts a PNG on the clipboard though JPEG is chosen [phone]', 
   await hand.tap(copy);
   await checkAskedToUpscale(page, check);
   await hand.tap(questionButton(page, 'No'));
-  await check('a message reads "Copied to clipboard (PNG)."', async () => {
-    await expect.poll(() => toastMessage(page)).toBe('Copied to clipboard (PNG).');
+  await check(`a message reads "${ruledCopiedMessage()}"`, async () => {
+    // Today's words or ruling R79's: MSG-29.1 holds the words.
+    await expect.poll(() => toastMessage(page)).toMatch(copiedMessage());
   });
   const pasted = await readClipboardImage(page);
   await check('the clipboard holds a PNG of 1400 × 1400 px', async () => {
@@ -754,8 +758,9 @@ test('EXP-12.2 With JPEG and a Transparent fill, Copy\'s empty areas are white [
     await hand.tap(page.locator('#btnCopy'));
     await checkAskedToUpscale(page, check);
     await hand.tap(questionButton(page, 'No'));
-    await check('a message reads "Copied to clipboard (PNG)."', async () => {
-      await expect.poll(() => toastMessage(page)).toBe('Copied to clipboard (PNG).');
+    await check(`a message reads "${ruledCopiedMessage()}"`, async () => {
+      // Today's words or ruling R79's: MSG-29.1 holds the words.
+      await expect.poll(() => toastMessage(page)).toMatch(copiedMessage());
     });
     const pasted = await readClipboardImage(page);
     await check('the corners the tilt left empty are solid white; nothing is see-through',
@@ -858,7 +863,7 @@ test('EXP-14.2 Share, Download and Copy are dimmed while an export runs [phone]'
   });
 });
 
-// "Exported 1400 × 1400 px in N s. Tap Share now to open the share sheet."
+// The finished message giving 1400 × 1400 px, then "Tap Share now to open the share sheet."
 const SHARE_NOW_MESSAGE = new RegExp(`${EXPORTED_MESSAGE.source} Tap Share now to open the `
   + 'share sheet\\.$');
 
@@ -1373,8 +1378,9 @@ test('EXP-22.3 A finished Copy counts as exported [phone]', async ({
   await hand.tap(page.locator('#btnCopy'));
   await checkAskedToUpscale(page, check);
   await hand.tap(questionButton(page, 'No'));
-  await check('"Copied to clipboard (PNG)."; Next card shows in white', async () => {
-    await expect.poll(() => toastMessage(page)).toBe('Copied to clipboard (PNG).');
+  await check(`"${ruledCopiedMessage()}"; Next card shows in white`, async () => {
+    // Today's words or ruling R79's: MSG-29.1 holds the words.
+    await expect.poll(() => toastMessage(page)).toMatch(copiedMessage());
     await expect(nextCard(page)).toBeVisible();
     expect(await hasWhiteFill(nextCard(page))).toBe(true);
   });
@@ -2256,10 +2262,11 @@ test('EXP-37.2 A pasted photo saves as pasted-photo-straight.jpg [desktop]', asy
 
 // The first four bytes of every PNG file (part of its signature).
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47];
-// The done message when WebP was saved as a PNG: "Exported 1080 × 1080 px in N s. WEBP isn’t
-// supported by this browser, so it was saved as PNG."
-const WEBP_FALLBACK_MESSAGE = new RegExp('^Exported 1080 × 1080 px in \\d+\\.\\d s\\. WEBP '
-  + 'isn’t supported by this browser, so it was saved as PNG\\.$');
+// The done message when WebP was saved as a PNG: the finished message giving 1080 × 1080 px
+// (today's words or ruling R79's), then "WEBP isn’t supported by this browser, so it was saved
+// as PNG."
+const WEBP_FALLBACK_MESSAGE = new RegExp(`${finishedMessage('photo', '1080 × 1080 px').source} `
+  + 'WEBP isn’t supported by this browser, so it was saved as PNG\\.$');
 
 test('EXP-38.2 Where WebP can\'t be saved, Download saves a PNG and says so [phone]', async ({
   page,

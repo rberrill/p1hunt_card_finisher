@@ -277,11 +277,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#toolFitToCard`, "Fit to card", "Put the crop back around the card", `CONFIG.crop.fitPaddingPct`
 - Source: `js/app/crop.js` (`fitCropToCard`, `bindCrop`); `js/engine.js` (`cropInRotated`, `fitCrop`)
-- Flag: to confirm. **Fit to card** is never off and responds to a tap even when nothing changes; a second tap adds no undo step.
+- Ruling: R57. **Fit to card** is never dimmed, and a tap that changes nothing adds no undo step. The app already does this.
 - Cases: 2
 
 ### CRP-07.1 Fit to card puts the box back around the card, one undo step   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -303,7 +302,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CRP-07.2 Fit to card is never greyed out, and a tap that changes nothing adds no undo step   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -335,11 +333,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: none
 - Anchors: `#toolSwap`, "Swap", "Swap portrait / landscape"
 - Source: `js/app/crop.js` (`swapCrop`, `bindCrop`, `syncCrop`)
-- Flag: to confirm. **Swap** is an undo step for a single photo but not in a front and back pair.
+- Ruling: Rich's settled decision (front and back pairs): **Swap** is an undo step for a single photo but not in a pair. The app already does this.
 - Cases: 3
 
 ### CRP-08.1 Swap turns the crop between portrait and landscape, one undo step   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -360,7 +357,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CRP-08.2 Swap turns a box drawn by hand about its middle   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -380,7 +376,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CRP-08.3 In a front and back pair, Swap adds no undo step   [auto: phone]
-Flag: to confirm. Written to today's behavior.
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)

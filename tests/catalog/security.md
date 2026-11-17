@@ -177,11 +177,11 @@ When **Load edits** reads a file, every field is checked; a malformed field is r
 - Changed: none
 - Anchors: `#btnLoadEdits`, `"Some settings in these edits weren’t valid and were reset: "`
 - Source: `js/app/export.js` (`loadEdits`), `js/app/state.js` (`cleanState`), `js/engine.js` (`sanitizeState`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's case has one problem and is written to today's wording.
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
 - Cases: 1
 
 ### SEC-05.1 A malformed field is reset and named, the rest is applied   [auto: phone]
-Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -198,7 +198,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-levels-as-words-edits.json | An amber message reads "Some settings in these edits weren’t valid and were reset: levels." |
+| 1 | Load the edits file IMG_9136-levels-as-words-edits.json | One amber message shows; its lines read "Edits loaded." and "Reset, not valid: levels.", in that order |
 | 2 | Look at the photo | It is turned a quarter right: the file's other edits were applied |
 | 3 | Tap **Levels** in the step tabs (the six tabs Perspective to Export, along the bottom) | **Clear** and **Apply** are greyed out (shown dim and not answering a tap), and there is no dot on the **Levels** tab: no levels are set |
 
@@ -255,11 +255,11 @@ A logo carried inside an edits file must be a PNG, WebP, JPEG or SVG, and at mos
 - Changed: none
 - Anchors: `CONFIG.overlay.maxBytes`, `"The overlay in these edits couldn’t be read, so it was left out."`
 - Source: `js/app/overlay.js` (`overlayFromEdits`, `register`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; this entry's case loads files with one problem each and is written to today's wording.
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today. R59. The logo's line reads "Logo left out; it couldn’t be read." (approved wording). The app differs today.
 - Cases: 1
 
 ### SEC-07.1 An edits file's logo of the wrong type or over 5 MB is left out   [auto: phone]
-Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -278,9 +278,9 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-gif-logo-edits.json | An amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 1 | Load the edits file IMG_9136-gif-logo-edits.json | One amber message shows; its lines read "Edits loaded." and "Logo left out; it couldn’t be read.", in that order |
 | 2 | Look at the photo | It is turned a quarter right, with no logo on it |
-| 3 | Load the edits file IMG_9136-big-logo-edits.json | The same amber message reads "The overlay in these edits couldn’t be read, so it was left out." |
+| 3 | Load the edits file IMG_9136-big-logo-edits.json | The same amber message shows, its lines reading "Edits loaded." and "Logo left out; it couldn’t be read.", in that order |
 | 4 | Look at the photo | It is still turned a quarter right, with no logo on it |
 
 Pass: every row's result is seen.
@@ -388,7 +388,7 @@ A logo file must be a PNG, WebP, JPEG or SVG of at most 5 MB, and an SVG must st
 - Changed: none
 - Anchors: `"That file type isn’t supported. Use PNG, WebP, JPG or SVG."`, `"That SVG has no width, height or viewBox, so it can’t be sized. "`, `" MB. The overlay limit is "`, `CONFIG.overlay.maxBytes`
 - Source: `js/app/overlay.js` (`imageTypeOf`, `addOverlayFile`, `decodeSvg`, `svgSize`, `register`)
-- Flag: to confirm. The Overlay step's hint always says "up to 5 MB", though a link can lower the limit, and the refusal then names the lower one.
+- Ruling: R83. The hint gives the logo size limit in force, which a link can lower. The app differs today.
 - Cases: 3
 
 ### SEC-10.1 An SVG with no size is refused   [auto: phone]
@@ -425,8 +425,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what the Console printed, a screenshot.
 
-### SEC-10.3 With a lower limit from a link, the refusal names it   [auto: phone]
-Flag: to confirm. Written to what the app does today: the hint keeps saying 5 MB, and the refusal names the lower limit in MB with four decimals.
+### SEC-10.3 With a lower limit from a link, the hint and the refusal name it   [auto: phone]
+Written to rulings R83 and R59; it fails until both are built (BUG-293, BUG-283).
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -438,8 +438,8 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the line above the controls (the one line of text at the top of the block of buttons under the photo) | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." |
-| 2 | Tap **Add logo** and choose noisy-logo.png | The line reads "That file is 0.1 MB. The overlay limit is 0.0625 MB." in red |
+| 1 | Read the line above the controls (the one line of text at the top of the block of buttons under the photo) | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to" and then the limit the link set, 0.0625 MB (64 KB), not 5 MB |
+| 2 | Tap **Add logo** and choose noisy-logo.png | The line reads "That file is 0.1 MB. The logo limit is 0.0625 MB." in red |
 | 3 | Look at the photo | No logo is on it |
 
 Pass: every row's result is seen.
@@ -456,7 +456,7 @@ Names from photos and edits files are shown only as plain text, never as markup,
 - Changed: none
 - Anchors: `#resumeName`, `"Edits were saved for “"`
 - Source: `js/app/core.js` (`shortText`), `js/app/start-screen.js` (`resumeName`, `resumeSession`), `js/app/export.js` (`loadEdits`), `js/app/pair.js` (`restorePair`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. Whether the approved lines also apply to a load with only one problem waits on Rich; SEC-11.2 loads a file with one problem and is written to today's wording.
+- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
 - Cases: 2
 
 ### SEC-11.1 A photo's name with markup shows as text on the Resume card, cut to 60   [auto: phone, webkit]
@@ -482,7 +482,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### SEC-11.2 An edits file's name with markup shows as text in the warning, cut to 60   [auto: phone]
-Written to today's wording. Ruling R12's approved lines are for a load with more than one problem; whether they also apply to a load with one problem waits on Rich.
+Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
@@ -499,7 +499,7 @@ The named actions:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-markup-name-edits.json | An amber message reads "Edits were saved for “<b>bold</b> <img src=x onerror="window.testRan=1"> yyyyyyyy…”. Applied anyway — sizes match.": the name's first 59 characters as typed, tags and all, then "…"; nothing in it is bold, and no picture shows |
+| 1 | Load the edits file IMG_9136-markup-name-edits.json | One amber message shows; its lines read "Edits loaded." and "Saved for “<b>bold</b> <img src=x onerror="window.testRan=1"> yyyyyyyy…”; sizes match.": the name's first 59 characters as typed, tags and all, then "…"; nothing in it is bold, and no picture shows |
 | 2 | In the Console, type `window.testRan` and press Enter | The Console answers undefined: nothing the name holds has run |
 
 Pass: every row's result is seen.
