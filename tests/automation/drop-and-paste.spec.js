@@ -3,7 +3,8 @@
 // arrives while the app is busy, and a file dropped outside the photo area.
 // A drop is the browser's own drag events carrying the files in a DataTransfer; a paste is a
 // real Ctrl+V with a picture on the clipboard (Chromium at desktop size: a phone has neither).
-// Each test reads the app's state only to check a result.
+// The files other than sample photos are the committed ones in tests/fixtures/ that the cases
+// name. Each test reads the app's state only to check a result.
 'use strict';
 const { test, expect } = require('./support/case.js');
 const { openApp, goToStep, handFor, editState } = require('./support/app.js');
@@ -16,7 +17,7 @@ const {
   waitForOpening,
   PORTRAIT_PAIR,
 } = require('./support/front-and-back.js');
-const { drawnLogo, logoId } = require('./support/overlay.js');
+const { logoId } = require('./support/overlay.js');
 const {
   PHOTO,
   OTHER_SIZE_PHOTO,
@@ -24,22 +25,26 @@ const {
   saveEdits,
   recordMessages,
   messagesSoFar,
+  toastNow,
   waitForToast,
   sampleFile,
+  droppedFixture,
   dragFiles,
   dropOutline,
   copyImage,
   copyText,
   allowClipboard,
-  holdEncoding,
-  releaseEncoding,
-  waitForExporting,
+  startHeldExport,
+  releaseHeldExport,
 } = require('./support/edits-drop-keys.js');
 
 // The photo area, where a drop opens a photo.
 const STAGE = '#stage';
 // The message a photo arriving during an export gets, word for word.
 const WAIT_FOR_EXPORT = 'Wait for the export to finish, then open the photo.';
+// The message a photo arriving while a pair's side opens gets by ruling R13, word for word
+// (tests/catalog/wording.md).
+const WAIT_FOR_SIDE = 'Wait for the other side to open, then open the photo.';
 // The message a HEIC file gets in a browser that can't open HEIC, word for word.
 const NO_HEIC = 'This browser can’t open HEIC. Save the photo as JPEG first (Safari opens HEIC '
   + 'directly).';
@@ -49,13 +54,14 @@ const PASTED_NAME = 'pasted-photo';
 const NOTHING_HAPPENS_MS = 800;
 // The drop outline's border: 2 px, dashed, the app's white (#f2f2f3).
 const OUTLINE_BORDER = '2px dashed rgb(242, 242, 243)';
+// Two logos added less than this far apart, in ms, would be one undo step today (ruling R19).
+const COALESCE_MS = 900;
 
-// A line of text named like notes: a file that is not a picture.
-const notesFile = () => ({
-  name: 'notes.txt',
-  mimeType: 'text/plain',
-  buffer: Buffer.from('Notes about the card.\n'),
-});
+// The fixtures the cases drop: a line of text, a stand-in for a HEIC photo and two logos.
+const notesFile = () => droppedFixture('notes.txt');
+const heicFile = () => droppedFixture('card.HEIC');
+const greenLogo = () => droppedFixture('green-logo.png');
+const blueDisc = () => droppedFixture('blue-disc.png');
 
 // Waits until the photo named `name` is open and its corners have been looked for.
 function waitForPhotoNamed(page, name) {
@@ -72,14 +78,22 @@ const openPhotoName = page => page.evaluate(() => {
   return state ? state.source.name : '';
 });
 
+// The open step's name.
+const stepNow = page => page.evaluate(() => window.__straightener.app.tab);
+
+// Whether the question box is up now.
+const isQuestionUp = page => page.evaluate(() => window.CF.isAlertOpen(
+  document.getElementById('pairPrompt')));
+
+// When the last undo step was recorded, on the page's clock in ms: a logo added a moment
+// after another is recorded at its own time even when the two are merged into one step.
+const lastStepTime = page => page.evaluate(() => window.CF.History.lastTime);
+
 // Opens the app on its start screen, with no photo open. Returns the hand for this target.
 async function startEmpty(page, testInfo) {
   await openApp(page);
   return handFor(page, testInfo);
 }
-
-// A green logo, 400 px square, as a file payload.
-const greenLogo = page => drawnLogo(page, { name: 'green-logo.png', paint: 'green' });
 
 // Waits until a logo other than `idBefore` is on the photo.
 function waitForNewLogo(page, idBefore) {
@@ -87,22 +101,6 @@ function waitForNewLogo(page, idBefore) {
     const overlay = window.__straightener.app.state.overlay;
     return !!overlay && overlay.id !== before;
   }, idBefore);
-}
-
-// From the Export step: holds the export's encoding, taps Download and answers No to the
-// Upscale question, and waits until the export is running. releaseEncoding lets it finish.
-async function startHeldExport(page, hand) {
-  await holdEncoding(page);
-  await hand.tap(page.locator('#btnDownload'));
-  await waitForQuestion(page, true);
-  await hand.tap(page.locator('#pairPrompt').getByRole('button', { name: 'No', exact: true }));
-  await waitForExporting(page, true);
-}
-
-// Lets a held export finish and waits until it has.
-async function finishHeldExport(page) {
-  await releaseEncoding(page);
-  await waitForExporting(page, false);
 }
 
 test('DND-01.1 A photo dropped on the photo area opens [desktop]', async ({
@@ -118,7 +116,7 @@ test('DND-01.1 A photo dropped on the photo area opens [desktop]', async ({
   await check('dropping IMG_9136.JPEG opens it on the Perspective step', async () => {
     expect(drop.dropPrevented).toBe(true);
     await waitForPhotoNamed(page, PHOTO);
-    expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
   });
 });
 
@@ -139,14 +137,9 @@ test('DND-01.3 A HEIC file is taken by its name [desktop]', async ({
   check,
 }, testInfo) => {
   await startEmpty(page, testInfo);
-  // A file named card.HEIC with no type given, as some systems hand a HEIC over. Its bytes are
-  // a stand-in: no browser here decodes HEIC, and the app says so, which shows it was taken.
-  const heic = {
-    name: 'card.HEIC',
-    mimeType: '',
-    buffer: Buffer.from('Stand-in for a HEIC photo.\n'),
-  };
-  await dragFiles(page, STAGE, [notesFile(), heic]);
+  // card.HEIC with no type given, as some systems hand a HEIC over. Its bytes are a stand-in:
+  // no browser here decodes HEIC, and the app says so, which shows it was taken.
+  await dragFiles(page, STAGE, [notesFile(), heicFile()]);
   await check(`a red message reads "${NO_HEIC}"`, async () => {
     expect(await waitForToast(page)).toEqual({ text: NO_HEIC, kind: 'error', isShown: true });
   });
@@ -171,20 +164,20 @@ test('DND-01.4 A dropped file that isn\'t a picture is ignored [desktop]', async
 test('DND-01.5 While a pair is open, a dropped photo asks New photo or Replace back '
   + '[desktop]', async ({ page, check }, testInfo) => {
   const hand = await makePair(page, testInfo);
-  await check('the pair is open, on the back', async () => {
+  await check('the pair is open: Front / Back shows in the top bar', async () => {
     await expect(page.locator('#sideSwitch')).toBeVisible();
   });
   await dragFiles(page, STAGE, [sampleFile(PHOTO)]);
-  const card = page.locator('#pairPrompt');
-  await check('a card asks "New photo": "End the pair, or replace the side you’re on?", with '
-    + 'New photo and Replace back', async () => {
+  const box = page.locator('#pairPrompt');
+  await check('the question box asks "New photo": "End the pair, or replace the side you’re '
+    + 'on?", with New photo and Replace back', async () => {
     await waitForQuestion(page, true);
-    await expect(card.locator('.alert-title')).toHaveText('New photo');
-    await expect(card).toContainText('End the pair, or replace the side you’re on?');
-    await expect(card.getByRole('button', { name: 'New photo', exact: true })).toBeVisible();
-    await expect(card.getByRole('button', { name: 'Replace back', exact: true })).toBeVisible();
+    await expect(box.locator('.alert-title')).toHaveText('New photo');
+    await expect(box).toContainText('End the pair, or replace the side you’re on?');
+    await expect(box.getByRole('button', { name: 'New photo', exact: true })).toBeVisible();
+    await expect(box.getByRole('button', { name: 'Replace back', exact: true })).toBeVisible();
   });
-  await hand.tap(card.getByRole('button', { name: 'New photo', exact: true }));
+  await hand.tap(box.getByRole('button', { name: 'New photo', exact: true }));
   await check('New photo: IMG_9136.JPEG opens on its own; Front / Back is gone', async () => {
     await waitForPhotoNamed(page, PHOTO);
     await expect(page.locator('#sideSwitch')).toBeHidden();
@@ -213,18 +206,17 @@ test('DND-02.1 A file held over the photo area shows the outline and Drop to ope
 test('DND-02.2 On Overlay the outline says Drop to add as the logo, and goes on the drop '
   + '[desktop]', async ({ page, check }, testInfo) => {
   await startOn(page, testInfo, { step: 'overlay' });
-  const logo = await greenLogo(page);
-  await dragFiles(page, STAGE, [logo], 'over');
-  await check('holding a logo over the photo: the outline reads "Drop to add as the logo"',
-    async () => {
-      const outline = await dropOutline(page);
-      expect(outline).toEqual({
-        isShown: true,
-        caption: 'Drop to add as the logo',
-        border: OUTLINE_BORDER,
-      });
+  await dragFiles(page, STAGE, [greenLogo()], 'over');
+  await check('holding green-logo.png over the photo: the outline reads "Drop to add as the '
+    + 'logo"', async () => {
+    const outline = await dropOutline(page);
+    expect(outline).toEqual({
+      isShown: true,
+      caption: 'Drop to add as the logo',
+      border: OUTLINE_BORDER,
     });
-  await dragFiles(page, STAGE, [logo], 'drop');
+  });
+  await dragFiles(page, STAGE, [greenLogo()], 'drop');
   await check('letting go: the outline goes and the logo shows on the photo', async () => {
     expect((await dropOutline(page)).isShown).toBe(false);
     await waitForNewLogo(page, null);
@@ -244,10 +236,14 @@ test('DND-03.1 A pasted picture opens as a photo named pasted-photo [desktop]', 
   await page.keyboard.press('Control+V');
   await check('Ctrl+V opens the card photo on Perspective', async () => {
     await waitForPhotoNamed(page, PASTED_NAME);
-    expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('perspective');
+    expect(await stepNow(page)).toBe('perspective');
   });
   const hand = handFor(page, testInfo);
   await goToStep(page, 'export', hand);
+  await check('Export in the step tabs: the Export step shows, with Export options', async () => {
+    expect(await stepNow(page)).toBe('export');
+    await expect(page.locator('#btnSaveEdits')).toBeVisible();
+  });
   const saved = await saveEdits(page, hand, testInfo);
   await check('Save edits saves a file named pasted-photo-edits.json', () => {
     expect(saved.name).toBe(`${PASTED_NAME}-edits.json`);
@@ -282,12 +278,12 @@ test('DND-04.1 On Overlay, a dropped picture becomes the logo [desktop]', async 
   check,
 }, testInfo) => {
   await startOn(page, testInfo, { step: 'overlay' });
-  await dragFiles(page, STAGE, [await greenLogo(page)]);
+  await dragFiles(page, STAGE, [greenLogo()]);
   await check('the green logo shows on the photo; IMG_9136.JPEG is still open, on Overlay',
     async () => {
       await waitForNewLogo(page, null);
       expect(await openPhotoName(page)).toBe(PHOTO);
-      expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('overlay');
+      expect(await stepNow(page)).toBe('overlay');
     });
 });
 
@@ -299,7 +295,7 @@ test('DND-04.2 On Overlay, a pasted picture becomes the logo [desktop]', async (
 }, testInfo) => {
   await allowClipboard(context, browserName, test);
   await startOn(page, testInfo, { step: 'overlay' });
-  await copyImage(page, await greenLogo(page));
+  await copyImage(page, greenLogo());
   await page.keyboard.press('Control+V');
   await check('Ctrl+V: the green logo shows on the photo; IMG_9136.JPEG is still open',
     async () => {
@@ -312,11 +308,10 @@ test('DND-04.3 In a pair, a dropped logo goes to the side you\'re on, with no qu
   + '[desktop]', async ({ page, check }, testInfo) => {
   const hand = await makePair(page, testInfo);
   await goToStep(page, 'overlay', hand);
-  await dragFiles(page, STAGE, [await greenLogo(page)]);
-  await check('on the back, the logo shows; no question is asked', async () => {
+  await dragFiles(page, STAGE, [greenLogo()]);
+  await check('on the back, the logo shows; no question box shows', async () => {
     await waitForNewLogo(page, null);
-    expect(await page.evaluate(() => window.CF.isAlertOpen(
-      document.getElementById('pairPrompt')))).toBe(false);
+    expect(await isQuestionUp(page)).toBe(false);
   });
   await switchTo(page, hand, 'front');
   await check('on the front, no logo', async () => {
@@ -330,15 +325,22 @@ test('DND-04.4 Two logos dropped within 0.9 s are two undo steps [desktop]', asy
 }, testInfo) => {
   test.fail(true, 'BUG-080');
   const hand = await startOn(page, testInfo, { step: 'overlay' });
-  const disc = await drawnLogo(page, { name: 'blue-disc.png', paint: 'disc' });
-  const green = await greenLogo(page);
+  const disc = blueDisc();
+  const green = greenLogo();
   await dragFiles(page, STAGE, [disc]);
   await waitForNewLogo(page, null);
+  const discAddedMs = await lastStepTime(page);
   const discId = await logoId(page);
+  await check('blue-disc.png dropped: the blue disc is the logo', () => {
+    expect(discId).not.toBeNull();
+  });
   await dragFiles(page, STAGE, [green]);
   await waitForNewLogo(page, discId);
-  await check('the blue disc, then at once the green square: the green square shows', async () => {
+  const greenAddedMs = await lastStepTime(page);
+  await check('green-logo.png dropped at once: the green square is the logo, added less than '
+    + '0.9 s after the blue disc', async () => {
     expect(await logoId(page)).not.toBe(discId);
+    expect(greenAddedMs - discAddedMs).toBeLessThan(COALESCE_MS);
   });
   await hand.tap(page.locator('#btnUndo'));
   await check('one Undo brings back the blue disc', async () => {
@@ -351,8 +353,7 @@ test('DND-04.5 A dropped logo is taken by its name, as the logo picker takes it 
     test.fail(true, 'BUG-191');
     await startOn(page, testInfo, { step: 'overlay' });
     // A PNG handed over with no type, as some systems drag one: only its name says PNG.
-    const logo = Object.assign(await greenLogo(page), { mimeType: '' });
-    await dragFiles(page, STAGE, [logo]);
+    await dragFiles(page, STAGE, [droppedFixture('green-logo.png', '')]);
     await page.waitForTimeout(NOTHING_HAPPENS_MS);
     await check('green-logo.png, dropped with no type, shows on the photo as the logo',
       async () => {
@@ -360,24 +361,25 @@ test('DND-04.5 A dropped logo is taken by its name, as the logo picker takes it 
       });
   });
 
-// The body of DND-04.6 and DND-04.7: during a held export, goes to Overlay, brings a logo in
-// with `bringIn(logo)` and expects it refused with the dropped photo's message.
+// The body of DND-04.6 and DND-04.7: holds an export open (Download, then No), goes to
+// Overlay, brings green-logo.png in with `bringIn(logo)` and expects it refused with the
+// dropped photo's amber message.
 async function checkLogoRefusedDuringExport(page, check, hand, bringIn) {
-  const logo = await greenLogo(page);
-  await startHeldExport(page, hand);
+  const logo = greenLogo();
+  await startHeldExport(page, hand, check);
   await goToStep(page, 'overlay', hand);
-  await check('during the export, the Overlay step opens', async () => {
+  await check('during the export, Overlay in the step tabs: the Overlay step shows', async () => {
+    expect(await stepNow(page)).toBe('overlay');
     expect(await page.evaluate(() => window.__straightener.app.exporting)).toBe(true);
   });
   await bringIn(logo);
   await page.waitForTimeout(NOTHING_HAPPENS_MS);
   const added = await logoId(page);
-  const message = await page.evaluate(() => document.querySelector('#toast .toast-text')
-    .textContent);
-  await finishHeldExport(page);
+  const message = await toastNow(page);
+  await releaseHeldExport(page);
   await check(`no logo is added, and an amber message reads "${WAIT_FOR_EXPORT}"`, () => {
     expect(added).toBeNull();
-    expect(message).toBe(WAIT_FOR_EXPORT);
+    expect(message).toEqual({ text: WAIT_FOR_EXPORT, kind: 'warn', isShown: true });
   });
 }
 
@@ -400,17 +402,16 @@ test('DND-04.7 During an export, a pasted logo is refused [desktop]', async ({
   await allowClipboard(context, browserName, test);
   const hand = await startOn(page, testInfo);
   // The logo is on the clipboard before the export: putting it there draws on a canvas.
-  await copyImage(page, await greenLogo(page));
+  await copyImage(page, greenLogo());
   await checkLogoRefusedDuringExport(page, check, hand, () => page.keyboard.press('Control+V'));
 });
 
-test('DND-05.1 A photo dropped during an export is refused [desktop]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startOn(page, testInfo);
-  await startHeldExport(page, hand);
-  await dragFiles(page, STAGE, [sampleFile(OTHER_SIZE_PHOTO)]);
+// The body of DND-05.1 and DND-05.2: holds an export open (Download, then No), brings
+// IMG_9075.JPEG in with `bringIn()`, expects the amber message, then lets the export finish
+// and expects IMG_9136.JPEG still open.
+async function checkPhotoRefusedDuringExport(page, check, hand, bringIn) {
+  await startHeldExport(page, hand, check);
+  await bringIn();
   await check(`an amber message reads "${WAIT_FOR_EXPORT}"`, async () => {
     expect(await waitForToast(page)).toEqual({
       text: WAIT_FOR_EXPORT,
@@ -418,11 +419,20 @@ test('DND-05.1 A photo dropped during an export is refused [desktop]', async ({
       isShown: true,
     });
   });
-  await finishHeldExport(page);
+  await releaseHeldExport(page);
   await page.waitForTimeout(NOTHING_HAPPENS_MS);
   await check('once the export ends, IMG_9136.JPEG is still the photo open', async () => {
     expect(await openPhotoName(page)).toBe(PHOTO);
   });
+}
+
+test('DND-05.1 A photo dropped during an export is refused [desktop]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOn(page, testInfo);
+  const bringIn = () => dragFiles(page, STAGE, [sampleFile(OTHER_SIZE_PHOTO)]);
+  await checkPhotoRefusedDuringExport(page, check, hand, bringIn);
 });
 
 test('DND-05.2 A photo pasted during an export is refused [desktop]', async ({
@@ -433,21 +443,10 @@ test('DND-05.2 A photo pasted during an export is refused [desktop]', async ({
 }, testInfo) => {
   await allowClipboard(context, browserName, test);
   const hand = await startOn(page, testInfo);
+  // The photo is on the clipboard before the export: putting it there draws on a canvas.
   await copyImage(page, sampleFile(OTHER_SIZE_PHOTO));
-  await startHeldExport(page, hand);
-  await page.keyboard.press('Control+V');
-  await check(`an amber message reads "${WAIT_FOR_EXPORT}"`, async () => {
-    expect(await waitForToast(page)).toEqual({
-      text: WAIT_FOR_EXPORT,
-      kind: 'warn',
-      isShown: true,
-    });
-  });
-  await finishHeldExport(page);
-  await page.waitForTimeout(NOTHING_HAPPENS_MS);
-  await check('once the export ends, IMG_9136.JPEG is still the photo open', async () => {
-    expect(await openPhotoName(page)).toBe(PHOTO);
-  });
+  const bringIn = () => page.keyboard.press('Control+V');
+  await checkPhotoRefusedDuringExport(page, check, hand, bringIn);
 });
 
 test('DND-05.3 A photo dropped while a side is opening gets the side\'s own warning '
@@ -456,16 +455,17 @@ test('DND-05.3 A photo dropped while a side is opening gets the side\'s own warn
   const hand = await makePair(page, testInfo);
   await holdNextOpening(page);
   await hand.tap(page.locator('#sideSwitch .segment[data-value="front"]'));
-  await waitForOpening(page);
+  await check('Front: the front starts to open; Front / Back is greyed out', async () => {
+    await waitForOpening(page);
+    await expect(page.locator('#sideSwitch .segment[data-value="front"]')).toBeDisabled();
+    await expect(page.locator('#sideSwitch .segment[data-value="back"]')).toBeDisabled();
+  });
   await dragFiles(page, STAGE, [sampleFile(PHOTO)]);
   const shown = await waitForToast(page);
   await releaseOpening(page);
-  await check('an amber warning says to wait for the other side to open, not for an export',
-    () => {
-      expect(shown.kind).toBe('warn');
-      expect(shown.text).not.toMatch(/export/i);
-      expect(shown.text).toMatch(/side/i);
-    });
+  await check(`an amber message reads "${WAIT_FOR_SIDE}"`, () => {
+    expect(shown).toEqual({ text: WAIT_FOR_SIDE, kind: 'warn', isShown: true });
+  });
   await check('the front opens; no photo replaced either side', async () => {
     await page.waitForFunction(() => !window.__straightener.app.isSwitching);
     expect(await openPhotoName(page)).toBe(PORTRAIT_PAIR.front);
@@ -490,6 +490,6 @@ test('DND-06.1 A file dropped outside the photo area is ignored [desktop]', asyn
   await check('IMG_9136.JPEG is still open, its edits as they were, on Rotate', async () => {
     expect(await openPhotoName(page)).toBe(PHOTO);
     expect(await editState(page)).toEqual(before);
-    expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('rotate');
+    expect(await stepNow(page)).toBe('rotate');
   });
 });

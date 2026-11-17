@@ -2,13 +2,15 @@
 
 Bringing a photo or a logo in by dragging a file onto the app or pasting an image.
 
+The files these cases drop or paste, other than the sample photos in `samples/`, are in `tests/fixtures/`: notes.txt (one line of text, "Notes about the card."), card.HEIC (a stand-in: a short text file named like a HEIC photo), green-logo.png (400 × 400 px, solid pure green) and blue-disc.png (400 × 400 px, see-through but for a pure blue disc).
+
 ## DND-01 Drop a photo to open it
 
 Drop an image file on the photo area to open it. Of several files dropped, the first image or HEIC file is used; anything else is ignored. While a pair is open, the app first asks **New photo** or to replace the side you are on.
 
 - Risk: medium
 - Check: script
-- Layout: both. In practice a desktop; a phone has no drag and drop of files.
+- Layout: both. The cases use a computer: whether an iPhone lets a person drag a photo from Photos into Safari at all is find-out item Q-05.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#stage`, `.drag-over`
@@ -19,6 +21,7 @@ Drop an image file on the photo area to open it. Of several files dropped, the f
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/, in a file browser beside the app
 - Starting screen: the start screen, with no photo open
 
@@ -34,7 +37,8 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
-- Files: notes.txt (a line of text, made for the case), then IMG_9075.JPEG and IMG_9136.JPEG from samples/, selected together in that order in a file browser beside the app
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Files: notes.txt from tests/fixtures/ (one line of text), then IMG_9075.JPEG and IMG_9136.JPEG from samples/, copied into one folder and selected together in that order in a file browser beside the app
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
@@ -48,7 +52,8 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer with a mouse; a wide window, in a browser that can't open HEIC (Chrome or Edge)
 - Build: the build under test
-- Files: notes.txt (a line of text) and card.HEIC (a stand-in made for the case: a file named like a HEIC photo, handed over with no type, as some systems drag one), selected together in a file browser beside the app
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Files: notes.txt and card.HEIC from tests/fixtures/ (card.HEIC is a stand-in: a short text file named like a HEIC photo), selected together in a file browser beside the app
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
@@ -62,7 +67,8 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
-- File: notes.txt, made for the case: a line of text, in a file browser beside the app
+- Browser data: none for this site (a private window, or the site's data cleared)
+- File: notes.txt from tests/fixtures/ (one line of text), in a file browser beside the app
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
@@ -76,14 +82,15 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/; IMG_9136.JPEG from samples/ in a file browser beside the app
 - Starting screen: the front open, with the back added by **Add back** on the Export step; the back is open
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the top bar | **Front** / **Back** shows |
-| 2 | Drag IMG_9136.JPEG onto the photo area and let go | A card asks "New photo": "End the pair, or replace the side you’re on?", with **New photo** and **Replace back** |
-| 3 | Tap **New photo** | IMG_9136.JPEG opens on its own; **Front** / **Back** is gone from the top bar |
+| 2 | Drag IMG_9136.JPEG onto the photo area and let go | The question box (the box over the dimmed photo with a question and two or three buttons) asks "New photo": "End the pair, or replace the side you’re on?", with **New photo** and **Replace back** |
+| 3 | Click **New photo** | IMG_9136.JPEG opens on its own; **Front** / **Back** is gone from the top bar |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -105,6 +112,7 @@ While a file is dragged over the photo area, a white dashed outline shows with t
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG from samples/; IMG_9075.JPEG from samples/ in a file browser beside the app
 - Starting screen: IMG_9136.JPEG open, on the Perspective step
 
@@ -112,7 +120,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Look at the photo area | No outline |
 | 2 | Drag IMG_9075.JPEG over the photo area and hold it there | A white dashed outline, 2 px, just inside the photo area, with "Drop to open" near its foot |
-| 3 | Drag it back off the photo area without letting go, then let go elsewhere | The outline goes; IMG_9136.JPEG is still open |
+| 3 | Drag it back off the photo area without letting go, then let go over the file browser | The outline goes; IMG_9136.JPEG is still open |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -121,8 +129,9 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green, in a file browser beside the app
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green), in a file browser beside the app
 - Starting screen: the photo open, on the Overlay step
 
 | # | Do this | You should see |
@@ -148,30 +157,33 @@ Paste an image anywhere on the page (Ctrl+V or Cmd+V, or the browser's Paste) to
 
 ### DND-03.1 A pasted picture opens as a photo named pasted-photo   [auto: desktop]
 Before you start:
-- Device and browser: a computer with a keyboard; a wide window, in a browser that can paste images (the automated case runs in Chromium only), with downloads saved to a folder you can open
+- Device and browser: a computer with a keyboard and a mouse; a wide window, in a browser that can paste images (the automated case runs in Chromium only), with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/, opened in an image viewer and copied with its Copy, so the picture is on the clipboard
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Press Ctrl+V (Cmd+V on a Mac) | The card photo opens on the Perspective step |
-| 2 | Tap **Export** in the step bar, open **Export options** (on a wide screen they are always shown under the controls) and tap **Save edits** | A file named pasted-photo-edits.json is saved: the photo is named pasted-photo |
+| 2 | Click **Export** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Export step shows, with Export options under the controls |
+| 3 | Click **Save edits** in Export options | A file named pasted-photo-edits.json is saved: the photo is named pasted-photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-03.2 A paste with no picture in it is left to the browser   [auto: desktop]
 Before you start:
-- Device and browser: a computer with a keyboard; a wide window, in a browser that lets a page read pasted text (the automated case runs in Chromium only)
+- Device and browser: a computer with a keyboard and a mouse; a wide window, in a browser that lets a page read pasted text (the automated case runs in Chromium only)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Clipboard: the text 7, copied from any text
 - Starting screen: the photo open, on the Rotate step, the angle at 0.0°
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the angle (**0.0°**, with a pencil after it) | A text box takes its place, with 0.0 in it, selected |
+| 1 | Click the angle (**0.0°**, with a pencil after it) | A text box takes its place, with 0.0 in it, selected |
 | 2 | Press Ctrl+V (Cmd+V on a Mac) | The box shows 7: the browser pasted the text; IMG_9136.JPEG is still open |
 
 Pass: every row's result is seen.
@@ -183,7 +195,7 @@ On the Overlay step with a photo open, a dropped or pasted image is added as the
 
 - Risk: medium
 - Check: script
-- Layout: both
+- Layout: both. The cases use a computer: whether an iPhone lets a person drag a picture into Safari at all is find-out item Q-05.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `"Drop to add as the logo"`, `#overlayInput`
@@ -195,8 +207,9 @@ On the Overlay step with a photo open, a dropped or pasted image is added as the
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green, in a file browser beside the app
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green), in a file browser beside the app
 - Starting screen: the photo open, on the Overlay step, with no logo
 
 | # | Do this | You should see |
@@ -210,8 +223,9 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window, in a browser that can paste images (the automated case runs in Chromium only)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case (a PNG of 400 × 400 px, solid pure green), opened in an image viewer and copied with its Copy
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green), opened in an image viewer and copied with its Copy
 - Starting screen: the photo open, on the Overlay step, with no logo
 
 | # | Do this | You should see |
@@ -225,87 +239,103 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green, in a file browser beside the app
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green), in a file browser beside the app
 - Starting screen: the front open, with the back added by **Add back**; the back is open, on the Overlay step, with no logo
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag green-logo.png onto the photo area and let go | The logo shows on the back; no question is asked |
-| 2 | Tap **Front** in the top bar | The front has no logo |
+| 1 | Drag green-logo.png onto the photo area and let go | The logo shows on the back; no question box (a box over the dimmed photo with a question) shows |
+| 2 | Click **Front** in the top bar | The front has no logo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-04.4 Two logos dropped within 0.9 s are two undo steps   [auto: desktop]
 Written to ruling R19; it fails until that is built (BUG-080).
+Script only
+Stand-in: the script drops the second logo less than 0.9 s after the first has been added, and measures the gap between the two; dragging two files one after the other from a file browser takes a person longer than that.
 
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logos: blue-disc.png (a PNG of 400 × 400 px, see-through but for a pure blue disc) and green-logo.png (solid pure green), made for the case, in a file browser beside the app
+- Logos: blue-disc.png and green-logo.png from tests/fixtures/, in a file browser beside the app
 - Starting screen: the photo open, on the Overlay step, with no logo
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag blue-disc.png onto the photo area and let go, then at once (within 0.9 s) drag green-logo.png onto it and let go | The green square is the logo |
-| 2 | Tap **Undo** (the arrow curving left, at the top right) | The blue disc is the logo again |
+| 1 | Drag blue-disc.png onto the photo area and let go | The blue disc is the logo |
+| 2 | At once, drag green-logo.png onto the photo area and let go | The green square is the logo, added less than 0.9 s after the blue disc |
+| 3 | Click **Undo** (the arrow curving left, at the top right) | The blue disc is the logo again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-04.5 A dropped logo is taken by its name, as the logo picker takes it   [auto: desktop]
 Written to ruling R19; it fails until that is built (BUG-191).
+Script only
+Stand-in: the script drops green-logo.png with no file type, only its name saying PNG, as some systems hand a dragged file over. A file browser on a computer gives a PNG its type, so a person can't drop one without it.
 
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case (a PNG of 400 × 400 px, solid pure green), handed over with no file type, as some systems drag a file: only its name says PNG
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green), handed over with no file type
 - Starting screen: the photo open, on the Overlay step, with no logo
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag green-logo.png onto the photo area and let go | The green logo shows on the photo |
+| 1 | Drop green-logo.png, with no file type, onto the photo area | The green logo shows on the photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-04.6 During an export, a dropped logo is refused   [auto: desktop]
 Written to ruling R32; it fails until that is built (BUG-192).
+Script only
+Stand-in: an export here lasts well under a second, too short for a person to change step and drop a file while it runs, so the script holds the export open until the drop has been checked, then lets it finish.
 
 Before you start:
-- Device and browser: a computer with a mouse; a wide window. A real export is too quick to act in; the automated case holds it open until the drop is checked
+- Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green, in a file browser beside the app
-- Starting screen: the photo open, on the Export step, with no logo
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green), in a file browser beside the app
+- Starting screen: the photo open, on the Export step, with **2000** selected under Size and no logo
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** on "Upscale to 2000 px?" | The export runs |
-| 2 | While it runs, tap **Overlay** in the step bar | The Overlay step shows |
-| 3 | Still while it runs, drag green-logo.png onto the photo area and let go | No logo is added, and an amber message reads "Wait for the export to finish, then open the photo." |
+| 1 | Click **Download** | The question box (the box over the dimmed photo with a question and two or three buttons) asks "Upscale to 2000 px?" |
+| 2 | Click **No** | The export runs: a progress line crosses the top edge of the controls |
+| 3 | While it runs, click **Overlay** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Overlay step shows |
+| 4 | Still while it runs, drag green-logo.png onto the photo area and let go | No logo is added, and an amber message reads "Wait for the export to finish, then open the photo." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-04.7 During an export, a pasted logo is refused   [auto: desktop]
 Written to ruling R32; it fails until that is built (BUG-192).
+Script only
+Stand-in: an export here lasts well under a second, too short for a person to change step and paste while it runs, so the script holds the export open until the paste has been checked, then lets it finish.
 
 Before you start:
-- Device and browser: a computer with a keyboard; a wide window, in a browser that can paste images (the automated case runs in Chromium only). A real export is too quick to act in; the automated case holds it open until the paste is checked
+- Device and browser: a computer with a keyboard and a mouse; a wide window, in a browser that can paste images (the automated case runs in Chromium only)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case (a PNG of 400 × 400 px, solid pure green), opened in an image viewer and copied with its Copy
-- Starting screen: the photo open, on the Export step, with no logo
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green), opened in an image viewer and copied with its Copy
+- Starting screen: the photo open, on the Export step, with **2000** selected under Size and no logo
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** on "Upscale to 2000 px?" | The export runs |
-| 2 | While it runs, tap **Overlay** in the step bar | The Overlay step shows |
-| 3 | Still while it runs, press Ctrl+V (Cmd+V on a Mac) | No logo is added, and an amber message reads "Wait for the export to finish, then open the photo." |
+| 1 | Click **Download** | The question box (the box over the dimmed photo with a question and two or three buttons) asks "Upscale to 2000 px?" |
+| 2 | Click **No** | The export runs: a progress line crosses the top edge of the controls |
+| 3 | While it runs, click **Overlay** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Overlay step shows |
+| 4 | Still while it runs, press Ctrl+V (Cmd+V on a Mac) | No logo is added, and an amber message reads "Wait for the export to finish, then open the photo." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -321,54 +351,67 @@ A photo opened, dropped or pasted while an export runs or a pair's side is openi
 - Changed: none
 - Anchors: `"Wait for the export to finish, then open the photo."`
 - Source: `js/app/pair.js` (`receivePhoto`)
-- Ruling: R13. While a side is opening the warning reads "Wait for the other side to open, then open the photo."; the export wording stays for an export. The app differs today. New wording, to be approved by Rich.
+- Ruling: R13. While a side is opening the warning reads "Wait for the other side to open, then open the photo." (approved wording, tests/catalog/wording.md); the export wording stays for an export. The app differs today.
 - Cases: 3
 
 ### DND-05.1 A photo dropped during an export is refused   [auto: desktop]
+Script only
+Stand-in: an export here lasts well under a second, too short for a person to drop a file while it runs, so the script holds the export open until the drop has been checked, then lets it finish.
+
 Before you start:
-- Device and browser: a computer with a mouse; a wide window. A real export is too quick to act in; the automated case holds it open until the drop is checked
+- Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG from samples/; IMG_9075.JPEG from samples/ in a file browser beside the app
-- Starting screen: IMG_9136.JPEG open, on the Export step
+- Starting screen: IMG_9136.JPEG open, on the Export step, with **2000** selected under Size
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** on "Upscale to 2000 px?" | The export runs |
-| 2 | While it runs, drag IMG_9075.JPEG onto the photo area and let go | An amber message reads "Wait for the export to finish, then open the photo." |
-| 3 | Wait for the export to finish | IMG_9136.JPEG is still the photo open |
+| 1 | Click **Download** | The question box (the box over the dimmed photo with a question and two or three buttons) asks "Upscale to 2000 px?" |
+| 2 | Click **No** | The export runs: a progress line crosses the top edge of the controls |
+| 3 | While it runs, drag IMG_9075.JPEG onto the photo area and let go | An amber message reads "Wait for the export to finish, then open the photo." |
+| 4 | Wait for the export to finish | IMG_9136.JPEG is still the photo open |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-05.2 A photo pasted during an export is refused   [auto: desktop]
+Script only
+Stand-in: an export here lasts well under a second, too short for a person to paste while it runs, so the script holds the export open until the paste has been checked, then lets it finish.
+
 Before you start:
-- Device and browser: a computer with a keyboard; a wide window, in a browser that can paste images (the automated case runs in Chromium only). A real export is too quick to act in; the automated case holds it open until the paste is checked
+- Device and browser: a computer with a keyboard and a mouse; a wide window, in a browser that can paste images (the automated case runs in Chromium only)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG from samples/; IMG_9075.JPEG from samples/, opened in an image viewer and copied with its Copy
-- Starting screen: IMG_9136.JPEG open, on the Export step
+- Starting screen: IMG_9136.JPEG open, on the Export step, with **2000** selected under Size
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download**, then **No** on "Upscale to 2000 px?" | The export runs |
-| 2 | While it runs, press Ctrl+V (Cmd+V on a Mac) | An amber message reads "Wait for the export to finish, then open the photo." |
-| 3 | Wait for the export to finish | IMG_9136.JPEG is still the photo open |
+| 1 | Click **Download** | The question box (the box over the dimmed photo with a question and two or three buttons) asks "Upscale to 2000 px?" |
+| 2 | Click **No** | The export runs: a progress line crosses the top edge of the controls |
+| 3 | While it runs, press Ctrl+V (Cmd+V on a Mac) | An amber message reads "Wait for the export to finish, then open the photo." |
+| 4 | Wait for the export to finish | IMG_9136.JPEG is still the photo open |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-05.3 A photo dropped while a side is opening gets the side's own warning   [auto: desktop]
-Written to ruling R13; it fails until that is built (BUG-031). The wording is to be approved by Rich, so the case checks what the warning says, not its words.
+Written to ruling R13; it fails until that is built (BUG-031).
+Script only
+Stand-in: a side opens in well under a second, too short for a person to drop a file while it does, so the script holds the front's opening until the drop has been checked, then lets it finish.
 
 Before you start:
-- Device and browser: a computer with a mouse; a wide window. A side opens too quickly to act in; the automated case holds the front's opening until the drop is checked
+- Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/; IMG_9136.JPEG from samples/ in a file browser beside the app
 - Starting screen: the front open, with the back added by **Add back**; the back is open
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Front** in the top bar | The front starts to open |
-| 2 | While it opens, drag IMG_9136.JPEG onto the photo area and let go | An amber warning says to wait for the other side to open; it doesn't mention an export |
+| 1 | Click **Front** in the top bar | The front starts to open: **Front** / **Back** is greyed out while it does |
+| 2 | While it opens, drag IMG_9136.JPEG onto the photo area and let go | An amber message reads "Wait for the other side to open, then open the photo." |
 | 3 | Wait for the front to open | The front is open; IMG_9136.JPEG replaced neither side |
 
 Pass: every row's result is seen.
@@ -380,7 +423,7 @@ A file dropped anywhere but the photo area (the side panel, the top bar) shows t
 
 - Risk: medium
 - Check: script
-- Layout: wide. A phone has no drag and drop of files.
+- Layout: wide. The cases use the wide layout's side panel; whether an iPhone lets a person drag a file into Safari at all is find-out item Q-05.
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#panel`, `#topBarHost`
@@ -391,6 +434,7 @@ A file dropped anywhere but the photo area (the side panel, the top bar) shows t
 Before you start:
 - Device and browser: a computer with a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: IMG_9136.JPEG from samples/; IMG_9075.JPEG from samples/ in a file browser beside the app
 - Starting screen: IMG_9136.JPEG open, on the Rotate step
 

@@ -1,8 +1,9 @@
 // Helpers for the edits-file, drop-and-paste and keyboard cases (tests/automation/
 // edits-files.spec.js, drop-and-paste.spec.js and keyboard.spec.js): saving and loading an
 // edits file through Export options, edits files changed or made in the test, files dropped on
-// the page with a DataTransfer, images put on the clipboard for a paste, an export held open so
-// a case can act while it runs, and the messages the toast shows.
+// the page with a DataTransfer (the committed ones in tests/fixtures/ among them), images put
+// on the clipboard for a paste, an export held open so a case can act while it runs, the
+// question box, and the messages the toast shows.
 // They drive the app as a person would and read its state only to check a result. The few that
 // change the page's code say why: no control can do it.
 'use strict';
@@ -18,6 +19,7 @@ const {
   closeOptions,
 } = require('./app.js');
 const { saveFileBy } = require('./export.js');
+const { expect } = require('./case.js');
 
 // The photo most cases use: a PSA slab, 1498 × 2098 px.
 const PHOTO = 'IMG_9136.JPEG';
@@ -180,6 +182,23 @@ async function waitForToast(page) {
   return toastNow(page);
 }
 
+// The folder of files the drop and paste cases name, other than the sample photos.
+const FIXTURES = path.resolve(__dirname, '../../fixtures');
+// The type a dragged file carries, by its extension. A HEIC file carries none, as some systems
+// hand one over; only its name says what it is.
+const DROPPED_TYPES = {
+  '.txt': 'text/plain',
+  '.png': 'image/png',
+  '.heic': '',
+};
+
+// A file in tests/fixtures/ as a dragged file's payload ({ name, mimeType, buffer }), with the
+// type its extension gives, or `mimeType` when one is passed ('' for none).
+function droppedFixture(name, mimeType = null) {
+  const type = mimeType === null ? DROPPED_TYPES[path.extname(name).toLowerCase()] : mimeType;
+  return { name, mimeType: type, buffer: fs.readFileSync(path.join(FIXTURES, name)) };
+}
+
 // A sample photo as a file payload ({ name, mimeType, buffer }), under its own name or `name`.
 function sampleFile(sampleName, name = sampleName) {
   const mimeType = MIME_TYPES[path.extname(sampleName).toLowerCase()] || 'image/jpeg';
@@ -298,6 +317,46 @@ function waitForExporting(page, isRunning) {
     isRunning);
 }
 
+// Whether an export's progress line shows now, on the top edge of the controls or of an open
+// sheet.
+function isProgressShown(page) {
+  return page.evaluate(() => [...document.querySelectorAll('.progress-line')]
+    .some(line => !line.hidden && line.getBoundingClientRect().width > 0));
+}
+
+// The question box's title now, or '' when none is up.
+function questionTitle(page) {
+  return page.evaluate(() => {
+    const layer = document.getElementById('pairPrompt');
+    if (!layer || !window.CF.isAlertOpen(layer)) return '';
+    return layer.querySelector('.alert-title').textContent;
+  });
+}
+
+// From the Export step at 2000: holds the export's encoding, taps Download and checks the
+// question box asks "Upscale to 2000 px?", taps No and checks the export runs, with its progress
+// line. These are a case's rows, so each is checked with `check` (the case's check fixture).
+// releaseHeldExport lets the export finish.
+async function startHeldExport(page, hand, check) {
+  await holdEncoding(page);
+  await hand.tap(page.locator('#btnDownload'));
+  await check('the question box asks "Upscale to 2000 px?"', async () => {
+    await expect.poll(() => questionTitle(page)).toBe('Upscale to 2000 px?');
+  });
+  await hand.tap(page.locator('#pairPrompt').getByRole('button', { name: 'No', exact: true }));
+  await check('the export runs: a progress line crosses the top edge of the controls',
+    async () => {
+      await waitForExporting(page, true);
+      expect(await isProgressShown(page)).toBe(true);
+    });
+}
+
+// Lets an export startHeldExport held finish and waits until it has.
+async function releaseHeldExport(page) {
+  await releaseEncoding(page);
+  await waitForExporting(page, false);
+}
+
 // A logo of random colored pixels drawn in the page and saved as a PNG, `sidePx` square. Noise
 // doesn't compress, so the file is about 4 bytes per pixel: a 200 px logo is about 160 KB.
 // Returns a payload { name, mimeType, buffer }.
@@ -373,6 +432,7 @@ module.exports = {
   toastNow,
   waitForToast,
   sampleFile,
+  droppedFixture,
   dragFiles,
   dropOutline,
   copyImage,
@@ -381,6 +441,10 @@ module.exports = {
   holdEncoding,
   releaseEncoding,
   waitForExporting,
+  isProgressShown,
+  questionTitle,
+  startHeldExport,
+  releaseHeldExport,
   noisyLogo,
   tabTo,
   focusRingOf,

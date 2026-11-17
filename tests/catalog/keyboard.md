@@ -20,6 +20,7 @@ Ctrl+Z (Cmd+Z on a Mac) undoes the last edit, as **Undo** does.
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
@@ -34,18 +35,22 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### KEY-01.2 During an export, Ctrl+Z does nothing   [auto: desktop]
 Written to ruling R32; it fails until that is built (BUG-193).
+Script only
+Stand-in: an export here lasts well under a second, too short for a person to press a key while it runs, so the script holds the export open until the key has been pressed and its result read, then lets it finish.
 
 Before you start:
-- Device and browser: a computer with a keyboard and a mouse; a wide window. A real export is too quick to act in; the automated case holds it open until the key is checked
+- Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Export step, at **JPEG**
+- Starting screen: the photo open, on the Export step, with **JPEG** selected under Format
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **PNG** | **PNG** is selected |
-| 2 | Click **Download**, then **No** on "Upscale to 2000 px?" | The export runs |
-| 3 | While it runs, press Ctrl+Z (Cmd+Z on a Mac) | **PNG** is still selected |
+| 2 | Click **Download** | The question box (the box over the dimmed photo with a question and two or three buttons) asks "Upscale to 2000 px?" |
+| 3 | Click **No** | The export runs: a progress line crosses the top edge of the controls |
+| 4 | While it runs, press Ctrl+Z (Cmd+Z on a Mac) | **PNG** is still selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -71,33 +76,42 @@ Flag: to confirm. Written to today's behavior: the tooltip names only Shift+Ctrl
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Hold the pointer over **Redo** (the arrow curving right, at the top right) | Its tooltip reads "Redo (Shift+Ctrl/Cmd+Z)" |
-| 2 | Click **90° right**, then press Ctrl+Z (Cmd+Z on a Mac) | The photo is upright; **Redo** is lit |
-| 3 | Press Shift+Ctrl+Z (Shift+Cmd+Z on a Mac) | The photo turns a quarter clockwise again |
-| 4 | Press Ctrl+Z, then Ctrl+Y (Cmd+Y on a Mac) | The photo is turned a quarter again; **Redo** is greyed out |
+| 2 | Click **90° right** | The photo turns a quarter clockwise |
+| 3 | Press Ctrl+Z (Cmd+Z on a Mac) | The photo is upright; **Redo** is no longer greyed out |
+| 4 | Press Shift+Ctrl+Z (Shift+Cmd+Z on a Mac) | The photo turns a quarter clockwise again |
+| 5 | Press Ctrl+Z | The photo is upright again |
+| 6 | Press Ctrl+Y (Cmd+Y on a Mac) | The photo is turned a quarter again; **Redo** is greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### KEY-02.2 During an export, the redo keys do nothing   [auto: desktop]
 Written to ruling R32; it fails until that is built (BUG-193).
+Script only
+Stand-in: an export here lasts well under a second, too short for a person to press a key while it runs, so the script holds the export open until both keys have been pressed and their results read, then lets it finish.
 
 Before you start:
-- Device and browser: a computer with a keyboard and a mouse; a wide window. A real export is too quick to act in; the automated case holds it open until the keys are checked
+- Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Export step, at **JPEG**
+- Starting screen: the photo open, on the Export step, with **JPEG** selected under Format
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **PNG**, then **Undo** (the arrow curving left, at the top right) | **JPEG** is selected and **Redo** is lit |
-| 2 | Click **Download**, then **No** on "Upscale to 2000 px?" | The export runs |
-| 3 | While it runs, press Shift+Ctrl+Z, then Ctrl+Y (Shift+Cmd+Z and Cmd+Y on a Mac) | **JPEG** is still selected |
+| 1 | Click **PNG** | **PNG** is selected |
+| 2 | Click **Undo** (the arrow curving left, at the top right) | **JPEG** is selected, and **Redo** is no longer greyed out |
+| 3 | Click **Download** | The question box (the box over the dimmed photo with a question and two or three buttons) asks "Upscale to 2000 px?" |
+| 4 | Click **No** | The export runs: a progress line crosses the top edge of the controls |
+| 5 | While it runs, press Shift+Ctrl+Z (Shift+Cmd+Z on a Mac) | **JPEG** is still selected |
+| 6 | Still while it runs, press Ctrl+Y (Cmd+Y on a Mac) | **JPEG** is still selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -119,17 +133,23 @@ The undo and redo keys still undo and redo the app's edits while a slider, a swi
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step, the angle at 0.0° and **Fill frame** Off
+
+The named action:
+- Type the angle 5: click the angle (**0.0°**, with a pencil after it), type 5, press Enter.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **Fill frame** | It reads On, and keeps the keyboard focus |
 | 2 | Press Ctrl+Z (Cmd+Z on a Mac) | **Fill frame** reads Off |
-| 3 | Click the angle, type 5, press Enter, then click the angle again | The angle box opens again showing 5.0, with the focus |
-| 4 | Press Ctrl+Z | The photo goes back to 0.0° |
-| 5 | Click **Export** in the step bar, then click the middle of the **Quality** slider | **Quality** reads 75%, and the slider has the focus |
-| 6 | Press Ctrl+Z | **Quality** reads 92% again |
+| 3 | Type the angle 5 | The angle reads 5.0° and the photo turns |
+| 4 | Click the angle again | The angle box opens again showing 5.0, with the focus |
+| 5 | Press Ctrl+Z | The photo goes back to 0.0° |
+| 6 | Click **Export** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Export step shows, with **Quality** at 92% in Export options under the controls |
+| 7 | Click the middle of the **Quality** slider | **Quality** reads 75%, and the slider has the focus |
+| 8 | Press Ctrl+Z | **Quality** reads 92% again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -138,14 +158,20 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
+The named action:
+- Add a 5 to the field: press End, then type 5.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **90° right**, then press the backtick key (`` ` ``) | The photo is turned a quarter; the tuning panel opens |
-| 2 | Click the first number field in the panel, press End and type 5 | The field reads its number with a 5 after it |
-| 3 | Press Ctrl+Z (Cmd+Z on a Mac) | The field reads its first number again; the photo is still turned a quarter |
+| 1 | Click **90° right** | The photo is turned a quarter clockwise |
+| 2 | Press the backtick key (`` ` ``) | The tuning panel opens |
+| 3 | Click the first number field in the panel | A text cursor shows in the field |
+| 4 | Add a 5 to the field | The field reads its number with a 5 after it |
+| 5 | Press Ctrl+Z (Cmd+Z on a Mac) | The field reads its first number again; the photo is still turned a quarter |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -161,21 +187,58 @@ The other shortcuts do nothing while you type in a field, or while Ctrl, Cmd or 
 - Changed: none
 - Anchors: `CONFIG.keys.fit`, `CONFIG.keys.debug`, `#rotateAngleField`
 - Source: `js/app/input.js` (`onKeyDown`)
-- Cases: 1
+- Cases: 3
 
 ### KEY-04.1 The shortcuts do nothing while typing, or with Alt held   [auto: desktop]
 Before you start:
-- Device and browser: a computer with a keyboard and a mouse; a wide window
+- Device and browser: a computer with a keyboard and a mouse with a wheel; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, fitted to the photo area
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Roll the mouse wheel away from you over the middle of the photo | The photo zooms in, to more than one and a half times its fitted size |
+| 2 | Click the angle (**0.0°**, with a pencil after it) | A text box takes its place, with 0.0 in it, selected |
+| 3 | Type 3 | The box shows 3; the step is still Rotate (3 alone goes to Crop) |
+| 4 | Type f | The box shows 3f; the photo is still zoomed in (f alone fits it to the photo area) |
+| 5 | Press Escape | The box closes; the angle reads 0.0° |
+| 6 | Press Alt+3 (Option+3 on a Mac) | The step is still Rotate |
+| 7 | Press 3 | The Crop step shows |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### KEY-04.2 The shortcuts do nothing with Ctrl held   [auto: desktop]
+Before you start:
+- Device and browser: a computer with a keyboard; a wide window, the app in the browser's only tab (in a browser with more tabs, Ctrl+3 goes to the third)
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, the tuning panel closed
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Press Ctrl+` (the Control key with the backtick key, on a Mac too) | The tuning panel stays closed |
+| 2 | Press Ctrl+3 (the Control key with 3, on a Mac too) | The step is still Rotate |
+| 3 | Press the backtick key (`` ` ``) alone | The tuning panel opens |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### KEY-04.3 On a Mac, the shortcuts do nothing with Cmd held   [auto: desktop]
+Before you start:
+- Device and browser: a Mac with a keyboard; a wide window, the app in the browser's only tab (in a browser with more tabs, Cmd+3 goes to the third)
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click the angle (with a pencil after it) and type 3 | The box shows 3; the step is still Rotate (3 alone goes to Crop) |
-| 2 | Type f | The box shows 3f; nothing else happens (f alone fits the photo) |
-| 3 | Press Escape, then Alt+3 (Option+3 on a Mac) | The box has closed; the step is still Rotate |
-| 4 | Press 3 | The Crop step shows |
+| 1 | Press Cmd+3 | The step is still Rotate |
+| 2 | Press 3 alone | The Crop step shows |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -195,17 +258,24 @@ With a photo open, the keys 1 to 6 go to Perspective, Rotate, Crop, Levels, Over
 
 ### KEY-05.1 The keys 1 to 6 go to the six steps   [auto: desktop]
 Before you start:
-- Device and browser: a computer with a keyboard; a wide window
+- Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the start screen, with no photo open
+
+Each step's tab is in the step tabs, the six tabs Perspective to Export in the top bar; the open step's tab is selected (a solid white fill).
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Press 6 | Nothing happens: the start screen stays |
-| 2 | Open IMG_9136.JPEG with **Open photo** | The photo opens on Perspective |
-| 3 | Press 2, 3, 4, 5 and 6 in turn | Each goes to its step, its tab selected in the step bar: Rotate, Crop, Levels, Overlay, Export |
-| 4 | Press 1 | The Perspective step shows |
+| 2 | Click **Open photo** and choose IMG_9136.JPEG | The photo opens on Perspective |
+| 3 | Press 2 | The Rotate step shows, its tab selected |
+| 4 | Press 3 | The Crop step shows, its tab selected |
+| 5 | Press 4 | The Levels step shows, its tab selected |
+| 6 | Press 5 | The Overlay step shows, its tab selected |
+| 7 | Press 6 | The Export step shows, its tab selected |
+| 8 | Press 1 | The Perspective step shows, its tab selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -227,6 +297,7 @@ With a photo open, F fits the current view to the screen, as **Fit to screen** d
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse with a wheel; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step, fitted to the photo area
 
@@ -255,17 +326,20 @@ On the Levels step, holding C shows the photo without levels, with the **Before 
 
 ### KEY-07.1 Holding C on Levels shows the photo before levels   [auto: desktop]
 Before you start:
-- Device and browser: a computer with a keyboard and a mouse; a wide window
+- Device and browser: a computer with a keyboard and a mouse; a wide window, with a second window open beside the browser (any app)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step, with no levels
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **Auto**, then **Apply** | The levels are applied: the photo is brighter |
-| 2 | Hold C down | The photo shows without levels, with the **Before levels** badge at the top left |
-| 3 | Let go of C | The levels are back and the badge goes |
-| 4 | Hold C down again, and while holding it click another window, so the browser loses focus | The comparison ends: the levels are back |
+| 1 | Click **Auto** | The photo is brighter |
+| 2 | Click **Apply** | **Apply** and **Discard** are greyed out; the photo stays brighter |
+| 3 | Hold C down | The photo shows as it was before levels, with the **Before levels** badge at the top left |
+| 4 | Let go of C | The photo is brighter again, and the badge goes |
+| 5 | Hold C down again | The **Before levels** badge shows again |
+| 6 | Still holding C, click the other window, so the browser loses focus | The comparison ends: the photo is brighter again, with no badge |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -276,6 +350,7 @@ Written to ruling R9; it fails until that is built (BUG-102).
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step, with no levels set and none applied
 
@@ -288,7 +363,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## KEY-08 Tab steps through the Perspective handles
 
-On Perspective, Tab into the photo selects the first of the eight handles (Shift+Tab the last). While the photo has focus, Tab and Shift+Tab step through the handles, then leave the photo for the next control. With focus anywhere else, Tab moves between controls as usual.
+On Perspective, while the photo has the keyboard focus, Tab and Shift+Tab step through the eight handles (the four corners, then the four edges) and leave the photo after the last handle (Tab) or before the first (Shift+Tab). Tab or Shift+Tab into the photo keeps the handle that is selected: Corner 1 of 4 when a photo opens. With focus anywhere else, Tab moves between controls as usual.
 
 - Risk: medium
 - Check: script
@@ -298,19 +373,20 @@ On Perspective, Tab into the photo selects the first of the eight handles (Shift
 - Anchors: `key:Tab`, `#view`, `.is-keyboard-focus`
 - Source: `js/app/input.js` (`onPhotoKey`, `stepHandleByTab`, `onCanvasFocus`)
 - Ruling: R2. While Preview is on, the keys do nothing to the handles. The app differs today.
-- Flag: to confirm. The wide keyboard help says Tab selects the next handle without saying the photo must have focus first; on a fresh page Tab goes to the top bar.
-- Cases: 2
+- Flag: to confirm. The wide keyboard help says Tab selects the next handle without saying the photo must have focus first; on a fresh page Tab goes to the top bar. The code means a Tab into the photo with no handle selected to select the first handle, and a Shift+Tab the last, but a photo always has a handle selected, so Tab and Shift+Tab into the photo keep the handle selected before.
+- Cases: 3
 
 ### KEY-08.1 Tab steps through the eight handles once the photo has the focus   [auto: desktop]
 Flag: to confirm. Written to today's behavior: from a fresh page, Tab reaches the photo only after the top bar.
 
 Before you start:
-- Device and browser: a computer with a keyboard; a wide window
+- Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the app opened afresh, then IMG_9136.JPEG opened with **Open photo**; it opens on Perspective. Nothing else clicked
 
-The line above the controls names the selected handle: Corner 1 of 4 to Corner 4 of 4, then Edge 1 of 4 to Edge 4 of 4.
+The line above the controls (the one line of text at the top of the controls) names the selected handle: Corner 1 of 4 to Corner 4 of 4, then Edge 1 of 4 to Edge 4 of 4.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -318,7 +394,8 @@ The line above the controls names the selected handle: Corner 1 of 4 to Corner 4
 | 2 | Press Tab four more times | The line reads Edge 1 of 4; the photo still has the focus |
 | 3 | Press Tab three more times | The line reads Edge 4 of 4, the last handle |
 | 4 | Press Tab once more | The focus leaves the photo for **Nudge left** |
-| 5 | Press Shift+Tab twice | The focus is back on the photo, and the line reads Edge 3 of 4 |
+| 5 | Press Shift+Tab | The focus is back on the photo; the line still reads Edge 4 of 4 |
+| 6 | Press Shift+Tab | The line reads Edge 3 of 4; the photo still has the focus |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -329,13 +406,38 @@ Written to ruling R2; it fails until that is built (BUG-062).
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Perspective step
+- Starting screen: the photo open, on the Perspective step; the line above the controls (the one line of text at the top of the controls) reads Corner 1 of 4
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **Preview** | It reads On: the corrected card shows, with no handles |
-| 2 | Press Tab until the photo has the focus, then press Tab once more | The selected handle doesn't change, and the focus moves on from the photo |
+| 2 | Click the photo area 20 px in from its top-left corner | The photo has the focus; the line still reads Corner 1 of 4 |
+| 3 | Press Tab | The line still reads Corner 1 of 4, and the focus has moved on from the photo |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### KEY-08.3 Shift+Tab steps back through the handles and leaves before the first   [auto: desktop]
+Flag: to confirm. Written to today's behavior: Tab into the photo keeps the handle selected before; it doesn't start again at the first.
+
+Before you start:
+- Device and browser: a computer with a keyboard and a mouse; a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the app opened afresh, then IMG_9136.JPEG opened with **Open photo**; it opens on Perspective. Nothing else clicked
+
+The line above the controls (the one line of text at the top of the controls) names the selected handle.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Press Tab nine times | The focus lands on the photo; the line reads Corner 1 of 4 |
+| 2 | Press Tab | The line reads Corner 2 of 4 |
+| 3 | Press Shift+Tab | The line reads Corner 1 of 4; the photo still has the focus |
+| 4 | Press Shift+Tab | The focus leaves the photo for **Fit to screen** in the top bar |
+| 5 | Press Tab | The focus is back on the photo; the line still reads Corner 1 of 4 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -358,6 +460,7 @@ The photo shows a 2 px white ring when the keyboard brought focus to it, and non
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
@@ -376,13 +479,16 @@ Ruling R41: the ring stays, as it does today (the photo had the focus already, s
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click the photo area 20 px in from its top-left corner, press Shift+Tab, then Tab | The photo has the focus, with the 2 px white ring |
-| 2 | Click the photo area 20 px in from its top-left corner again | The ring stays |
+| 1 | Click the photo area 20 px in from its top-left corner | The photo has the focus, with no ring |
+| 2 | Press Shift+Tab | The focus moves to **Fit to screen** |
+| 3 | Press Tab | The photo has the focus, with a 2 px white ring just inside its edge |
+| 4 | Click the photo area 20 px in from its top-left corner again | The ring stays |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -408,16 +514,21 @@ Flag: to confirm. Written to today's behavior: the keys move whole photo pixels,
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, Corner 1 of 4 (top left) selected
+
+The line above the controls (the one line of text at the top of the controls) names the selected handle.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Press Tab until the photo has the focus | The line reads Corner 1 of 4 |
-| 2 | Press → (the right arrow key), then Shift+↓ | The top-left corner moves 1 photo pixel right and 10 down |
-| 3 | Click **Undo** (the arrow curving left, at the top right) | One Undo takes both presses back; **Undo** is greyed out |
-| 4 | Click the photo area 20 px in from its top-left corner, then press Tab four times | The line reads Edge 1 of 4: the top edge |
-| 5 | Press Shift+↑ | The top edge moves out, straight up, both its corners with it; the bottom corners don't move |
+| 2 | Press → (the right arrow key) | The top-left corner moves 1 photo pixel right |
+| 3 | Press Shift+↓ | The top-left corner moves 10 photo pixels down |
+| 4 | Click **Undo** (the arrow curving left, at the top right) | One Undo takes both presses back; **Undo** is greyed out |
+| 5 | Click the photo area 20 px in from its top-left corner | The photo has the focus; the line still reads Corner 1 of 4 |
+| 6 | Press Tab four times | The line reads Edge 1 of 4: the top edge |
+| 7 | Press Shift+↑ | The top edge moves out, straight up, both its corners with it; the bottom corners don't move |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -428,6 +539,7 @@ Written to ruling R2; it fails until that is built (BUG-062).
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, Corner 1 of 4 selected
 
@@ -456,8 +568,9 @@ On Overlay, the arrow keys move the logo by 0.5% of the photo's width, or 5% wit
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green)
 - Starting screen: the photo open, on the Overlay step, with green-logo.png added by **Add logo**
 
 The framed photo is the photo as cropped, where the logo sits.
@@ -489,8 +602,9 @@ On Overlay, + (or =) makes the logo 5% bigger and − (or _) 5% smaller.
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Logo: green-logo.png, made for the case: a PNG of 400 × 400 px, solid pure green
+- Logo: green-logo.png from tests/fixtures/ (400 × 400 px, solid pure green)
 - Starting screen: the photo open, on the Overlay step, with green-logo.png added by **Add logo**
 
 | # | Do this | You should see |
@@ -508,7 +622,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 With the **Free** crop preset, holding Shift while dragging the crop box (from the press or at any point during the drag) keeps its shape.
 
 - Risk: low
-- Check: script, touch
+- Check: script
 - Layout: both. Needs a keyboard and a mouse.
 - Added: 1.10 baseline
 - Changed: none
@@ -520,22 +634,28 @@ With the **Free** crop preset, holding Shift while dragging the crop box (from t
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Crop step
+
+The named actions (the right edge's handle is the bar at the middle of the crop box's right edge):
+- Shift-drag the right edge: hold Shift down, drag the right edge's handle 60 px to the left, let go of the mouse, then let go of Shift.
+- Drag the right edge and press Shift halfway: drag the right edge's handle 30 px to the left, press Shift and keep it down, drag 30 px further, let go of the mouse, then let go of Shift.
+- Drag the right edge: drag the right edge's handle 60 px to the left with no key held, and let go.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **Free** | **Free** is selected |
-| 2 | Hold Shift, drag the handle on the crop box's right edge 60 px to the left, let go, then let go of Shift | The box is smaller and the same shape |
-| 3 | Drag the right edge 60 px to the left again, pressing Shift halfway through the drag; let go, then let go of Shift | Still the same shape |
-| 4 | Drag the right edge 60 px to the left with no Shift | The box gets narrower: its shape changes |
+| 2 | Shift-drag the right edge | The box is smaller and the same shape |
+| 3 | Drag the right edge and press Shift halfway | The box is smaller again, still the same shape |
+| 4 | Drag the right edge | The box gets narrower: its shape changes |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## KEY-14 Escape cancels a question
 
-Escape cancels an open question card, as its Cancel does.
+Escape cancels an open question box, as its Cancel does.
 
 - Risk: medium
 - Check: script
@@ -550,13 +670,14 @@ Escape cancels an open question card, as its Cancel does.
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window, with downloads saved to a folder you can open
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
-- Starting screen: the photo open, on the Export step, at **2000**
+- Starting screen: the photo open, on the Export step, with **2000** selected under Size
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **Download** | A card asks "Upscale to 2000 px?" |
-| 2 | Press Escape | The card closes and no file is saved |
+| 1 | Click **Download** | The question box (the box over the dimmed photo with a question and two or three buttons) asks "Upscale to 2000 px?" |
+| 2 | Press Escape | The question box closes, and no file is saved to the downloads folder |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -575,21 +696,27 @@ On the phone layout, Escape closes an open options sheet.
 - Flag: to confirm. Escape closes a sheet on the phone layout only, and never disarms **Tap to find card** or a Levels pick.
 - Cases: 1
 
-### KEY-15.1 On a phone, Escape closes an options sheet but leaves a pick armed   [auto: phone]
+### KEY-15.1 In the phone layout, Escape closes an options sheet but leaves a pick armed   [auto: phone]
 Flag: to confirm. Written to today's behavior: Escape closes the sheet but leaves **Pick white** armed.
+It runs at phone size, though it needs a keyboard: the options sheets are only in the phone layout (on a wide screen the options are always open in the side panel, with nothing to close).
 
 Before you start:
-- Device and browser: a phone-width window with a keyboard (an iPad with a keyboard, or a computer's window made narrow)
+- Device and browser: a computer with a keyboard and a mouse, the browser window made 760 px wide or narrower so the app shows its phone layout (the step tabs along the bottom)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
+The options tab is the small tab with an up arrow on the top edge of the controls (the block of buttons and sliders under the photo).
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the **Options** tab (the tab with an up arrow on the top edge of the controls) | Rotate options rise |
+| 1 | Click the options tab | ROTATE OPTIONS rise from the bottom |
 | 2 | Press Escape | They close |
-| 3 | Tap **Levels** in the step bar, tap **Pick white**, then tap the **Options** tab | **Pick white** is selected; the Levels tips are open |
-| 4 | Press Escape | The tips close; **Pick white** is still selected |
+| 3 | Click **Levels** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Levels step shows |
+| 4 | Click **Pick white** | **Pick white** is selected |
+| 5 | Click the options tab | The Levels tips rise from the bottom |
+| 6 | Press Escape | The tips close; **Pick white** is still selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -611,6 +738,7 @@ The backtick key (`` ` ``) opens and closes the tuning panel, with or without a 
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step, the tuning panel closed
 
@@ -639,18 +767,22 @@ Every control shows a 2 px white ring when it has keyboard focus.
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window, 1280 × 800 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Export step
 
-Each row: click the photo area 20 px in from its top-left corner, then press Tab until the control named has the focus. A script also measures the ring (2 px, solid, the app's white); the judge looks at the screenshot.
+The named action:
+- Tab to X on step S: click S in the step tabs (the six tabs Perspective to Export, in the top bar), click the photo area 20 px in from its top-left corner, then press Tab until X has the focus.
+
+A script also measures each ring (2 px, solid, the app's white); the judge looks at the screenshot.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | On Export, Tab to **Download** | A 2 px white ring around **Download**, clear of its neighbors |
-| 2 | On Export, Tab to the Size choice **1080** | A 2 px white ring around **1080**, clear of the choices beside it |
-| 3 | On Crop, Tab to the **Free** preset | A 2 px white ring around **Free** |
-| 4 | On Rotate, Tab to **Fill frame** | A 2 px white ring around **Fill frame** |
-| 5 | On Rotate, Tab to the Straighten ruler | A 2 px white ring around the ruler |
+| 1 | Tab to **Download** on Export | A 2 px white ring around **Download**, clear of its neighbors |
+| 2 | Tab to the Size choice **1080** on Export | A 2 px white ring around **1080**, clear of the choices beside it |
+| 3 | Tab to the **Free** preset on Crop | A 2 px white ring around **Free** |
+| 4 | Tab to **Fill frame** on Rotate | A 2 px white ring around **Fill frame** |
+| 5 | Tab to the Straighten ruler on Rotate | A 2 px white ring around the ruler |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -672,17 +804,26 @@ A focused control takes its own keys: the arrow keys move the Straighten ruler a
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step, the angle at 0.0°
 
-Each Tab row starts by clicking the photo area 20 px in from its top-left corner.
+The named action:
+- Tab to X: click the photo area 20 px in from its top-left corner, then press Tab until X has the focus (a white ring shows around it).
+
+The step tabs are the six tabs Perspective to Export, in the top bar. The line above the controls is the one line of text at the top of the controls.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tab to the Straighten ruler and press → (the right arrow key) | The angle moves by 0.1° |
-| 2 | Click **Export** in the step bar, Tab to **Quality**, and press ← | **Quality** reads 91% |
-| 3 | Click **Perspective** in the step bar, Tab to **Nudge right** (the right arrow under the line), and press Enter | The selected corner moves right once |
-| 4 | Press Space | It moves right once more |
+| 1 | Tab to the Straighten ruler | A white ring shows around the ruler |
+| 2 | Press → (the right arrow key) | The angle moves by 0.1° |
+| 3 | Click **Export** in the step tabs | The Export step shows |
+| 4 | Tab to **Quality** | A white ring shows around **Quality** |
+| 5 | Press ← | **Quality** reads 91% |
+| 6 | Click **Perspective** in the step tabs | The Perspective step shows |
+| 7 | Tab to **Nudge right** (the right arrow under the line above the controls) | The line above the controls reads Edge 4 of 4: on the way, Tab stepped through the photo's eight handles to the last, the left edge |
+| 8 | Press Enter | The left edge moves right once |
+| 9 | Press Space | It moves right once more |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
