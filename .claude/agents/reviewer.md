@@ -31,6 +31,12 @@ for" in `tests/WRITING-CASES.md`, then the files you were given. For each case a
 `CLAUDE.md` and the rule files for what it touches, and ask: does it do exactly what the
 ruling says, no more; what input or state breaks it; is the catalog updated with it?
 
+**A sweep slice** (the `sweep` skill, `/sweep full`). You are given a slice of files, the
+inventory of the project's rules and the kinds of finding. Read every file of the slice in
+full, and report each finding with its kind, the file and line of each side, and the lines
+quoted word for word. Run no selftest and no spec for a sweep, and give no grades: the main
+session orders the findings.
+
 Report findings most serious first, each with the file and line, what is wrong, a concrete
 way it fails, and what would fix it. Grade each: must fix (wrong, or can't be run), should
 fix, minor. Say plainly what you did not read. Do not pad: no finding is a fine result.
