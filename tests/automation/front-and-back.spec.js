@@ -349,7 +349,6 @@ test('PAIR-01.2 Add back is dimmed while an export runs [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-030');
   const hand = await startWithFront(page, testInfo);
   await goToStep(page, 'export', hand);
   await hand.tap(page.locator('#exportSize .segment[data-value="0"]'));

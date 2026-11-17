@@ -908,16 +908,16 @@ On a fail, record: the row number, what you saw instead, a screen recording (Con
 
 ## EXP-18 One export at a time
 
-Only one export runs at a time. While it runs, the save buttons, **Together** | **Separately**, **Front** | **Back**, **Unpair** and the corner-shot buttons are dimmed.
+Only one export runs at a time. While it runs, the save buttons, **Together** | **Separately**, **Front** | **Back**, **Unpair** and the corner-shot buttons are dimmed, and so are Size, Format, the settings in Export options, **Reset export settings**, **Load edits**, **Undo**, **Redo** and **Add back**; the step tabs stay live.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnDownload`, `#pairOutput`, `#btnUnpair`, `#btnCornerDownload`
-- Source: `js/app/export.js` (`doExport`, `runWithProgress`); `js/app/export-controls.js` (`syncSaveButtons`); `js/app/corner-shots.js` (`syncCornerShots`); `js/app/pair.js` (`syncPair`)
-- Ruling: R17. During an export, Size, Format, the options sheet's settings, Load edits, Undo, Redo and Add back are dimmed along with the save buttons; the step tabs stay live. The app differs today.
+- Source: `js/app/export.js` (`doExport`, `runWithProgress`); `js/app/export-controls.js` (`syncSaveButtons`, `syncExportLock`); `js/app/shell.js` (`syncHistoryButtons`); `js/app/corner-shots.js` (`syncCornerShots`); `js/app/pair.js` (`syncPair`)
+- Ruling: R17. During an export, Size, Format, the options sheet's settings, Load edits, Undo, Redo and Add back are dimmed along with the save buttons; the step tabs stay live. The app does this since 1.10.0.
 - Cases: 2
 
 ### EXP-18.1 While an export runs, the other save buttons are dimmed   [auto: both]
@@ -940,8 +940,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-18.2 While an export runs, the settings are dimmed and the steps stay live   [auto: both]
-Written to ruling R17; it fails until R17 is built (BUG-013).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test

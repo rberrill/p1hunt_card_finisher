@@ -287,7 +287,6 @@ test('TOP-02.2 Undo is greyed out while an export runs [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-013');
   const hand = await startOnExport(page, testInfo, { isWatched: true });
   await hand.tap(choiceButton(page, 'exportSize', '1080'));
   await check('1080 is selected; Undo is no longer greyed out', async () => {
@@ -328,7 +327,6 @@ test('TOP-03.2 Redo is greyed out while an export runs [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-013');
   const hand = await startOnExport(page, testInfo, { isWatched: true });
   await hand.tap(choiceButton(page, 'exportSize', '1080'));
   await check('1080 is selected', async () => {

@@ -191,7 +191,8 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   user-select: none;
 }
 .icon-button:disabled, .step-tab:disabled, .text-button:disabled, .tool:disabled,
-.action-button:disabled, .preset-chip:disabled, .segment:disabled, .nudge-key:disabled {
+.action-button:disabled, .preset-chip:disabled, .segment:disabled, .nudge-key:disabled,
+.sheet-row:disabled {
   opacity: .38;
   cursor: default;
 }
@@ -1725,7 +1726,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
     background: var(--control);
   }
   .text-button:hover:not(:disabled) { border-radius: 10px; }
-  .sheet-row:hover { background: var(--pressed); }
+  .sheet-row:hover:not(:disabled) { background: var(--pressed); }
   .sheet-list > .sheet-row:first-child:hover { border-radius: 12px 12px 0 0; }
   .sheet-list > .sheet-row:last-child:hover { border-radius: 0 0 12px 12px; }
   .sheet-list > .sheet-row:only-child:hover { border-radius: 12px; }

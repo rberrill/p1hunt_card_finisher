@@ -10,10 +10,10 @@ On Export, **Add back** keeps the open photo as the front, with its edits and un
 - Check: script
 - Layout: both. On a phone it sits in Export's bottom row; on a wide screen in the same row of the side panel.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnAddBack`, "Keep this photo as the front and open the back", `#fileInput`
-- Source: `js/app/pair.js` (`startPair`, `receivePhoto`, `bindPair`), `js/app/export-controls.js` (`buildMoreRow`)
-- Ruling: R17. While an export runs, Add back is dimmed with the save buttons (as are Size, Format, the options sheet's settings, Load edits, Undo and Redo); the tab bar stays live. The app differs today.
+- Source: `js/app/pair.js` (`startPair`, `receivePhoto`, `bindPair`), `js/app/export-controls.js` (`buildMoreRow`, `syncExportLock`)
+- Ruling: R17. While an export runs, Add back is dimmed with the save buttons (as are Size, Format, the options sheet's settings, Load edits, Undo and Redo); the tab bar stays live. The app does this since 1.10.0.
 - Cases: 2
 
 ### PAIR-01.1 Add back keeps the front and opens the back   [auto: phone, webkit]
@@ -46,8 +46,6 @@ Before you start:
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG from samples/
 - Starting screen: the photo open on its own, on the Export step, Size **Original** selected
-
-Written to ruling R17; it fails until R17 is built (BUG-030).
 
 An export takes well under a second, so watch the bottom row closely, or record the screen and step through it.
 

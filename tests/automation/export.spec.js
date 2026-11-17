@@ -1060,7 +1060,6 @@ const R17_CONTROLS = [
 
 test('EXP-18.2 While an export runs, the settings are dimmed and the steps stay live [both]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-013');
     const hand = await startOn(page, testInfo, { isWatched: true });
     await tapSize(page, hand, '1080');
     await tapSize(page, hand, '3000');
@@ -1085,7 +1084,11 @@ test('EXP-18.2 While an export runs, the settings are dimmed and the steps stay 
     });
     await waitForExportEnd(page);
     await check('a file is saved and everything is live again', async () => {
-      await expectLive(page, ['btnUndo', 'btnRedo', 'btnDownload'], true);
+      await expectLive(page, R17_CONTROLS.concat(['btnDownload']), true);
+      const dimmedChoices = page.locator(
+        '#exportSize .segment:disabled, #exportFormat .segment:disabled',
+      );
+      await expect(dimmedChoices).toHaveCount(0);
     });
   });
 

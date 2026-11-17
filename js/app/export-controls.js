@@ -46,6 +46,17 @@
     { value: 'together', label: 'Together' },
     { value: 'separately', label: 'Separately' },
   ];
+  // The controls that are off while an export runs, by id, besides the Size and Format choices
+  // and the Quality slider (syncExportLock): Interpolation, Fill outside photo and its custom
+  // color, Reset export settings, Load edits and Add back.
+  const EXPORT_LOCKED_IDS = [
+    'interp',
+    'fill',
+    'fillColor',
+    'exportResetRow',
+    'btnLoadEdits',
+    'btnAddBack',
+  ];
   // Icon sizes in CSS px: the note's warning mark and a picker row's chevron (frame E4, E11).
   const NOTE_ICON_PX = 15;
   const PICKER_ICON_PX = 16;
@@ -462,6 +473,21 @@
     });
   }
 
+  // While an export runs, what would change the edits under it is off with the save buttons
+  // (ruling R17): the Size and Format choices, the options sheet's settings and its Reset, Load
+  // edits and Add back. The step tabs stay live.
+  function syncExportLock() {
+    const isExporting = !!app.exporting;
+    const choices = '#exportSize .segment, #exportFormat .segment';
+    document.querySelectorAll(choices).forEach(segment => {
+      segment.disabled = isExporting;
+    });
+    CF.updateSlider(byId('quality').parentElement, { isDisabled: isExporting });
+    EXPORT_LOCKED_IDS.forEach(id => {
+      byId(id).disabled = isExporting;
+    });
+  }
+
   // The readout, the notes under it, the save row and Add back. A note hides no button: it is
   // the readout row's second line, and stays beside Next card after an export. (On the phone,
   // css/app.css shows one note at a time, and beside a pair's Together | Separately gives the
@@ -475,6 +501,7 @@
     const sideToFix = isOpenValid ? CF.waitingSideToFix() : null;
     const isValid = isOpenValid && !sideToFix;
     syncSaveButtons(isValid);
+    syncExportLock();
     byId('btnAddBack').hidden = !!app.pair;
     const noteList = byId('exportMessage');
     if (!isValid) {

@@ -55,10 +55,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnUndo`, "Undo (Ctrl/Cmd+Z)", `CONFIG.keys.undo`
-- Source: `js/app/parts/top-bar.js` (`buildTopBar`, `updateTopBar`); `js/app/shell.js` (`bindNavigation`, `syncUI`); `js/app/state.js` (`undo`)
-- Ruling: R17. While an export runs, **Undo** is dimmed with the save buttons. The app differs today.
+- Source: `js/app/parts/top-bar.js` (`buildTopBar`, `updateTopBar`); `js/app/shell.js` (`bindNavigation`, `syncUI`, `syncHistoryButtons`); `js/app/state.js` (`undo`)
+- Ruling: R17. While an export runs, **Undo** is dimmed with the save buttons. The app does this since 1.10.0.
 - Cases: 2
 
 ### TOP-02.1 Undo takes back the last edit and is greyed out when there is none   [auto: phone]
@@ -81,8 +81,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-02.2 Undo is greyed out while an export runs   [auto: phone]
-Written to ruling R17; it fails until that is built (BUG-013).
-
 Before you start:
 - Device and browser: a phone-width window
 - Build: the build under test
@@ -110,10 +108,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnRedo`, "Redo (Shift+Ctrl/Cmd+Z)", `CONFIG.keys.redo`
-- Source: `js/app/parts/top-bar.js` (`buildTopBar`, `updateTopBar`); `js/app/shell.js` (`bindNavigation`, `syncUI`); `js/app/state.js` (`redo`)
-- Ruling: R17. While an export runs, **Redo** is dimmed with the save buttons. The app differs today. R66. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z. The app already does this.
+- Source: `js/app/parts/top-bar.js` (`buildTopBar`, `updateTopBar`); `js/app/shell.js` (`bindNavigation`, `syncUI`, `syncHistoryButtons`); `js/app/state.js` (`redo`)
+- Ruling: R17. While an export runs, **Redo** is dimmed with the save buttons. The app does this since 1.10.0. R66. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z. The app already does this.
 - Cases: 3
 
 ### TOP-03.1 Redo puts back what Undo took back, and is greyed out when there is none   [auto: phone]
@@ -135,8 +133,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-03.2 Redo is greyed out while an export runs   [auto: phone]
-Written to ruling R17; it fails until that is built (BUG-013).
-
 Before you start:
 - Device and browser: a phone-width window
 - Build: the build under test
