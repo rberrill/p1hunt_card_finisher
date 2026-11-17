@@ -137,7 +137,61 @@ function stageShare(page) {
   });
 }
 
+// A color channel further than this (0 to 255) from a reference drawing counts as a different
+// pixel (drawnSource).
+const PIXEL_DIFFERENCE_MIN = 8;
+
+// Which of its two sources a square of the photo area's drawing was drawn from: the
+// full-resolution photo or the smaller on-screen copy. Each is drawn here at the same zoom,
+// place and smoothing as the app draws. `point` is the square's middle on the page and
+// `radiusPx` half its side, in CSS px. Returns { fromPhoto, fromCopy }: the share (0 to 1) of
+// the square's device pixels that differ from each. A pixel that differs from both is left out:
+// it is the outline or a handle drawn over the photo. The source the app drew differs nowhere.
+function drawnSource(page, point, radiusPx) {
+  return page.evaluate(({ middle, radius, differenceMin }) => {
+    const app = window.__straightener.app;
+    const view = window.CF.currentView();
+    const canvas = document.getElementById('view');
+    const box = canvas.getBoundingClientRect();
+    const ratio = app.devicePixelRatio;
+    const size = Math.round(2 * radius * ratio);
+    const left = Math.round((middle.x - box.left - radius) * ratio);
+    const top = Math.round((middle.y - box.top - radius) * ratio);
+    const drawn = canvas.getContext('2d').getImageData(left, top, size, size).data;
+    // The same square drawn from `source`, stretched over the whole photo as the app draws it.
+    const drawFrom = source => {
+      const copy = document.createElement('canvas');
+      copy.width = size;
+      copy.height = size;
+      const ctx = copy.getContext('2d');
+      const scale = ratio * view.zoom;
+      ctx.setTransform(scale, 0, 0, scale, ratio * view.panX - left, ratio * view.panY - top);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(source, 0, 0, app.img.width, app.img.height);
+      return ctx.getImageData(0, 0, size, size).data;
+    };
+    const fromPhoto = drawFrom(app.img.el);
+    const fromCopy = drawFrom(app.preview.canvas);
+    const differs = (reference, i) => [0, 1, 2]
+      .some(channel => Math.abs(drawn[i + channel] - reference[i + channel]) > differenceMin);
+    let photoCount = 0;
+    let copyCount = 0;
+    let counted = 0;
+    for (let i = 0; i < drawn.length; i += 4) {
+      const isPhotoDifferent = differs(fromPhoto, i);
+      const isCopyDifferent = differs(fromCopy, i);
+      if (isPhotoDifferent && isCopyDifferent) continue;
+      counted += 1;
+      if (isPhotoDifferent) photoCount += 1;
+      if (isCopyDifferent) copyCount += 1;
+    }
+    return { fromPhoto: photoCount / counted, fromCopy: copyCount / counted };
+  }, { middle: point, radius: radiusPx, differenceMin: PIXEL_DIFFERENCE_MIN });
+}
+
 module.exports = {
+  drawnSource,
   FIRST_FINGER,
   SECOND_FINGER,
   THIRD_FINGER,

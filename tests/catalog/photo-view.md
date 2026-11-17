@@ -20,15 +20,16 @@ Each view of the photo starts fitted to the photo area, with 24 px of space arou
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
-The photo area is the space between the top bar and the controls.
+The photo area is the space between the top bar and the controls (the block of buttons and sliders under the photo).
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the photo | It is as large as fits: 24 px from the photo area's left and right edges, and centered top to bottom |
-| 2 | Tap **Rotate** in the step bar | The straightened photo is as large as fits, 24 px from the photo area's edges on its tighter side, and centered on the other |
+| 2 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom) | The straightened photo is as large as fits, 24 px from the photo area's edges on its tighter side, and centered on the other |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -39,20 +40,23 @@ Flag: to confirm. Written to today's behavior: Rotate and Crop share one view, s
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
+The photo area is the space between the top bar and the controls (the block of buttons and sliders under the photo).
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Crop** in the step bar | The photo is 36 px from the photo area's edges on its tighter side |
-| 2 | Tap **Rotate** | The photo is still 36 px from the edges, not 24 |
+| 1 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom) | The photo is 36 px from the photo area's edges on its tighter side |
+| 2 | Tap **Rotate** in the step tabs | The photo is still 36 px from the edges, not 24 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-02 Each step keeps its own zoom
 
-Zoom and pan are kept separately for four views: Perspective's photo; the corrected photo (Rotate, Crop and Perspective's **Preview**); the cropped photo (Levels, Overlay and Export); and a pair's joined preview on Export.
+Zoom and pan are kept separately for four views: Perspective's photo; the corrected photo (Rotate, Crop and Perspective's **Preview**); the cropped photo (Levels, Overlay and Export); and a pair's joined preview on Export, which is fitted again each time **Together** is chosen.
 
 - Risk: medium
 - Check: script
@@ -60,23 +64,45 @@ Zoom and pan are kept separately for four views: Perspective's photo; the correc
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#view`, `#btnFit`
-- Source: `js/app/view.js` (`currentView`, `togetherView`, `viewKey`)
-- Cases: 1
+- Source: `js/app/view.js` (`currentView`, `togetherView`, `viewKey`); `js/app/pair.js` (`setPairOutput`)
+- Flag: to confirm. A pair's joined preview loses its zoom each time **Together** or **Separately** is chosen.
+- Cases: 2
 
 ### VIEW-02.1 Perspective keeps its zoom; Rotate and Crop share theirs   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Spread two fingers apart on the photo | The photo zooms in |
-| 2 | Tap **Rotate** in the step bar | Rotate's photo is fitted, not zoomed |
-| 3 | Spread two fingers apart on the photo, further than in row 1 | The photo zooms in more than Perspective's did |
-| 4 | Tap **Crop** | The photo is zoomed exactly as it was on Rotate |
-| 5 | Tap **Perspective** | The photo is zoomed exactly as it was left in row 1 |
+| 1 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in to twice its fitted size |
+| 2 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom) | Rotate's photo is fitted, not zoomed |
+| 3 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 300 px apart and lift them | The photo zooms in to three times its fitted size, more than Perspective's did |
+| 4 | Tap **Crop** in the step tabs | The photo is zoomed exactly as it was on Rotate |
+| 5 | Tap **Perspective** in the step tabs | The photo is zoomed exactly as it was left in row 1 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### VIEW-02.2 A pair's joined preview is fitted again each time Together is chosen   [auto: phone]
+Flag: to confirm. Written to today's behavior: the joined preview's zoom is dropped when **Separately** or **Together** is chosen.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px, with touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | The two cards show side by side, fitted, with **Together** chosen beside the size line (the line that gives the saved picture's size in px and its format) |
+| 2 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The joined picture of both cards zooms in |
+| 3 | Tap **Separately** | Only the back shows, fitted, not zoomed |
+| 4 | Tap **Together** | The two cards show side by side again, fitted: the zoom from row 2 is gone |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -97,15 +123,16 @@ A view that is still fitted refits when the window changes size and after edits;
 
 ### VIEW-03.1 A fitted photo refits when the window changes size; a zoomed one stays   [auto: desktop]
 Before you start:
-- Device and browser: a wide window, 1280 × 800 px, whose size you can set
+- Device and browser: a wide window, 1280 × 800 px, whose size you can set, with a mouse wheel
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Make the window 1000 × 600 px | The photo is smaller, still as large as fits the smaller photo area |
-| 2 | Roll the mouse wheel away from you over the photo | The photo zooms in |
+| 2 | Put the pointer on the middle of the photo and roll the wheel four notches away from you | The photo zooms in |
 | 3 | Make the window 1280 × 800 px again | The photo stays at the same zoom, not refitted |
 
 Pass: every row's result is seen.
@@ -113,15 +140,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-03.2 A fitted photo refits after an edit; a zoomed one stays   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Rotate step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **90° right** | The photo turns, and is as large as fits again, now lying on its side |
-| 2 | Spread two fingers apart on the photo | The photo zooms in |
+| 2 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in |
 | 3 | Tap **90° right** | The photo turns; the zoom is the same as before the turn |
 
 Pass: every row's result is seen.
@@ -131,17 +159,20 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Flag: to confirm. Written to today's behavior: zoom on Levels, Overlay and Export is dropped each time one of them is opened, while Perspective's and Rotate and Crop's zoom is kept.
 
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Spread two fingers apart on the photo, then tap **Levels** in the step bar | Levels shows the cropped photo, fitted |
-| 2 | Spread two fingers apart on the photo | It zooms in |
-| 3 | Tap **Rotate**, then **Levels** | The cropped photo is fitted again: Levels' zoom was dropped |
-| 4 | Tap **Perspective** | The photo is still zoomed as it was left in row 1 |
+| 1 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in |
+| 2 | Tap **Levels** in the step tabs (the six tabs Perspective to Export, along the bottom) | Levels shows the cropped photo, fitted |
+| 3 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | It zooms in |
+| 4 | Tap **Rotate** in the step tabs | The straightened photo shows, with STRAIGHTEN in the line above the controls (the one line of text at the top of the block of buttons and sliders under the photo) |
+| 5 | Tap **Levels** in the step tabs | The cropped photo is fitted again: Levels' zoom was dropped |
+| 6 | Tap **Perspective** in the step tabs | The photo is still zoomed as it was left in row 1 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -162,15 +193,15 @@ Two fingers on the photo zoom and pan it together, held at the point between the
 
 ### VIEW-04.1 Two fingers zoom the photo about the point between them   [auto: phone, webkit]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo just opened, on the Perspective step
+- Starting screen: the photo just opened, on the Perspective step, fitted
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Put two fingers 100 px apart, side by side, on the middle of the photo | Nothing changes yet |
-| 2 | Spread them to 200 px apart, and lift both | The photo is twice as large; the part of the photo that was between the fingers is still between them |
+| 1 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo is twice as large; the part of the photo that was midway between the fingers is still in the middle of the photo area, where they were |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -179,14 +210,15 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Flag: to confirm. Written to today's behavior: on Overlay the photo can't be zoomed or panned, and with no logo placed a touch does nothing.
 
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Overlay step, no logo added
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Spread two fingers from 100 px to 200 px apart on the middle of the photo | The photo does not zoom or move |
+| 1 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo does not zoom or move |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -207,16 +239,19 @@ Putting a second finger down during a one-finger drag ends that drag, keeping wh
 
 ### VIEW-05.1 A second finger ends a corner drag, keeping it, and zooms   [auto: phone, webkit]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo just opened, on the Perspective step (**Undo** greyed out)
+- Starting screen: the photo just opened, on the Perspective step (**Undo**, the arrow curving left near the right end of the top bar, greyed out)
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Put a finger on the top-left corner ring and drag it 30 px left, without lifting | The corner follows the finger |
-| 2 | Put a second finger on the photo 100 px to the right of the first, and spread the two fingers 100 px further apart; lift both | The photo zooms in; the corner stayed where the first finger left it, 30 px left of where it started |
-| 3 | Tap **Undo** | The corner is back where it started; **Undo** is greyed out: the drag was one undo step |
+| 2 | Keeping it there, put a second finger on the photo 100 px to the right of the first | The photo does not move or change size; the corner stays where the first finger left it |
+| 3 | Move the two fingers apart, each 50 px outward | The photo zooms in |
+| 4 | Lift both fingers | The corner is where the first finger left it in row 1: 30 px left of where it started, at the size the photo had then |
+| 5 | Tap **Undo** | The corner is back where it started; **Undo** is greyed out: the drag was one undo step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -225,15 +260,21 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Written to ruling R8; it fails until that is built (BUG-101).
 
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step, no levels set
+
+The color patch is the small square beside **Pick white** that shows the color picked; it is dashed and empty until a white point is set.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Pick white** | **Pick white** is selected |
-| 2 | Put a finger on the white background, then a second finger 80 px to its right; lift the second, then the first | No white point is set; **Pick white** is still selected |
+| 2 | Put a finger on the white background left of the slab, halfway down, and hold it there | The color patch is still dashed and empty |
+| 3 | Keeping it there, put a second finger on the photo 80 px to the right of the first | The color patch is still dashed and empty; **Pick white** is still selected |
+| 4 | Lift the second finger | The color patch is still dashed and empty; **Pick white** is still selected |
+| 5 | Lift the first finger | The color patch is still dashed and empty; **Pick white** is still selected |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -253,32 +294,37 @@ A third finger is ignored. When one finger of a pinch lifts, the other does noth
 
 ### VIEW-06.1 A third finger is ignored   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Put two fingers on the photo, 100 px apart, and spread them to 160 px | The photo zooms in |
-| 2 | Keeping both down, put a third finger on the photo and move it 80 px down | The photo does not change |
-| 3 | Lift all three | The photo stays as it was after row 1 |
+| 1 | Put two fingers on the middle of the photo, 100 px apart side by side, and spread them to 160 px apart, without lifting | The photo zooms in |
+| 2 | Keeping both down, put a third finger on the photo 100 px below the middle | The photo does not change |
+| 3 | Move the third finger 80 px down | The photo does not change |
+| 4 | Lift all three fingers | The photo stays as it was after row 1 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-06.2 The finger left after a pinch does nothing until it lifts   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Put two fingers on the photo, 100 px apart, and spread them to 160 px | The photo zooms in |
-| 2 | Lift one finger, and move the other 60 px to the right | The photo does not move |
-| 3 | Lift it, then drag an empty part of the photo 60 px to the right with one finger | The photo moves 60 px to the right |
+| 1 | Put two fingers on the middle of the photo, 100 px apart side by side, and spread them to 160 px apart, without lifting | The photo zooms in |
+| 2 | Lift the right-hand finger | The photo stays as it is |
+| 3 | Move the finger still down 60 px to the right | The photo does not move |
+| 4 | Lift that finger | The photo stays as it is |
+| 5 | With one finger, drag the photo's top-left area (40 px in from the photo area's left edge and 60 px down from its top) 60 px to the right, and let go | The photo moves 60 px to the right |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -299,8 +345,9 @@ The mouse wheel zooms about the cursor (faster with Ctrl held, which is what a t
 
 ### VIEW-07.1 The wheel zooms about the cursor, faster with Ctrl, and the page doesn't scroll   [auto: desktop]
 Before you start:
-- Device and browser: a wide window with a mouse wheel
+- Device and browser: a wide window, 1280 × 800 px, with a mouse wheel
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
@@ -316,14 +363,15 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Flag: to confirm. Written to today's behavior: on Overlay the photo can't be zoomed or panned, and with no logo placed the wheel does nothing.
 
 Before you start:
-- Device and browser: a wide window with a mouse wheel
+- Device and browser: a wide window, 1280 × 800 px, with a mouse wheel
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Overlay step, no logo added
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Roll the wheel away from you over the photo | The photo does not zoom |
+| 1 | Put the pointer on the middle of the photo and roll the wheel one notch away from you | The photo does not zoom |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -342,18 +390,22 @@ Zoom stops at 0.01 and at 64 screen pixels per photo pixel.
 - Cases: 1
 
 ### VIEW-08.1 Zoom stops at 64 times and at a hundredth   [auto: desktop]
-Before you start:
-- Device and browser: a wide window with a mouse wheel
-- Build: the build under test
-- Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo just opened, on the Perspective step
+Script only
+Stand-in: the script reads the zoom (how many screen pixels one pixel of the photo covers) from the app after each roll. On screen a person sees the photo stop growing or shrinking, but can't measure where it stops: the photo is drawn smoothed, so its pixels never show as squares to count.
 
-The zoom is how many screen pixels one pixel of the photo covers.
+Before you start:
+- Device and browser: a wide window, 1280 × 800 px, with a mouse wheel
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo just opened, on the Perspective step, fitted (one photo pixel covers about a third of a screen pixel)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Roll the wheel away from you, hard, several times | The photo stops growing when one of its pixels covers 64 × 64 screen pixels |
-| 2 | Roll the wheel toward you, hard, several times | The photo stops shrinking when 100 of its pixels cover one screen pixel (a speck) |
+| 1 | Put the pointer on the middle of the photo and roll the wheel 40 notches away from you | The zoom is 64: one photo pixel covers 64 × 64 screen pixels |
+| 2 | Roll the wheel one more notch away from you | The zoom is still 64: the photo does not grow |
+| 3 | Roll the wheel 70 notches toward you | The zoom is 0.01: 100 × 100 photo pixels share one screen pixel, and the photo is a speck |
+| 4 | Roll the wheel one more notch toward you | The zoom is still 0.01: the photo does not shrink |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -374,14 +426,15 @@ Dragging an empty part of the photo moves it.
 
 ### VIEW-09.1 Dragging an empty part of the photo moves it   [auto: phone, webkit]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag the photo's top-left area (away from every handle) 60 px right and 40 px down, and let go | The photo, outline and all, has moved 60 px right and 40 px down; the corners are on the same points of the card; **Fit to screen** shows in the top bar |
+| 1 | Drag the photo's top-left area (40 px in from the photo area's left edge and 60 px down from its top, away from every handle) 60 px right and 40 px down, and let go | The photo, outline and all, has moved 60 px right and 40 px down, at the same size; the corners are on the same points of the card; **Fit to screen** (four corner brackets) shows in the top bar |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -390,8 +443,9 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Flag: to confirm. Written to today's behavior: on Overlay the photo can't be zoomed or panned, and with no logo placed a touch does nothing.
 
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Overlay step, no logo added
 
@@ -404,28 +458,29 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-10 Double tap to fit
 
-A double tap or double click on an empty part of the photo fits it again: two quick taps (each under 300 ms) within 320 ms and 24 px of each other. It does nothing on Overlay, or while Tap to find card or a Levels pick is armed.
+A double tap or double click on an empty part of the photo fits it again: two quick taps (each under 300 ms) within 320 ms and 24 px of each other. It does nothing on Overlay (where a gesture moves the logo), or while Tap to find card or a Levels pick is armed.
 
 - Risk: medium
-- Check: script, touch
+- Check: script, touch, phone (the [phone] case: on a real iPhone, Safari leaves the double tap to the app)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#view`, `#btnFindCard`
 - Source: `js/app/input.js` (`onPointerUp`, `checkDoubleTap`); `js/app/view.js` (`fitCurrent`)
 - Ruling: R10. On Levels, a press long enough to show the before-and-after compare never counts as a tap. The app differs today.
-- Cases: 5
+- Cases: 7
 
 ### VIEW-10.1 A double tap fits the photo again   [auto: phone, webkit]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Spread two fingers apart on the middle of the photo | The photo zooms in; **Fit to screen** shows |
+| 1 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in; **Fit to screen** (four corner brackets) shows in the top bar |
 | 2 | Tap twice quickly on the middle of the photo, away from every handle | The photo is back at its fitted size and place; **Fit to screen** has gone |
 
 Pass: every row's result is seen.
@@ -433,74 +488,127 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-10.2 Two taps too slow or too far apart don't fit   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Spread two fingers apart on the middle of the photo | The photo zooms in |
-| 2 | Tap the middle of the photo, wait half a second, and tap it again | The photo stays zoomed in |
-| 3 | Tap the middle of the photo, then quickly tap 40 px to the right of it | The photo stays zoomed in |
+| 1 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in |
+| 2 | Tap the middle of the photo once | The photo stays zoomed in |
+| 3 | Half a second later, tap the same place again | The photo stays zoomed in: two taps half a second apart are not a double tap |
+| 4 | Half a second later, tap the middle of the photo again | The photo stays zoomed in |
+| 5 | Straight away, tap 40 px to the right of it | The photo stays zoomed in: two quick taps 40 px apart are not a double tap |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-10.3 A double tap does nothing while a Levels pick is armed   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step, no levels set
 
+The color patch is the small square beside **Pick white** that shows the color picked; it is dashed and empty until a white point is set.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Spread two fingers apart around the white background left of the slab | The photo zooms in, the white background still in view |
-| 2 | Tap **Pick white**, then tap twice quickly on the white background | A white point is set from the first tap; the photo stays zoomed in |
+| 1 | Put two fingers on the white background left of the slab, halfway down, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in; the white background is still in the photo area |
+| 2 | Tap **Pick white** | **Pick white** is selected |
+| 3 | Tap twice quickly on the white background left of the slab, halfway down | The color patch fills with the background's off-white (red, green and blue each within 3 of 225, 226, 217); the photo stays zoomed in |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-10.4 A double tap does nothing while Tap to find card is armed   [auto: phone]
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
+The controls are the block of buttons and sliders under the photo; the line above the controls is the one line of text at their top. The options tab is the small tab with an up arrow on the top edge of the controls; it has no words on it.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Spread two fingers apart on the middle of the photo | The photo zooms in |
-| 2 | Open the options (the tab with an up arrow on the top edge of the controls) and tap **Tap to find card** | The line reads "Tap the card in the photo." |
-| 3 | Tap twice quickly on the middle of the card | The card is searched for at the tap; the photo stays zoomed in |
+| 1 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in |
+| 2 | Tap the options tab | PERSPECTIVE OPTIONS rise over the photo, with **Tap to find card** among them |
+| 3 | Tap **Tap to find card** | The options close; the line above the controls reads "Tap the card in the photo." |
+| 4 | Tap twice quickly on the middle of the card | The card is found: the line above the controls reads **Nudge** Corner 1 of 4 again, with "Confidence" and a percentage at its right; the photo stays zoomed in |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-10.5 A press that showed Levels' compare doesn't count toward a double tap   [auto: phone]
+Script only
+Stand-in: the script presses with a dispatched finger, lifts it the moment the comparison shows (under 0.3 s in all) and taps again at once. No person can time a press between 0.25 and 0.3 s.
+
 Written to ruling R10; it fails until that is built (BUG-103).
 
 Before you start:
-- Device and browser: a phone-width window
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step, no levels set
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Auto**, then spread two fingers apart on the middle of the photo | The photo zooms in |
-| 2 | Press the middle of the photo until the before-and-after compare shows (about a quarter of a second), lift, and at once tap the same place | The compare showed; the photo stays zoomed in |
+| 1 | Tap **Auto** | A white dot shows on the **Levels** tab in the step tabs (the six tabs Perspective to Export, along the bottom) |
+| 2 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in |
+| 3 | Press the middle of the photo until the comparison shows, and lift at once (under 0.3 seconds in all) | The comparison showed (the **Before levels** badge) |
+| 4 | Straight away, tap the same place once | The photo stays zoomed in: the press and the tap were not a double tap |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### VIEW-10.6 On Overlay a double tap moves nothing and adds no undo step   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px, with touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Logo: blue-disc.png from tests/fixtures/ (a blue disc on a see-through square)
+- Starting screen: the photo open, on the Overlay step, blue-disc.png added with **Add logo** (in the middle of the photo)
+
+The rings are the nine small circles drawn on the photo on this step, where a tap snaps the logo.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap twice quickly on the photo a quarter of the way in from its left edge and a quarter of the way up from its bottom, away from the logo and the rings | The logo stays where it was, at the same size; the photo does not move or change size |
+| 2 | Tap **Undo** (the arrow curving left, near the right end of the top bar) | The logo goes, and **Undo** is greyed out: adding the logo was the only undo step, and the double tap added none |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### VIEW-10.7 On an iPhone, a double tap fits the photo and Safari doesn't zoom the page   [phone]
+Before you start:
+- Device and browser: an iPhone, Safari
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
+- Starting screen: the photo open, on the Perspective step, the whole photo fitting the photo area
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Put two fingers on the middle of the photo and spread them apart | The photo zooms in; **Fit to screen** (four corner brackets) shows in the top bar |
+| 2 | Double tap the middle of the photo, away from every handle, quickly with one finger | The photo is back at its fitted size and place; **Fit to screen** has gone; the top bar, the controls (the block of buttons and sliders under the photo) and the step tabs (the six tabs Perspective to Export, along the bottom) stay their usual size: Safari has not zoomed the page |
+| 3 | Double tap the middle of the photo again | The photo stays fitted, and the page stays its usual size |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screen recording.
 
 ## VIEW-11 Sharp when zoomed in on Perspective
 
 Zoomed in further than the on-screen copy's resolution, Perspective draws the part in view from the full-resolution photo, so fine detail at the card's corners stays sharp.
 
 - Risk: medium
-- Check: eye
+- Check: eye, script (a script checks that the part in view is drawn from the full-resolution photo)
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
@@ -511,13 +619,15 @@ Zoomed in further than the on-screen copy's resolution, Perspective draws the pa
 ### VIEW-11.1 Zoomed far in on Perspective, the card's corner is sharp, for a person to judge   [eye]
 Before you start:
 - Device and browser: a wide window, 1280 × 800 px, with a mouse wheel
-- Build: the build under test
+- Build: the build under test, opened with `?previewMaxPx=512` at the end of its address. The app then keeps its on-screen copy of the photo at 512 px on its long side, a quarter of this photo's 2048 px; at the usual setting the copy is as large as this photo, and the two drawings can't be told apart
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo just opened, on the Perspective step
+- Starting screen: the photo just opened, on the Perspective step, fitted
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Put the pointer on the card's top-left corner and roll the wheel away from you until one pixel of the photo covers about 4 × 4 screen pixels | The card's corner and its printed edge are crisp, with single photo pixels visible as small squares, not a smooth blur |
+| 1 | Put the pointer on the card's top-left corner and roll the wheel 16 notches away from you | The photo is about 11 times the size it had when it fitted, and the card's corner is still under the pointer. One photo pixel now covers about 4 × 4 screen pixels; one pixel of the on-screen copy would cover about 15 × 15 |
+| 2 | Look at the card's corner and its printed edge, around the pointer | They are crisp: each edge goes from dark to light within about 4 screen pixels, not a soft blur about 15 screen pixels wide. A script also checks that this part is drawn from the full-resolution photo, not from the copy |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -537,15 +647,24 @@ On the steps after Perspective, the area around the photo inside the frame is th
 
 ### VIEW-12.1 Around a tilted photo: the fill color, or a checkerboard, for a person to judge   [eye]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step, **Fill outside photo** at its starting White
 
+The controls are the block of buttons and sliders under the photo; the line above the controls is the one line of text at their top. The options tab is the small tab with an up arrow on the top edge of the controls; it has no words on it.
+
+Type the angle 10: tap the angle (**0.0°**, at the right of the line above the controls), type 10 in the text box that takes its place, and tap **Done**.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap the angle (**0.0°**), type 10 and tap **Done** | The photo is tilted 10°; the four triangles between its edges and the frame's are white |
-| 2 | Tap **Export** in the step bar, open its options, set **Fill outside photo** to **Transparent**, close the options and tap **Rotate** | The four triangles show a grey checkerboard of two greys |
+| 1 | Type the angle 10 | The photo is tilted 10°; the four triangles between its edges and the frame's are white |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | Export's controls show, with **Download** |
+| 3 | Tap the options tab | EXPORT OPTIONS rise over the photo; **Fill outside photo** reads White |
+| 4 | Choose **Transparent** for **Fill outside photo** | **Fill outside photo** reads Transparent |
+| 5 | Tap **Close** (the cross at the top right of the options) | The options close |
+| 6 | Tap **Rotate** in the step tabs | The four triangles show a grey checkerboard of two greys |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -567,13 +686,14 @@ Levels, Overlay and Export show the photo cut to the crop; Rotate and Crop show 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step, the crop at its starting 1:1
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the photo | The whole straightened photo, taller than wide, with the square crop drawn as a dashed box on it |
-| 2 | Tap **Levels** in the step bar | Only the square inside the crop shows, filling the width of the photo area |
+| 2 | Tap **Levels** in the step tabs (the six tabs Perspective to Export, along the bottom) | Only the square inside the crop shows, filling the width of the photo area |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -594,15 +714,16 @@ While the corners cross or fold inward, every step after Perspective (and Perspe
 
 ### VIEW-14.1 With the corners crossed, the later steps show a message, for a person to judge   [eye]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring past the bottom-right one, and let go | The outline crosses itself |
-| 2 | Tap **Rotate** in the step bar | No photo; in the middle of the photo area, in grey, "Fix the corners in Perspective first." |
+| 2 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom) | No photo; in the middle of the photo area, in grey, "Fix the corners in Perspective first." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -611,8 +732,9 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Flag: to confirm. Written to today's behavior: with **Preview** on, the message tells the user to go to Perspective while they are already on it.
 
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
@@ -626,15 +748,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-14.3 A pair's joined preview with one side's corners crossed, for a person to judge   [eye]
 Before you start:
-- Device and browser: a phone-width window, 390 × 844 px
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring past the bottom-right one, and let go | The outline crosses itself |
-| 2 | Tap **Export** in the step bar, with **Together** chosen | No photo; in the middle of the photo area, in grey, "Fix the corners of both sides in Perspective first." |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | **Together** is chosen; no photo; in the middle of the photo area, in grey, "Fix the corners of both sides in Perspective first." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -654,25 +777,31 @@ The mouse pointer is an open hand over the photo (closed while panning), a move 
 
 ### VIEW-15.1 On Perspective the pointer is a hand, a move pointer on a handle, a crosshair to find the card   [auto: desktop]
 Before you start:
-- Device and browser: a wide window with a mouse
+- Device and browser: a wide window, 1280 × 800 px, with a mouse
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
+The line above the controls is the one line of text at the top of the panel at the right.
+
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Move the mouse over an empty part of the photo | The pointer is an open hand |
-| 2 | Press the button there and move the mouse a little, holding the button | The hand is closed |
-| 3 | Let go, and move the mouse onto the top-left corner ring | The pointer is the four-way move arrow |
-| 4 | Click **Tap to find card** in the side panel, then move the mouse over the photo | The pointer is a crosshair |
+| 1 | Move the mouse over an empty part of the photo, away from every handle | The pointer is an open hand |
+| 2 | Press the button there and, holding it, move the mouse 10 px right and 10 px down | The hand is closed |
+| 3 | Let go of the button | The pointer is an open hand again |
+| 4 | Move the mouse onto the top-left corner ring | The pointer is the four-way move arrow |
+| 5 | Click **Tap to find card** in the panel at the right | The line above the controls reads "Tap the card in the photo." |
+| 6 | Move the mouse onto the middle of the photo | The pointer is a crosshair |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-15.2 On Crop the pointer moves the box inside it and resizes on a handle   [auto: desktop]
 Before you start:
-- Device and browser: a wide window with a mouse
+- Device and browser: a wide window, 1280 × 800 px, with a mouse
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Crop step
 
@@ -681,22 +810,24 @@ Before you start:
 | 1 | Move the mouse into the middle of the crop box | The pointer is the four-way move arrow |
 | 2 | Move it onto the crop box's top-left corner | The pointer is a diagonal resize arrow (top-left to bottom-right) |
 | 3 | Move it onto the middle of the box's right side | The pointer is a left-right resize arrow |
-| 4 | Move it outside the box, on the photo | The pointer is an open hand |
+| 4 | Move it 40 px above the middle of the box's top side, on the photo | The pointer is an open hand |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-15.3 A crosshair while a Levels pick is armed   [auto: desktop]
 Before you start:
-- Device and browser: a wide window with a mouse
+- Device and browser: a wide window, 1280 × 800 px, with a mouse
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9075.JPEG from samples/
 - Starting screen: the photo open, on the Levels step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Move the mouse over the photo | The pointer is an open hand |
-| 2 | Click **Pick white**, then move the mouse over the photo | The pointer is a crosshair |
+| 1 | Move the mouse onto the middle of the photo | The pointer is an open hand |
+| 2 | Click **Pick white** | **Pick white** is selected |
+| 3 | Move the mouse back over the photo, 5 px right and 5 px down of its middle | The pointer is a crosshair |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -716,31 +847,33 @@ A right click on the photo shows no menu. Pressing the photo gives it keyboard f
 
 ### VIEW-16.1 A right click on the photo opens no menu   [auto: desktop]
 Before you start:
-- Device and browser: a wide window with a mouse
+- Device and browser: a wide window, 1280 × 800 px, with a mouse
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo just opened, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Right-click the photo | No menu opens (the browser's own menu is held back) |
+| 1 | Right-click the middle of the photo | No menu opens (the browser's own menu is held back) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-16.2 Clicking the photo gives it the focus, with no focus ring   [auto: desktop, webkit]
 Before you start:
-- Device and browser: a wide window with a mouse and a keyboard
+- Device and browser: a wide window, 1280 × 800 px, with a mouse and a keyboard
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo just opened, on the Rotate step
+- Starting screen: the photo just opened, then **Rotate** clicked in the top bar
 
 The focus is the control the keyboard acts on; a ring shows where it is when it came from the keyboard.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Press Tab a few times, so the focus ring shows on a control | A white ring is drawn around a control |
-| 2 | Click the photo | The photo has the focus (its name, read by a screen reader, is "Photo editing canvas"); no ring is drawn around it |
+| 1 | Press Tab three times | A white ring, 2 px wide, is drawn around a control |
+| 2 | Click an empty part of the photo (its top-left area, away from the card) | The photo has the focus (its name, read by a screen reader, is "Photo editing canvas"); no ring is drawn around it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -761,35 +894,44 @@ On iPhone a pinch on the photo never zooms the page itself, and a long press sel
 ### VIEW-17.1 On iPhone a pinch never zooms the page and a long press selects nothing   [phone]
 Before you start:
 - Device and browser: an iPhone, Safari
-- Build: the build under test
-- Photo: IMG_9136.JPEG from your photos (copied from samples/)
+- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/ (AirDrop it to the phone or save it to Photos first)
 - Starting screen: the photo open, on the Rotate step
+
+The controls are the block of buttons and sliders under the photo; the line above the controls is the one line of text at their top.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Pinch on the photo, spreading two fingers apart | The photo zooms; the page itself (the top bar, the controls) stays the same size |
-| 2 | Pinch on the top bar | The page doesn't zoom |
+| 1 | Put two fingers on the photo and spread them apart | The photo zooms; the page itself (the top bar, the controls) stays the same size |
+| 2 | Put two fingers on the top bar and spread them apart | The page doesn't zoom |
 | 3 | Press and hold the photo for two seconds | No text is selected; no magnifier and no menu (Copy, Look Up) appears |
-| 4 | Press and hold the word STRAIGHTEN for two seconds | No text is selected; no magnifier and no menu appears |
-| 5 | Tap the angle (**0.0°**), then press and hold in the text box | The text box's own magnifier or menu appears, as in any text field |
+| 4 | Press and hold the word STRAIGHTEN, in the line above the controls, for two seconds | No text is selected; no magnifier and no menu appears |
+| 5 | Tap the angle (**0.0°**, at the right of the line above the controls) | A text box takes its place, and the keyboard rises |
+| 6 | Press and hold in the text box for two seconds | Safari's own text tools for a text box appear (a magnifier over the text, a menu with Paste, or both), as in any text field |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screen recording.
 
 ### VIEW-17.2 The page cancels the pinch zoom and text selection, but not in a text box   [auto: phone, webkit]
+Script only
+Stand-in: the script sends the page the events Safari sends when a pinch zoom or a text selection starts, and reads whether the page cancels them. On a computer no finger or mouse makes a browser send Safari's pinch event, and nothing on screen shows whether an event was cancelled; on a real iPhone this is VIEW-17.1.
+
 Before you start:
-- Device and browser: a phone-width window (a script sends the browser's events)
+- Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
-This checks the page's side of VIEW-17.1; how Safari draws it is checked there.
+The line above the controls is the one line of text at the top of the block of buttons and sliders under the photo.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Send the page a pinch-zoom start (Safari's gesture start) | The page cancels it |
-| 2 | Send a text selection start on the word STRAIGHTEN | The page cancels it |
-| 3 | Tap the angle (**0.0°**) and send a text selection start in the text box | The page lets it go ahead |
+| 1 | Send the photo a pinch-zoom start (Safari's gesture start) | The page cancels it |
+| 2 | Send a text selection start on the word STRAIGHTEN, in the line above the controls | The page cancels it |
+| 3 | Tap the angle (**0.0°**, at the right of the line above the controls) | A text box takes its place |
+| 4 | Send a text selection start in the text box | The page lets it go ahead |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -808,23 +950,31 @@ The photo is drawn at the screen's pixel density (at most 3 device pixels per CS
 - Cases: 2
 
 ### VIEW-18.1 The photo is drawn at the screen's pixel density   [auto: phone, webkit]
+Script only
+Stand-in: the script reads the size, in device pixels, of the drawing behind the photo area. Nothing on screen shows how many pixels the drawing has.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, at an iPhone's density (3 device pixels per CSS pixel)
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Measure the photo area and the picture drawn in it (a script reads the drawing's size) | The photo area is 390 × 544 CSS px; the drawing is 1170 × 1632 pixels: three to each CSS pixel |
+| 1 | Measure the photo area and the drawing in it | The photo area is 390 × 544 CSS px; the drawing is 1170 × 1632 pixels: three to each CSS pixel |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-18.2 On a denser screen the drawing stops at 3 pixels per CSS pixel   [auto: phone]
+Script only
+Stand-in: the script makes the browser report 4 device pixels per CSS pixel, a density no iPhone has, and reads the size, in device pixels, of the drawing behind the photo area. Nothing on screen shows how many pixels the drawing has.
+
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, at 4 device pixels per CSS pixel
 - Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Perspective step
 

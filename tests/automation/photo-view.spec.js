@@ -10,6 +10,7 @@ const {
   goToStep,
   editState,
   openOptions,
+  closeOptions,
   waitForStill,
 } = require('./support/app.js');
 const {
@@ -21,17 +22,20 @@ const {
   tapAt,
 } = require('./support/perspective.js');
 const { makePair, zoomIn, chooseOutput } = require('./support/front-and-back.js');
-const { crossTheCorners, chooseFill } = require('./support/export.js');
+const { crossTheCorners } = require('./support/export.js');
 const {
   startOnLevels,
   SPOTS,
   spotOnPage,
   pickButton,
   armedPick,
-  swatchColor,
+  patchFill,
+  isPatchEmpty,
+  levelsDot,
   pressThenTap,
 } = require('./support/levels.js');
 const { cropHandleOnPage } = require('./support/crop.js');
+const { chooseLogo, fixtureLogo } = require('./support/overlay.js');
 const {
   startOn,
   waitForSheet,
@@ -53,6 +57,7 @@ const {
   drawingSize,
   colorsAround,
   stageShare,
+  drawnSource,
 } = require('./support/photo-view.js');
 
 // The space around a fitted photo, in CSS px (view.js, fitView): 24, and 36 on Crop.
@@ -72,8 +77,10 @@ const WORLD_TOLERANCE_PX = 0.5;
 const NOTCH_PX = 100;
 const NOTCH_FACTOR = Math.exp(0.15);
 const CTRL_NOTCH_FACTOR = Math.exp(1);
-// A wheel roll far past either zoom limit, in px.
-const HARD_ROLL_PX = 20000;
+// Wheel notches past either zoom limit from the fitted photo (about 0.34 at desktop size): 35
+// notches reach 64 times, and 59 more go down to a hundredth.
+const GROW_NOTCHES = 40;
+const SHRINK_NOTCHES = 70;
 // The zoom limits (view.js): screen px per photo px.
 const MAX_ZOOM = 64;
 const MIN_ZOOM = 0.01;
@@ -86,6 +93,9 @@ const EMPTY_SPOT = { dx: 40, dy: 60 };
 // How far a corner is dragged before the second finger, and the second finger's start, in CSS px.
 const CORNER_DRAG_PX = 30;
 const SECOND_FINGER_GAP_PX = 100;
+// How far right of the first finger VIEW-05.2's second finger lands, in CSS px: still on the
+// framed picture.
+const PICK_SECOND_FINGER_PX = 80;
 const SPREAD_EACH_PX = 50;
 const SPREAD_MOVES = 8;
 // How far the third finger and a leftover finger slide, in CSS px.
@@ -107,8 +117,29 @@ const CHECKER_GREYS = ['90,90,90', '122,122,122'];
 const FRAME_CORNER_PX = 60;
 const SPOT_RADIUS_PX = 3;
 const CHECKER_RADIUS_PX = 8;
-// The zoom VIEW-11.1 rolls to: four screen px per photo px.
+// VIEW-11.1 rolls the wheel this many notches from the fitted photo (about 0.34 at desktop
+// size), to about four screen px per photo px (3.75), give or take SHARP_ZOOM_TOLERANCE.
+const SHARP_NOTCHES = 16;
 const SHARP_ZOOM = 4;
+const SHARP_ZOOM_TOLERANCE = 0.5;
+// VIEW-11.1's link: the on-screen copy made 512 px on its long side (CONFIG.previewMaxPx, whose
+// least is 512), a quarter of 01_chrome_flat_black.JPEG's 2048, so the full-resolution drawing
+// differs from the copy's. At the default 2048 the copy is the photo itself.
+const SMALL_COPY_PX = 512;
+const SMALL_COPY_LINK = `index.html?previewMaxPx=${SMALL_COPY_PX}`;
+// Where VIEW-11.1 compares the drawing: a square centered on the card's top-left corner, where
+// the card's edges meet the dark background, half its side in CSS px.
+const SHARP_SPOT_RADIUS_PX = 40;
+// The share of that square's pixels (0 to 1) that may differ from the full-resolution photo,
+// and the share that must differ from the 512 px copy (about 40% did on 16 November).
+const SAME_DRAWING_MAX = 0.01;
+const COPY_DIFFERENT_MIN = 0.1;
+// VIEW-10.6's logo (tests/fixtures/), and where it double taps: a quarter of the way in from the
+// crop's left edge and up from its bottom, clear of the logo (the middle quarter of the width)
+// and of the nine rings (at least 57 px from each on a phone, where a ring takes a press within
+// 24 px).
+const LOGO_FILE = 'blue-disc.png';
+const AWAY_FROM_RINGS = { across: 0.25, down: 0.75 };
 // The share of the photo area that must be the empty stage when only a message is drawn.
 const MESSAGE_ONLY_SHARE = 0.97;
 // A screen's density in device px per CSS px: an iPhone's, and the most the app draws at.
@@ -116,6 +147,19 @@ const PHONE_DENSITY = 3;
 // A desktop window and a smaller one, in CSS px.
 const DESKTOP_WINDOW = { width: 1280, height: 800 };
 const SMALLER_WINDOW = { width: 1000, height: 600 };
+// The white background left of the slab in IMG_9075.JPEG as a pick reads it (r, g, b), and how
+// far each channel may be from it (levels.md, LEV-07.1).
+const BACKGROUND_WHITE = [225, 226, 217];
+const PICK_TOLERANCE = 3;
+// How many Tab presses VIEW-16.2 makes from the Rotate tab it clicked, and the focus ring it
+// expects: 2 px of --ink, the app's near-white (css/app.css), as the computed style writes it.
+const RING_TABS = 3;
+const RING_OUTLINE = 'solid 2px rgb(242, 242, 243)';
+// VIEW-15.2: how far above the middle of the crop box's top side the pointer goes, in CSS px.
+const ABOVE_CROP_PX = 40;
+// VIEW-15.3: the pointer goes back near the photo's middle, this far right and down of where it
+// was, in CSS px, so that it moves and the app sets the pointer's shape again.
+const NEAR_MIDDLE_PX = 5;
 // A press held until the compare shows must still be under a tap's 300 ms (input.js, TAP_MS).
 const TAP_MS = 300;
 
@@ -152,6 +196,14 @@ async function pinchMiddle(page, endPx = PINCH_END_PX) {
   await pinchAt(page, await photoMiddle(page), PINCH_START_PX, endPx);
 }
 
+// Export's Together or Separately choice for a pair: output is 'together' or 'separately'.
+const outputSegment = (page, output) => page.locator(
+  `#pairOutput .segment[data-value="${output}"]`,
+);
+
+// True while the photo area shows a pair's joined picture of both cards.
+const isJoinedShown = page => page.evaluate(() => window.CF.isTogetherShown());
+
 test('VIEW-01.1 The photo opens fitted, with 24 px around it [phone]', async ({
   page,
   check,
@@ -187,10 +239,13 @@ test('VIEW-02.1 Perspective keeps its zoom; Rotate and Crop share theirs [phone]
   check,
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
+  const perspectiveFitted = await viewNow(page);
   await pinchMiddle(page);
   const perspectiveView = await viewNow(page);
-  await check('two fingers zoom the photo in', () => {
+  await check('the photo zooms in to twice its fitted size', () => {
     expect(perspectiveView.isFitted).toBe(false);
+    expect(perspectiveView.zoom / perspectiveFitted.zoom)
+      .toBeCloseTo(PINCH_END_PX / PINCH_START_PX, 5);
   });
   await goToStep(page, 'rotate', hand);
   await check('Rotate\'s photo is fitted, not zoomed', async () => {
@@ -199,10 +254,11 @@ test('VIEW-02.1 Perspective keeps its zoom; Rotate and Crop share theirs [phone]
   const rotateFitted = await viewNow(page);
   await pinchMiddle(page, PINCH_WIDER_PX);
   const rotateView = await viewNow(page);
-  await check('a wider pinch zooms Rotate in more than Perspective was', () => {
-    const rotateFactor = rotateView.zoom / rotateFitted.zoom;
-    expect(rotateFactor).toBeGreaterThan(PINCH_END_PX / PINCH_START_PX);
-  });
+  await check('the photo zooms in to three times its fitted size, more than Perspective\'s did',
+    () => {
+      expect(rotateView.zoom / rotateFitted.zoom)
+        .toBeCloseTo(PINCH_WIDER_PX / PINCH_START_PX, 5);
+    });
   await goToStep(page, 'crop', hand);
   await check('Crop shows the photo zoomed exactly as on Rotate', async () => {
     expect(await viewNow(page)).toEqual(rotateView);
@@ -212,6 +268,33 @@ test('VIEW-02.1 Perspective keeps its zoom; Rotate and Crop share theirs [phone]
     expect(await viewNow(page)).toEqual(perspectiveView);
   });
 });
+
+test('VIEW-02.2 A pair\'s joined preview is fitted again each time Together is chosen [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await makePair(page, testInfo);
+    await goToStep(page, 'export', hand);
+    await check('the two cards show side by side, fitted, with Together chosen', async () => {
+      await expect(outputSegment(page, 'together')).toHaveAttribute('aria-pressed', 'true');
+      expect(await isJoinedShown(page)).toBe(true);
+      expect((await viewNow(page)).isFitted).toBe(true);
+    });
+    await pinchMiddle(page);
+    await check('the joined picture of both cards zooms in', async () => {
+      expect(await isJoinedShown(page)).toBe(true);
+      expect((await viewNow(page)).isFitted).toBe(false);
+    });
+    await chooseOutput(page, hand, 'separately');
+    await check('only the back shows, fitted, not zoomed', async () => {
+      expect(await isJoinedShown(page)).toBe(false);
+      expect(await page.evaluate(() => window.__straightener.app.pair.current)).toBe('back');
+      expect((await viewNow(page)).isFitted).toBe(true);
+    });
+    await chooseOutput(page, hand, 'together');
+    await check('the two cards show side by side again, fitted: the zoom is gone', async () => {
+      expect(await isJoinedShown(page)).toBe(true);
+      expect((await viewNow(page)).isFitted).toBe(true);
+    });
+  });
 
 test('VIEW-03.1 A fitted photo refits when the window changes size; a zoomed one stays '
   + '[desktop]', async ({ page, check }, testInfo) => {
@@ -268,6 +351,9 @@ test('VIEW-03.3 Levels\' zoom is dropped when the step is opened again; Perspect
   const hand = await startOn(page, testInfo);
   await pinchMiddle(page);
   const perspectiveView = await viewNow(page);
+  await check('two fingers zoom the photo in', () => {
+    expect(perspectiveView.isFitted).toBe(false);
+  });
   await goToStep(page, 'levels', hand);
   await check('Levels shows the cropped photo, fitted', async () => {
     expect((await viewNow(page)).isFitted).toBe(true);
@@ -277,6 +363,11 @@ test('VIEW-03.3 Levels\' zoom is dropped when the step is opened again; Perspect
     expect((await viewNow(page)).isFitted).toBe(false);
   });
   await goToStep(page, 'rotate', hand);
+  await check('the straightened photo shows, with STRAIGHTEN in the line above the controls',
+    async () => {
+      await expect(page.locator('#rotateStraightenLine .line-label')).toHaveText(/straighten/i);
+      await expect(page.locator('#rotateStraightenLine')).toBeVisible();
+    });
   await goToStep(page, 'levels', hand);
   await check('back on Levels, the cropped photo is fitted again', async () => {
     expect((await viewNow(page)).isFitted).toBe(true);
@@ -322,7 +413,9 @@ test('VIEW-05.1 A second finger ends a corner drag, keeping it, and zooms [phone
   async ({ page, check }, testInfo) => {
     const hand = await startOn(page, testInfo);
     const before = await cornersNow(page);
-    const zoomBefore = (await viewNow(page)).zoom;
+    const viewBefore = await viewNow(page);
+    const zoomBefore = viewBefore.zoom;
+    const panBefore = { x: viewBefore.panX, y: viewBefore.panY };
     const start = await handleOnPage(page, 0);
     await fingerDown(page, FIRST_FINGER, start);
     const first = await slideFinger(page, FIRST_FINGER, start, -CORNER_DRAG_PX, 0);
@@ -331,6 +424,13 @@ test('VIEW-05.1 A second finger ends a corner drag, keeping it, and zooms [phone
     });
     const second = { x: first.x + SECOND_FINGER_GAP_PX, y: first.y };
     await fingerDown(page, SECOND_FINGER, second);
+    await check('the photo does not move or change size; the corner stays where the first '
+      + 'finger left it', async () => {
+      const view = await viewNow(page);
+      expect([view.zoom, view.panX, view.panY]).toEqual([zoomBefore, panBefore.x, panBefore.y]);
+      const moved = (await cornersNow(page))[0][0] - before[0][0];
+      expect(moved * zoomBefore).toBeCloseTo(-CORNER_DRAG_PX, 3);
+    });
     for (let i = 1; i <= SPREAD_MOVES; i++) {
       const step = SPREAD_EACH_PX * i / SPREAD_MOVES;
       await sendTouch(page, '#view', 'pointermove', { x: first.x - step, y: first.y },
@@ -338,16 +438,18 @@ test('VIEW-05.1 A second finger ends a corner drag, keeping it, and zooms [phone
       await sendTouch(page, '#view', 'pointermove', { x: second.x + step, y: second.y },
         SECOND_FINGER);
     }
+    await check('the photo zooms in', async () => {
+      expect((await viewNow(page)).zoom).toBeGreaterThan(zoomBefore);
+    });
     await fingerUp(page, SECOND_FINGER, { x: second.x + SPREAD_EACH_PX, y: second.y });
     await fingerUp(page, FIRST_FINGER, { x: first.x - SPREAD_EACH_PX, y: first.y });
-    await check('the photo zoomed in; the corner stayed 30 px left of where it started',
-      async () => {
-        expect((await viewNow(page)).zoom).toBeGreaterThan(zoomBefore);
-        const moved = (await cornersNow(page))[0][0] - before[0][0];
-        expect(moved * zoomBefore).toBeCloseTo(-CORNER_DRAG_PX, 3);
-      });
+    await check('the corner is where the first finger left it: 30 px left of where it started, '
+      + 'at the size the photo had then', async () => {
+      const moved = (await cornersNow(page))[0][0] - before[0][0];
+      expect(moved * zoomBefore).toBeCloseTo(-CORNER_DRAG_PX, 3);
+    });
     await hand.tap(page.locator('#btnUndo'));
-    await check('one Undo puts the corner back; Undo is greyed out', async () => {
+    await check('the corner is back where it started; Undo is greyed out', async () => {
       expect(await cornersNow(page)).toEqual(before);
       await expect(page.locator('#btnUndo')).toBeDisabled();
     });
@@ -364,15 +466,23 @@ test('VIEW-05.2 A second finger while a Levels pick is armed cancels the press [
     expect(await armedPick(page)).toBe('white');
   });
   const first = await spotOnPage(page, SPOTS.white);
-  const second = { x: first.x + SECOND_FINGER_GAP_PX * 0.8, y: first.y };
+  const second = { x: first.x + PICK_SECOND_FINGER_PX, y: first.y };
   await fingerDown(page, FIRST_FINGER, first);
-  await fingerDown(page, SECOND_FINGER, second);
-  await fingerUp(page, SECOND_FINGER, second);
-  await fingerUp(page, FIRST_FINGER, first);
-  await check('no white point is set; Pick white is still selected', async () => {
-    expect(await swatchColor(page, 'white')).toBeNull();
-    expect(await armedPick(page)).toBe('white');
+  await check('the color patch is still dashed and empty', async () => {
+    expect(await isPatchEmpty(page, 'white')).toBe(true);
   });
+  // The patch is empty, and Pick white still selected, after each later finger.
+  const expectStillArmed = async () => {
+    expect(await isPatchEmpty(page, 'white')).toBe(true);
+    expect(await armedPick(page)).toBe('white');
+  };
+  const stillArmed = 'the color patch is still dashed and empty; Pick white is still selected';
+  await fingerDown(page, SECOND_FINGER, second);
+  await check(stillArmed, expectStillArmed);
+  await fingerUp(page, SECOND_FINGER, second);
+  await check(stillArmed, expectStillArmed);
+  await fingerUp(page, FIRST_FINGER, first);
+  await check(stillArmed, expectStillArmed);
 });
 
 test('VIEW-06.1 A third finger is ignored [phone]', async ({ page, check }, testInfo) => {
@@ -386,19 +496,22 @@ test('VIEW-06.1 A third finger is ignored [phone]', async ({ page, check }, test
   const leftEnd = await slideFinger(page, FIRST_FINGER, left, -spreadEach, 0);
   const rightEnd = await slideFinger(page, SECOND_FINGER, right, spreadEach, 0);
   const pinched = await viewNow(page);
-  await check('two fingers spread from 100 to 160 px zoom the photo in', () => {
+  await check('the photo zooms in', () => {
     expect(pinched.isFitted).toBe(false);
   });
   const third = { x: middle.x, y: middle.y + THIRD_FINGER_BELOW_PX };
   await fingerDown(page, THIRD_FINGER, third);
+  await check('the photo does not change', async () => {
+    expect(await viewNow(page)).toEqual(pinched);
+  });
   const thirdEnd = await slideFinger(page, THIRD_FINGER, third, 0, THIRD_SLIDE_PX);
-  await check('a third finger moving 80 px down changes nothing', async () => {
+  await check('the photo does not change', async () => {
     expect(await viewNow(page)).toEqual(pinched);
   });
   await fingerUp(page, THIRD_FINGER, thirdEnd);
   await fingerUp(page, SECOND_FINGER, rightEnd);
   await fingerUp(page, FIRST_FINGER, leftEnd);
-  await check('with all three lifted the photo is as it was after the pinch', async () => {
+  await check('the photo stays as it was after row 1', async () => {
     expect(await viewNow(page)).toEqual(pinched);
   });
 });
@@ -417,18 +530,24 @@ test('VIEW-06.2 The finger left after a pinch does nothing until it lifts [phone
   const leftEnd = await slideFinger(page, FIRST_FINGER, left, -spreadEach, 0);
   const rightEnd = await slideFinger(page, SECOND_FINGER, right, spreadEach, 0);
   const pinched = await viewNow(page);
-  await check('the pinch zooms the photo in', () => {
+  await check('the photo zooms in', () => {
     expect(pinched.isFitted).toBe(false);
   });
   await fingerUp(page, SECOND_FINGER, rightEnd);
+  await check('the photo stays as it is', async () => {
+    expect(await viewNow(page)).toEqual(pinched);
+  });
   const leftover = await slideFinger(page, FIRST_FINGER, leftEnd, LEFTOVER_SLIDE_PX, 0);
-  await check('the finger left on the photo, moved 60 px right, does not move it', async () => {
+  await check('the photo does not move', async () => {
     expect(await viewNow(page)).toEqual(pinched);
   });
   await fingerUp(page, FIRST_FINGER, leftover);
+  await check('the photo stays as it is', async () => {
+    expect(await viewNow(page)).toEqual(pinched);
+  });
   const start = await pointInPhoto(page, EMPTY_SPOT.dx, EMPTY_SPOT.dy);
   await hand.drag(start, { x: start.x + LEFTOVER_SLIDE_PX, y: start.y });
-  await check('once lifted, a new one-finger drag moves the photo 60 px right', async () => {
+  await check('the photo moves 60 px to the right', async () => {
     expect((await viewNow(page)).panX - pinched.panX).toBeCloseTo(LEFTOVER_SLIDE_PX, 3);
   });
 });
@@ -473,12 +592,20 @@ test('VIEW-08.1 Zoom stops at 64 times and at a hundredth [desktop]', async ({
 }, testInfo) => {
   await startOn(page, testInfo);
   const middle = await photoMiddle(page);
-  for (let i = 0; i < 3; i++) await wheelAt(page, middle, -HARD_ROLL_PX);
-  await check('rolled away hard, the zoom stops at 64 screen px per photo px', async () => {
+  for (let i = 0; i < GROW_NOTCHES; i++) await wheelAt(page, middle, -NOTCH_PX);
+  await check('the zoom is 64: one photo pixel covers 64 × 64 screen pixels', async () => {
     expect((await viewNow(page)).zoom).toBe(MAX_ZOOM);
   });
-  for (let i = 0; i < 3; i++) await wheelAt(page, middle, HARD_ROLL_PX);
-  await check('rolled toward you hard, it stops at a hundredth', async () => {
+  await wheelAt(page, middle, -NOTCH_PX);
+  await check('the zoom is still 64: the photo does not grow', async () => {
+    expect((await viewNow(page)).zoom).toBe(MAX_ZOOM);
+  });
+  for (let i = 0; i < SHRINK_NOTCHES; i++) await wheelAt(page, middle, NOTCH_PX);
+  await check('the zoom is 0.01: 100 × 100 photo pixels share one screen pixel', async () => {
+    expect((await viewNow(page)).zoom).toBe(MIN_ZOOM);
+  });
+  await wheelAt(page, middle, NOTCH_PX);
+  await check('the zoom is still 0.01: the photo does not shrink', async () => {
     expect((await viewNow(page)).zoom).toBe(MIN_ZOOM);
   });
 });
@@ -521,16 +648,17 @@ test('VIEW-10.1 A double tap fits the photo again [phone] [webkit]', async ({
   check,
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
-  await zoomIn(page, hand);
-  await check('the photo zooms in; Fit to screen shows', async () => {
+  await pinchMiddle(page);
+  await check('the photo zooms in; Fit to screen shows in the top bar', async () => {
     expect((await viewNow(page)).isFitted).toBe(false);
     await expect(page.locator('#btnFit')).toBeVisible();
   });
   await doubleTapAt(page, hand, await photoMiddle(page));
-  await check('two quick taps fit it again; Fit to screen has gone', async () => {
-    expect((await viewNow(page)).isFitted).toBe(true);
-    await expect(page.locator('#btnFit')).toBeHidden();
-  });
+  await check('the photo is back at its fitted size and place; Fit to screen has gone',
+    async () => {
+      expect((await viewNow(page)).isFitted).toBe(true);
+      await expect(page.locator('#btnFit')).toBeHidden();
+    });
 });
 
 test('VIEW-10.2 Two taps too slow or too far apart don\'t fit [phone]', async ({
@@ -539,23 +667,27 @@ test('VIEW-10.2 Two taps too slow or too far apart don\'t fit [phone]', async ({
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
   const middle = await photoMiddle(page);
-  await zoomIn(page, hand);
+  await pinchMiddle(page);
   const zoomed = await viewNow(page);
   await check('the photo zooms in', () => {
     expect(zoomed.isFitted).toBe(false);
   });
-  await tapAt(page, hand, middle);
-  await page.waitForTimeout(SLOW_TAP_MS);
-  await tapAt(page, hand, middle);
-  await check('two taps half a second apart leave it zoomed in', async () => {
+  // The photo is still as the pinch left it.
+  const expectZoomed = async () => {
     expect(await viewNow(page)).toEqual(zoomed);
-  });
+  };
+  await tapAt(page, hand, middle);
+  await check('the photo stays zoomed in', expectZoomed);
   await page.waitForTimeout(SLOW_TAP_MS);
   await tapAt(page, hand, middle);
+  await check('the photo stays zoomed in: two taps half a second apart are not a double tap',
+    expectZoomed);
+  await page.waitForTimeout(SLOW_TAP_MS);
+  await tapAt(page, hand, middle);
+  await check('the photo stays zoomed in', expectZoomed);
   await tapAt(page, hand, { x: middle.x + FAR_TAP_PX, y: middle.y });
-  await check('two quick taps 40 px apart leave it zoomed in', async () => {
-    expect(await viewNow(page)).toEqual(zoomed);
-  });
+  await check('the photo stays zoomed in: two quick taps 40 px apart are not a double tap',
+    expectZoomed);
 });
 
 test('VIEW-10.3 A double tap does nothing while a Levels pick is armed [phone]', async ({
@@ -565,19 +697,27 @@ test('VIEW-10.3 A double tap does nothing while a Levels pick is armed [phone]',
   const hand = await startOnLevels(page, testInfo);
   await pinchAt(page, await spotOnPage(page, SPOTS.white), PINCH_START_PX, PINCH_END_PX);
   const zoomed = await viewNow(page);
-  await check('the photo zooms in around the white background', () => {
-    expect(zoomed.isFitted).toBe(false);
-  });
-  await hand.tap(pickButton(page, 'white'));
   const white = await spotOnPage(page, SPOTS.white);
-  await check('Pick white is selected, and the white background is in view', async () => {
-    expect(await armedPick(page)).toBe('white');
+  await check('the photo zooms in; the white background is still in the photo area', async () => {
+    expect(zoomed.isFitted).toBe(false);
     const area = await page.locator('#view').boundingBox();
     expect(white.x).toBeGreaterThan(area.x);
+    expect(white.x).toBeLessThan(area.x + area.width);
+    expect(white.y).toBeGreaterThan(area.y);
+    expect(white.y).toBeLessThan(area.y + area.height);
+  });
+  await hand.tap(pickButton(page, 'white'));
+  await check('Pick white is selected', async () => {
+    expect(await armedPick(page)).toBe('white');
   });
   await doubleTapAt(page, hand, white);
-  await check('a white point is set from the first tap; the photo stays zoomed in', async () => {
-    expect(await swatchColor(page, 'white')).not.toBeNull();
+  await check('the color patch fills with the background\'s off-white (each within 3 of 225, '
+    + '226, 217); the photo stays zoomed in', async () => {
+    const color = await patchFill(page, 'white');
+    expect(color).not.toBeNull();
+    color.forEach((value, i) => {
+      expect(Math.abs(value - BACKGROUND_WHITE[i])).toBeLessThanOrEqual(PICK_TOLERANCE);
+    });
     expect(await viewNow(page)).toEqual(zoomed);
   });
 });
@@ -587,15 +727,24 @@ test('VIEW-10.4 A double tap does nothing while Tap to find card is armed [phone
   check,
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
-  await zoomIn(page, hand);
+  await pinchMiddle(page);
   const zoomed = await viewNow(page);
   await check('the photo zooms in', () => {
     expect(zoomed.isFitted).toBe(false);
   });
   await openOptions(page, hand, 'perspective');
+  await check('PERSPECTIVE OPTIONS rise over the photo, with Tap to find card among them',
+    async () => {
+      expect(await page.evaluate(() => window.CF.isSheetOpen(
+        document.getElementById('perspectiveSheet'),
+      ))).toBe(true);
+      await expect(page.locator('#btnFindCard')).toBeVisible();
+    });
   await hand.tap(page.locator('#btnFindCard'));
   await waitForSheet(page, 'perspective', false);
-  await check('the line reads "Tap the card in the photo."', async () => {
+  await check('the options close; the line above the controls reads "Tap the card in the '
+    + 'photo."', async () => {
+    await expect(page.locator('#perspectiveSheet')).toBeHidden();
     await expect(page.locator('#perspectiveStatus .status-text'))
       .toHaveText('Tap the card in the photo.');
   });
@@ -605,8 +754,13 @@ test('VIEW-10.4 A double tap does nothing while Tap to find card is armed [phone
     const detection = window.__straightener.app.detection;
     return detection.running > runs && detection.message === '';
   }, runsBefore);
-  await check('the card is searched for at the tap; the photo stays zoomed in', async () => {
-    await expect(page.locator('#perspectiveStatus')).not.toContainText('Tap the card');
+  await check('the card is found: the line reads Nudge Corner 1 of 4 again, with "Confidence" '
+    + 'and a percentage at its right; the photo stays zoomed in', async () => {
+    const line = page.locator('#perspectiveLine');
+    await expect(line).toBeVisible();
+    await expect(line.locator('.line-label')).toHaveText(/^nudge$/i);
+    await expect(line.locator('.line-value')).toHaveText('Corner 1 of 4');
+    await expect(line.locator('.line-readout')).toHaveText(/^Confidence \d+%$/);
     expect(await viewNow(page)).toEqual(zoomed);
   });
 });
@@ -616,36 +770,104 @@ test('VIEW-10.5 A press that showed Levels\' compare doesn\'t count toward a dou
     test.fail(true, 'BUG-103');
     const hand = await startOnLevels(page, testInfo);
     await hand.tap(page.locator('#toolAutoLevels'));
+    await check('a white dot shows on the Levels tab in the step tabs', async () => {
+      await expect(levelsDot(page)).toBeVisible();
+    });
     const middle = await photoMiddle(page);
     await pinchAt(page, middle, PINCH_START_PX, PINCH_END_PX);
     const zoomed = await viewNow(page);
-    await check('two fingers zoom the photo in', () => {
+    await check('the photo zooms in', () => {
       expect(zoomed.isFitted).toBe(false);
     });
     const press = await pressThenTap(page, middle);
-    await check('the press showed the compare and lasted under 0.3 seconds', () => {
+    await check('the comparison showed (the Before levels badge), in under 0.3 seconds', () => {
       expect(press.isCompared).toBe(true);
       expect(press.holdMs).toBeLessThan(TAP_MS);
     });
     const view = await viewNow(page);
-    await check('after the quick tap the photo stays zoomed in', () => {
+    await check('the photo stays zoomed in: the press and the tap were not a double tap', () => {
       expect(view.zoom).toBe(zoomed.zoom);
     });
   });
 
+// A point of the framed photo on the page, as fractions of the crop (0 to 1 across and down).
+function cropPointOnPage(page, across, down) {
+  return page.evaluate(([acrossFrac, downFrac]) => {
+    const crop = window.__straightener.app.geometry.crop;
+    const view = window.CF.currentView();
+    const box = document.getElementById('view').getBoundingClientRect();
+    const [x, y] = window.CF.toScreen(view,
+      [crop.x + acrossFrac * crop.width, crop.y + downFrac * crop.height]);
+    return { x: box.left + x, y: box.top + y };
+  }, [across, down]);
+}
+
+// The logo on the photo and how many undo steps there are: { overlay, undoSteps }.
+const logoAndSteps = page => page.evaluate(() => ({
+  overlay: window.__straightener.app.state.overlay,
+  undoSteps: window.CF.History.undo.length,
+}));
+
+test('VIEW-10.6 On Overlay a double tap moves nothing and adds no undo step [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOn(page, testInfo, 'overlay');
+  await chooseLogo(page, hand, page.locator('#btnOverlayAdd'), fixtureLogo(LOGO_FILE));
+  const before = await logoAndSteps(page);
+  const viewBefore = await viewNow(page);
+  const spot = await cropPointOnPage(page, AWAY_FROM_RINGS.across, AWAY_FROM_RINGS.down);
+  await doubleTapAt(page, hand, spot);
+  await check('the logo stays where it was, at the same size; the photo does not move or change '
+    + 'size', async () => {
+    expect(await logoAndSteps(page)).toEqual(before);
+    expect(await viewNow(page)).toEqual(viewBefore);
+  });
+  await hand.tap(page.locator('#btnUndo'));
+  await check('the logo goes, and Undo is greyed out: the double tap added no undo step',
+    async () => {
+      expect((await logoAndSteps(page)).overlay).toBeNull();
+      await expect(page.locator('#btnUndo')).toBeDisabled();
+    });
+});
+
 test('VIEW-11.1 Zoomed far in on Perspective, the card\'s corner is sharp, for a person to '
   + 'judge [desktop]', async ({ page, check }, testInfo) => {
-  await startOn(page, testInfo);
-  const corner = await handleOnPage(page, 0);
-  const zoom = (await viewNow(page)).zoom;
-  // A roll of -n px multiplies the zoom by e^(0.0015 n): this one lands on SHARP_ZOOM.
-  await wheelAt(page, corner, -Math.log(SHARP_ZOOM / zoom) / 0.0015);
-  await check('one photo pixel covers about 4 × 4 screen pixels', async () => {
-    expect((await viewNow(page)).zoom).toBeCloseTo(SHARP_ZOOM, 3);
+  await startOn(page, testInfo, 'perspective', { address: SMALL_COPY_LINK });
+  // The link's effect, which the case's Build line states: no row of its own.
+  await check('the on-screen copy is 512 px on its long side, a quarter of the photo\'s 2048',
+    async () => {
+      const copy = await page.evaluate(() => {
+        const preview = window.__straightener.app.preview.canvas;
+        return Math.max(preview.width, preview.height);
+      });
+      expect(copy).toBe(SMALL_COPY_PX);
+    });
+  // The pointer on the card's corner, at whole CSS px: the wheel's events carry whole px, and
+  // the zoom keeps the point under them still.
+  const handle = await handleOnPage(page, 0);
+  const corner = { x: Math.round(handle.x), y: Math.round(handle.y) };
+  const fitted = await viewNow(page);
+  const underBefore = await worldUnder(page, corner);
+  for (let i = 0; i < SHARP_NOTCHES; i++) await wheelAt(page, corner, -NOTCH_PX);
+  await check('the photo is about 11 times its fitted size, the card\'s corner still under the '
+    + 'pointer; one photo pixel covers about 4 × 4 screen pixels', async () => {
+    const view = await viewNow(page);
+    expect(view.zoom / fitted.zoom).toBeCloseTo(NOTCH_FACTOR ** SHARP_NOTCHES, 5);
+    expect(Math.abs(view.zoom - SHARP_ZOOM)).toBeLessThan(SHARP_ZOOM_TOLERANCE);
+    const underAfter = await worldUnder(page, corner);
+    expect(Math.abs(underAfter[0] - underBefore[0])).toBeLessThan(WORLD_TOLERANCE_PX);
+    expect(Math.abs(underAfter[1] - underBefore[1])).toBeLessThan(WORLD_TOLERANCE_PX);
   });
   await waitForStill(page);
-  await check.eye('the card\'s top-left corner and its printed edge are crisp, single photo '
-    + 'pixels showing as small squares, not a smooth blur');
+  const source = await drawnSource(page, corner, SHARP_SPOT_RADIUS_PX);
+  await check('around the card\'s corner the drawing is the full-resolution photo, not the copy',
+    () => {
+      expect(source.fromPhoto).toBeLessThan(SAME_DRAWING_MAX);
+      expect(source.fromCopy).toBeGreaterThan(COPY_DIFFERENT_MIN);
+    });
+  await check.eye('the card\'s corner and its printed edge are crisp: each edge goes from dark '
+    + 'to light within about 4 screen pixels, not a soft blur about 15 screen pixels wide');
 });
 
 // A point of the straightened frame (its own px) near one of its corners but outside the tilted
@@ -682,16 +904,34 @@ test('VIEW-12.1 Around a tilted photo: the fill color, or a checkerboard, for a 
   await hand.tap(page.locator('#btnAngleDone'));
   const frameCorner = await pointOutsidePhoto(page);
   await waitForStill(page);
-  await check('tilted 10°, the triangles outside the photo are white', async () => {
+  await check('the photo is tilted 10°; the triangles outside it are white', async () => {
     expect(await colorsAround(page, frameCorner, SPOT_RADIUS_PX)).toEqual([FILL_WHITE]);
   });
   await check.eye('the photo tilted 10°; the four triangles between its edges and the frame\'s '
     + 'are white');
   await goToStep(page, 'export', hand);
-  await chooseFill(page, hand, 'transparent');
+  await check('Export\'s controls show, with Download', async () => {
+    await expect(page.locator('#btnDownload')).toBeVisible();
+  });
+  await openOptions(page, hand, 'export');
+  await check('EXPORT OPTIONS rise over the photo; Fill outside photo reads White', async () => {
+    expect(await page.evaluate(() => window.CF.isSheetOpen(
+      document.getElementById('exportSheet'),
+    ))).toBe(true);
+    await expect(page.locator('#fill')).toBeVisible();
+    await expect(page.locator('#fill option:checked')).toHaveText('White');
+  });
+  await page.locator('#fill').selectOption('transparent');
+  await check('Fill outside photo reads Transparent', async () => {
+    await expect(page.locator('#fill option:checked')).toHaveText('Transparent');
+  });
+  await closeOptions(page, hand, 'export');
+  await check('the options close', async () => {
+    await expect(page.locator('#exportSheet')).toBeHidden();
+  });
   await goToStep(page, 'rotate', hand);
   await waitForStill(page);
-  await check('with Transparent, they show a checkerboard of two greys', async () => {
+  await check('the four triangles show a grey checkerboard of two greys', async () => {
     const colors = await colorsAround(page, frameCorner, CHECKER_RADIUS_PX);
     expect(colors).toEqual(expect.arrayContaining(CHECKER_GREYS));
     for (const color of colors) {
@@ -768,10 +1008,11 @@ test('VIEW-14.3 A pair\'s joined preview with one side\'s corners crossed, for a
     expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(false);
   });
   await goToStep(page, 'export', hand);
-  await chooseOutput(page, hand, 'together');
+  await check('Together is chosen', async () => {
+    await expect(outputSegment(page, 'together')).toHaveAttribute('aria-pressed', 'true');
+  });
   await checkMessageOnly(page, check,
-    'on Export with Together, no photo, only "Fix the corners of both sides in Perspective '
-    + 'first."');
+    'on Export, no photo, only "Fix the corners of both sides in Perspective first."');
 });
 
 test('VIEW-15.1 On Perspective the pointer is a hand, a move pointer on a handle, a crosshair '
@@ -779,24 +1020,31 @@ test('VIEW-15.1 On Perspective the pointer is a hand, a move pointer on a handle
   await startOn(page, testInfo);
   const empty = await pointInPhoto(page, EMPTY_SPOT.dx, EMPTY_SPOT.dy);
   await page.mouse.move(empty.x, empty.y);
-  await check('over an empty part the pointer is an open hand', async () => {
+  await check('the pointer is an open hand', async () => {
     expect(await pointerShape(page)).toBe('grab');
   });
   await page.mouse.down();
   await page.mouse.move(empty.x + 10, empty.y + 10, { steps: 4 });
-  await check('held down and moved, the hand is closed', async () => {
+  await check('the hand is closed', async () => {
     expect(await pointerShape(page)).toBe('grabbing');
   });
   await page.mouse.up();
+  await check('the pointer is an open hand again', async () => {
+    expect(await pointerShape(page)).toBe('grab');
+  });
   const corner = await handleOnPage(page, 0);
   await page.mouse.move(corner.x, corner.y, { steps: 4 });
-  await check('on the top-left corner ring it is the four-way move arrow', async () => {
+  await check('the pointer is the four-way move arrow', async () => {
     expect(await pointerShape(page)).toBe('move');
   });
   await page.locator('#btnFindCard').click();
+  await check('the line above the controls reads "Tap the card in the photo."', async () => {
+    await expect(page.locator('#perspectiveStatus .status-text'))
+      .toHaveText('Tap the card in the photo.');
+  });
   const middle = await photoMiddle(page);
   await page.mouse.move(middle.x, middle.y, { steps: 4 });
-  await check('after Tap to find card it is a crosshair over the photo', async () => {
+  await check('the pointer is a crosshair', async () => {
     expect(await pointerShape(page)).toBe('crosshair');
   });
 });
@@ -806,26 +1054,26 @@ test('VIEW-15.2 On Crop the pointer moves the box inside it and resizes on a han
     await startOn(page, testInfo, 'crop');
     const moveTo = async point => page.mouse.move(point.x, point.y, { steps: 4 });
     await moveTo(await cropHandleOnPage(page, 'middle'));
-    await check('in the middle of the crop box it is the four-way move arrow', async () => {
+    await check('the pointer is the four-way move arrow', async () => {
       expect(await pointerShape(page)).toBe('move');
     });
     await moveTo(await cropHandleOnPage(page, 'nw'));
-    await check('on the top-left corner it is a diagonal resize arrow', async () => {
+    await check('the pointer is a diagonal resize arrow (top-left to bottom-right)', async () => {
       expect(await pointerShape(page)).toBe('nwse-resize');
     });
     await moveTo(await cropHandleOnPage(page, 'e'));
-    await check('on the middle of the right side it is a left-right resize arrow', async () => {
+    await check('the pointer is a left-right resize arrow', async () => {
       expect(await pointerShape(page)).toBe('ew-resize');
     });
-    const outside = await page.evaluate(() => {
+    const outside = await page.evaluate(abovePx => {
       const crop = window.__straightener.app.geometry.crop;
       const [x, y] = window.CF.toScreen(window.CF.currentView(),
         [crop.x + crop.width / 2, crop.y]);
       const box = document.getElementById('view').getBoundingClientRect();
-      return { x: box.left + x, y: box.top + y - 40 };
-    });
+      return { x: box.left + x, y: box.top + y - abovePx };
+    }, ABOVE_CROP_PX);
     await moveTo(outside);
-    await check('outside the box, on the photo, it is an open hand', async () => {
+    await check('the pointer is an open hand', async () => {
       expect(await pointerShape(page)).toBe('grab');
     });
   });
@@ -837,12 +1085,15 @@ test('VIEW-15.3 A crosshair while a Levels pick is armed [desktop]', async ({
   await startOnLevels(page, testInfo);
   const middle = await photoMiddle(page);
   await page.mouse.move(middle.x, middle.y, { steps: 4 });
-  await check('over the photo the pointer is an open hand', async () => {
+  await check('the pointer is an open hand', async () => {
     expect(await pointerShape(page)).toBe('grab');
   });
   await pickButton(page, 'white').click();
-  await page.mouse.move(middle.x + 5, middle.y + 5, { steps: 4 });
-  await check('with Pick white armed it is a crosshair', async () => {
+  await check('Pick white is selected', async () => {
+    expect(await armedPick(page)).toBe('white');
+  });
+  await page.mouse.move(middle.x + NEAR_MIDDLE_PX, middle.y + NEAR_MIDDLE_PX, { steps: 4 });
+  await check('the pointer is a crosshair', async () => {
     expect(await pointerShape(page)).toBe('crosshair');
   });
 });
@@ -869,15 +1120,23 @@ test('VIEW-16.1 A right click on the photo opens no menu [desktop]', async ({
 test('VIEW-16.2 Clicking the photo gives it the focus, with no focus ring [desktop] [webkit]',
   async ({ page, check }, testInfo) => {
     await startOn(page, testInfo, 'rotate');
-    await page.locator('#btnUndo').focus();
-    await page.keyboard.press('Tab');
-    await check('Tab puts a focus ring on a control', async () => {
-      expect(await page.evaluate(() => document.activeElement.matches(':focus-visible')))
-        .toBe(true);
+    for (let press = 0; press < RING_TABS; press++) await page.keyboard.press('Tab');
+    await check('a white ring, 2 px wide, is drawn around a control', async () => {
+      const ring = await page.evaluate(() => {
+        const focused = document.activeElement;
+        const style = getComputedStyle(focused);
+        return {
+          isControl: focused !== document.body && focused.id !== 'view',
+          isVisible: focused.matches(':focus-visible'),
+          outline: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor}`,
+        };
+      });
+      expect(ring).toEqual({ isControl: true, isVisible: true, outline: RING_OUTLINE });
     });
     const empty = await pointInPhoto(page, EMPTY_SPOT.dx, EMPTY_SPOT.dy);
     await page.mouse.click(empty.x, empty.y);
-    await check('the photo, "Photo editing canvas", has the focus; no ring is drawn', async () => {
+    await check('the photo has the focus (its name is "Photo editing canvas"); no ring is '
+      + 'drawn around it', async () => {
       const view = page.locator('#view');
       await expect(view).toBeFocused();
       await expect(view).toHaveAttribute('aria-label', 'Photo editing canvas');
@@ -899,15 +1158,17 @@ function isCancelled(page, selector, type) {
 test('VIEW-17.2 The page cancels the pinch zoom and text selection, but not in a text box '
   + '[phone] [webkit]', async ({ page, check }, testInfo) => {
   const hand = await startOn(page, testInfo, 'rotate');
-  await check('the page cancels Safari\'s gesture start', async () => {
+  await check('the page cancels it (Safari\'s gesture start)', async () => {
     expect(await isCancelled(page, '#view', 'gesturestart')).toBe(true);
   });
-  await check('the page cancels a text selection start on STRAIGHTEN', async () => {
+  await check('the page cancels it (a text selection start on STRAIGHTEN)', async () => {
     expect(await isCancelled(page, '#rotateStraightenLine .line-label', 'selectstart')).toBe(true);
   });
   await hand.tap(page.locator('#rotateAngle'));
-  await page.locator('#rotateAngleField').waitFor({ state: 'visible' });
-  await check('in the angle\'s text box the page lets it go ahead', async () => {
+  await check('a text box takes its place', async () => {
+    await expect(page.locator('#rotateAngleField')).toBeVisible();
+  });
+  await check('the page lets it go ahead (a text selection start in the text box)', async () => {
     expect(await isCancelled(page, '#rotateAngleField', 'selectstart')).toBe(false);
   });
 });
