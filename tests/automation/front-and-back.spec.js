@@ -87,6 +87,8 @@ const BACK = PORTRAIT_PAIR.back;
 const OTHER_PHOTO = 'IMG_9136.JPEG';
 // A logo: the app's own icon.
 const LOGO = path.join(root, 'icons', 'icon.svg');
+// A second logo, for a pair with a different one on each side: the app's touch icon.
+const OTHER_LOGO = path.join(root, 'icons', 'apple-touch-icon.png');
 // A line of text named like a photo, so no browser can read it as an image.
 const NOT_A_PHOTO = fixturePath('not-a-photo.JPEG');
 // A line of text, which Overlay's Add logo refuses.
@@ -2537,6 +2539,87 @@ test('PAIR-40.1 Resume brings back the waiting side\'s edits, Levels changes, lo
   await check('the logo is on the front, and the card lies down, 7 wide to 5 high', async () => {
     expect((await editState(page)).overlay).not.toBeNull();
     await expectCardCrop(page, 'landscape');
+  });
+});
+
+// Taps Add logo on the Overlay step, chooses the logo at `filePath` and waits until it is on
+// the photo. Returns the logo's id.
+async function addLogoToSide(page, hand, filePath) {
+  await chooseFile(page, hand, page.locator('#btnOverlayAdd'), filePath);
+  await page.waitForFunction(() => !!window.__straightener.app.state.overlay);
+  return (await editState(page)).overlay.id;
+}
+
+// Taps Download where it asks no question (Size Original) and one file is expected. Returns
+// { name, file } for the saved file, or null when the export fails instead (a red message, and
+// no file), so a failed export is seen at once rather than after a download's timeout.
+async function downloadOrFail(page, hand) {
+  const downloading = page.waitForEvent('download').then(async download => ({
+    name: download.suggestedFilename(),
+    file: await download.path(),
+  }), () => null);
+  await hand.tap(page.locator('#btnDownload'));
+  const failing = page.locator('#toast.is-error').waitFor({ state: 'visible' })
+    .then(() => null, () => null);
+  return Promise.race([downloading, failing]);
+}
+
+test('PAIR-40.2 With a different logo on each side, Resume brings back the open side\'s logo '
+  + '[phone] [webkit]', async ({ page, check }, testInfo) => {
+  const hand = await makePair(page, testInfo);
+  await goToStep(page, 'export', hand);
+  await chooseSize(page, hand, '0');
+  await hand.tap(segment(page, 'exportFormat', 'png'));
+  await switchTo(page, hand, 'front');
+  await goToStep(page, 'overlay', hand);
+  const frontLogo = await addLogoToSide(page, hand, LOGO);
+  await check('the app icon appears on the front', async () => {
+    expect(await page.evaluate(() => window.__straightener.app.pair.current)).toBe('front');
+    expect((await editState(page)).overlay.id).toBe(frontLogo);
+  });
+  await switchTo(page, hand, 'back');
+  await check('the back\'s Overlay step, with Add logo and no logo on the photo', async () => {
+    expect(await stepNow(page)).toBe('overlay');
+    await expect(page.locator('#btnOverlayAdd')).toBeVisible();
+    expect((await editState(page)).overlay).toBeNull();
+  });
+  const backLogo = await addLogoToSide(page, hand, OTHER_LOGO);
+  await check('the other picture appears on the back', async () => {
+    expect(backLogo).not.toBe(frontLogo);
+  });
+  await switchTo(page, hand, 'front');
+  await check('the front\'s Overlay step, with the app icon on the photo', async () => {
+    expect(await stepNow(page)).toBe('overlay');
+    expect((await editState(page)).overlay.id).toBe(frontLogo);
+  });
+  await goToStep(page, 'export', hand);
+  await check('the front\'s Export step, Together selected', async () => {
+    expect(await stepNow(page)).toBe('export');
+    await expect(segment(page, 'pairOutput', 'together')).toHaveAttribute('aria-pressed', 'true');
+  });
+  const before = await downloadOrFail(page, hand);
+  await check('one file, 14_front_portrait_raw_white-pair.png, arrives', async () => {
+    expect(before).not.toBeNull();
+    expect(before.name).toBe('14_front_portrait_raw_white-pair.png');
+  });
+  await waitUntilPairStored(page);
+  await reloadToResume(page);
+  await check(`Resume names ${FRONT} + ${BACK}`, async () => {
+    await expect(page.locator('#resumeName')).toHaveText(`${FRONT} + ${BACK}`);
+  });
+  await resume(page, hand, FRONT, 'front');
+  await check('the front opens on Export, with Front in white', async () => {
+    expect(await stepNow(page)).toBe('export');
+    await expect(sideButton(page, 'front')).toHaveAttribute('aria-pressed', 'true');
+  });
+  const after = await downloadOrFail(page, hand);
+  const message = await page.locator('#toast .toast-text').textContent();
+  await check('a second -pair.png file arrives, with no message about a logo', async () => {
+    expect(after, `the message: ${message}`).not.toBeNull();
+    expect(after.name).toBe('14_front_portrait_raw_white-pair.png');
+  });
+  await check('the two files are the same, pixel for pixel', async () => {
+    await expectSameImage(page, before.file, after.file);
   });
 });
 

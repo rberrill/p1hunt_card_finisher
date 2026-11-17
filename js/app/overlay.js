@@ -32,6 +32,9 @@
   const images = new Map();
   // The browser's saved overlay: { id, type, name, settings, url } (url: a thumbnail).
   let saved = null;
+  // The id of the logo this page last asked storage to write to 'photoOverlay' (the write is
+  // best-effort, so it may not have landed), or found there at Resume; '' while not known.
+  let photoOverlayId = '';
 
   const TYPES_BY_EXTENSION = {
     png: 'image/png',
@@ -223,6 +226,8 @@
   // Places an image as the overlay (one undo step), at saved settings if given.
   function place(image, settings) {
     const wanted = settings || {};
+    // Stored before the commit, so the state change it makes finds the logo already written.
+    storePhotoOverlay(image);
     CF.commit(state => {
       const defaults = defaultPlacement(image);
       // Saved settings come from storage.
@@ -235,12 +240,29 @@
         opacity: unitOr(wanted.opacity, defaults.opacity),
       }));
     }, 'overlayPlace');
-    CF.Session.put('photoOverlay', storedRecord(image)).catch(() => {});
   }
 
   // The fields of an image record that go into storage.
   function storedRecord(image) {
     return { id: image.id, buf: image.buf, type: image.type, name: image.name };
+  }
+
+  // Stores an image as this photo's logo for Resume ('photoOverlay'); best-effort.
+  function storePhotoOverlay(image) {
+    photoOverlayId = image.id;
+    CF.Session.put('photoOverlay', storedRecord(image)).catch(() => {});
+  }
+
+  // Keeps the logo on the photo where Resume can find it (ruling R35). Undo, a pair's side
+  // switch or Delete saved can leave on the photo a logo that is neither this photo's stored
+  // logo nor the saved one, the two places ensureOverlayImage looks; it then becomes this
+  // photo's stored logo. Called after every state change and whenever the saved logo changes.
+  function keepPhotoOverlayStored() {
+    const overlay = app.state && app.state.overlay;
+    if (!overlay || overlay.id === photoOverlayId) return;
+    if (saved && saved.id === overlay.id) return;
+    const image = images.get(overlay.id);
+    if (image) storePhotoOverlay(image);
   }
 
   // Adds a logo (the button, or drop or paste on this step). Errors leave the current overlay
@@ -302,6 +324,8 @@
         url: URL.createObjectURL(new Blob([record.buf], { type: record.type })),
       }
       : null;
+    // The logo on the photo may have counted on the saved logo that was just replaced or deleted.
+    keepPhotoOverlayStored();
     CF.syncUI();
   }
 
@@ -315,12 +339,13 @@
   let settingsTimer = 0;
   // The latest placement becomes the saved "last used" settings (only for the saved logo).
   // A message shown over an earlier placement is cleared too (state.js calls this before the
-  // controls are synced).
+  // controls are synced), and the logo now on the photo is kept stored for Resume.
   function overlayStateChanged() {
     const overlay = app.state && app.state.overlay;
     if (app.overlayMessage && JSON.stringify(overlay || null) !== messagePlacement) {
       app.overlayMessage = '';
     }
+    keepPhotoOverlayStored();
     if (!overlay || !saved || overlay.id !== saved.id) return;
     const settings = settingsOf(overlay);
     if (JSON.stringify(settings) === JSON.stringify(saved.settings)) return;
@@ -375,6 +400,7 @@
       try {
         const record = await CF.Session.get(key);
         if (record && record.id === overlay.id) {
+          if (key === 'photoOverlay') photoOverlayId = record.id;
           await register(record.buf, record.type, record.name);
           CF.requestRender();
           CF.syncUI();
@@ -445,7 +471,7 @@
       const name = typeof embedded.name === 'string' ? embedded.name.slice(0, 200) : 'overlay';
       const image = await register(fromBase64(embedded.data), embedded.type, name);
       state.overlay.id = image.id;
-      CF.Session.put('photoOverlay', storedRecord(image)).catch(() => {});
+      storePhotoOverlay(image);
       return true;
     } catch (error) {
       return false;

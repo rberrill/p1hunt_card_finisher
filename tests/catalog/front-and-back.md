@@ -1824,10 +1824,11 @@ The pair is stored for Resume: the open side as for any photo, plus the waiting 
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.session.enabled`, `CONFIG.session.saveDelayMs`
-- Source: `js/app/pair.js` (`savePairSession`, `savePairSoon`)
-- Cases: 1
+- Source: `js/app/pair.js` (`savePairSession`, `savePairSoon`); `js/app/overlay.js` (`keepPhotoOverlayStored`)
+- Ruling: R35. After Resume the photo exports as it looked: when a switch opens a side whose logo is neither the stored photo's logo nor the saved one, it becomes the stored photo's logo. The app does this since 1.10.0.
+- Cases: 2
 
 ### PAIR-40.1 Resume brings back the waiting side's edits, Levels changes, logo and the pair's orientation   [auto: phone, webkit]
 Before you start:
@@ -1858,6 +1859,33 @@ Whether the side that was open comes back with its own work is PAIR-41.1; this c
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-40.2 With a different logo on each side, Resume brings back the open side's logo   [auto: phone, webkit]
+Before you start:
+- Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/; the logos icons/icon.svg and icons/apple-touch-icon.png from the app's own folder
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open; tap **Export**, Size **Original** and Format **PNG**, then tap **Front** in the top bar and **Overlay** in the step tabs (the six tabs Perspective to Export). The front is open on the Overlay step, with **Add logo** and no logo on the photo; **Together** is selected on Export
+
+One named action:
+- Add the logo NAME: tap **Add logo** and choose NAME in the file picker.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Add the logo icon.svg | The app icon appears on the front |
+| 2 | Tap **Back** in the top bar | The back's Overlay step, with **Add logo** and no logo on the photo |
+| 3 | Add the logo apple-touch-icon.png | The other picture appears on the back |
+| 4 | Tap **Front** in the top bar | The front's Overlay step, with the app icon on the photo |
+| 5 | Tap **Export** in the step tabs | The front's Export step, **Together** selected |
+| 6 | Tap **Download** | One file, 14_front_portrait_raw_white-pair.png, arrives |
+| 7 | Wait two seconds, then reload the page | The start screen offers **Resume**, naming 14_front_portrait_raw_white.JPEG + 14_back_portrait_raw_white.JPEG |
+| 8 | Tap **Resume** | The front opens on Export, with **Front** in white |
+| 9 | Tap **Download** | A second -pair.png file arrives, with no message about a logo |
+| 10 | Compare the two files | They are the same, pixel for pixel |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot, and the two files.
 
 ## PAIR-41 Resume brings the pair back
 

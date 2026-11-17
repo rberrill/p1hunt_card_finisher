@@ -49,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - After you choose a file the app can't read ("Couldn’t read that file as an image."), the photo that is open keeps being saved, so **Resume** brings back the edits you make afterwards. They used to stop being saved until another photo was opened.
 - A drag on the photo (a corner, an edge, the crop box or the logo) that the phone interrupts, such as Control Center taking the touch, now goes back to where it started and leaves no undo step. It used to stay where the finger was, as if you had let go.
 - **Unpair** now shows "Unpaired. The front is a single photo now." (or the back) only once the kept photo is saved, so reloading or leaving the page right after it resumes that photo on its own, not the old pair.
+- After **Replace logo** and then **Undo**, closing and resuming the photo lost the logo, and the export failed with "The overlay image isn’t loaded. Open the Overlay step and add it again." The logo that Undo brings back is now kept with the photo, so it exports as it looked. The same holds for a pair with a different logo on each side, and after **Delete saved**.
 - When the browser can't save the chosen format (WebP on Safari) and saves a PNG instead, the message saying so was replaced at once by the "Exported…" message, so it was never seen. It's now part of that message, shown as a warning, on Download, Share, a pair's export and the corner shots.
 
 ## [1.9.0] - 2026-11-10

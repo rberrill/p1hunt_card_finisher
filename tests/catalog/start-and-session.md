@@ -529,11 +529,11 @@ A resumed photo that had a logo gets its logo image back: from the logo stored w
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnResume`, "The overlay image isn’t loaded. Open the Overlay step and add it again."
-- Source: `js/app/overlay.js` (`ensureOverlayImage`); `js/app/state.js` (`openFile`)
-- Ruling: R22. **Remove** leaves the photo's logo in storage, so Undo after a resume can bring it back. The app already does this. R35. Whatever logo Undo can bring back stays stored, so after Resume the photo exports as it looked. The app differs today.
-- Cases: 4
+- Source: `js/app/overlay.js` (`ensureOverlayImage`, `keepPhotoOverlayStored`); `js/app/state.js` (`openFile`)
+- Ruling: R22. **Remove** leaves the photo's logo in storage, so Undo after a resume can bring it back. The app already does this. R35. Whatever logo Undo can bring back stays stored, so after Resume the photo exports as it looked: a logo that Undo, a pair's side switch (PAIR-40.2) or **Delete saved** leaves on the photo, and that is neither the photo's stored logo nor the saved one, becomes the photo's stored logo. The app does this since 1.10.0.
+- Cases: 5
 
 To add a logo: on the Overlay step, tap **Add logo** (or **Replace logo** when a logo is on the photo) and choose the file. The logos are the app's own icons, from the icons/ folder of the build: icon.svg and apple-touch-icon.png.
 
@@ -586,8 +586,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-10.3 After a replaced logo is undone, Resume keeps the logo   [auto: phone, webkit]
-Written to ruling R35; it fails until R35 is built (BUG-140).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -602,7 +600,7 @@ Before you start:
 | 3 | Tap **Undo** (the arrow curving left, at the top right) | The app icon is the logo again |
 | 4 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Download** |
 | 5 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 6 | Tap **No** | A file named IMG_9136-straight.jpg is saved, with the app icon as its logo |
+| 6 | Tap **No** | A file named IMG_9136-straight.jpg is saved; the app icon is still the logo on the photo |
 | 7 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
 | 8 | Tap **Resume** | The photo opens on the Export step |
 | 9 | Tap **Download** | The question box asks "Upscale to 2000 px?" |
@@ -642,6 +640,38 @@ This order leaves the photo's own stored logo different from the one on the phot
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
+
+### STA-10.5 After Delete saved, Resume still brings the logo back   [auto: phone, webkit]
+Before you start:
+- Device and browser: any; a phone-width or a wide window, in a private window, with downloads saved to a folder you can open
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/; logos: icons/apple-touch-icon.png and icons/icon.svg
+- Starting screen: IMG_9136.JPEG open (with **Open photo**). Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) and **Original** (at Original, **Download** asks no question). Tap **Overlay** in the step tabs, tap **Add logo** and choose apple-touch-icon.png. Save the edits (below), then tap **Overlay** again. The photo is on the Overlay step, with apple-touch-icon.png as its logo, and a file named IMG_9136-edits.json is saved
+
+The named actions:
+- Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls, the block of buttons under the photo); on a wide screen they are always shown under the controls.
+- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
+- Save the edits: tap **Export** in the step tabs, open Export options, tap **Save edits**, then close Export options.
+- Load the edits: tap **Export** in the step tabs, open Export options, tap **Load edits** and choose the IMG_9136-edits.json you saved, then close Export options.
+
+As in STA-10.4, rows 1 to 3 leave the logo on the photo kept only as the logo saved in the browser. **Delete saved** then removes that one.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Wait two seconds, then tap **Replace logo** and choose icon.svg | The app icon is the logo now |
+| 2 | Load the edits | The logo is apple-touch-icon.png again |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) | The app icon is the logo again |
+| 4 | Tap **Overlay** in the step tabs | The Overlay step shows, with the app icon as the logo and **Delete saved** in the row of tools |
+| 5 | Tap **Delete saved** | **Delete saved** is greyed out (shown dim and not answering a tap); the app icon is still the logo |
+| 6 | Tap **Export** in the step tabs | The Export step shows **Download** |
+| 7 | Tap **Download** | A file named IMG_9136-straight.jpg is saved |
+| 8 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
+| 9 | Tap **Resume** | The photo opens on the Export step |
+| 10 | Tap **Download** | A second file is saved, with no message about the logo; it is the same picture as the first, logo and all |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot, and the two files.
 
 ## STA-11 Resume with the saved photo missing
 

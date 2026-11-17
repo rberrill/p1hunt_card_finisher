@@ -918,7 +918,6 @@ test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [w
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-140');
   const hand = await startWithPhoto(page, testInfo);
   const download = page.locator('#btnDownload');
   await goToStep(page, 'overlay', hand);
@@ -940,11 +939,11 @@ test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [w
   await tapAndSeeQuestion(page, hand, check, download,
     'a question box asks "Upscale to 2000 px?"');
   const before = await answerAndSave(page, hand);
-  await check('a file named IMG_9136-straight.jpg is saved, with the app icon as its logo',
-    async () => {
-      expect(before.name).toBe('IMG_9136-straight.jpg');
-      expect((await editState(page)).overlay.id).toBe(first);
-    });
+  await check('a file named IMG_9136-straight.jpg is saved; the app icon is still the logo on '
+    + 'the photo', async () => {
+    expect(before.name).toBe('IMG_9136-straight.jpg');
+    expect((await editState(page)).overlay.id).toBe(first);
+  });
   await waitForSaved(page, { overlayId: first, exported: true });
   await reloadToStart(page);
   await check('the card offers "Resume IMG_9136.JPEG?"', async () => {
@@ -1048,6 +1047,97 @@ test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webki
       expect(saved.name).toBe('IMG_9136-straight.jpg');
       expect((await toastNow(page)).kind).toBe('');
     });
+});
+
+// Taps Download where it asks no question (Size Original). Returns { name, file } for the saved
+// file, or null when the export fails instead (a red message, and no file), so a failed export
+// is seen at once rather than after a download's timeout.
+async function downloadOrFail(page, hand) {
+  const downloading = page.waitForEvent('download').then(async download => ({
+    name: download.suggestedFilename(),
+    file: await download.path(),
+  }), () => null);
+  await hand.tap(page.locator('#btnDownload'));
+  const failing = page.locator('#toast.is-error').waitFor({ state: 'visible' })
+    .then(() => null, () => null);
+  return Promise.race([downloading, failing]);
+}
+
+// STA-10.5's starting screen: Original for Size, apple-touch-icon.png added as the logo, the
+// edits saved, then the Overlay step. Returns { pngLogo, editsFile }: the logo's id and the
+// saved edits file's download.
+async function startWithLogoAndSavedEdits(page, hand) {
+  await goToStep(page, 'export', hand);
+  await hand.tap(exportSegment(page, 'exportSize', '0'));
+  await expectSelected(exportSegment(page, 'exportSize', '0'));
+  await goToStep(page, 'overlay', hand);
+  const pngLogo = await addLogo(page, hand, page.locator('#btnOverlayAdd'), OTHER_LOGO);
+  const editsFile = await saveTheEdits(page, hand);
+  await goToStep(page, 'overlay', hand);
+  return { pngLogo, editsFile };
+}
+
+test('STA-10.5 After Delete saved, Resume still brings the logo back [phone] [webkit]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startWithPhoto(page, testInfo);
+  const download = page.locator('#btnDownload');
+  const deleteSaved = page.locator('#toolOverlayDeleteSaved');
+  const { pngLogo, editsFile } = await startWithLogoAndSavedEdits(page, hand);
+  await page.waitForTimeout(LOGO_GAP_MS);
+  const svgLogo = await addLogo(page, hand, page.locator('#toolOverlayReplace'), LOGO);
+  await check('the app icon is the logo now', async () => {
+    expect(svgLogo).not.toBe(pngLogo);
+  });
+  await loadTheEdits(page, hand, editsFile, pngLogo);
+  await check('Load the edits makes apple-touch-icon.png the logo again', async () => {
+    expect((await editState(page)).overlay.id).toBe(pngLogo);
+  });
+  await hand.tap(page.locator('#btnUndo'));
+  await check('Undo makes the app icon the logo again', async () => {
+    expect((await editState(page)).overlay.id).toBe(svgLogo);
+  });
+  await goToStep(page, 'overlay', hand);
+  await check('the Overlay step shows, with the app icon as the logo and Delete saved in the row '
+    + 'of tools', async () => {
+    expect(await stepNow(page)).toBe('overlay');
+    expect((await editState(page)).overlay.id).toBe(svgLogo);
+    await expect(deleteSaved).toBeVisible();
+    await expect(deleteSaved).toBeEnabled();
+  });
+  await hand.tap(deleteSaved);
+  await check('Delete saved is greyed out; the app icon is still the logo', async () => {
+    await expect(deleteSaved).toBeDisabled();
+    expect((await editState(page)).overlay.id).toBe(svgLogo);
+  });
+  await goToStepAndSee(page, hand, check, 'export', download, 'the Export step shows Download');
+  const before = await downloadOrFail(page, hand);
+  await check('a file named IMG_9136-straight.jpg is saved', async () => {
+    expect(before).not.toBeNull();
+    expect(before.name).toBe('IMG_9136-straight.jpg');
+  });
+  await waitForSaved(page, { overlayId: svgLogo, exported: true });
+  // The saved logo has gone from the device before the reload.
+  await expect.poll(() => storedRecord(page, 'overlay')).toBeNull();
+  await reloadToStart(page);
+  await check('the card offers "Resume IMG_9136.JPEG?"', async () => {
+    await expect(page.locator('#resumeName')).toHaveText(PHOTO);
+  });
+  await resumeAs(page, hand, PHOTO);
+  await check('the photo opens on the Export step', async () => {
+    expect(await stepNow(page)).toBe('export');
+  });
+  const after = await downloadOrFail(page, hand);
+  const toast = await toastNow(page);
+  await check('a second file is saved, with no message about the logo: the same picture as the '
+    + 'first, logo and all', async () => {
+    expect(toast.kind, `the message: ${toast.text}`).toBe('');
+    expect(after).not.toBeNull();
+    const beforeImage = await readSavedImage(page, before.file, COMPARE_GRID);
+    const afterImage = await readSavedImage(page, after.file, COMPARE_GRID);
+    expectSamePicture(beforeImage, afterImage);
+  });
 });
 
 test('STA-11.1 Resume after the saved photo has gone [phone] [webkit]', async ({
