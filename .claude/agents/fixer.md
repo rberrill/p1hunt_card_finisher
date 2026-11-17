@@ -44,5 +44,5 @@ Rules:
 - Do not commit, push or publish.
 
 Report: the cause, the change (files and why), the test that failed before and passes now,
-the complete run's totals, the `Catalog:` line for the commit message, and anything you
+its runs' totals, the `Catalog:` line for the commit message, and anything you
 noticed but did not touch.
