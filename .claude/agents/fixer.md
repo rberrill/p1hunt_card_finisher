@@ -18,6 +18,8 @@ cases the row names, and their tests. The rules for the code load when you open 
 Rules:
 
 - Do all the work yourself. Start no agents, subagents, forks or workflows.
+- Fix only a row whose Decision in `tests/bugs.md` reads "Fix". Rich reviews every bug before
+  it is fixed; if the row reads "Not reviewed" or "Open for now", stop and report.
 - Test first. The case's test is already marked `test.fail(true, 'BUG-0NN')`: run it and see
   that it fails for the bug's reason before you change the app. If no test fails for this
   bug, stop and report; the case needs writing first.

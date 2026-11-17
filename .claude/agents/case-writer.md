@@ -29,7 +29,9 @@ Rules:
   remove an export. Say in your report what you added.
 - Never edit `js/`, `css/` or `index.html`. When the app doesn't do what a ruling in
   `tests/catalog/rulings.md` says, write the case to the ruling, mark its test
-  `test.fail(true, 'BUG-0NN')` and add a row to `tests/bugs.md` in the range you were given.
+  `test.fail(true, 'BUG-0NN')` and add a row to `tests/bugs.md` in the range you were given,
+  with a Severity from the definitions at the top of that file and the Decision "Not
+  reviewed".
 - Never invent a behavior or a wording. Words on screen come from the code today or from
   `tests/catalog/wording.md`. A behavior nobody has ruled on gets a `Flag:` line and goes in
   your report as a question for Rich; something only an iPhone can settle goes in

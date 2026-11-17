@@ -10,7 +10,7 @@ argument-hint: "[X.Y.Z]"
 **Stop and ask** if Rich hasn't said go in this conversation, or if any of these is not true (the `test` skill):
 
 - the newest checklist in `tests/checklists/` is for the build being released (no app file changed since), is filled in, and its result is Pass;
-- `tests/bugs.md` has no open row, or Rich has said in this conversation which open rows ship;
+- every open row in `tests/bugs.md` has the Decision "Open for now" (Rich reviewed it and it may ship): none reads "Fix" or "Not reviewed";
 - `tests/catalog/find-out.md` has no item a case in this release is waiting on.
 
 ## Branches
@@ -60,6 +60,8 @@ Release X.Y.Z
 Verified: selftest n/n; full run n case runs, 0 failed (Chromium and WebKit; phone, small
 phone, desktop, file://). Phone checklist tests/checklists/<file> passed on the UAT site
 (iPhone Safari; Rich, YYYY-MM-DD).
+
+Open at release (Rich's decision): <BUG ids and severities, or none>
 
 Caught during the work:
 - <bug found before release, and the test that now guards it>

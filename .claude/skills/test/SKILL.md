@@ -108,10 +108,27 @@ For trying work in progress on the phone. No checklist, no complete run.
 2. Steps 3 to 5 of a UAT round.
 3. Tell Rich the version and commit now on the site.
 
+## Bugs: rate, review with Rich, then fix
+
+Rich's rule (2026-11-17): every bug gets a severity when it is opened, and nothing is fixed
+until he has reviewed the run's bugs and said which to fix.
+
+1. **Rate.** Whoever opens a row in `tests/bugs.md` gives it a Severity (Critical, High,
+   Medium, Low; his definitions are at the top of that file) and the Decision "Not reviewed".
+2. **Review.** When a run or a phone checklist is finished, put all of its "Not reviewed"
+   rows to Rich before any fix: a table, most severe first, with the ID, the severity, what
+   happens in one line, and your recommendation (Fix or Open for now). He confirms Fix or
+   Open for now for each, and may change a severity. Ask by severity group, one picker at a
+   time, and let him name the exceptions (*Claude's call* on the grouping).
+3. **Record** his answer in each row's Decision.
+4. **Fix** only rows that read "Fix", most severe first, test-first as above. A row that
+   reads "Open for now" keeps its `test.fail` mark and may ship; the release tag's message
+   lists those.
+
 ## When the checklist comes back
 
-- A failed case: a row in `tests/bugs.md` with the checklist's file name, the case and what
-  Rich saw, then fix it test-first as above.
+- A failed case: a row in `tests/bugs.md` with the checklist's file name, the case, what
+  Rich saw and a severity. It joins the bug review above; it is not fixed until he says so.
 - A Part C answer: write it into the case that was waiting, add a ruling if the answer is a
   decision, and delete the item from `find-out.md`.
 - Commit the filled-in checklist; it is the record of the round. The release tag's message

@@ -31,7 +31,9 @@ How:
    - **Defect:** the app does not do what the case (and its ruling, if any) says. Draft a row
      in `tests/bugs.md` in the range you were given: the case, the build, what happened
      against what should, seen how often. Give the cause only if you read it in the code, and
-     say so.
+     say so. Give it a **Severity** from the definitions at the top of `tests/bugs.md`
+     (Critical, High, Medium, Low), judged by what the user loses, and say in your report
+     why you chose it. Its Decision is "Not reviewed": Rich decides what is fixed.
    - **Test fault:** the test is wrong or checks the wrong thing. No bug row. Say what is
      wrong with it.
    - **Flaky:** it passes on some of the three runs. Say how often and what differs.
@@ -40,4 +42,4 @@ How:
 4. Never mark a test `test.fail` yourself, and never change a test or the app.
 
 Report a table: case, target, verdict (defect, test fault, flaky, fixed), one line of why,
-and the bug row if you drafted one; then the run's totals.
+and the bug row and its severity if you drafted one; then the run's totals.
