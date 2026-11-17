@@ -47,3 +47,15 @@ To add one: give it the next number, say exactly what to do and what to record, 
 - Waiting: STA-05.5, STA-08.1, STA-08.2
 - Do (on the computer, not the phone): in Chrome, open the app, open a photo, open developer tools, Application, IndexedDB, and click a stored value.
 - Write down: whether a value can be edited in place, or only refreshed and deleted.
+
+## Q-08 What the top of the share sheet shows for a picture
+
+- Waiting: EXP-08.2
+- Do: open IMG_9136.JPEG in the app on the UAT site, tap **Export**, **2000**, **Share**, then **No** in the question box. Look at the top of the share sheet before choosing anything, then close it with its **×**.
+- Write down: what the top of the share sheet shows: a small picture of the straightened card or not, and the file's name (IMG_9136-straight.jpg) or not, word for word.
+
+## Q-09 Which photo makes Safari refuse a share after a slow save
+
+- Waiting: EXP-15.3
+- Do: open the largest photo you have (a 48 MP one, from an iPhone that takes them) in the app on the UAT site, tap **Export**, **Original**, then **Share**. Do it three times, with a reload between.
+- Write down: the photo (its name, and the size the source line in **Export options** gives); each time, whether the share sheet rose by itself or the red button changed to **Share now** with a message ending "Tap Share now to open the share sheet."; and the seconds the message gives.

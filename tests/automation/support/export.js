@@ -5,7 +5,13 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { openOptions, closeOptions, cornerOnPage, saveByDownload } = require('./app.js');
+const {
+  openOptions,
+  closeOptions,
+  cornerOnPage,
+  saveByDownload,
+  waitForStill,
+} = require('./app.js');
 
 // The image types a saved file can have, by its extension.
 const MIME_TYPES = { '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
@@ -45,6 +51,15 @@ const WATCHED_CHOICES = ['exportSize', 'exportFormat', 'pairOutput', 'cornerOutp
 // How far past the bottom-right corner the top-left one is dragged to cross the outline, in
 // source px.
 const CROSS_PAST_PX = 60;
+// How many moves a drag of the Quality slider is made of (dragQualityTo).
+const QUALITY_SLIDE_MOVES = 12;
+// How far past an end of the Quality slider's track a drag to that end goes, in CSS px, so
+// the knob ends hard against it, as a finger that overshoots does.
+const QUALITY_PAST_END_PX = 12;
+// The width of a slider's knob, in CSS px (css/app.css, .slider input's thumb).
+const SLIDER_KNOB_PX = 22;
+// The rows readSavedRows reads, as fractions of the image's height.
+const SAVED_ROW_FRACTIONS = [0.25, 0.5, 0.75];
 
 // Gives the page a stand-in for the browser's share sheet before the app loads, so a case can
 // prove what the app hands over without opening a real one (Rich: no case uses a desktop
@@ -334,10 +349,87 @@ async function readSavedPixels(page, file, points) {
 // Moves the Quality slider in Export options to its 'low' or 'high' end. A native range input
 // ignores the dispatched pointer events a phone target's drags are made of, so the slider is
 // moved with the Home and End keys, which change it through the same input event as a drag.
+// Kept for other areas' cases that only need a setting changed; the Export cases drag the
+// knob (dragQualityTo).
 async function moveQualityTo(page, end) {
   const slider = page.locator('#quality');
   await slider.focus();
   await page.keyboard.press(end === 'low' ? 'Home' : 'End');
+}
+
+// Drags the Quality slider's knob in Export options from where it rests to one end of its
+// track ('low' at the left, 'high' at the right) in one movement, and lets go: a finger on a
+// phone target, the mouse on a wide one. The drag is QUALITY_SLIDE_MOVES moves, each a separate
+// input event, so the app sees a drag and not a jump. A dispatched pointer doesn't move a
+// native slider, so in Chromium a finger goes through the browser's own touch input (the
+// DevTools protocol), as a real touch would; WebKit has no such input, so there the mouse
+// stands in for the finger. pauseMs: a wait between the moves, for a case that proves what a
+// slow drag would do (0 for one smooth movement).
+async function dragQualityTo(page, hand, end, pauseMs = 0) {
+  const slider = page.locator('#quality');
+  // The options sheet may still be rising: measure the slider once it is still.
+  await waitForStill(page);
+  const box = await slider.boundingBox();
+  const fraction = await slider.evaluate(
+    input => (input.value - input.min) / (input.max - input.min),
+  );
+  // The knob's middle is half a knob in from each end of the track at its two ends.
+  const knobHalf = SLIDER_KNOB_PX / 2;
+  const startX = box.x + knobHalf + fraction * (box.width - 2 * knobHalf);
+  const endX = end === 'low'
+    ? box.x - QUALITY_PAST_END_PX
+    : box.x + box.width + QUALITY_PAST_END_PX;
+  const middleY = box.y + box.height / 2;
+  const xAtMove = move => startX + (endX - startX) * move / QUALITY_SLIDE_MOVES;
+  const isCdpTouch = hand.isTouch && page.context().browser().browserType().name() === 'chromium';
+  if (!isCdpTouch) {
+    await page.mouse.move(startX, middleY);
+    await page.mouse.down();
+    for (let move = 1; move <= QUALITY_SLIDE_MOVES; move++) {
+      await page.mouse.move(xAtMove(move), middleY);
+      if (pauseMs) await page.waitForTimeout(pauseMs);
+    }
+    await page.mouse.up();
+    return;
+  }
+  const session = await page.context().newCDPSession(page);
+  const touch = (type, x) => session.send('Input.dispatchTouchEvent', {
+    type,
+    touchPoints: type === 'touchEnd' ? [] : [{ x, y: middleY }],
+  });
+  await touch('touchStart', startX);
+  for (let move = 1; move <= QUALITY_SLIDE_MOVES; move++) {
+    await touch('touchMove', xAtMove(move));
+    if (pauseMs) await page.waitForTimeout(pauseMs);
+  }
+  await touch('touchEnd', endX);
+  await session.detach();
+}
+
+// Reads three rows of pixels of a saved image file in the page, at a quarter, a half and three
+// quarters of its height. Returns { width, height, rows }: rows[r][x] is the [r, g, b] (0 to 255)
+// of the pixel x px from the left in the r-th row.
+async function readSavedRows(page, file) {
+  const type = MIME_TYPES[path.extname(file).toLowerCase()] || 'image/jpeg';
+  const base64 = fs.readFileSync(file).toString('base64');
+  return page.evaluate(async ({ data, mimeType, fractions }) => {
+    const bytes = Uint8Array.from(atob(data), character => character.charCodeAt(0));
+    const bitmap = await createImageBitmap(new Blob([bytes], { type: mimeType }));
+    const { width, height } = bitmap;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bitmap, 0, 0);
+    const rows = fractions.map(down => {
+      const y = Math.min(height - 1, Math.floor(down * height));
+      const pixels = ctx.getImageData(0, y, width, 1).data;
+      const row = [];
+      for (let x = 0; x < width; x++) row.push(Array.from(pixels.slice(x * 4, x * 4 + 3)));
+      return row;
+    });
+    return { width, height, rows };
+  }, { data: base64, mimeType: type, fractions: SAVED_ROW_FRACTIONS });
 }
 
 // Waits until the question card (Upscale to N px?) is up (true) or gone (false). Its layer's
@@ -436,6 +528,8 @@ module.exports = {
   saveFileBy,
   readSavedPixels,
   moveQualityTo,
+  dragQualityTo,
+  readSavedRows,
   waitForQuestion,
   downloadAnswering,
   isSameFile,

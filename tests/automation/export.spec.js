@@ -43,12 +43,13 @@ const {
   readClipboardImage,
   saveFileBy,
   readSavedPixels,
-  moveQualityTo,
+  readSavedRows,
+  dragQualityTo,
+  waitForQuestion,
   downloadAnswering,
   isSameFile,
   takeAwayWebpSaving,
   copyPhotoToClipboard,
-  SHARE_FAILURE_MESSAGE,
   rectsOverlap,
 } = require('./support/export.js');
 
@@ -87,11 +88,44 @@ async function startOn(page, testInfo, options = {}) {
   return hand;
 }
 
-// Opens the case's second photo, as Open does, and goes back to Export.
-async function openSecondPhoto(page, hand) {
+// Opens the case's second photo, as Open does, and goes back to Export, recording the verdict
+// of the row "the new photo opens on the Perspective step" and, when hasExportRow, of the row
+// after it, "the Export controls show". A case whose own verdict follows the tap on Export
+// passes hasExportRow false and records it itself.
+async function openSecondPhoto(page, hand, check, hasExportRow = true) {
   await openPhoto(page, SECOND_PHOTO);
+  await check('the new photo opens on the Perspective step', async () => {
+    expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('perspective');
+  });
   await goToStep(page, 'export', hand);
+  if (!hasExportRow) return;
+  await check('the Export controls show', async () => {
+    await expect(page.locator('#exportSize')).toBeVisible();
+  });
 }
+
+// Records the verdict of a row whose result, after a tap on Undo, is that Redo turns live.
+async function checkRedoLive(page, check) {
+  await check('Redo turns live', async () => {
+    await expect(page.locator('#btnRedo')).toBeEnabled();
+  });
+}
+
+// The clamp note in today's words or in the words Rich approved (ruling R15): cases about
+// which notes show pass with either; EXP-06.3 and EXP-06.4 check the approved words.
+const CLAMP_NOTES = [
+  'Clamped to fit the 16.8 MP canvas limit.',
+  'Scaled down to fit the 16.7 MP limit.',
+];
+// The approved clamp note (rulings R14 and R15, tests/catalog/wording.md).
+const APPROVED_CLAMP_NOTE = 'Scaled down to fit the 16.7 MP limit.';
+// The approved note for a pair saved Separately when the front, not on screen, is clamped,
+// with the limit's number left to the app: EXP-06.4 lowers the limit with a link, and whether
+// the note then gives 16.7 or the lowered limit is for Rich to say.
+const APPROVED_FRONT_CLAMP_NOTE = /^The front is scaled down to fit the [\d.]+ MP limit\.$/;
+// The clamp note in today's words or the approved ones, whatever the limit a link sets.
+const ANY_CLAMP_NOTE = new RegExp('^(Clamped to fit the [0-9.]+ MP canvas limit'
+  + '|Scaled down to fit the [0-9.]+ MP limit)[.]$');
 
 // Taps one of the Size choices by its label ('1080', '2000', '3000' or 'Original').
 const tapSize = (page, hand, label) => hand.tap(choiceButton(page, 'exportSize', label));
@@ -99,14 +133,14 @@ const tapSize = (page, hand, label) => hand.tap(choiceButton(page, 'exportSize',
 // Taps one of the Format choices by its label ('JPEG', 'PNG' or 'WebP').
 const tapFormat = (page, hand, label) => hand.tap(choiceButton(page, 'exportFormat', label));
 
-// The question card over the photo, and one of its buttons by label.
+// The question box over the photo, and one of its buttons by label.
 const questionCard = page => page.locator('#pairPrompt');
 const questionButton = (page, label) => questionCard(page)
   .getByRole('button', { name: label, exact: true });
 
 // Records the verdict that the Upscale question is up, asking for `sizePx`.
 async function checkAskedToUpscale(page, check, sizePx = 2000) {
-  await check(`a question card asks "Upscale to ${sizePx} px?"`, async () => {
+  await check(`a question box asks "Upscale to ${sizePx} px?"`, async () => {
     await expect(questionCard(page)).toBeVisible();
     await expect(questionCard(page)).toContainText(`Upscale to ${sizePx} px?`);
   });
@@ -171,7 +205,7 @@ test('EXP-01.1 The size choices set the long edge, each one undo step [phone]', 
   await check('a second Undo selects 1080 again', async () => {
     await expectSelected(page, 'exportSize', '1080');
   });
-  await openSecondPhoto(page, hand);
+  await openSecondPhoto(page, hand, check, false);
   await check('the next photo starts with 1080: the undone size is remembered', async () => {
     await expectSelected(page, 'exportSize', '1080');
   });
@@ -182,13 +216,18 @@ test('EXP-02.1 An edits file with a 1500 px long edge leaves no size selected [p
     await checkUnlistedLongEdge(page, check, testInfo);
   });
 
-// With Export options open, taps Load edits, chooses the edits file `file` in the picker and
-// waits until its corners and export settings are the ones in use.
-async function loadEditsFile(page, hand, file) {
+// With Export options open, taps Load edits, records the verdict that the file picker opens,
+// chooses the edits file `file` in it and waits until its corners and export settings are the
+// ones in use.
+async function loadEditsFile(page, hand, check, file) {
   const edits = JSON.parse(fs.readFileSync(file, 'utf8'));
   const choosing = page.waitForEvent('filechooser');
   await hand.tap(page.locator('#btnLoadEdits'));
-  await (await choosing).setFiles(file);
+  const chooser = await choosing;
+  await check('the file picker opens', () => {
+    expect(chooser.isMultiple()).toBe(false);
+  });
+  await chooser.setFiles(file);
   await page.waitForFunction(({ corners, exportSettings }) => {
     const state = window.__straightener.app.state;
     const isSameCorners = JSON.stringify(state.corners) === corners;
@@ -197,6 +236,10 @@ async function loadEditsFile(page, hand, file) {
     return isSameCorners && isSameExport;
   }, { corners: JSON.stringify(edits.corners), exportSettings: edits.export });
 }
+
+// The case's edits file: IMG_9136.JPEG's edits as Save edits saves them, with the long edge
+// changed by hand to 1500.
+const LONG_EDGE_1500_EDITS = path.join(root, 'tests/fixtures/IMG_9136-edits-long-edge-1500.json');
 
 // The body of EXP-02.1: an edits file whose long edge is 1500 px selects none of the sizes.
 async function checkUnlistedLongEdge(page, check, testInfo) {
@@ -209,14 +252,7 @@ async function checkUnlistedLongEdge(page, check, testInfo) {
     await expect(page.locator('#btnSaveEdits')).toBeVisible();
     await expect(page.locator('#btnLoadEdits')).toBeVisible();
   });
-  // The case's edits file: saved by Save edits, then changed as the case says.
-  const saving = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnSaveEdits'));
-  const edits = JSON.parse(fs.readFileSync(await (await saving).path(), 'utf8'));
-  edits.export.longEdge = 1500;
-  const editsFile = testInfo.outputPath('IMG_9136-edits.json');
-  fs.writeFileSync(editsFile, JSON.stringify(edits, null, 2));
-  await loadEditsFile(page, hand, editsFile);
+  await loadEditsFile(page, hand, check, LONG_EDGE_1500_EDITS);
   await closeOptions(page, hand, 'export');
   await check('none of the four sizes is selected', async () => {
     expect(await selectedChoices(page, 'exportSize')).toEqual([]);
@@ -254,7 +290,7 @@ test('EXP-03.1 The format choices set the format, each one undo step [phone]', a
   await check('Undo selects PNG again', async () => {
     await expectSelected(page, 'exportFormat', 'PNG');
   });
-  await openSecondPhoto(page, hand);
+  await openSecondPhoto(page, hand, check, false);
   await check('the next photo starts with PNG: the undone format is remembered', async () => {
     await expectSelected(page, 'exportFormat', 'PNG');
   });
@@ -324,23 +360,56 @@ test('EXP-05.1 Invalid corners blank the size line and its note [phone]', async 
   await check('Fill outside photo reads White', async () => {
     await expect(page.locator('#fillValue')).toHaveText('White');
   });
-  await page.locator('#fill').selectOption('transparent');
+  await setFillTransparent(page, check);
   await closeOptions(page, hand, 'export');
   await check('the size line shows the output and the JPEG note shows', async () => {
     expect(await readoutText(page)).toMatch(/^Output 1400 × 1400 px · JPEG/);
     expect(await visibleNotes(page)).toEqual([JPEG_NOTE]);
   });
-  await goToStep(page, 'perspective', hand);
+  await goToPerspectiveChecked(page, hand, check);
   await crossTheCorners(page, hand);
-  await check('the outline crosses itself: the corners are invalid', async () => {
-    expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(false);
-  });
+  await checkCornersCrossed(page, check);
   await goToStep(page, 'export', hand);
   await check('the size line is empty and no note shows', async () => {
     await expect(page.locator('#exportReadout')).toHaveText('');
     await expect(page.locator('#exportMessage')).toBeHidden();
   });
 });
+
+// With Export options open, sets the fill to Transparent through the row's own list, and
+// records the verdict that the row reads Transparent.
+async function setFillTransparent(page, check) {
+  await page.locator('#fill').selectOption('transparent');
+  await check('the row reads Transparent', async () => {
+    await expect(page.locator('#fillValue')).toHaveText('Transparent');
+  });
+}
+
+// Taps Perspective in the step tabs and records the verdict that the card's corners show as
+// handles joined by a whole outline (the corners make a shape the app can straighten).
+async function goToPerspectiveChecked(page, hand, check) {
+  await goToStep(page, 'perspective', hand);
+  await check('the corners show as round handles joined by an outline', async () => {
+    expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(true);
+    await expect(page.locator('#perspectiveStatus')).toBeHidden();
+  });
+}
+
+// The line above Perspective's controls while the corners cross.
+const CROSSED_MESSAGE = 'Corners cross or fold inward. Drag them back into a convex shape.';
+
+// Records the verdict of the row after the corners are crossed: the outline crosses itself
+// (the corners no longer make a shape the app can straighten), and the line above the controls
+// says so.
+async function checkCornersCrossed(page, check) {
+  await check(`the outline crosses itself; the line above the controls reads "${CROSSED_MESSAGE}"`,
+    async () => {
+      expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(false);
+      const status = page.locator('#perspectiveStatus');
+      await expect(status).toBeVisible();
+      await expect(status.locator('.status-text')).toHaveText(CROSSED_MESSAGE);
+    });
+}
 
 // Taps Auto on the Levels step, which leaves the levels with changes not yet applied.
 async function makeLevelsDraft(page, hand) {
@@ -362,9 +431,15 @@ test('EXP-06.1 A wide screen shows every note, each with an amber mark [desktop]
     const notes = await visibleNotes(page);
     expect(notes).toHaveLength(2);
     expect(notes[0]).toBe(LEVELS_NOTE);
-    expect(notes[1]).toMatch(/^Clamped to fit the .* MP canvas limit\.$/);
+    expect(CLAMP_NOTES).toContain(notes[1]);
   });
-  await chooseFill(page, hand, 'transparent');
+  await check('the Fill outside photo list offers Transparent, White, Black and Custom…',
+    async () => {
+      await expect(page.locator('#fill')).toBeVisible();
+      const choices = await page.locator('#fill option').allTextContents();
+      expect(choices).toEqual(['Transparent', 'White', 'Black', 'Custom…']);
+    });
+  await page.locator('#fill').selectOption('transparent');
   await check('the JPEG note follows them', async () => {
     const notes = await visibleNotes(page);
     expect(notes).toHaveLength(3);
@@ -395,6 +470,9 @@ test('EXP-06.2 A phone shows one note at a time, in order [phone]', async ({
     expect(await visibleNotes(page)).toEqual([LEVELS_NOTE]);
   });
   await goToStep(page, 'levels', hand);
+  await check('the Levels controls show, with Apply in the line above them', async () => {
+    await expect(page.locator('#btnApplyLevels')).toBeVisible();
+  });
   await hand.tap(page.locator('#btnApplyLevels'));
   await check('the white dot on the Levels tab goes', async () => {
     await expect(page.locator('[data-step="levels"]:visible .step-tab-mark')).toBeHidden();
@@ -403,7 +481,7 @@ test('EXP-06.2 A phone shows one note at a time, in order [phone]', async ({
   await check('one note shows: the clamp note', async () => {
     const notes = await visibleNotes(page);
     expect(notes).toHaveLength(1);
-    expect(notes[0]).toMatch(/^Clamped to fit the .* MP canvas limit\.$/);
+    expect(CLAMP_NOTES).toContain(notes[0]);
   });
   await tapSize(page, hand, '1080');
   await check('at 1080 one note shows: the JPEG note', async () => {
@@ -417,17 +495,24 @@ test('EXP-06.3 The clamp note reads 16.7 MP [phone]', async ({ page, check }, te
   await check('the size line begins Output 4096 × 4096 px · JPEG', async () => {
     expect(await readoutText(page)).toMatch(/^Output 4096 × 4096 px · JPEG/);
   });
-  await check('the note reads "Clamped to fit the 16.7 MP canvas limit."', async () => {
-    expect(await visibleNotes(page)).toEqual(['Clamped to fit the 16.7 MP canvas limit.']);
+  await check(`the note reads "${APPROVED_CLAMP_NOTE}"`, async () => {
+    expect(await visibleNotes(page)).toEqual([APPROVED_CLAMP_NOTE]);
   });
 });
 
-// Taps Add back, chooses `name` in the file picker and waits until the back is open and its
+// Taps Add back, records the verdict that the file picker opens (the case's row for the tap;
+// none when `check` is null), chooses `name` in it and waits until the back is open and its
 // corners are found.
-async function addBack(page, hand, name) {
+async function addBack(page, hand, check, name) {
   const choosing = page.waitForEvent('filechooser');
   await hand.tap(page.locator('#btnAddBack'));
-  await (await choosing).setFiles(samplePath(name));
+  const chooser = await choosing;
+  if (check) {
+    await check('the file picker opens', () => {
+      expect(chooser.isMultiple()).toBe(false);
+    });
+  }
+  await chooser.setFiles(samplePath(name));
   await page.waitForFunction(photoName => {
     const app = window.__straightener.app;
     const isBackOpen = !!app.pair && app.pair.current === 'back' && !app.isSwitching;
@@ -441,14 +526,17 @@ test('EXP-06.4 For a pair saved Separately, a clamp on the other side shows a no
     test.fail(true, 'BUG-012');
     const hand = await startOn(page, testInfo, { address: 'index.html?maxOutputArea=1000000' });
     await tapSize(page, hand, 'Original');
-    await check('the size line reads Output 1000 × 1000 px · JPEG, with the clamp note',
+    await check('the size line reads Output 1000 × 1000 px · JPEG, with the clamp note under it',
       async () => {
         expect(await readoutText(page)).toBe('Output 1000 × 1000 px · JPEG');
-        expect((await visibleNotes(page))[0]).toMatch(/^Clamped to fit the /);
+        const notes = await visibleNotes(page);
+        expect(notes).toHaveLength(1);
+        expect(notes[0]).toMatch(ANY_CLAMP_NOTE);
       });
-    await addBack(page, hand, PAIR_BACK);
+    await addBack(page, hand, check, PAIR_BACK);
     await check('the back opens, with Front and Back in the top bar and Back selected',
       async () => {
+        await expect(page.locator('#sideSwitch')).toBeVisible();
         expect(await selectedChoices(page, 'sideSwitch')).toEqual(['Back']);
       });
     await goToStep(page, 'export', hand);
@@ -459,15 +547,12 @@ test('EXP-06.4 For a pair saved Separately, a clamp on the other side shows a no
     await check('Separately is selected', async () => {
       expect(await selectedChoices(page, 'pairOutput')).toEqual(['Separately']);
     });
-    await check('a warning note shows: the front is scaled down to fit', async () => {
-      const isFrontClamped = await page.evaluate(() => {
-        const front = window.__straightener.app.pair.other.state;
-        return CardEngine.computeGeometry(front, window.CF.geometryConfig()).output.isClamped;
+    await check('one amber note reads "The front is scaled down to fit the N MP limit."',
+      async () => {
+        const notes = await visibleNotes(page);
+        expect(notes).toHaveLength(1);
+        expect(notes[0]).toMatch(APPROVED_FRONT_CLAMP_NOTE);
       });
-      expect(isFrontClamped).toBe(true);
-      const notes = await page.locator('#exportMessage .export-note').count();
-      expect(notes).toBe(1);
-    });
   });
 
 // Expects the export note to be whole within its column and to cover none of the buttons of
@@ -495,7 +580,7 @@ test('EXP-07.1 A note covers no button, before and after an export [phone] [webk
   await check('Fill outside photo reads White', async () => {
     await expect(page.locator('#fillValue')).toHaveText('White');
   });
-  await page.locator('#fill').selectOption('transparent');
+  await setFillTransparent(page, check);
   await closeOptions(page, hand, 'export');
   await check('the JPEG note shows under the size line', async () => {
     expect(await visibleNotes(page)).toEqual([JPEG_NOTE]);
@@ -503,9 +588,15 @@ test('EXP-07.1 A note covers no button, before and after an export [phone] [webk
   await check('the whole note can be read and it covers no button', async () => {
     await expectNoteClearOfButtons(page);
   });
-  await downloadExport(page, hand);
-  await check('a file is saved and Next card shows', async () => {
+  const downloading = page.waitForEvent('download');
+  await hand.tap(page.locator('#btnDownload'));
+  await checkAskedToUpscale(page, check);
+  await hand.tap(questionButton(page, 'No'));
+  const saved = await downloading;
+  await check('a file is saved, and Next card shows in white in the bottom row', async () => {
+    expect(saved.suggestedFilename()).toBe('IMG_9136-straight.jpg');
     await expect(page.locator('#btnNextCard')).toBeVisible();
+    expect(await hasWhiteFill(page.locator('#btnNextCard'))).toBe(true);
   });
   await check('the note is still whole and covers no button, Next card included', async () => {
     await expectNoteClearOfButtons(page);
@@ -706,7 +797,7 @@ test('EXP-13.2 A pair set to Separately hides Copy [phone]', async ({
   await check('Copy shows', async () => {
     await expect(copy).toBeVisible();
   });
-  await addBack(page, hand, PAIR_BACK);
+  await addBack(page, hand, check, PAIR_BACK);
   await check('the back opens, with Front and Back in the top bar', async () => {
     await expect(page.locator('#sideSwitch')).toBeVisible();
   });
@@ -725,7 +816,7 @@ test('EXP-13.2 A pair set to Separately hides Copy [phone]', async ({
   });
 });
 
-// How long a case waits for a file or a question card that should not come, in ms.
+// How long a case waits for a file or a question box that should not come, in ms.
 const NOTHING_COMES_MS = 1500;
 
 test('EXP-14.1 Invalid corners dim Share, Download and Copy [phone]', async ({
@@ -736,11 +827,9 @@ test('EXP-14.1 Invalid corners dim Share, Download and Copy [phone]', async ({
   await check('Share, Download and Copy are live', async () => {
     await expectLive(page, SAVE_BUTTONS, true);
   });
-  await goToStep(page, 'perspective', hand);
+  await goToPerspectiveChecked(page, hand, check);
   await crossTheCorners(page, hand);
-  await check('the outline crosses itself: the corners are invalid', async () => {
-    expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(false);
-  });
+  await checkCornersCrossed(page, check);
   await goToStep(page, 'export', hand);
   await check('Share, Download and Copy are greyed out', async () => {
     await expectLive(page, SAVE_BUTTONS, false);
@@ -866,7 +955,46 @@ test('EXP-16.1 An edit drops a waiting Share now [phone]', async ({
   });
 });
 
-test('EXP-17.1 Cancelling the share sheet shows nothing and doesn\'t count [phone]', async ({
+test('EXP-16.2 Switching a pair\'s side drops a waiting Share now [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOn(page, testInfo, { share: 'refuseOnce' });
+  // Before the case: the pair is made as its starting screen says.
+  await addBack(page, hand, null, PAIR_BACK);
+  await goToStep(page, 'export', hand);
+  await hand.tap(page.locator('#btnShare'));
+  await waitForShares(page, 1);
+  await check('no question box asks to upscale; the share is refused; the red button reads '
+    + 'Share now', async () => {
+    await expect(shareLabel(page)).toHaveText('Share now');
+    await expect(questionCard(page)).toBeHidden();
+  });
+  await hand.tap(choiceButton(page, 'sideSwitch', 'Front'));
+  await waitForSide(page, 'front');
+  await check('the front is on screen, still on Export; the red button reads Share', async () => {
+    expect(await page.evaluate(() => window.__straightener.app.state.source.name)).toBe(PHOTO);
+    expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('export');
+    await expect(shareLabel(page)).toHaveText('Share');
+  });
+  await hand.tap(choiceButton(page, 'sideSwitch', 'Back'));
+  await waitForSide(page, 'back');
+  await check('the back is on screen again; the red button still reads Share', async () => {
+    expect(await page.evaluate(() => window.__straightener.app.state.source.name))
+      .toBe(PAIR_BACK);
+    await expect(shareLabel(page)).toHaveText('Share');
+  });
+});
+
+// Waits until a pair's side `side` ('front' or 'back') is open and the switch has finished.
+function waitForSide(page, side) {
+  return page.waitForFunction(wanted => {
+    const app = window.__straightener.app;
+    return !!app.pair && app.pair.current === wanted && !app.isSwitching && !!app.geometry;
+  }, side);
+}
+
+test('EXP-17.1 A cancelled share shows nothing and doesn\'t count [phone]', async ({
   page,
   check,
 }, testInfo) => {
@@ -875,8 +1003,11 @@ test('EXP-17.1 Cancelling the share sheet shows nothing and doesn\'t count [phon
   await checkAskedToUpscale(page, check);
   await hand.tap(questionButton(page, 'No'));
   await waitForShares(page, 1);
-  await check('the share sheet opens', async () => {
-    expect(await sharesSoFar(page)).toHaveLength(1);
+  await check('the share sheet is handed IMG_9136-straight.jpg, and is cancelled', async () => {
+    const shares = await sharesSoFar(page);
+    expect(shares.map(call => call.files.map(file => file.name))).toEqual([
+      ['IMG_9136-straight.jpg'],
+    ]);
   });
   await waitForExportEnd(page);
   await check('no message shows, Next card doesn\'t show, the button still reads Share',
@@ -887,7 +1018,7 @@ test('EXP-17.1 Cancelling the share sheet shows nothing and doesn\'t count [phon
     });
 });
 
-test('EXP-18.1 While an export runs, the other save buttons are dimmed [phone]', async ({
+test('EXP-18.1 While an export runs, the other save buttons are dimmed [both]', async ({
   page,
   check,
 }, testInfo) => {
@@ -932,7 +1063,7 @@ const R17_CONTROLS = [
   'btnLoadEdits',
 ];
 
-test('EXP-18.2 While an export runs, the settings are dimmed and the steps stay live [phone]',
+test('EXP-18.2 While an export runs, the settings are dimmed and the steps stay live [both]',
   async ({ page, check }, testInfo) => {
     test.fail(true, 'BUG-013');
     const hand = await startOn(page, testInfo, { isWatched: true });
@@ -994,7 +1125,7 @@ test('EXP-19.1 Add back shows only while the photo isn\'t part of a pair [phone]
     await expect(addBackButton).toHaveAttribute('title',
       'Keep this photo as the front and open the back');
   });
-  await addBack(page, hand, PAIR_BACK);
+  await addBack(page, hand, check, PAIR_BACK);
   await check('the back opens; Front, Back and Unpair show in the top bar', async () => {
     await expect(page.locator('#sideSwitch')).toBeVisible();
     await expect(page.locator('#btnUnpair')).toBeVisible();
@@ -1004,7 +1135,7 @@ test('EXP-19.1 Add back shows only while the photo isn\'t part of a pair [phone]
     await expect(addBackButton).toBeHidden();
   });
   await hand.tap(page.locator('#btnUnpair'));
-  await check('a question card titled Unpair offers Keep front and Keep back', async () => {
+  await check('a question box titled Unpair offers Keep front and Keep back', async () => {
     await expect(questionCard(page)).toContainText('Unpair');
     await expect(questionButton(page, 'Keep front')).toBeVisible();
     await expect(questionButton(page, 'Keep back')).toBeVisible();
@@ -1078,13 +1209,30 @@ function cornerSectionPlace(page) {
   });
 }
 
-// The text of the element that has the keyboard focus, and whether it is the selected choice
-// of the Corner shots section.
-function focusedCornerChoice(page) {
+// The element that has the keyboard focus: { text, hasRing, isSelected }: its text, whether
+// the browser draws a focus ring round it (it matches :focus-visible), and whether it is a
+// selected choice.
+function focusedControl(page) {
   return page.evaluate(() => {
     const focused = document.activeElement;
-    const isSelectedChoice = focused.matches('#cornerOutput [aria-pressed="true"]');
-    return { text: focused.textContent.trim(), isSelectedChoice };
+    return {
+      text: focused.textContent.trim(),
+      hasRing: focused.matches(':focus-visible'),
+      isSelected: focused.getAttribute('aria-pressed') === 'true',
+    };
+  });
+}
+
+// Records the verdict of a row whose step is Shift+Tab: the focus ring is on 4 photos, the
+// choice before 1 sheet, so the focus was on 1 sheet; 1 sheet is still selected.
+async function checkRingOnFourPhotos(page, check) {
+  await check('a focus ring shows round 4 photos; 1 sheet is still selected', async () => {
+    expect(await focusedControl(page)).toEqual({
+      text: '4 photos',
+      hasRing: true,
+      isSelected: false,
+    });
+    expect(await selectedChoices(page, 'cornerOutput')).toEqual(['1 sheet']);
   });
 }
 
@@ -1102,24 +1250,25 @@ test('EXP-20.2 On a wide screen, Corner shots brings its section into view only 
     expect(before.section.bottom).toBeLessThanOrEqual(before.panel.bottom);
   });
   await hand.tap(page.locator('#btnCornerShots'));
-  await check('the panel doesn\'t move; the focus is on 1 sheet', async () => {
+  await check('the panel doesn\'t move', async () => {
     expect((await cornerSectionPlace(page)).scroll).toBe(before.scroll);
-    expect(await focusedCornerChoice(page)).toEqual({ text: '1 sheet', isSelectedChoice: true });
   });
+  await page.keyboard.press('Shift+Tab');
+  await checkRingOnFourPhotos(page, check);
   await page.setViewportSize(SHORT_DESKTOP);
   await check('the bottom of the section is cut off by the window\'s lower edge', async () => {
     const short = await cornerSectionPlace(page);
     expect(short.section.bottom).toBeGreaterThan(short.panel.bottom);
   });
   await hand.tap(page.locator('#btnCornerShots'));
-  await check('the panel scrolls just enough to show the whole section; the focus is on 1 sheet',
-    async () => {
-      const after = await cornerSectionPlace(page);
-      expect(after.scroll).toBeGreaterThan(0);
-      expect(after.section.top).toBeGreaterThanOrEqual(after.panel.top - PLACE_TOLERANCE_PX);
-      expect(after.section.bottom).toBeLessThanOrEqual(after.panel.bottom + PLACE_TOLERANCE_PX);
-      expect(await focusedCornerChoice(page)).toEqual({ text: '1 sheet', isSelectedChoice: true });
-    });
+  await check('the panel scrolls up just enough that the whole section shows', async () => {
+    const after = await cornerSectionPlace(page);
+    expect(after.scroll).toBeGreaterThan(0);
+    expect(after.section.top).toBeGreaterThanOrEqual(after.panel.top - PLACE_TOLERANCE_PX);
+    expect(after.section.bottom).toBeLessThanOrEqual(after.panel.bottom + PLACE_TOLERANCE_PX);
+  });
+  await page.keyboard.press('Shift+Tab');
+  await checkRingOnFourPhotos(page, check);
 });
 
 test('EXP-21.1 Next card shows once the edits are exported, and opens the picker [phone]',
@@ -1173,20 +1322,30 @@ test('EXP-21.2 A waiting Share now holds Next card back, even for exported edits
     });
   });
 
-test('EXP-22.1 Corner shots and Save edits don\'t count as exported; a finished Share does '
-  + '[phone]', async ({ page, check }, testInfo) => {
+test('EXP-22.1 Corner shots and Save edits don\'t count as exported [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
   const hand = await startOn(page, testInfo);
   await hand.tap(page.locator('#btnCornerShots'));
-  await check('the Corner shots sheet opens', async () => {
+  await check('the Corner shots sheet opens, with 1 sheet selected', async () => {
     await expect(page.locator('#btnCornerDownload')).toBeVisible();
+    expect(await selectedChoices(page, 'cornerOutput')).toEqual(['1 sheet']);
   });
-  const corners = await saveFileBy(page, hand, page.locator('#btnCornerDownload'));
+  const downloading = page.waitForEvent('download');
+  await hand.tap(page.locator('#btnCornerDownload'));
+  await checkAskedToUpscale(page, check);
+  await hand.tap(questionButton(page, 'No'));
+  const corners = await downloading;
   await waitForExportEnd(page);
   await check('a file of corner shots is saved; Next card doesn\'t show', async () => {
-    expect(corners.name).toMatch(/^IMG_9136-/);
+    expect(corners.suggestedFilename()).toMatch(/^IMG_9136-/);
     await expect(nextCard(page)).toBeHidden();
   });
   await closeOptions(page, hand, 'cornerShots');
+  await check('the sheet goes down', async () => {
+    expect(await isSheetOpen(page, 'cornerShotsSheet')).toBe(false);
+  });
   await openOptions(page, hand, 'export');
   await check('Save edits shows', async () => {
     await expect(page.locator('#btnSaveEdits')).toBeVisible();
@@ -1196,12 +1355,6 @@ test('EXP-22.1 Corner shots and Save edits don\'t count as exported; a finished 
     expect(edits.name).toBe('IMG_9136-edits.json');
     await expect(nextCard(page)).toBeHidden();
   });
-  await closeOptions(page, hand, 'export');
-  await hand.tap(page.locator('#btnShare'));
-  await checkAskedToUpscale(page, check);
-  await hand.tap(questionButton(page, 'No'));
-  await waitForShares(page, 1);
-  await checkNextCardShows(page, check, 'once shared, Next card shows in white');
 });
 
 test('EXP-22.2 A failed share doesn\'t count as exported [phone]', async ({
@@ -1214,8 +1367,8 @@ test('EXP-22.2 A failed share doesn\'t count as exported [phone]', async ({
   await hand.tap(questionButton(page, 'No'));
   await waitForShares(page, 1);
   await waitForExportEnd(page);
-  await check('a red message reads "Share failed: " and the reason; no Next card', async () => {
-    await expect.poll(() => toastMessage(page)).toBe(`Share failed: ${SHARE_FAILURE_MESSAGE}`);
+  await check('a red message begins "Share failed"; Next card doesn\'t show', async () => {
+    await expect.poll(() => toastMessage(page)).toMatch(/^Share failed/);
     await expect(page.locator('#toast')).toHaveClass(/is-error/);
     await expect(nextCard(page)).toBeHidden();
   });
@@ -1234,6 +1387,27 @@ test('EXP-22.3 A finished Copy counts as exported [phone]', async ({
   await hand.tap(questionButton(page, 'No'));
   await check('"Copied to clipboard (PNG)."; Next card shows in white', async () => {
     await expect.poll(() => toastMessage(page)).toBe('Copied to clipboard (PNG).');
+    await expect(nextCard(page)).toBeVisible();
+    expect(await hasWhiteFill(nextCard(page))).toBe(true);
+  });
+});
+
+test('EXP-22.4 A finished Share counts as exported [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOn(page, testInfo);
+  await check('there is no Next card', async () => {
+    await expect(nextCard(page)).toBeHidden();
+  });
+  await hand.tap(page.locator('#btnShare'));
+  await checkAskedToUpscale(page, check);
+  await hand.tap(questionButton(page, 'No'));
+  await waitForShares(page, 1);
+  await check('the share sheet is handed IMG_9136-straight.jpg and finishes; Next card shows '
+    + 'in white', async () => {
+    expect((await sharesSoFar(page))[0].files.map(file => file.name))
+      .toEqual(['IMG_9136-straight.jpg']);
     await expect(nextCard(page)).toBeVisible();
     expect(await hasWhiteFill(nextCard(page))).toBe(true);
   });
@@ -1270,68 +1444,86 @@ test('EXP-23.1 Exported edits still count after a reload and Resume [phone] [web
 
 const qualityValue = page => page.locator('#qualityValue');
 
-test('EXP-24.1 Quality goes from 50 to 100%, is hidden for PNG, and is one undo step [phone]',
-  async ({ page, check }, testInfo) => {
-    const hand = await startOn(page, testInfo);
-    await openOptions(page, hand, 'export');
-    await check('the Quality row reads 92%', async () => {
+// Opens Export options and records the verdict of the row that opens them: the options show,
+// and `description`'s check `then` holds (the Quality row's reading, say).
+async function openOptionsChecked(page, hand, check, description, then) {
+  await openOptions(page, hand, 'export');
+  await check(description, async () => {
+    await expect(page.locator('#exportSheetTitle')).toBeVisible();
+    await then();
+  });
+}
+
+// Closes Export options and records the verdict that they go down (on a wide screen, where
+// they stay, that they are still shown).
+async function closeOptionsChecked(page, hand, check) {
+  await closeOptions(page, hand, 'export');
+  await check('the options go down (on a wide screen they stay)', async () => {
+    const isOpen = await isSheetOpen(page, 'exportSheet');
+    const body = page.locator('#exportSheet .sheet-body');
+    if (hand.isTouch) expect(isOpen).toBe(false);
+    else await expect(body).toBeVisible();
+  });
+}
+
+// Drags the Quality slider's knob to one end ('low' or 'high') and records the verdict that
+// the row reads `percent`.
+async function dragQualityChecked(page, hand, check, end, percent) {
+  await dragQualityTo(page, hand, end);
+  await check(`it reads ${percent}`, async () => {
+    await expect(qualityValue(page)).toHaveText(percent);
+  });
+}
+
+test('EXP-24.1 Quality goes from 50 to 100% and is hidden for PNG [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOn(page, testInfo);
+  await openOptionsChecked(page, hand, check, 'Export options rise; Quality reads 92%',
+    async () => {
       await expect(qualityValue(page)).toHaveText('92%');
     });
-    await moveQualityTo(page, 'high');
-    await check('at the right end it reads 100%', async () => {
-      await expect(qualityValue(page)).toHaveText('100%');
-    });
-    await closeOptions(page, hand, 'export');
-    await tapFormat(page, hand, 'PNG');
-    await openOptions(page, hand, 'export');
-    await check('with PNG there is no Quality row', async () => {
-      await expect(page.locator('#qualityRow')).toBeHidden();
-    });
-    await closeOptions(page, hand, 'export');
-    await tapFormat(page, hand, 'JPEG');
-    await openOptions(page, hand, 'export');
-    await check('with JPEG the Quality row is back, reading 100%', async () => {
-      await expect(page.locator('#qualityRow')).toBeVisible();
-      await expect(qualityValue(page)).toHaveText('100%');
-    });
-    await moveQualityTo(page, 'low');
-    await check('at the left end it reads 50%', async () => {
-      await expect(qualityValue(page)).toHaveText('50%');
-    });
-    await closeOptions(page, hand, 'export');
-    await hand.tap(page.locator('#btnUndo'));
-    await openOptions(page, hand, 'export');
-    await check('Undo takes it back to 100%', async () => {
-      await expect(qualityValue(page)).toHaveText('100%');
-    });
-    await closeOptions(page, hand, 'export');
-    await openSecondPhoto(page, hand);
-    await openOptions(page, hand, 'export');
-    await check('the next photo starts at 100%: the undone quality is remembered', async () => {
-      await expect(qualityValue(page)).toHaveText('100%');
-    });
+  await dragQualityChecked(page, hand, check, 'high', '100%');
+  await dragQualityChecked(page, hand, check, 'low', '50%');
+  await closeOptionsChecked(page, hand, check);
+  await tapFormat(page, hand, 'PNG');
+  await check('PNG is selected', async () => {
+    await expectSelected(page, 'exportFormat', 'PNG');
   });
+  await openOptionsChecked(page, hand, check, 'there is no Quality row', async () => {
+    await expect(page.locator('#qualityRow')).toBeHidden();
+  });
+  await closeOptionsChecked(page, hand, check);
+  await tapFormat(page, hand, 'JPEG');
+  await check('JPEG is selected', async () => {
+    await expectSelected(page, 'exportFormat', 'JPEG');
+  });
+  await openOptionsChecked(page, hand, check, 'the Quality row is back, reading 50%', async () => {
+    await expect(page.locator('#qualityRow')).toBeVisible();
+    await expect(qualityValue(page)).toHaveText('50%');
+  });
+});
 
+// In WebKit, which has no way to send a real finger to a slider, the mouse drags the knob.
 test('EXP-24.2 A lower Quality gives a smaller file [phone] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
   await tapSize(page, hand, '1080');
-  const atDefault = await downloadExport(page, hand);
-  await check('IMG_9136-straight.jpg is saved at 92%', async () => {
+  const atDefault = await downloadAnswering(page, hand);
+  await check('no question box; IMG_9136-straight.jpg is saved at 92%', async () => {
+    expect(atDefault.question).toBe('');
     expect(atDefault.name).toBe('IMG_9136-straight.jpg');
+    expect(await page.evaluate(() => window.__straightener.app.state.export.quality)).toBe(0.92);
   });
-  await openOptions(page, hand, 'export');
-  await check('the Quality row reads 92%', async () => {
+  await openOptionsChecked(page, hand, check, 'the Quality row reads 92%', async () => {
     await expect(qualityValue(page)).toHaveText('92%');
   });
-  await moveQualityTo(page, 'low');
-  await check('at the left end it reads 50%', async () => {
-    await expect(qualityValue(page)).toHaveText('50%');
-  });
-  await closeOptions(page, hand, 'export');
-  const atLow = await downloadExport(page, hand);
+  await dragQualityChecked(page, hand, check, 'low', '50%');
+  await closeOptionsChecked(page, hand, check);
+  const atLow = await downloadAnswering(page, hand);
   await check('a second file is saved', async () => {
     expect(atLow.name).toBe('IMG_9136-straight.jpg');
   });
@@ -1340,38 +1532,80 @@ test('EXP-24.2 A lower Quality gives a smaller file [phone] [webkit]', async ({
   });
 });
 
+// How long the case waits between its two drags, in ms: "wait a second", longer than the
+// 0.9 s within which the app joins changes to one setting into one undo step.
+const PAUSE_BETWEEN_DRAGS_MS = 1000;
+
+test('EXP-24.3 A Quality drag is one undo step, and the quality Undo goes back to is '
+  + 'remembered [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOn(page, testInfo);
+  await openOptionsChecked(page, hand, check, 'the Quality row reads 92%', async () => {
+    await expect(qualityValue(page)).toHaveText('92%');
+  });
+  await dragQualityChecked(page, hand, check, 'high', '100%');
+  await page.waitForTimeout(PAUSE_BETWEEN_DRAGS_MS);
+  await dragQualityChecked(page, hand, check, 'low', '50%');
+  await closeOptionsChecked(page, hand, check);
+  await hand.tap(page.locator('#btnUndo'));
+  await checkRedoLive(page, check);
+  await openOptionsChecked(page, hand, check, 'Quality reads 100%: one undo took back the '
+    + 'whole drag to the left', async () => {
+    await expect(qualityValue(page)).toHaveText('100%');
+  });
+  await closeOptionsChecked(page, hand, check);
+  await openSecondPhoto(page, hand, check);
+  await openOptionsChecked(page, hand, check, 'the Quality row reads 100%: the quality the '
+    + 'undo went back to is the one remembered', async () => {
+    await expect(qualityValue(page)).toHaveText('100%');
+  });
+});
+
 test('EXP-25.1 Interpolation picks Bilinear or Bicubic, one undo step each [phone]', async ({
   page,
   check,
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
-  await openOptions(page, hand, 'export');
   const value = page.locator('#interpValue');
-  await check('the Interpolation row reads Bilinear', async () => {
+  await openOptionsChecked(page, hand, check, 'Export options show; Interpolation reads '
+    + 'Bilinear', async () => {
     await expect(value).toHaveText('Bilinear');
   });
-  await check('its list offers Bilinear and Bicubic (sharper, slower)', async () => {
-    const choices = await page.locator('#interp option').allTextContents();
-    expect(choices).toEqual(['Bilinear', 'Bicubic (sharper, slower)']);
-  });
+  await checkInterpolationList(page, check);
   await page.locator('#interp').selectOption({ label: 'Bicubic (sharper, slower)' });
   await check('the row reads Bicubic', async () => {
     await expect(value).toHaveText('Bicubic');
   });
-  await closeOptions(page, hand, 'export');
+  await closeOptionsChecked(page, hand, check);
   await hand.tap(page.locator('#btnUndo'));
-  await openOptions(page, hand, 'export');
-  await check('Undo makes it read Bilinear', async () => {
+  await checkRedoLive(page, check);
+  await openOptionsChecked(page, hand, check, 'the Interpolation row reads Bilinear', async () => {
     await expect(value).toHaveText('Bilinear');
   });
-  await closeOptions(page, hand, 'export');
-  await openSecondPhoto(page, hand);
-  await openOptions(page, hand, 'export');
-  await check('the next photo starts with Bilinear: the undo put the remembered one back',
-    async () => {
-      await expect(value).toHaveText('Bilinear');
-    });
+  await closeOptionsChecked(page, hand, check);
+  await openSecondPhoto(page, hand, check);
+  await openOptionsChecked(page, hand, check, 'the Interpolation row reads Bilinear: the undo '
+    + 'put the remembered choice back too', async () => {
+    await expect(value).toHaveText('Bilinear');
+  });
 });
+
+// Records the verdict of a tap on the Interpolation row: its list offers Bilinear and Bicubic
+// (sharper, slower). The list is the system's own, which no script can see open, so its
+// choices are read from the row.
+async function checkInterpolationList(page, check) {
+  await check('a list offers Bilinear and Bicubic (sharper, slower)', async () => {
+    const choices = await page.locator('#interp option').allTextContents();
+    expect(choices).toEqual(['Bilinear', 'Bicubic (sharper, slower)']);
+  });
+}
+
+// Records the verdict of a tap on the Fill outside photo row: its list offers the four fills.
+async function checkFillList(page, check) {
+  await check('a list offers Transparent, White, Black and Custom…', async () => {
+    const choices = await page.locator('#fill option').allTextContents();
+    expect(choices).toEqual(['Transparent', 'White', 'Black', 'Custom…']);
+  });
+}
 
 // The fill's row: what it reads, and its swatch's look ({ isCheckered, color }).
 async function fillRow(page) {
@@ -1388,14 +1622,11 @@ test('EXP-26.1 Fill outside photo picks a color and shows its swatch [phone]', a
   check,
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
-  await openOptions(page, hand, 'export');
-  await check('the row reads White, with a white swatch', async () => {
+  await openOptionsChecked(page, hand, check, 'Export options show; the fill reads White, with '
+    + 'a white swatch', async () => {
     expect(await fillRow(page)).toMatchObject({ text: 'White', color: 'rgb(255, 255, 255)' });
   });
-  await check('its list offers Transparent, White, Black and Custom…', async () => {
-    const choices = await page.locator('#fill option').allTextContents();
-    expect(choices).toEqual(['Transparent', 'White', 'Black', 'Custom…']);
-  });
+  await checkFillList(page, check);
   await page.locator('#fill').selectOption({ label: 'Transparent' });
   await check('the row reads Transparent, with a checkered swatch', async () => {
     expect(await fillRow(page)).toMatchObject({ text: 'Transparent', isCheckered: true });
@@ -1405,19 +1636,20 @@ test('EXP-26.1 Fill outside photo picks a color and shows its swatch [phone]', a
     const row = await fillRow(page);
     expect(row).toMatchObject({ text: 'Black', isCheckered: false, color: 'rgb(0, 0, 0)' });
   });
-  await closeOptions(page, hand, 'export');
+  await closeOptionsChecked(page, hand, check);
   await hand.tap(page.locator('#btnUndo'));
-  await openOptions(page, hand, 'export');
-  await check('Undo makes it read Transparent, with the checkered swatch', async () => {
+  await checkRedoLive(page, check);
+  await openOptionsChecked(page, hand, check, 'the fill reads Transparent again, with the '
+    + 'checkered swatch', async () => {
     expect(await fillRow(page)).toMatchObject({ text: 'Transparent', isCheckered: true });
   });
+  // "Open IMG_9075.JPEG" closes the options first.
   await closeOptions(page, hand, 'export');
-  await openSecondPhoto(page, hand);
-  await openOptions(page, hand, 'export');
-  await check('the next photo starts with Transparent: the undo put the remembered fill back',
-    async () => {
-      expect((await fillRow(page)).text).toBe('Transparent');
-    });
+  await openSecondPhoto(page, hand, check);
+  await openOptionsChecked(page, hand, check, 'the fill reads Transparent: the undo put the '
+    + 'remembered fill back too', async () => {
+    expect((await fillRow(page)).text).toBe('Transparent');
+  });
 });
 
 test('EXP-27.1 Custom… opens the color picker and shows the Custom color row [phone]', async ({
@@ -1434,9 +1666,9 @@ test('EXP-27.1 Custom… opens the color picker and shows the Custom color row [
     };
   });
   const hand = await startOn(page, testInfo);
-  await openOptions(page, hand, 'export');
   const customRow = page.locator('#fillColorRow');
-  await check('the fill reads White; there is no Custom color row', async () => {
+  await openOptionsChecked(page, hand, check, 'the fill reads White; there is no Custom color '
+    + 'row', async () => {
     await expect(page.locator('#fillValue')).toHaveText('White');
     await expect(customRow).toBeHidden();
   });
@@ -1456,55 +1688,78 @@ test('EXP-27.1 Custom… opens the color picker and shows the Custom color row [
     await expect(page.locator('#fillColorValue')).toHaveText('#ff8800');
     expect((await fillRow(page)).color).toBe('rgb(255, 136, 0)');
   });
-  await closeOptions(page, hand, 'export');
+  await closeOptionsChecked(page, hand, check);
   await hand.tap(page.locator('#btnUndo'));
-  await openOptions(page, hand, 'export');
-  await check('one Undo: the fill reads White again and the Custom color row is gone',
-    async () => {
-      await expect(page.locator('#fillValue')).toHaveText('White');
-      await expect(customRow).toBeHidden();
-    });
+  await checkRedoLive(page, check);
+  await openOptionsChecked(page, hand, check, 'one Undo: the fill reads White again and the '
+    + 'Custom color row is gone', async () => {
+    await expect(page.locator('#fillValue')).toHaveText('White');
+    await expect(customRow).toBeHidden();
+  });
 });
 
 // The four corners of a saved image, as fractions, top-left first, clockwise.
 const IMAGE_CORNERS = [[0, 0], [1, 0], [1, 1], [0, 1]];
 
-// Downloads the export and reads its four corner pixels.
+// Downloads the export (answering No if the Upscale question is asked) and reads the saved
+// file's four corner pixels. Returns { name, question, corners }: the file's name, the
+// question box's title ('' when none was asked) and the [r, g, b, a] of each corner.
 async function downloadCorners(page, hand) {
-  const saved = await downloadExport(page, hand);
+  const saved = await downloadAnswering(page, hand);
   const { pixels } = await readSavedPixels(page, saved.file, IMAGE_CORNERS);
-  return { name: saved.name, corners: pixels };
+  return { name: saved.name, question: saved.question, corners: pixels };
+}
+
+// "Set the fill to F" (EXP-28): opens Export options, chooses the fill `value` ('transparent',
+// '#000000') and closes them, recording the verdict that the row read `label` as they closed.
+async function setFillChecked(page, hand, check, value, label) {
+  await openOptions(page, hand, 'export');
+  await page.locator('#fill').selectOption(value);
+  const reading = await page.locator('#fillValue').textContent();
+  await closeOptions(page, hand, 'export');
+  await check(`Fill outside photo reads ${label} as the options close`, () => {
+    expect(reading).toBe(label);
+  });
 }
 
 test('EXP-28.1 The fill paints the empty corners, and a JPEG flattens Transparent onto white '
   + '[phone] [webkit]', async ({ page, check }, testInfo) => {
-  const hand = await startOn(page, testInfo, { step: 'rotate' });
+  const hand = await startOn(page, testInfo);
+  // Before the case: 1080 and PNG are chosen on Export, then the case starts on Rotate.
+  await tapSize(page, hand, '1080');
+  await tapFormat(page, hand, 'PNG');
+  await goToStep(page, 'rotate', hand);
   await typeAngle(page, hand, '10');
   await check('the angle reads 10.0°', async () => {
     await expect(page.locator('#rotateAngleText')).toHaveText('10.0°');
   });
   await goToStep(page, 'export', hand);
-  await tapSize(page, hand, '1080');
-  await tapFormat(page, hand, 'PNG');
   await check('the size line reads Output 1080 × 1080 px · PNG', async () => {
     expect(await readoutText(page)).toBe('Output 1080 × 1080 px · PNG');
   });
-  await chooseFill(page, hand, 'transparent');
+  await setFillChecked(page, hand, check, 'transparent', 'Transparent');
   const transparent = await downloadCorners(page, hand);
   const empty = transparent.corners
     .map((pixel, index) => (pixel[3] === 0 ? index : -1))
     .filter(index => index >= 0);
-  await check('IMG_9136-straight.png is saved, with two see-through corners', async () => {
-    expect(transparent.name).toBe('IMG_9136-straight.png');
-    expect(empty).toHaveLength(2);
-  });
-  await chooseFill(page, hand, '#000000');
+  await check('no question box; IMG_9136-straight.png is saved, with two see-through corners',
+    async () => {
+      expect(transparent.question).toBe('');
+      expect(transparent.name).toBe('IMG_9136-straight.png');
+      expect(empty).toHaveLength(2);
+    });
+  await setFillChecked(page, hand, check, '#000000', 'Black');
   const black = await downloadCorners(page, hand);
-  await check('in the second PNG the same corners are solid black', async () => {
+  await check('a second IMG_9136-straight.png; the same corners are solid black', async () => {
+    expect(black.name).toBe('IMG_9136-straight.png');
     expect(empty.map(index => black.corners[index])).toEqual([[0, 0, 0, 255], [0, 0, 0, 255]]);
   });
-  await chooseFill(page, hand, 'transparent');
+  await setFillChecked(page, hand, check, 'transparent', 'Transparent');
   await tapFormat(page, hand, 'JPEG');
+  await check('JPEG is selected; the JPEG note shows under the size line', async () => {
+    await expectSelected(page, 'exportFormat', 'JPEG');
+    expect(await visibleNotes(page)).toEqual([JPEG_NOTE]);
+  });
   const flattened = await downloadCorners(page, hand);
   await check('IMG_9136-straight.jpg is saved, with those corners white', async () => {
     expect(flattened.name).toBe('IMG_9136-straight.jpg');
@@ -1523,29 +1778,80 @@ const SHEET_GUTTER_POINTS = [[0.5, 0.25], [0.5, 0.75], [0.25, 0.5], [0.75, 0.5]]
 test('EXP-28.2 The fill paints the gap between the corner sheet\'s tiles [phone] [webkit]',
   async ({ page, check }, testInfo) => {
     const hand = await startOn(page, testInfo);
-    await openOptions(page, hand, 'export');
-    await check('Fill outside photo reads White', async () => {
+    await openOptionsChecked(page, hand, check, 'Fill outside photo reads White', async () => {
       await expect(page.locator('#fillValue')).toHaveText('White');
     });
+    await checkFillList(page, check);
     await page.locator('#fill').selectOption({ label: 'Black' });
-    await closeOptions(page, hand, 'export');
-    await check('the swatch is black', async () => {
-      expect((await fillRow(page)).color).toBe('rgb(0, 0, 0)');
+    await check('the row reads Black, with a black swatch', async () => {
+      expect(await fillRow(page)).toMatchObject({ text: 'Black', color: 'rgb(0, 0, 0)' });
     });
+    await closeOptionsChecked(page, hand, check);
     await hand.tap(page.locator('#btnCornerShots'));
     await check('the Corner shots sheet opens with 1 sheet selected', async () => {
       await expect(page.locator('#btnCornerDownload')).toBeVisible();
       expect(await selectedChoices(page, 'cornerOutput')).toEqual(['1 sheet']);
     });
-    const sheet = await saveFileBy(page, hand, page.locator('#btnCornerDownload'));
-    const { pixels } = await readSavedPixels(page, sheet.file, SHEET_GUTTER_POINTS);
+    const downloading = page.waitForEvent('download');
+    await hand.tap(page.locator('#btnCornerDownload'));
+    await checkAskedToUpscale(page, check);
+    await hand.tap(questionButton(page, 'No'));
+    const sheet = await downloading;
+    const sheetFile = await sheet.path();
     await check('a 2 × 2 sheet of the corners is saved', async () => {
-      expect(sheet.name).toMatch(/^IMG_9136-.*\.jpg$/);
+      expect(sheet.suggestedFilename()).toMatch(/^IMG_9136-.*\.jpg$/);
     });
+    const { pixels } = await readSavedPixels(page, sheetFile, SHEET_GUTTER_POINTS);
     await check('the lines between the tiles are black', async () => {
       expect(pixels.every(pixel => pixel.slice(0, 3).every(isNearBlack))).toBe(true);
     });
   });
+
+// The columns of a pair's joined image where the two saved files `whiteFile` and `blackFile`
+// (the same pair, saved with the fill White and Black) are white and black at all three rows
+// readSavedRows reads: the gap the fill paints. Returns { width, columns }.
+async function fillGapColumns(page, whiteFile, blackFile) {
+  const white = await readSavedRows(page, whiteFile);
+  const black = await readSavedRows(page, blackFile);
+  const columns = [];
+  for (let x = 0; x < white.width; x++) {
+    const isGap = white.rows.every((row, index) => row[x].every(isNearWhite)
+      && black.rows[index][x].every(isNearBlack));
+    if (isGap) columns.push(x);
+  }
+  return { width: white.width, columns };
+}
+
+// The middle third of a joined image, as fractions of its width: where the gap between a
+// pair's two cards, side by side, must be.
+const MIDDLE_THIRD = [1 / 3, 2 / 3];
+
+test('EXP-28.3 The fill paints the gap between a pair\'s two sides [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOn(page, testInfo);
+  // Before the case: the pair is made as its starting screen says, at 1080.
+  await addBack(page, hand, null, PAIR_BACK);
+  await goToStep(page, 'export', hand);
+  await tapSize(page, hand, '1080');
+  const withWhite = await downloadAnswering(page, hand);
+  const whiteImage = await readSavedImage(page, withWhite.file);
+  await check('one file is saved, with no question box: the two cards side by side', async () => {
+    expect(withWhite.question).toBe('');
+    expect(whiteImage.width).toBeGreaterThan(whiteImage.height);
+  });
+  await setFillChecked(page, hand, check, '#000000', 'Black');
+  const withBlack = await downloadAnswering(page, hand);
+  const gap = await fillGapColumns(page, withWhite.file, withBlack.file);
+  await check('a second file: the line down the middle between the cards is black (it was '
+    + 'white)', async () => {
+    expect(withBlack.question).toBe('');
+    expect(gap.columns.length).toBeGreaterThan(0);
+    const [left, right] = MIDDLE_THIRD.map(fraction => fraction * gap.width);
+    expect(gap.columns.every(x => x > left && x < right)).toBe(true);
+  });
+});
 
 // Opens the Corner shots sheet (a section of the panel on a wide screen), chooses one of its
 // outputs ('4 photos' or '1 sheet') and closes it again on a phone.
@@ -1560,27 +1866,27 @@ test('EXP-29.1 Reset export settings puts five settings back in one undo step [p
   check,
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
+  // The case's set-up, as its "Before you start" lists it.
+  await tapSize(page, hand, '1080');
+  await tapFormat(page, hand, 'WebP');
   await openOptions(page, hand, 'export');
-  await moveQualityTo(page, 'low');
+  await dragQualityTo(page, hand, 'low');
   await page.locator('#interp').selectOption('bicubic');
   await page.locator('#fill').selectOption('#000000');
-  await check('Quality reads 50%, Interpolation Bicubic, the fill Black', async () => {
+  await closeOptions(page, hand, 'export');
+  await chooseCornerOutput(page, hand, '4 photos');
+  await check('1080 and WebP are selected', async () => {
+    await expectSelected(page, 'exportSize', '1080');
+    await expectSelected(page, 'exportFormat', 'WebP');
+  });
+  // The three settings in Export options as the set-up left them.
+  const changedSettings = async () => {
     await expect(qualityValue(page)).toHaveText('50%');
     await expect(page.locator('#interpValue')).toHaveText('Bicubic');
     await expect(page.locator('#fillValue')).toHaveText('Black');
-  });
-  await closeOptions(page, hand, 'export');
-  await tapSize(page, hand, '1080');
-  await tapFormat(page, hand, 'PNG');
-  await check('1080 and PNG are selected', async () => {
-    await expectSelected(page, 'exportSize', '1080');
-    await expectSelected(page, 'exportFormat', 'PNG');
-  });
-  await chooseCornerOutput(page, hand, '4 photos');
-  await check('4 photos was selected', async () => {
-    expect(await selectedChoices(page, 'cornerOutput')).toEqual(['4 photos']);
-  });
-  await openOptions(page, hand, 'export');
+  };
+  await openOptionsChecked(page, hand, check, 'Quality reads 50%, Interpolation Bicubic, the '
+    + 'fill Black', changedSettings);
   await hand.tap(page.locator('#exportResetRow'));
   await check('Quality reads 92%, Interpolation Bilinear, the fill White', async () => {
     await expect(qualityValue(page)).toHaveText('92%');
@@ -1597,23 +1903,16 @@ test('EXP-29.1 Reset export settings puts five settings back in one undo step [p
     expect(await selectedChoices(page, 'cornerOutput')).toEqual(['4 photos']);
   });
   await closeOptions(page, hand, 'cornerShots');
+  await check('the Corner shots sheet goes down (on a wide screen it stays)', async () => {
+    if (hand.isTouch) expect(await isSheetOpen(page, 'cornerShotsSheet')).toBe(false);
+  });
   await hand.tap(page.locator('#btnUndo'));
-  await check('one Undo selects 1080 and PNG again', async () => {
+  await check('one Undo selects 1080 and WebP again', async () => {
     await expectSelected(page, 'exportSize', '1080');
-    await expectSelected(page, 'exportFormat', 'PNG');
+    await expectSelected(page, 'exportFormat', 'WebP');
   });
-  await openOptions(page, hand, 'export');
-  await check('Interpolation reads Bicubic and the fill Black; Quality is hidden', async () => {
-    await expect(page.locator('#interpValue')).toHaveText('Bicubic');
-    await expect(page.locator('#fillValue')).toHaveText('Black');
-    await expect(page.locator('#qualityRow')).toBeHidden();
-  });
-  await closeOptions(page, hand, 'export');
-  await tapFormat(page, hand, 'JPEG');
-  await openOptions(page, hand, 'export');
-  await check('with JPEG, Quality reads 50%: all five came back', async () => {
-    await expect(qualityValue(page)).toHaveText('50%');
-  });
+  await openOptionsChecked(page, hand, check, 'Quality reads 50%, Interpolation Bicubic, the '
+    + 'fill Black: one undo brought all five back', changedSettings);
 });
 
 // The source line's text.
@@ -1661,38 +1960,47 @@ async function savedSize(page, file) {
   return [image.width, image.height];
 }
 
+// Waits until the open photo's edits, as they are now, are kept on the device (what a person's
+// "wait two seconds" gives time for), so a reload offers them.
+function waitForEditsKept(page) {
+  return page.waitForFunction(async () => {
+    const app = window.__straightener.app;
+    const record = await window.__straightener.Session.peek();
+    const isSameState = !!record && JSON.stringify(record.state) === JSON.stringify(app.state);
+    return isSameState && record.tab === app.tab;
+  });
+}
+
 test('EXP-32.1 The saved file doesn\'t depend on the preview\'s resolution [phone] [webkit]',
   async ({ page, check }, testInfo) => {
     const hand = await startOn(page, testInfo);
+    // Before the case: Original is chosen.
     await tapSize(page, hand, 'Original');
     const first = await downloadAnswering(page, hand);
-    await check('IMG_9136-straight.jpg of 1400 × 1400 px is saved', async () => {
+    await check('no question box; IMG_9136-straight.jpg of 1400 × 1400 px is saved', async () => {
+      expect(first.question).toBe('');
       expect(first.name).toBe('IMG_9136-straight.jpg');
       expect(await savedSize(page, first.file)).toEqual([CROP_PX, CROP_PX]);
     });
-    await openOptions(page, hand, 'export');
-    const saved = await saveFileBy(page, hand, page.locator('#btnSaveEdits'));
-    await check('IMG_9136-edits.json is saved', async () => {
-      expect(saved.name).toBe('IMG_9136-edits.json');
-    });
-    const editsFile = testInfo.outputPath(saved.name);
-    fs.copyFileSync(saved.file, editsFile);
+    await waitForEditsKept(page);
     await openApp(page, SMALL_PREVIEW_LINK);
-    await openPhoto(page, PHOTO);
-    await check('the photo opens; on screen it is the 512 px copy', async () => {
-      const longSide = await page.evaluate(() => {
-        const preview = window.__straightener.app.preview.canvas;
-        return Math.max(preview.width, preview.height);
+    await check('the start screen offers to resume IMG_9136.JPEG', async () => {
+      await expect(page.locator('#btnResume')).toBeVisible();
+      await expect(page.locator('#btnFresh')).toBeVisible();
+      await expect(page.locator('#resumeName')).toHaveText(PHOTO);
+    });
+    await hand.tap(page.locator('#btnResume'));
+    await page.waitForFunction(() => !!window.__straightener.app.geometry);
+    await check('the photo opens on Export, with Original selected (drawn from the 512 px copy)',
+      async () => {
+        expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('export');
+        await expectSelected(page, 'exportSize', 'Original');
+        const longSide = await page.evaluate(() => {
+          const preview = window.__straightener.app.preview.canvas;
+          return Math.max(preview.width, preview.height);
+        });
+        expect(longSide).toBe(SMALL_PREVIEW_PX);
       });
-      expect(longSide).toBe(SMALL_PREVIEW_PX);
-    });
-    await goToStep(page, 'export', hand);
-    await openOptions(page, hand, 'export');
-    await loadEditsFile(page, hand, editsFile);
-    await check('Original is selected', async () => {
-      await expectSelected(page, 'exportSize', 'Original');
-    });
-    await closeOptions(page, hand, 'export');
     const second = await downloadAnswering(page, hand);
     await check('a second IMG_9136-straight.jpg of 1400 × 1400 px is saved', async () => {
       expect(second.name).toBe('IMG_9136-straight.jpg');
@@ -1703,19 +2011,29 @@ test('EXP-32.1 The saved file doesn\'t depend on the preview\'s resolution [phon
     });
   });
 
+// Records the verdict that the white dot on the Levels tab shows (true) or has gone (false).
+async function checkLevelsDot(page, check, isShown, description) {
+  await check(description, async () => {
+    const dot = page.locator('[data-step="levels"]:visible .step-tab-mark');
+    await (isShown ? expect(dot).toBeVisible() : expect(dot).toBeHidden());
+  });
+}
+
 test('EXP-32.2 The saved file has the applied levels, not unapplied ones [phone] [webkit]',
   async ({ page, check }, testInfo) => {
     const hand = await startOn(page, testInfo);
     await tapSize(page, hand, '1080');
     const first = await downloadAnswering(page, hand);
-    await check('IMG_9136-straight.jpg is saved', async () => {
+    await check('no question box; IMG_9136-straight.jpg is saved', async () => {
+      expect(first.question).toBe('');
       expect(first.name).toBe('IMG_9136-straight.jpg');
     });
     await goToStep(page, 'levels', hand);
-    await makeLevelsDraft(page, hand);
-    await check('a white dot shows on the Levels tab', async () => {
-      await expect(page.locator('[data-step="levels"]:visible .step-tab-mark')).toBeVisible();
+    await check('the Levels controls show, with Auto in the row of tools', async () => {
+      await expect(page.locator('#toolAutoLevels')).toBeVisible();
     });
+    await makeLevelsDraft(page, hand);
+    await checkLevelsDot(page, check, true, 'a white dot shows on the Levels tab');
     await goToStep(page, 'export', hand);
     await check('a note reads "Levels has unapplied changes; export uses the applied levels."',
       async () => {
@@ -1726,11 +2044,15 @@ test('EXP-32.2 The saved file has the applied levels, not unapplied ones [phone]
       expect(isSameFile(first.file, second.file)).toBe(true);
     });
     await goToStep(page, 'levels', hand);
-    await hand.tap(page.locator('#btnApplyLevels'));
-    await check('the white dot goes', async () => {
-      await expect(page.locator('[data-step="levels"]:visible .step-tab-mark')).toBeHidden();
+    await check('the Levels controls show, with Apply in the line above them', async () => {
+      await expect(page.locator('#btnApplyLevels')).toBeVisible();
     });
+    await hand.tap(page.locator('#btnApplyLevels'));
+    await checkLevelsDot(page, check, false, 'the white dot on the Levels tab goes');
     await goToStep(page, 'export', hand);
+    await check('no note shows under the size line', async () => {
+      expect(await visibleNotes(page)).toEqual([]);
+    });
     const third = await downloadAnswering(page, hand);
     await check('a third file is saved, and it differs from the first', async () => {
       expect(third.name).toBe('IMG_9136-straight.jpg');
@@ -1741,10 +2063,14 @@ test('EXP-32.2 The saved file has the applied levels, not unapplied ones [phone]
 // The tip on Original in Export options.
 const ORIGINAL_TIP = 'Original keeps the crop at the photo’s own resolution and never upscales.';
 
-// Opens Export options' Tips, if they are folded.
-async function unfoldExportTips(page, hand) {
-  const tips = page.locator('#exportTips');
-  if (await tips.getAttribute('aria-expanded') !== 'true') await hand.tap(tips);
+// Taps Download, records the verdict that the question box asks "Upscale to `sizePx` px?",
+// answers it with `answer` and returns the path of the saved file.
+async function downloadAsked(page, hand, check, sizePx, answer) {
+  const downloading = page.waitForEvent('download');
+  await hand.tap(page.locator('#btnDownload'));
+  await checkAskedToUpscale(page, check, sizePx);
+  await hand.tap(questionButton(page, answer));
+  return (await downloading).path();
 }
 
 test('EXP-33.1 The long edge fits the size and is enlarged only on Yes [phone] [webkit]', async ({
@@ -1754,32 +2080,41 @@ test('EXP-33.1 The long edge fits the size and is enlarged only on Yes [phone] [
   const hand = await startOn(page, testInfo);
   await tapSize(page, hand, '1080');
   const at1080 = await downloadAnswering(page, hand);
-  await check('no question; the saved file is 1080 × 1080 px', async () => {
+  await check('no question box; the saved file is 1080 × 1080 px', async () => {
     expect(at1080.question).toBe('');
     expect(await savedSize(page, at1080.file)).toEqual([1080, 1080]);
   });
   await tapSize(page, hand, '3000');
-  const downloading = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnDownload'));
-  await checkAskedToUpscale(page, check, 3000);
-  await hand.tap(questionButton(page, 'No'));
-  const notEnlarged = await (await downloading).path();
+  await check('the size line reads Output 1400 × 1400 px · JPEG · full crop, not upscaled',
+    async () => {
+      expect(await readoutText(page)).toBe(FULL_CROP_LINE);
+    });
+  const notEnlarged = await downloadAsked(page, hand, check, 3000, 'No');
   await check('the saved file is 1400 × 1400 px: not enlarged', async () => {
     expect(await savedSize(page, notEnlarged)).toEqual([CROP_PX, CROP_PX]);
   });
-  const enlarged = await downloadAnswering(page, hand, 'Yes');
-  await check('after Yes, the saved file is 3000 × 3000 px', async () => {
-    expect(enlarged.question).toBe('Upscale to 3000 px?');
-    expect(await savedSize(page, enlarged.file)).toEqual([3000, 3000]);
+  await waitForQuestion(page, false);
+  const enlarged = await downloadAsked(page, hand, check, 3000, 'Yes');
+  await check('the saved file is 3000 × 3000 px', async () => {
+    expect(await savedSize(page, enlarged)).toEqual([3000, 3000]);
   });
   await tapSize(page, hand, 'Original');
+  await check('the size line reads Output 1400 × 1400 px · JPEG', async () => {
+    expect(await readoutText(page)).toBe(`Output ${CROP_PX} × ${CROP_PX} px · JPEG`);
+  });
   const original = await downloadAnswering(page, hand);
-  await check('with Original, no question; the saved file is 1400 × 1400 px', async () => {
+  await check('with Original, no question box; the saved file is 1400 × 1400 px', async () => {
     expect(original.question).toBe('');
     expect(await savedSize(page, original.file)).toEqual([CROP_PX, CROP_PX]);
   });
-  await openOptions(page, hand, 'export');
-  await unfoldExportTips(page, hand);
+  const tips = page.locator('#exportTips');
+  await openOptionsChecked(page, hand, check, 'Export options rise, with a Tips row at their end',
+    async () => {
+      await expect(tips).toBeVisible();
+      const rows = await page.locator('#exportSheet .sheet-row:visible').all();
+      expect(await rows[rows.length - 1].getAttribute('id')).toBe('exportTips');
+    });
+  await hand.tap(tips);
   await check(`a tip reads "${ORIGINAL_TIP}"`, async () => {
     await expect(page.locator('#exportSheet').getByText(ORIGINAL_TIP)).toBeVisible();
   });
@@ -1796,7 +2131,7 @@ test('EXP-34.1 The saved photo is at most 16,777,216 px in area [phone] [webkit]
   });
   // Answers No if the question is asked, so the file still comes and its size can be read.
   const saved = await downloadAnswering(page, hand, 'No');
-  await check('no question card: upscaling is already on, so a file is saved straight away',
+  await check('no question box: upscaling is already on, so a file is saved straight away',
     () => {
       expect(saved.question).toBe('');
     });
@@ -1825,6 +2160,22 @@ test('EXP-34.2 The saved photo\'s long side is capped [phone] [webkit]', async (
   });
 });
 
+// With Export options open and Interpolation at Bilinear, records the rows that choose
+// Bicubic: the row reads Bilinear, its list offers both, the row then reads Bicubic, and the
+// options close.
+async function chooseBicubicChecked(page, hand, check) {
+  const value = page.locator('#interpValue');
+  await openOptionsChecked(page, hand, check, 'the Interpolation row reads Bilinear', async () => {
+    await expect(value).toHaveText('Bilinear');
+  });
+  await checkInterpolationList(page, check);
+  await page.locator('#interp').selectOption({ label: 'Bicubic (sharper, slower)' });
+  await check('the row reads Bicubic', async () => {
+    await expect(value).toHaveText('Bicubic');
+  });
+  await closeOptionsChecked(page, hand, check);
+}
+
 test('EXP-36.1 Bicubic gives a different file from Bilinear [phone]', async ({
   page,
   check,
@@ -1832,20 +2183,12 @@ test('EXP-36.1 Bicubic gives a different file from Bilinear [phone]', async ({
   const hand = await startOn(page, testInfo);
   await tapSize(page, hand, '1080');
   const bilinear = await downloadAnswering(page, hand);
-  await check('no question; IMG_9136-straight.jpg of 1080 × 1080 px is saved', async () => {
+  await check('no question box; IMG_9136-straight.jpg of 1080 × 1080 px is saved', async () => {
     expect(bilinear.question).toBe('');
     expect(bilinear.name).toBe('IMG_9136-straight.jpg');
     expect(await savedSize(page, bilinear.file)).toEqual([1080, 1080]);
   });
-  await openOptions(page, hand, 'export');
-  await check('the Interpolation row reads Bilinear', async () => {
-    await expect(page.locator('#interpValue')).toHaveText('Bilinear');
-  });
-  await page.locator('#interp').selectOption({ label: 'Bicubic (sharper, slower)' });
-  await check('the row reads Bicubic', async () => {
-    await expect(page.locator('#interpValue')).toHaveText('Bicubic');
-  });
-  await closeOptions(page, hand, 'export');
+  await chooseBicubicChecked(page, hand, check);
   const bicubic = await downloadAnswering(page, hand);
   await check('a second file of 1080 × 1080 px is saved', async () => {
     expect(await savedSize(page, bicubic.file)).toEqual([1080, 1080]);
@@ -1861,30 +2204,17 @@ test('EXP-36.2 An upscale is bicubic whatever Interpolation says [phone] [webkit
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
   await tapSize(page, hand, '3000');
-  const downloading = page.waitForEvent('download');
-  await hand.tap(page.locator('#btnDownload'));
-  await checkAskedToUpscale(page, check, 3000);
-  await hand.tap(questionButton(page, 'Yes'));
-  const withBilinear = await (await downloading).path();
+  const withBilinear = await downloadAsked(page, hand, check, 3000, 'Yes');
   await check('IMG_9136-straight.jpg of 3000 × 3000 px is saved', async () => {
     expect(await savedSize(page, withBilinear)).toEqual([3000, 3000]);
   });
-  await openOptions(page, hand, 'export');
-  await check('the Interpolation row reads Bilinear', async () => {
-    await expect(page.locator('#interpValue')).toHaveText('Bilinear');
-  });
-  await page.locator('#interp').selectOption({ label: 'Bicubic (sharper, slower)' });
-  await check('the row reads Bicubic', async () => {
-    await expect(page.locator('#interpValue')).toHaveText('Bicubic');
-  });
-  await closeOptions(page, hand, 'export');
-  const withBicubic = await downloadAnswering(page, hand, 'Yes');
+  await chooseBicubicChecked(page, hand, check);
+  const withBicubic = await downloadAsked(page, hand, check, 3000, 'Yes');
   await check('a second file of 3000 × 3000 px is saved', async () => {
-    expect(withBicubic.question).toBe('Upscale to 3000 px?');
-    expect(await savedSize(page, withBicubic.file)).toEqual([3000, 3000]);
+    expect(await savedSize(page, withBicubic)).toEqual([3000, 3000]);
   });
   await check('the two files are the same, byte for byte', async () => {
-    expect(isSameFile(withBilinear, withBicubic.file)).toBe(true);
+    expect(isSameFile(withBilinear, withBicubic)).toBe(true);
   });
 });
 
@@ -1895,15 +2225,22 @@ test('EXP-37.1 The saved file is named for the photo and the format [phone] [web
   const hand = await startOn(page, testInfo);
   await tapSize(page, hand, '1080');
   const jpeg = await downloadAnswering(page, hand);
-  await check('a file named IMG_9136-straight.jpg is saved', async () => {
+  await check('no question box; a file named IMG_9136-straight.jpg is saved', async () => {
+    expect(jpeg.question).toBe('');
     expect(jpeg.name).toBe('IMG_9136-straight.jpg');
   });
   await tapFormat(page, hand, 'PNG');
+  await check('PNG is selected', async () => {
+    await expectSelected(page, 'exportFormat', 'PNG');
+  });
   const png = await downloadAnswering(page, hand);
   await check('a file named IMG_9136-straight.png is saved', async () => {
     expect(png.name).toBe('IMG_9136-straight.png');
   });
   await tapFormat(page, hand, 'WebP');
+  await check('WebP is selected', async () => {
+    await expectSelected(page, 'exportFormat', 'WebP');
+  });
   const webp = await downloadAnswering(page, hand);
   await check('a file named IMG_9136-straight.webp is saved', async () => {
     expect(webp.name).toBe('IMG_9136-straight.webp');
@@ -1927,16 +2264,21 @@ test('EXP-37.2 A pasted photo saves as pasted-photo-straight.jpg [desktop]', asy
   await copyPhotoToClipboard(page, samplePath(PHOTO));
   await page.keyboard.press('Control+V');
   await waitForPhotoOpen(page, PASTED_NAME);
-  await check('the card photo opens and its corners are found', async () => {
+  await check('the card photo opens on the Perspective step, its corners found', async () => {
     expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(true);
+    expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('perspective');
   });
   await goToStep(page, 'export', hand);
+  await check('the Export controls show', async () => {
+    await expect(page.locator('#exportSize')).toBeVisible();
+  });
   await tapSize(page, hand, '1080');
   await check('1080 is selected', async () => {
     await expectSelected(page, 'exportSize', '1080');
   });
   const saved = await downloadAnswering(page, hand);
-  await check('a file named pasted-photo-straight.jpg is saved', async () => {
+  await check('no question box; a file named pasted-photo-straight.jpg is saved', async () => {
+    expect(saved.question).toBe('');
     expect(saved.name).toBe(`${PASTED_NAME}-straight.jpg`);
   });
 });
@@ -2013,10 +2355,15 @@ test('EXP-39.2 Corner shots\' line runs on the top edge of the Corner shots shee
     const hand = await startOn(page, testInfo, { isWatched: true });
     await hand.tap(page.locator('#btnCornerShots'));
     await waitForCornerSheet(page, true);
-    await check('the Corner shots sheet rises over the photo', async () => {
+    await check('the Corner shots sheet rises over the photo, with 1 sheet selected', async () => {
       expect(await isSheetOpen(page, 'cornerShotsSheet')).toBe(true);
+      expect(await selectedChoices(page, 'cornerOutput')).toEqual(['1 sheet']);
     });
-    const saved = await saveFileBy(page, hand, page.locator('#btnCornerDownload'));
+    const downloading = page.waitForEvent('download');
+    await hand.tap(page.locator('#btnCornerDownload'));
+    await checkAskedToUpscale(page, check);
+    await hand.tap(questionButton(page, 'No'));
+    const saved = await downloading;
     await check('a thin red line runs along the sheet\'s top edge, and none on the controls',
       async () => {
         const [start] = await exportStarts(page);
@@ -2024,7 +2371,7 @@ test('EXP-39.2 Corner shots\' line runs on the top edge of the Corner shots shee
       });
     await waitForExportEnd(page);
     await check('a file of the four corners is saved, and the line has gone', async () => {
-      expect(saved.name).toMatch(/^IMG_9136-.*\.jpg$/);
+      expect(saved.suggestedFilename()).toMatch(/^IMG_9136-.*\.jpg$/);
       await expect(page.locator('#cornerShotsSheet .progress-line')).toBeHidden();
     });
   });
@@ -2035,14 +2382,10 @@ const visibleCloseUps = (page, selector) => page.locator(`${selector} canvas[dat
 // The top of an element on the page, in CSS px.
 const topOf = async locator => (await locator.boundingBox()).y;
 
-test('EXP-40.1 Corner shots comes before Export options [both]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startOn(page, testInfo);
-  const exportTitle = page.locator('#exportSheetTitle');
-  const cornerTitle = page.locator('#cornerShotsSheetTitle');
-  if (hand.isTouch) {
+test('EXP-40.1 On a phone, Corner shots and Export options are two separate sheets [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startOn(page, testInfo);
+    const exportTitle = page.locator('#exportSheetTitle');
     await openOptions(page, hand, 'export');
     await check('a sheet titled Export options rises, with no corner close-ups in it', async () => {
       await expect(exportTitle).toHaveText('Export options');
@@ -2050,24 +2393,32 @@ test('EXP-40.1 Corner shots comes before Export options [both]', async ({
       await expect(visibleCloseUps(page, '#exportSheet')).toHaveCount(0);
     });
     await closeOptions(page, hand, 'export');
+    await check('the sheet goes down', async () => {
+      expect(await isSheetOpen(page, 'exportSheet')).toBe(false);
+    });
     await hand.tap(page.locator('#btnCornerShots'));
     await waitForCornerSheet(page, true);
     await check('a separate sheet titled Corner shots rises, with four close-ups and no Quality',
       async () => {
-        await expect(cornerTitle).toHaveText('Corner shots');
+        await expect(page.locator('#cornerShotsSheetTitle')).toHaveText('Corner shots');
         await expect(visibleCloseUps(page, '#cornerShotsSheet')).toHaveCount(4);
         await expect(page.locator('#cornerShotsSheet #qualityRow')).toHaveCount(0);
         expect(await isSheetOpen(page, 'exportSheet')).toBe(false);
       });
-    return;
-  }
-  await check('the panel lists Corner shots, with four close-ups, above Export options',
-    async () => {
-      await expect(visibleCloseUps(page, '#cornerShotsSheet')).toHaveCount(4);
+  });
+
+test('EXP-40.2 On a wide screen, Corner shots is listed above Export options [desktop]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startOn(page, testInfo);
+    const exportTitle = page.locator('#exportSheetTitle');
+    const cornerTitle = page.locator('#cornerShotsSheetTitle');
+    await check('the panel lists Corner shots, with four close-ups, above Export options',
+      async () => {
+        await expect(visibleCloseUps(page, '#cornerShotsSheet')).toHaveCount(4);
+        expect(await topOf(cornerTitle)).toBeLessThan(await topOf(exportTitle));
+      });
+    await hand.tap(page.locator('#btnCornerShots'));
+    await check('Corner shots is still listed above Export options', async () => {
       expect(await topOf(cornerTitle)).toBeLessThan(await topOf(exportTitle));
     });
-  await hand.tap(page.locator('#btnCornerShots'));
-  await check('Corner shots is still listed above Export options', async () => {
-    expect(await topOf(cornerTitle)).toBeLessThan(await topOf(exportTitle));
   });
-});
