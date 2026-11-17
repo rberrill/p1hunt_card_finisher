@@ -947,11 +947,10 @@ test('CRP-16.1 Reset crop puts a box drawn by hand back around the card, one und
   });
 });
 
-test('CRP-16.2 Reset crop keeps the preset in use [phone]', async ({
+test('CRP-16.2 Reset crop goes back to the remembered preset [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-100');
   const hand = await startOnCrop(page, testInfo);
   await hand.tap(presetChip(page, '4:5'));
   const fitted = await cropRect(page);
@@ -966,6 +965,7 @@ test('CRP-16.2 Reset crop keeps the preset in use [phone]', async ({
   await check('4:5 is still white, and the box is back around the card at 4:5, as in row 1',
     async () => {
       expect(await selectedChips(page)).toEqual(['4:5']);
+      expect(await hasWhiteFill(presetChip(page, '4:5'))).toBe(true);
       expectSameRect(await cropRect(page), fitted);
     });
 });
@@ -1078,7 +1078,6 @@ test('CRP-17.3 Reset crop leaves the remembered preset as it was [phone]', async
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-100');
   const hand = await startOnCrop(page, testInfo);
   await tapFourFive(page, hand, check);
   const fitted = await cropRect(page);

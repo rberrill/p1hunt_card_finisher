@@ -790,16 +790,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## CRP-16 Reset crop
 
-**Reset crop** in the options sheet puts the crop back around the card at the default preset, **1:1**, as one undo step. In a front and back pair the 5:7 lock is applied again.
+**Reset crop** in the options sheet puts the crop back around the card at the remembered preset (CRP-17; **1:1** when none is remembered), as one undo step, and leaves the remembered preset as it was. In a front and back pair the 5:7 lock is applied again.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#cropResetRow`, "Reset crop", `CONFIG.crop.defaultPreset`
-- Source: `js/app/crop.js` (`buildCropResetRow`); `js/app/shell.js` (`resetStep`); `js/app/state.js` (`cropDefaults`); `js/app/pair.js` (`applyPairRules`)
-- Ruling: R4. Reset crop goes back to the remembered preset and leaves the remembered preset unchanged. The app differs today.
+- Source: `js/app/crop.js` (`buildCropResetRow`); `js/app/shell.js` (`resetStep`); `js/app/state.js` (`cropDefaults`); `js/app/adapters.js` (`Prefs.load`); `js/app/pair.js` (`applyPairRules`)
+- Ruling: R4. Reset crop goes back to the remembered preset and leaves the remembered preset unchanged. The app does this since 1.10.0.
 - Cases: 3
 
 ### CRP-16.1 Reset crop puts a box drawn by hand back around the card, one undo step   [auto: phone]
@@ -821,9 +821,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### CRP-16.2 Reset crop keeps the preset in use   [auto: phone]
-Written to ruling R4; it fails until that is built (BUG-100).
-
+### CRP-16.2 Reset crop goes back to the remembered preset   [auto: phone]
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test
@@ -871,10 +869,10 @@ The last preset used is remembered on this device and used for the next photo.
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.crop.defaultPreset`, `CONFIG.storageKey`
 - Source: `js/app/adapters.js` (`Prefs.load`, `Prefs.save`); `js/app/state.js` (`cropDefaults`, `newState`)
-- Ruling: R4. Reset crop leaves the remembered preset unchanged. The app differs today.
+- Ruling: R4. Reset crop leaves the remembered preset unchanged. The app does this since 1.10.0.
 - Cases: 3
 
 ### CRP-17.1 The next photo starts with the last preset used   [auto: phone]
@@ -916,8 +914,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CRP-17.3 Reset crop leaves the remembered preset as it was   [auto: phone]
-Written to ruling R4; it fails until that is built (BUG-100).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test

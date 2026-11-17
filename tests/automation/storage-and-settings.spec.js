@@ -148,7 +148,6 @@ test('STO-01.1 Undoing a Format change also changes the remembered Format [phone
 
 test('STO-01.2 Reset crop leaves the remembered preset for after a reload [phone] [webkit]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-100');
     const hand = await startWith(page, testInfo);
     await goToStep(page, 'crop', hand);
     await hand.tap(presetChip(page, '4:5'));

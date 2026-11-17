@@ -192,7 +192,10 @@
         state.rotation = { quarter: 0, fine: 0, fillFrame: false };
         state.flip = { h: false, v: false };
       } else if (step === 'crop') {
-        state.crop = CF.cropDefaults(null);
+        // Back to the remembered preset, which stays the remembered one (ruling R4). It comes
+        // from storage, so it is checked like an edits file.
+        const remembered = CF.cropDefaults(CF.Prefs.load());
+        state.crop = CF.cleanState({ crop: remembered }, app.img).state.crop;
       } else if (step === 'export') {
         const defaults = CONFIG.export;
         state.export = {
