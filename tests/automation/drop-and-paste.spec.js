@@ -24,7 +24,7 @@ const {
   waitForOpening,
   PORTRAIT_PAIR,
 } = require('./support/front-and-back.js');
-const { logoId } = require('./support/overlay.js');
+const { logoId, logoPlacement, slide } = require('./support/overlay.js');
 const {
   PHOTO,
   OTHER_SIZE_PHOTO,
@@ -63,6 +63,24 @@ const NOTHING_HAPPENS_MS = 800;
 const OUTLINE_BORDER = '2px dashed rgb(242, 242, 243)';
 // Two logos added less than this far apart, in ms, would be one undo step today (ruling R19).
 const COALESCE_MS = 900;
+// The Overlay step's move pad's Move right key and size pad's Larger key, and how many times
+// "Change the logo" presses each.
+const MOVE_RIGHT = '#overlayMovePad [data-key="1,0"]';
+const LARGER = '#overlaySizePad [data-key="grow"]';
+const MOVE_TAPS = 10;
+const GROW_TAPS = 3;
+// A new logo's width as a fraction of the photo's (CardEngine.OVERLAY_DEFAULTS.width). One
+// Move right moves it 0.5% of the photo's width (CONFIG.overlay.nudgePct); one Larger makes it
+// 1.05 times as wide (CONFIG.overlay.sizeStep). So "Change the logo" leaves its middle 55% of
+// the way across and its width 28.9% of the photo's.
+const START_WIDTH = 0.25;
+const MOVED_CX = 0.5 + MOVE_TAPS * 0.005;
+const GROWN_WIDTH = START_WIDTH * 1.05 ** GROW_TAPS;
+// How close two fractions of the photo must be (a placement is kept as exact fractions).
+const FRACTION_TOLERANCE = 1e-6;
+// Where the Opacity slider's knob rests at 100% and its middle, as fractions of its width.
+const SLIDER_RIGHT_END = 0.98;
+const SLIDER_MIDDLE = 0.5;
 
 // The fixtures the cases drop: a line of text, a stand-in for a HEIC photo and two logos.
 const notesFile = () => droppedFixture('notes.txt');
@@ -404,6 +422,60 @@ test('DND-04.7 During an export, a pasted logo is refused [desktop]', async ({
   // The logo is on the clipboard before the export: putting it there draws on a canvas.
   await copyImage(page, greenLogo());
   await checkLogoRefusedDuringExport(page, check, hand, () => page.keyboard.press('Control+V'));
+});
+
+// Expects two numbers to be within `tolerance` of each other.
+function expectNear(actual, expected, tolerance) {
+  expect(Math.abs(actual - expected)).toBeLessThanOrEqual(tolerance);
+}
+
+// The OPACITY readout beside the slider, as a number of percent.
+async function opacityReadout(page) {
+  return parseInt(await page.locator('#overlayOpacityValue').textContent(), 10);
+}
+
+test('DND-04.8 A logo dropped while one is placed takes its place, width and opacity '
+  + '[desktop]', async ({ page, check }, testInfo) => {
+  const hand = await startOn(page, testInfo, { step: 'overlay' });
+  await dragFiles(page, STAGE, [blueDisc()]);
+  await waitForNewLogo(page, null);
+  const discId = await logoId(page);
+  const start = await logoPlacement(page);
+  await check('blue-disc.png dropped: the blue disc is the logo, in the middle of the photo, a '
+    + 'quarter of its width, with OPACITY at 100%', async () => {
+    expectNear(start.cx, 0.5, FRACTION_TOLERANCE);
+    expectNear(start.cy, 0.5, FRACTION_TOLERANCE);
+    expectNear(start.w, START_WIDTH, FRACTION_TOLERANCE);
+    expect(start.opacity).toBe(1);
+    expect(await opacityReadout(page)).toBe(100);
+  });
+  // The named action "Change the logo".
+  for (let i = 0; i < MOVE_TAPS; i++) await hand.tap(page.locator(MOVE_RIGHT));
+  for (let i = 0; i < GROW_TAPS; i++) await hand.tap(page.locator(LARGER));
+  await slide(page, hand, page.locator('#overlayOpacity'), SLIDER_RIGHT_END, SLIDER_MIDDLE);
+  const changed = await logoPlacement(page);
+  await check('the disc\'s middle is 55% of the way across the photo, it is 28.9% of the '
+    + 'photo\'s width, and OPACITY reads about 50%', async () => {
+    expectNear(changed.cx, MOVED_CX, FRACTION_TOLERANCE);
+    expectNear(changed.cy, start.cy, FRACTION_TOLERANCE);
+    expectNear(changed.w, GROWN_WIDTH, FRACTION_TOLERANCE);
+    expect(changed.opacity).toBeGreaterThan(0.4);
+    expect(changed.opacity).toBeLessThan(0.6);
+    expect(await opacityReadout(page)).toBe(Math.round(changed.opacity * 100));
+  });
+  await dragFiles(page, STAGE, [greenLogo()]);
+  await waitForNewLogo(page, discId);
+  const replaced = await logoPlacement(page);
+  await check('green-logo.png dropped: the green square is the logo, where the disc was: its '
+    + 'middle 55% of the way across, as far down as the disc\'s, 28.9% of the photo\'s width, at '
+    + 'the same opacity', async () => {
+    expect(await logoId(page)).not.toBe(discId);
+    expectNear(replaced.cx, MOVED_CX, FRACTION_TOLERANCE);
+    expectNear(replaced.cy, changed.cy, FRACTION_TOLERANCE);
+    expectNear(replaced.w, GROWN_WIDTH, FRACTION_TOLERANCE);
+    expect(replaced.opacity).toBe(changed.opacity);
+    expect(await opacityReadout(page)).toBe(Math.round(changed.opacity * 100));
+  });
 });
 
 // The body of DND-05.1 and DND-05.2: holds an export open (Download, then No), brings

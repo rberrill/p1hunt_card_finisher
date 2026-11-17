@@ -191,17 +191,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## DND-04 On the Overlay step, a dropped or pasted image becomes the logo
 
-On the Overlay step with a photo open, a dropped or pasted image is added as the logo instead of opening as a photo. In a pair it becomes the logo of the side you are on, with no question.
+On the Overlay step with a photo open, a dropped or pasted image is added as the logo instead of opening as a photo. Dropped or pasted while a logo is placed, it replaces that logo and takes its position, width and opacity, as **Replace logo** does. In a pair it becomes the logo of the side you are on, with no question.
 
 - Risk: medium
 - Check: script
 - Layout: both. The cases use a computer: whether an iPhone lets a person drag a picture into Safari at all is find-out item Q-05.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `"Drop to add as the logo"`, `#overlayInput`
 - Source: `js/app/main.js` (`bindPhotoInput`), `js/app/overlay.js` (`addOverlayFile`, `place`)
-- Ruling: R19. Each logo added is its own undo step, even two within 900 ms, and a dropped logo is accepted by its file extension, as the logo picker does. The app differs today. R32. While an export is running a dropped or pasted logo is refused, with the message a dropped photo gets. The app differs today.
-- Cases: 7
+- Ruling: R18. A logo dropped or pasted on Overlay while one is placed is a replacement: it takes the old logo's position, width and opacity (a new logo of another shape keeps the old one's center and width, then is clamped inside the crop). The app does this since 1.10.0. R19. Each logo added is its own undo step, even two within 900 ms, and a dropped logo is accepted by its file extension, as the logo picker does. The app differs today. R32. While an export is running a dropped or pasted logo is refused, with the message a dropped photo gets. The app differs today.
+- Cases: 8
 
 ### DND-04.1 On Overlay, a dropped picture becomes the logo   [auto: desktop]
 Before you start:
@@ -336,6 +336,26 @@ Before you start:
 | 2 | Click **No** | The export runs: a progress line crosses the top edge of the controls |
 | 3 | While it runs, click **Overlay** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Overlay step shows |
 | 4 | Still while it runs, press Ctrl+V (Cmd+V on a Mac) | No logo is added, and an amber message reads "Wait for the export to finish, then open the photo." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### DND-04.8 A logo dropped while one is placed takes its place, width and opacity   [auto: desktop]
+Before you start:
+- Device and browser: a computer with a mouse; a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Logos: blue-disc.png (400 × 400 px, a pure blue disc on a see-through square) and green-logo.png (400 × 400 px, solid pure green) from tests/fixtures/, in a file browser beside the app
+- Starting screen: the photo open, on the Overlay step, with no logo
+
+"Change the logo": in the controls (the block of buttons and sliders in the panel at the right), click **Move right** (the right arrow in the left-hand pad) ten times, click **Larger** (**+** in the right-hand pad) three times, then slide the OPACITY slider's knob from the right end to the middle.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag blue-disc.png onto the photo area and let go | The blue disc is the logo, in the middle of the photo, a quarter of its width, with OPACITY at 100% |
+| 2 | Change the logo | The disc's middle is 55% of the way across the photo (5% of the photo's width right of the middle), it is 28.9% of the photo's width (a quarter, times 1.05 three times), and OPACITY reads about 50% |
+| 3 | Drag green-logo.png onto the photo area and let go | The green square is the logo, where the disc was: its middle 55% of the way across, as far down as the disc's, 28.9% of the photo's width, at the same opacity |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

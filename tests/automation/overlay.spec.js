@@ -883,27 +883,48 @@ async function expectChanged(page, changed) {
   expect(percent).toBe(Math.round(changed.opacity * 100));
 }
 
+// A point inside a logo that is clear of the rings drawn on the photo's middle and sides: a
+// quarter of the logo's width right of and above its middle. placed: from logoOnPage.
+const upRightInLogo = placed => ({
+  x: placed.middle.x + placed.width / 4,
+  y: placed.middle.y - placed.width / 4,
+});
+
+// The channels of a drawn color ([r, g, b]).
+const GREEN = 1;
+const BLUE = 2;
+
+// Expects `channel` to be the strongest of a drawn color's three: how a pure blue or green
+// logo shows at about half opacity, whatever part of the photo is under it.
+function expectStrongest(color, channel) {
+  for (let other = 0; other < color.length; other++) {
+    if (other !== channel) expect(color[channel]).toBeGreaterThan(color[other]);
+  }
+}
+
 test('OVL-09.1 A replacement logo takes the old one\'s place, width and opacity [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-081');
     const hand = await startOnOverlay(page, testInfo);
     const first = await addDisc(page, hand);
     const changed = await changeTheLogo(page, hand);
     await check('the blue disc is right of the middle, larger, and OPACITY reads about 50%',
       async () => {
         await expectChanged(page, changed);
+        expectStrongest(await colorOnPage(page, upRightInLogo(await logoOnPage(page))), BLUE);
       });
     await page.waitForTimeout(PAUSE_MS);
     const second = await replaceLogo(page, hand, GREEN_SQUARE);
     const replaced = await logoPlacement(page);
-    // Read at once, with no waiting: a known-defect check.
     await check('the green square takes the disc\'s place: as far right, as wide, and at the '
-      + 'same opacity', () => {
+      + 'same opacity', async () => {
       expect(second).not.toBe(first);
+      expectStrongest(await colorOnPage(page, upRightInLogo(await logoOnPage(page))), GREEN);
       expectNear(replaced.cx, changed.cx, FRACTION_TOLERANCE);
       expectNear(replaced.cy, changed.cy, FRACTION_TOLERANCE);
       expectNear(replaced.w, changed.w, FRACTION_TOLERANCE);
       expect(replaced.opacity).toBe(changed.opacity);
+      const percent = parseInt(await page.locator('#overlayOpacityValue').textContent(), 10);
+      expect(percent).toBe(Math.round(changed.opacity * 100));
     });
   });
 
@@ -952,6 +973,61 @@ test('OVL-09.2 The replacement becomes the saved logo [phone] [webkit]', async (
   await check('the green square is placed on the photo', async () => {
     expect(await logoId(page)).toBe(second);
     expectGreen(await colorOnPage(page, inDisc(await logoOnPage(page))));
+  });
+});
+
+// Where the middle of a logo a quarter of the photo's width is, across and down a square
+// photo, after a snap to the bottom-right ring: 3% of the photo's width and half the logo's
+// own width in from the right and bottom edges, so 84.5%.
+const SNAPPED_MIDDLE = 1 - SNAP_MARGIN_FRAC - START_WIDTH / 2;
+// Where the middle of a logo half the photo's height is, down the photo, with its bottom edge
+// on the photo's bottom edge.
+const PULLED_UP_MIDDLE = 0.75;
+
+test('OVL-09.3 A replacement of another shape keeps the old middle and width, pulled inside '
+  + 'the photo\'s edge [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOnOverlay(page, testInfo);
+  await addDisc(page, hand);
+  await tapAt(page, hand, await ringOnPage(page, 'br'));
+  const disc = await logoPlacement(page);
+  const discBox = await logoBox(page);
+  await check('the disc goes to the bottom-right corner: its middle is 84.5% across and 84.5% '
+    + 'down, its right and bottom edges 3% of the photo\'s width in from the photo\'s', () => {
+    // The photo is framed as a square, so the same share is as far across as it is down.
+    expect(disc.cropWidth).toBe(disc.cropHeight);
+    expectNear(disc.cx, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    expectNear(disc.cy, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    const marginPx = SNAP_MARGIN_FRAC * disc.cropWidth;
+    expectNear(disc.cropWidth - discBox.right, marginPx, PICTURE_TOLERANCE_PX);
+    expectNear(disc.cropHeight - discBox.bottom, marginPx, PICTURE_TOLERANCE_PX);
+  });
+  await replaceLogo(page, hand, GREEN_WIDE);
+  const wide = await logoPlacement(page);
+  await check('a green box three times as wide as it is high, a quarter of the photo\'s width '
+    + 'as the disc was, its middle where the disc\'s was: 84.5% across and 84.5% down',
+  async () => {
+    expectNear(wide.w, START_WIDTH, FRACTION_TOLERANCE);
+    expectNear(wide.cx, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    expectNear(wide.cy, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    await expectLogoShape(page, 3);
+    // Read at the box's middle, which is clear of the rings once the box is in the corner.
+    expectGreen(await colorOnPage(page, (await logoOnPage(page)).middle));
+  });
+  await replaceLogo(page, hand, BLUE_OVAL);
+  const oval = await logoPlacement(page);
+  const ovalBox = await logoBox(page);
+  await check('a blue oval in a box a quarter of the photo\'s width and half its height, its '
+    + 'middle still 84.5% across. Kept 84.5% down it would cross the photo\'s bottom edge, so '
+    + 'it is pulled up: its bottom edge is on the photo\'s bottom edge and its middle is 75% '
+    + 'down', async () => {
+    expectNear(oval.w, START_WIDTH, FRACTION_TOLERANCE);
+    expectNear(ovalBox.height, oval.cropHeight / 2, PICTURE_TOLERANCE_PX);
+    expectNear(oval.cx, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    expectNear(ovalBox.bottom, oval.cropHeight, PICTURE_TOLERANCE_PX);
+    expectNear(oval.cy, PULLED_UP_MIDDLE, FRACTION_TOLERANCE);
+    // Read a quarter of the way down the box, inside the oval and clear of the rings.
+    const placed = await logoOnPage(page);
+    expectBlue(await colorOnPage(page, { x: placed.middle.x, y: placed.y + placed.height / 4 }));
   });
 });
 

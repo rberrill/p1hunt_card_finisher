@@ -54,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - In a pair, when one side's corners cross or fold inward and you switch to the other side, the switch used to stop part-way: the wrong photo stayed on screen under "Opening the front…", Export's size line was empty, and **Download** failed with an error. The switch now finishes, Export's size line reads "Fix the back’s corners in Perspective first." (or the front’s), and **Share**, **Download** and **Copy** are off until that side is fixed.
 - While an export runs, only **Share**, **Download** and **Copy** used to be greyed out, so a setting could still change under it. Now **Undo**, **Redo**, **Add back**, the **Size** and **Format** choices and, in Export's options, **Quality**, **Interpolation**, **Fill outside photo**, **Reset export settings** and **Load edits** are greyed out too until the file is saved. The step tabs stay live.
 - **Reset crop** keeps the preset you last chose. It used to go back to **1:1** and make 1:1 the preset the next photo opened with.
+- **Replace logo** puts the new logo where the old one was, at its width and opacity, and so does a logo dropped or pasted on the Overlay step while one is placed. It used to go back to the middle of the photo, a quarter of its width, at 100%.
 
 ## [1.9.0] - 2026-11-10
 

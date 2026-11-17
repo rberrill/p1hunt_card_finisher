@@ -23,7 +23,7 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R15 | Note says 16.8 MP; docs say 16.7 | FIX: screen shows 16.7 MP (round down) |
 | R16 | Copy + JPEG + Transparent → white corners in PNG | AS-IS (matches the on-screen note and Download) |
 | R17 | Controls live during export | FIX: dim Size, Format, sheet settings, Load edits, Undo, Redo, Add back with the save buttons; tab bar stays live |
-| R18 | Replace logo resets placement | FIX: replacement takes old position, width, opacity |
+| R18 | Replace logo resets placement | FIX: replacement takes old position, width, opacity. Rich, 2026-11-17: a new logo of another shape keeps the old one's center and width (then clamped inside the crop); a logo dropped or pasted on Overlay while one is placed is a replacement and does the same |
 | R19 | Two adds <900 ms = one undo; drop needs image/ MIME | FIX both: each add its own undo step; drop accepts by extension like the picker |
 | R20 | Corner readout always "the card is too small"; buttons live | FIX: real reason; both save buttons dimmed |
 | R21 | Corner shots checks Share once; Share now vs Next card | FIX: corner shots re-checks share availability each sync; Next card stays independent of corner shots (AS-IS) |
