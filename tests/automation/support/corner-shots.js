@@ -6,8 +6,10 @@
 // through the page's code say why: there is no control a person could use for it.
 'use strict';
 const fs = require('fs');
+const path = require('path');
 const { expect } = require('@playwright/test');
 const {
+  root,
   openApp,
   openPhoto,
   goToStep,
@@ -15,9 +17,20 @@ const {
   openOptions,
   closeOptions,
   readSavedImage,
+  cornerOnPage,
 } = require('./app.js');
-const { installShareStandIn, recordExports, waitForQuestion } = require('./export.js');
+const {
+  installShareStandIn,
+  recordExports,
+  waitForQuestion,
+  waitForExportEnd,
+} = require('./export.js');
 const { downloadAll } = require('./front-and-back.js');
+
+// The committed files the cases name besides the sample photos (a logo, and the like).
+const FIXTURES_DIR = path.join(root, 'tests', 'fixtures');
+// The image types a fixture can have, by its extension.
+const FIXTURE_TYPES = { '.png': 'image/png', '.svg': 'image/svg+xml', '.gif': 'image/gif' };
 
 // The case photo for corner shots: a raw chrome card flat on a black mat. Its card is found the
 // same in Chromium and WebKit (14_front_portrait_raw_white.JPEG is not: its corner shots are
@@ -378,6 +391,94 @@ function topElementAt(page, locator) {
   });
 }
 
+// A file from tests/fixtures/ as a payload for a file picker: { name, mimeType, buffer }.
+function fixtureFile(name) {
+  const mimeType = FIXTURE_TYPES[path.extname(name).toLowerCase()] || 'application/octet-stream';
+  return { name, mimeType, buffer: fs.readFileSync(path.join(FIXTURES_DIR, name)) };
+}
+
+// Taps a control that opens the file picker (Open photo, Add logo) and waits for the picker to
+// open. Returns the picker, still open, so a case can check it before choosing a file.
+async function openPicker(page, hand, control) {
+  const choosing = page.waitForEvent('filechooser');
+  await hand.tap(control);
+  return choosing;
+}
+
+// Chooses a logo from tests/fixtures/ in an open picker (from Add logo or Replace logo) and
+// waits until it is the logo on the photo.
+async function chooseFixtureLogo(page, chooser, name) {
+  const before = await page.evaluate(() => {
+    const overlay = window.__straightener.app.state.overlay;
+    return overlay ? overlay.id : null;
+  });
+  await chooser.setFiles(fixtureFile(name));
+  await page.waitForFunction(idBefore => {
+    const overlay = window.__straightener.app.state.overlay;
+    return !!overlay && overlay.id !== idBefore;
+  }, before);
+}
+
+// Save the corners, the named action in tests/catalog/corner-shots.md: with the Corner shots
+// sheet closed, taps Corner shots, then Download corners (answering the Upscale question with
+// `answer` if it is asked), waits for `count` files and for the save to end, and closes the
+// sheet. Returns [{ name, file, atMs }] in the order the files arrived.
+async function saveTheCorners(page, hand, count = 1, answer = 'No') {
+  await openCornerSheet(page, hand);
+  const saved = await saveCorners(page, hand, count, answer);
+  await waitForExportEnd(page);
+  await closeCornerSheet(page, hand);
+  return saved;
+}
+
+// The four thumbnails as drawn now, in order: a SHA-256 of each canvas's pixels, equal for two
+// drawings exactly when every pixel is.
+function thumbnailDigests(page) {
+  return page.evaluate(async () => {
+    const canvases = [...document.querySelectorAll('canvas[data-corner]')];
+    const digests = [];
+    for (const canvas of canvases) {
+      const ctx = canvas.getContext('2d');
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      const digest = await crypto.subtle.digest('SHA-256', pixels);
+      const hex = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0'));
+      digests.push(hex.join(''));
+    }
+    return digests;
+  });
+}
+
+// True when the outline crosses itself as a person sees it on Perspective: the top-left
+// corner's handle sits below and to the right of the bottom-right one on the page.
+async function isOutlineCrossed(page) {
+  const topLeft = await cornerOnPage(page, 0);
+  const bottomRight = await cornerOnPage(page, 2);
+  return topLeft.x > bottomRight.x && topLeft.y > bottomRight.y;
+}
+
+// How much of a corner shot the logo covers, as a fraction (0 to 1) of the shot's square: the
+// overlap of the logo's box and the square the shot frames, both in the straightened picture's
+// px. label: 'tl', 'tr', 'br' or 'bl'. 0 with no logo or no corner shots. For the cases that
+// prove the logo is left out: they place it where it would show if it were drawn in.
+function logoCoverOfShot(page, label) {
+  return page.evaluate(shotLabel => {
+    const app = window.__straightener.app;
+    const overlay = app.state.overlay;
+    if (!overlay || !app.geometry || !app.geometry.ok) return 0;
+    const shots = window.CardEngine.cornerShots(app.geometry, CONFIG.cornerShots);
+    if (!shots.ok) return 0;
+    const crop = app.geometry.crop;
+    const placed = window.CardEngine.clampOverlay(overlay, crop.width, crop.height);
+    const logo = window.CardEngine.overlayRect(placed, crop.width, crop.height);
+    const square = shots.shots.find(shot => shot.label === shotLabel).rectRotated;
+    const overlapOf = (logoStart, logoSize, squareStart, squareSize) => Math.max(0,
+      Math.min(logoStart + logoSize, squareStart + squareSize) - Math.max(logoStart, squareStart));
+    const across = overlapOf(crop.x + logo.x, logo.width, square.x, square.width);
+    const down = overlapOf(crop.y + logo.y, logo.height, square.y, square.height);
+    return (across * down) / (square.width * square.height);
+  }, label);
+}
+
 module.exports = {
   CORNER_PHOTO,
   NO_CORNER_QUESTION,
@@ -408,4 +509,11 @@ module.exports = {
   chooseInterpolation,
   boxOf,
   topElementAt,
+  fixtureFile,
+  openPicker,
+  chooseFixtureLogo,
+  saveTheCorners,
+  thumbnailDigests,
+  isOutlineCrossed,
+  logoCoverOfShot,
 };
