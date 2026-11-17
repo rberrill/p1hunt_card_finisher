@@ -46,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 - After **Unpair** → **Keep front** (or **Keep back**) chosen from the other side, closing and resuming brought back the other side's photo under the kept side's edits. The kept side's photo is now the one stored.
+- After you choose a file the app can't read ("Couldn’t read that file as an image."), the photo that is open keeps being saved, so **Resume** brings back the edits you make afterwards. They used to stop being saved until another photo was opened.
 - When the browser can't save the chosen format (WebP on Safari) and saves a PNG instead, the message saying so was replaced at once by the "Exported…" message, so it was never seen. It's now part of that message, shown as a warning, on Download, Share, a pair's export and the corner shots.
 
 ## [1.9.0] - 2026-11-10

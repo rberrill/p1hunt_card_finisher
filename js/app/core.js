@@ -108,7 +108,12 @@
     cssWidth: 0,
     cssHeight: 0,
     edgeCanvas: null,
+    // Counts the photos that have opened, a side switch included; the session saves only for
+    // the one that is open.
     loadId: 0,
+    // Counts the opens that have started, so a slow one can tell a newer one took its place.
+    // An open that fails leaves loadId alone: the open photo keeps being saved (ruling R31).
+    openRequestId: 0,
     pendingSave: null,
     // Corner shots: the output ('sheet' or 'photos', a preference) and the files waiting for
     // "Share now" (corner-shots.js).

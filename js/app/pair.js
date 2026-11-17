@@ -244,8 +244,10 @@
     const step = app.tab;
     const leaving = captureSide();
     app.img.close();
-    // Work still running for the side being left (detection, a session save) is now stale.
+    // Work still running for the side being left (detection, a session save, a photo that is
+    // still opening) is now stale.
     app.loadId++;
+    app.openRequestId++;
     applySide(other, img);
     pair.other = leaving;
     pair.current = otherSide(pair.current);

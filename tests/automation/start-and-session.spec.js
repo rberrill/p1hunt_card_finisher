@@ -2204,7 +2204,6 @@ test('STA-22.2 A file that isn\'t an image leaves the open photo as it was [phon
 
 test('STA-22.3 After a failed open, the open photo\'s edits are still kept for Resume [phone] '
   + '[webkit]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-001');
   const hand = await startWithPhoto(page, testInfo);
   await goToStep(page, 'rotate', hand);
   await waitForSaved(page, { name: PHOTO, tab: 'rotate' });

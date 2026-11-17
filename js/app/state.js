@@ -313,7 +313,7 @@
   // opened meanwhile (the open photo is then unchanged).
   async function openFile(file, name, restore) {
     const startTime = performance.now();
-    const id = ++app.loadId;
+    const requestId = ++app.openRequestId;
     toast('Loading…');
     let img;
     try {
@@ -323,10 +323,13 @@
       return false;
     }
     // Another photo was opened meanwhile.
-    if (id !== app.loadId) {
+    if (requestId !== app.openRequestId) {
       img.close();
       return false;
     }
+    // Only now is this the open photo: a failed open must not stop the session saving the
+    // photo that stays open (ruling R31).
+    const id = ++app.loadId;
     if (app.img) app.img.close();
     app.img = img;
     // The original bytes, so a front + back pair can decode this side again after a switch.

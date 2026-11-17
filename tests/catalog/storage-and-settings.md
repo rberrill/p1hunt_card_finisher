@@ -90,10 +90,10 @@ The open photo and its edits are kept in the browser's database on this device: 
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.session.dbName`, `CONFIG.session.saveDelayMs`, `#btnResume`
 - Source: `js/app/adapters.js` (`Session.savePhoto`, `Session.flush`, `Session.snapshot`, `Session.put`), `js/app/pair.js` (`savePairSession`), `js/app/overlay.js` (`place`)
-- Ruling: R22. **Remove** leaves this photo's logo in storage, so Undo after Resume can bring it back. The app already does this. R31. A failed open (a file the app can't read) changes nothing: the photo that is open keeps being saved. The app differs today (BUG-001; its case is STA-22.3).
+- Ruling: R22. **Remove** leaves this photo's logo in storage, so Undo after Resume can bring it back. The app already does this. R31. A failed open (a file the app can't read) changes nothing: the photo that is open keeps being saved. The app does this from 1.10.0 (BUG-001, fixed; its case is STA-22.3).
 - Cases: 2
 
 ### STO-02.1 A pair with a logo keeps all six records on the device   [auto: phone, webkit]
