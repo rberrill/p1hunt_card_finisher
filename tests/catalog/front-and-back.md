@@ -1262,16 +1262,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PAIR-27 A Together image over the size limit
 
-A Together image larger than the browser's canvas limits scales both sides down by the same factor.
+A Together image larger than the browser's canvas limits scales both sides down by the same factor, and a note says so: "Scaled down to fit the 16.7 MP limit.", with the limit in force.
 
 - Risk: low
 - Check: script, saved file
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `CONFIG.maxOutputArea`, `CONFIG.maxOutputPx`
-- Source: `js/app/pair.js` (`togetherLayout`), `js/engine.js` (`pairLayout`, `pairScale`), `js/app/export-controls.js` (`exportNotes`)
-- Ruling: R15. The note reads "Scaled down to fit the N MP limit." (approved wording; N the limit in millions of pixels, rounded down to a tenth). The app differs today. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
+- Changed: 1.10.0
+- Anchors: `CONFIG.maxOutputArea`, `CONFIG.maxOutputPx`, "Scaled down to fit the ", " MP limit."
+- Source: `js/app/pair.js` (`togetherLayout`, `pairReadout`), `js/engine.js` (`pairLayout`, `pairScale`), `js/app/export-controls.js` (`exportNotes`, `clampNote`, `limitMegapixels`)
+- Ruling: R15. The note reads "Scaled down to fit the N MP limit." (approved wording; N the limit in millions of pixels, rounded down to a tenth). The app does this since 1.10.0. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app does this since 1.10.0.
 - Cases: 1
 
 ### PAIR-27.1 A Together image over the canvas limit scales both cards down alike   [auto: phone, webkit]
@@ -1282,7 +1282,7 @@ Before you start:
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. Then tap **Export**, and tap Size **Original**
 
-Written to ruling R15, in the words Rich approved; it fails until R15 is built (BUG-011). Each card alone is under 1 MP; the two side by side are over it.
+Each card alone is under 1 MP; the two side by side are over it.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -1679,16 +1679,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PAIR-37 The pair's size line
 
-On Export the size line reads **W × H px · FORMAT** for Together, and **front W × H + back W × H px · FORMAT** for Separately.
+On Export the size line reads **W × H px · FORMAT** for Together, and **front W × H + back W × H px · FORMAT** for Separately. With Separately, when the side not on screen is scaled down to fit the size limit, a note names it: "The back is scaled down to fit the 16.7 MP limit." (or the front), with the limit in force.
 
 - Risk: medium
 - Check: script
 - Layout: both. On a phone, while a note shows, the note takes the size line's place; on a wide screen the size line stays.
 - Added: 1.10 baseline
 - Changed: 1.10.0
-- Anchors: `#exportReadout`, `#exportMessage`, `#pairOutput`, "’s corners in Perspective first."
-- Source: `js/app/export-controls.js` (`syncExportReadouts`, `syncExportReadout`, `exportNotes`), `js/app/pair.js` (`pairReadout`, `togetherLayout`, `waitingSideToFix`)
-- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen: "The back is scaled down to fit the 16.7 MP limit." (or "The front…"; "Both sides are scaled down to fit the 16.7 MP limit." when both are; approved wording). The app differs today. R26. When the waiting side's corners are invalid, the line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"; approved wording) and Share, Download and Copy are dimmed. The app does this since 1.10.0. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
+- Anchors: `#exportReadout`, `#exportMessage`, `#pairOutput`, "’s corners in Perspective first.", " is scaled down to fit the ", " MP limit."
+- Source: `js/app/export-controls.js` (`syncExportReadouts`, `syncExportReadout`, `exportNotes`, `clampNote`, `limitMegapixels`), `js/app/pair.js` (`pairReadout`, `togetherLayout`, `waitingSideToFix`)
+- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen: "The back is scaled down to fit the 16.7 MP limit." (or "The front…"; "Both sides are scaled down to fit the 16.7 MP limit." when both are; approved wording). The app does this since 1.10.0. R26. When the waiting side's corners are invalid, the line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"; approved wording) and Share, Download and Copy are dimmed. The app does this since 1.10.0. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app does this since 1.10.0.
 - Cases: 3
 
 ### PAIR-37.1 The size line gives the joined size, or the front's and the back's   [auto: phone]
@@ -1710,8 +1710,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PAIR-37.2 Separately warns when the side not on screen is scaled down   [auto: phone]
-Written to ruling R14, in the words Rich approved; it fails until R14 is built (BUG-033).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test, opened with `?maxOutputArea=1000000` added to its address (index.html?maxOutputArea=1000000), which lowers the limit to 1 MP (1,000,000 pixels), the lowest a link may set

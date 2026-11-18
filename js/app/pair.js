@@ -457,7 +457,10 @@
     return geometry.ok ? null : otherSide(pair.current);
   }
 
-  // The export's readout for a pair: the choice and its size, e.g. "Together · 2881 × 2000 px".
+  // The export's readout for a pair: the choice and its size, e.g. "2881 × 2000 px".
+  // Together gives its layout. Separately gives layout: null and scaledDownSides, the sides
+  // ('front', 'back') whose own file is scaled down to fit the size limit: Export's note covers
+  // both files, not only the side on screen (ruling R14).
   // Only for a pair whose sides both have valid corners (waitingSideToFix says when not).
   function pairReadout() {
     const sides = sideStates();
@@ -465,12 +468,17 @@
       const layout = togetherLayout(sides);
       return { label: 'Together', size: `${layout.width} × ${layout.height}`, layout };
     }
-    const sizeOf = state => {
-      const output = CardEngine.computeGeometry(state, geometryConfig()).output;
-      return `${output.width} × ${output.height}`;
+    const outputs = {};
+    for (const side of SIDES) {
+      outputs[side] = CardEngine.computeGeometry(sides[side].state, geometryConfig()).output;
+    }
+    const sizeOf = side => `${outputs[side].width} × ${outputs[side].height}`;
+    return {
+      label: 'Separately',
+      size: `${sizeOf('front')} + ${sizeOf('back')}`,
+      layout: null,
+      scaledDownSides: SIDES.filter(side => outputs[side].isClamped),
     };
-    const size = `${sizeOf(sides.front.state)} + ${sizeOf(sides.back.state)}`;
-    return { label: 'Separately', size, layout: null };
   }
 
   // Runs task(side, photoEl) for each side from its full-resolution photo, one photo in memory at

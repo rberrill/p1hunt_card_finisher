@@ -1853,7 +1853,6 @@ test('PAIR-26.2 Together stacks landscape cards, the front on top [phone] [webki
 
 test('PAIR-27.1 A Together image over the canvas limit scales both cards down alike [phone] '
   + '[webkit]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-011');
   const lowLimitLink = `index.html?maxOutputArea=${LOW_AREA}`;
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR, lowLimitLink);
   await goToStep(page, 'export', hand);
@@ -1868,16 +1867,14 @@ test('PAIR-27.1 A Together image over the canvas limit scales both cards down al
   await chooseOutput(page, hand, 'together');
   const [joined] = await readoutSizes(page);
   const full = expectedTogether(front, back, 'portrait');
-  // A known defect: a plain value comparison, so the case fails at once rather than waiting.
-  await page.locator('#exportMessage').waitFor({ state: 'visible' });
-  const note = await page.locator('#exportMessage').textContent();
   await check('one size of at most 1 MP, the shape of the two cards side by side; a note reads '
     + `"${APPROVED_CLAMP_NOTE}"`, async () => {
     expect(joined[0] * joined[1]).toBeLessThanOrEqual(LOW_AREA);
     expect(full.width * full.height).toBeGreaterThan(LOW_AREA);
     const shapeChange = Math.abs(joined[0] / joined[1] - full.width / full.height);
     expect(shapeChange).toBeLessThan(full.width / full.height * SHAPE_TOLERANCE);
-    expect(note).toBe(APPROVED_CLAMP_NOTE);
+    await expect(page.locator('#exportMessage .export-note:visible'))
+      .toHaveText([APPROVED_CLAMP_NOTE]);
   });
   const [saved] = await downloadAll(page, hand, 1);
   const scale = joined[1] / full.height;
@@ -2284,7 +2281,6 @@ test('PAIR-37.2 Separately warns when the side not on screen is scaled down [pho
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-033');
   const lowLimitLink = `index.html?maxOutputArea=${LOW_AREA}`;
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR, lowLimitLink);
   const topLeft = await cornerOnPage(page, 0);
@@ -2325,9 +2321,6 @@ test('PAIR-37.2 Separately warns when the side not on screen is scaled down [pho
   // The sizes are still in the page while the note takes their place on a phone: the front is
   // under the limit as it is, the back scaled down to just under it.
   const [frontSize, backSize] = await readoutSizes(page);
-  // A known defect: plain value comparisons, so the case fails at once rather than waiting.
-  const isNoteShown = await page.locator('#exportMessage').isVisible();
-  const note = await page.locator('#exportMessage').textContent();
   await check('Separately is selected, and beside it one note reads '
     + `"${APPROVED_BACK_CLAMP_NOTE}"`, async () => {
     await expectSeparately(page);
@@ -2335,8 +2328,15 @@ test('PAIR-37.2 Separately warns when the side not on screen is scaled down [pho
     const backScaled = backSize[0] * backSize[1];
     expect(backScaled, 'the back is scaled to the limit').toBeLessThanOrEqual(LOW_AREA);
     expect(backScaled, 'the back is scaled to the limit').toBeGreaterThan(LOW_AREA * AREA_FILL_MIN);
-    expect(isNoteShown, 'a note shows').toBe(true);
-    expect(note).toBe(APPROVED_BACK_CLAMP_NOTE);
+    const notes = page.locator('#exportMessage .export-note:visible');
+    await expect(notes).toHaveText([APPROVED_BACK_CLAMP_NOTE]);
+    // Beside the control: to its left, on its row.
+    const note = await notes.boundingBox();
+    const control = await page.locator('#pairOutput').boundingBox();
+    expect(note.x + note.width, 'the note ends before the control').toBeLessThanOrEqual(
+      control.x + 0.5);
+    expect(note.y, 'the note is on the control\'s row').toBeLessThan(control.y + control.height);
+    expect(note.y + note.height, 'the note is on the control\'s row').toBeGreaterThan(control.y);
   });
 });
 

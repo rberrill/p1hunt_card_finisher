@@ -123,20 +123,13 @@ async function checkRedoLive(page, check) {
   });
 }
 
-// The clamp note in today's words or in the words Rich approved (ruling R15): cases about
-// which notes show pass with either; EXP-06.3 and EXP-06.4 check the approved words.
-const CLAMP_NOTES = [
-  'Clamped to fit the 16.8 MP canvas limit.',
-  'Scaled down to fit the 16.7 MP limit.',
-];
-// The approved clamp note (rulings R14 and R15, tests/catalog/wording.md).
+// The clamp note, in the words Rich approved (rulings R14 and R15, tests/catalog/wording.md).
 const APPROVED_CLAMP_NOTE = 'Scaled down to fit the 16.7 MP limit.';
-// The approved note for a pair saved Separately when the front, not on screen, is clamped.
-// EXP-06.4 lowers the limit to 1 MP with a link, and the note gives the limit in force (R47).
+// EXP-06.4 lowers the limit to 1 MP with a link, and the note gives the limit in force (R47):
+// the single photo's note, and the note for a pair saved Separately when the front, not on
+// screen, is clamped.
+const LOW_LIMIT_CLAMP_NOTE = 'Scaled down to fit the 1 MP limit.';
 const APPROVED_FRONT_CLAMP_NOTE = 'The front is scaled down to fit the 1 MP limit.';
-// The clamp note in today's words or the approved ones, whatever the limit a link sets.
-const ANY_CLAMP_NOTE = new RegExp('^(Clamped to fit the [0-9.]+ MP canvas limit'
-  + '|Scaled down to fit the [0-9.]+ MP limit)[.]$');
 
 // Taps one of the Size choices by its label ('1080', '2000', '3000' or 'Original').
 const tapSize = (page, hand, label) => hand.tap(choiceButton(page, 'exportSize', label));
@@ -427,12 +420,10 @@ test('EXP-06.1 A wide screen shows every note, each with an amber mark [desktop]
     await expect(page.locator('[data-step="levels"]:visible .step-tab-mark')).toBeVisible();
   });
   await goToStep(page, 'export', hand);
-  await check('two notes: the Levels note, then the clamp note', async () => {
-    const notes = await visibleNotes(page);
-    expect(notes).toHaveLength(2);
-    expect(notes[0]).toBe(LEVELS_NOTE);
-    expect(CLAMP_NOTES).toContain(notes[1]);
-  });
+  await check(`two notes: the Levels note, then the clamp note, "${APPROVED_CLAMP_NOTE}"`,
+    async () => {
+      expect(await visibleNotes(page)).toEqual([LEVELS_NOTE, APPROVED_CLAMP_NOTE]);
+    });
   await check('the Fill outside photo list offers Transparent, White, Black and Custom…',
     async () => {
       await expect(page.locator('#fill')).toBeVisible();
@@ -478,10 +469,8 @@ test('EXP-06.2 A phone shows one note at a time, in order [phone]', async ({
     await expect(page.locator('[data-step="levels"]:visible .step-tab-mark')).toBeHidden();
   });
   await goToStep(page, 'export', hand);
-  await check('one note shows: the clamp note', async () => {
-    const notes = await visibleNotes(page);
-    expect(notes).toHaveLength(1);
-    expect(CLAMP_NOTES).toContain(notes[0]);
+  await check(`one note shows: the clamp note, "${APPROVED_CLAMP_NOTE}"`, async () => {
+    expect(await visibleNotes(page)).toEqual([APPROVED_CLAMP_NOTE]);
   });
   await tapSize(page, hand, '1080');
   await check('at 1080 one note shows: the JPEG note', async () => {
@@ -490,7 +479,6 @@ test('EXP-06.2 A phone shows one note at a time, in order [phone]', async ({
 });
 
 test('EXP-06.3 The clamp note reads 16.7 MP [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-011');
   await startOn(page, testInfo, { address: OVER_LIMIT_LINK });
   await check('the size line begins Output 4096 × 4096 px · JPEG', async () => {
     expect(await readoutText(page)).toMatch(/^Output 4096 × 4096 px · JPEG/);
@@ -523,16 +511,17 @@ async function addBack(page, hand, check, name) {
 
 test('EXP-06.4 For a pair saved Separately, a clamp on the other side shows a note [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-012');
     const hand = await startOn(page, testInfo, { address: 'index.html?maxOutputArea=1000000' });
     await tapSize(page, hand, 'Original');
-    await check('the size line reads Output 1000 × 1000 px · JPEG, with the clamp note under it',
-      async () => {
-        expect(await readoutText(page)).toBe('Output 1000 × 1000 px · JPEG');
-        const notes = await visibleNotes(page);
-        expect(notes).toHaveLength(1);
-        expect(notes[0]).toMatch(ANY_CLAMP_NOTE);
-      });
+    await check('the size line reads Output 1000 × 1000 px · JPEG, and under it the clamp note '
+      + `reads "${LOW_LIMIT_CLAMP_NOTE}"`, async () => {
+      expect(await readoutText(page)).toBe('Output 1000 × 1000 px · JPEG');
+      expect(await visibleNotes(page)).toEqual([LOW_LIMIT_CLAMP_NOTE]);
+      const readout = await page.locator('#exportReadout').boundingBox();
+      const note = await page.locator('#exportMessage .export-note').boundingBox();
+      expect(note.y, 'the note is under the size line').toBeGreaterThanOrEqual(
+        readout.y + readout.height - 0.5);
+    });
     await addBack(page, hand, check, PAIR_BACK);
     await check('the back opens, with Front and Back in the top bar and Back selected',
       async () => {
@@ -547,10 +536,13 @@ test('EXP-06.4 For a pair saved Separately, a clamp on the other side shows a no
     await check('Separately is selected', async () => {
       expect(await selectedChoices(page, 'pairOutput')).toEqual(['Separately']);
     });
-    await check(`one amber note reads "${APPROVED_FRONT_CLAMP_NOTE}"`, async () => {
-      const notes = await visibleNotes(page);
-      expect(notes).toEqual([APPROVED_FRONT_CLAMP_NOTE]);
-    });
+    await check(`one note, led by an amber warning mark, reads "${APPROVED_FRONT_CLAMP_NOTE}"`,
+      async () => {
+        expect(await visibleNotes(page)).toEqual([APPROVED_FRONT_CLAMP_NOTE]);
+        const colors = await page.locator('#exportMessage .export-note .icon')
+          .evaluateAll(icons => icons.map(icon => getComputedStyle(icon).color));
+        expect(colors).toEqual([WARN_AMBER]);
+      });
   });
 
 // Expects the export note to be whole within its column and to cover none of the buttons of

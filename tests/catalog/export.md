@@ -218,19 +218,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## EXP-06 Notes under the size line
 
-Amber-marked notes under the size line explain an output you might not expect: **Levels has unapplied changes; export uses the applied levels.**, **Clamped to fit the 16.8 MP canvas limit.** and **JPEG has no transparency; empty areas will be white.**
+Amber-marked notes under the size line explain an output you might not expect: **Levels has unapplied changes; export uses the applied levels.**, **Scaled down to fit the 16.7 MP limit.** and **JPEG has no transparency; empty areas will be white.** The size limit's note gives the limit in force. For a pair saved Separately it also covers the side not on screen, which it names: **The front is scaled down to fit the 16.7 MP limit.** (MSG-72 has its other wordings).
 
 - Risk: medium
 - Check: script
 - Layout: both. A phone shows one note at a time, in that order, the next once the first is dealt with; a wide screen shows them all.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#exportMessage`, "Levels has unapplied changes; export uses the applied levels.", "Clamped to fit the ", "JPEG has no transparency; empty areas will be white."
-- Source: `js/app/export-controls.js` (`exportNotes`, `buildNote`, `syncExportReadouts`); `css/app.css` (the phone rules for the Export notes)
-- Ruling: R15. The clamp note reads 16.7 MP, rounded down. The app differs today. R14. For a pair saved Separately, the clamp note shows when either side is clamped and names the side when it isn't the one on screen. The app differs today. Rich approved the words (wording.md, 16 November 2026): "Scaled down to fit the 16.7 MP limit."; for the side not on screen, "The front is scaled down to fit the 16.7 MP limit." (or "The back…"); for both, "Both sides are scaled down to fit the 16.7 MP limit." R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
+- Changed: 1.10.0
+- Anchors: `#exportMessage`, "Levels has unapplied changes; export uses the applied levels.", "Scaled down to fit the ", " is scaled down to fit the ", " MP limit.", "JPEG has no transparency; empty areas will be white."
+- Source: `js/app/export-controls.js` (`exportNotes`, `clampNote`, `limitMegapixels`, `buildNote`, `syncExportReadouts`); `js/app/pair.js` (`pairReadout`); `css/app.css` (the phone rules for the Export notes)
+- Ruling: R15. The clamp note reads 16.7 MP, rounded down. The app does this since 1.10.0. R14. For a pair saved Separately, the clamp note shows when either side is clamped and names the side when it isn't the one on screen. The app does this since 1.10.0. Rich approved the words (wording.md, 16 November 2026): "Scaled down to fit the 16.7 MP limit."; for the side not on screen, "The front is scaled down to fit the 16.7 MP limit." (or "The back…"); for both, "Both sides are scaled down to fit the 16.7 MP limit." R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app does this since 1.10.0.
 - Cases: 4
 
-The note about the size limit is called the clamp note here. EXP-06.1 and EXP-06.2 are about which notes show and in what order, and pass with the clamp note in today's words ("Clamped to fit the 16.8 MP canvas limit.") or the approved ones; EXP-06.3 and EXP-06.4 check the approved words.
+The note about the size limit is called the clamp note here. EXP-06.1 and EXP-06.2 are about which notes show and in what order; EXP-06.3 and EXP-06.4 are about the clamp note's words.
 
 ### EXP-06.1 A wide screen shows every note, each with an amber mark   [auto: desktop]
 Before you start:
@@ -243,7 +243,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **Auto** in the row of tools | A white dot shows on the **Levels** tab: the levels have changes not yet applied |
-| 2 | Click **Export** in the step tabs | Under the size line (the line under the **Size** and **Format** choices), two notes: "Levels has unapplied changes; export uses the applied levels.", then the clamp note (its words are EXP-06.3's) |
+| 2 | Click **Export** in the step tabs | Under the size line (the line under the **Size** and **Format** choices), two notes: "Levels has unapplied changes; export uses the applied levels.", then the clamp note, "Scaled down to fit the 16.7 MP limit." |
 | 3 | In **Export options** (in the panel on the right), click the **Fill outside photo** row | A list offers **Transparent**, **White**, **Black** and **Custom…** |
 | 4 | Click **Transparent** | A third note follows them: "JPEG has no transparency; empty areas will be white." |
 | 5 | Look at the start of each note | Each one is led by an amber warning mark (a triangle) |
@@ -268,15 +268,13 @@ Set the fill to Transparent: tap the options tab (the tab with an up arrow on th
 | 3 | Set the fill to Transparent | Still only the Levels note shows |
 | 4 | Tap **Levels** in the step tabs | The Levels controls show, with **Apply** in the line above them |
 | 5 | Tap **Apply** | The white dot on the Levels tab goes |
-| 6 | Tap **Export** in the step tabs | One note shows: the clamp note (its words are EXP-06.3's) |
+| 6 | Tap **Export** in the step tabs | One note shows: the clamp note, "Scaled down to fit the 16.7 MP limit." |
 | 7 | Tap **1080** | One note shows: "JPEG has no transparency; empty areas will be white." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-06.3 The clamp note reads 16.7 MP   [auto: phone]
-Written to ruling R15, in the words Rich approved; it fails until R15 is built (BUG-011).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test, opened with `?export.longEdge=12000&export.allowUpscale=1` added to its address, so the output is larger than the canvas limit
@@ -293,8 +291,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-06.4 For a pair saved Separately, a clamp on the other side shows a note   [auto: phone]
-Written to ruling R14, in the words Rich approved; it fails until R14 is built (BUG-012).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test, opened with `?maxOutputArea=1000000` added to its address, which lowers the canvas limit to 1 MP
@@ -304,12 +300,12 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Original** | The size line reads Output 1000 × 1000 px · JPEG, and under it the clamp note (its words are EXP-06.3's; this case checks only that it shows) |
+| 1 | Tap **Original** | The size line reads Output 1000 × 1000 px · JPEG, and under it the clamp note reads "Scaled down to fit the 1 MP limit.", with the limit in force, which this case's link lowers to 1 MP (ruling R47) |
 | 2 | Tap **Add back** (in the bottom row of buttons) | The file picker opens |
 | 3 | Choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** and **Back** show in the top bar, with **Back** selected |
 | 4 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | **Together** and **Separately** show beside the size line |
 | 5 | Tap **Separately** | **Separately** is selected |
-| 6 | Look under the size line | One amber note reads "The front is scaled down to fit the 1 MP limit.", the approved words with the limit in force, which this case's link lowers to 1 MP (ruling R47) |
+| 6 | Look beside the **Together** and **Separately** control (with a pair open on a phone the note takes the size line's place) | One note, led by an amber warning mark, reads "The front is scaled down to fit the 1 MP limit.": the front, which is not on screen, is the side scaled down |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

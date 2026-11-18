@@ -2429,21 +2429,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-72 Export's canvas-limit note
 
-Under Export's size line, with an amber warning mark, when the output (or a pair's Together image) is scaled down to fit the canvas area limit: "Clamped to fit the 16.8 MP canvas limit." The figure is worked out from the limit and rounded, so today it reads 16.8; for a pair saved **Separately** only the open side is checked.
+Under Export's size line, with an amber warning mark, when the output (or a pair's Together image) is scaled down to fit the size limit: "Scaled down to fit the 16.7 MP limit." The figure is the limit in force in millions of pixels, rounded down to a tenth, so a link that lowers the limit to 1,000,000 pixels shows "1 MP". For a pair saved **Separately** the note covers both files: it names the side when the one scaled down is not on screen ("The front is scaled down to fit the 16.7 MP limit.", or "The back…"), and reads "Both sides are scaled down to fit the 16.7 MP limit." when both are.
 
 - Risk: low
 - Check: script
 - Layout: both. A phone shows one note at a time, in the order unapplied levels, canvas limit, JPEG; a wide screen lists them all. None shows while the corners are invalid.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Clamped to fit the ", " MP canvas limit.", `#exportMessage`, `CONFIG.maxOutputArea`
-- Source: `js/app/export-controls.js` (`exportNotes`, `syncExportReadouts`); `js/app/pair.js` (`pairReadout`, `togetherLayout`)
-- Ruling: R14 and R15. The note reads "Scaled down to fit the 16.7 MP limit." (16.7 MP, rounded down). For a pair saved Separately it shows when either side is scaled down, and names the side when it is not the one on screen: "The front is scaled down to fit the 16.7 MP limit." (or "The back…"), or "Both sides are scaled down to fit the 16.7 MP limit." (wording approved by Rich, tests/catalog/wording.md). The app differs today. R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
-- Cases: 2
+- Changed: 1.10.0
+- Anchors: "Scaled down to fit the ", " is scaled down to fit the ", "Both sides are scaled down to fit the ", " MP limit.", `#exportMessage`, `CONFIG.maxOutputArea`
+- Source: `js/app/export-controls.js` (`exportNotes`, `clampNote`, `limitMegapixels`, `syncExportReadouts`); `js/app/pair.js` (`pairReadout`, `togetherLayout`)
+- Ruling: R14 and R15. The note reads "Scaled down to fit the 16.7 MP limit." (16.7 MP, rounded down). For a pair saved Separately it shows when either side is scaled down, and names the side when it is not the one on screen: "The front is scaled down to fit the 16.7 MP limit." (or "The back…"), or "Both sides are scaled down to fit the 16.7 MP limit." (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0. R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app does this since 1.10.0.
+- Cases: 3
 
 ### MSG-72.1 The canvas-limit note says 16.7 MP   [auto: phone]
-Written to rulings R14 and R15, in the wording Rich approved; it fails until that is built (BUG-011).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -2459,8 +2457,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-72.2 With Separately, the note also covers the side not on screen   [auto: phone]
-Written to ruling R14, in the wording Rich approved; it fails until that is built (BUG-012).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -2472,7 +2468,25 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Original** | **Original** is selected (a white fill) |
 | 2 | Tap **Separately** | **Separately** is selected (a white fill) |
-| 3 | Read the note under the size line | With the back on screen, one amber note reads "The front is scaled down to fit the 1 MP limit.", the approved words with the limit in force, which this case's link lowers to 1 MP (ruling R47) |
+| 3 | Read the note beside the **Together** and **Separately** control (with a pair open on a phone the note takes the size line's place) | With the back on screen, one note, led by the amber warning mark, reads "The front is scaled down to fit the 1 MP limit.", the approved words with the limit in force, which this case's link lowers to 1 MP (ruling R47) |
+| 4 | Tap **Front** in the top bar | The front opens, and the one note reads "Scaled down to fit the 1 MP limit.": the side scaled down is now the one on screen, so the note names no side |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-72.3 With Separately, the note says so when both sides are scaled down   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/, used for both sides
+- Starting screen: the app opened from a link ending ?maxOutputArea=1000000 (a 1 MP limit); the pair made: IMG_9136.JPEG opened, then on Export **Add back** and IMG_9136.JPEG chosen again; the back open, on the Export step
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Original** | **Original** is selected (a white fill) |
+| 2 | Tap **Separately** | **Separately** is selected (a white fill) |
+| 3 | Read the note beside the **Together** and **Separately** control (with a pair open on a phone the note takes the size line's place) | One note, led by the amber warning mark, reads "Both sides are scaled down to fit the 1 MP limit." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

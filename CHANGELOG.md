@@ -84,6 +84,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - On the Overlay step, while the corners can't be used (they cross or fold inward), **Add logo**, **Use saved overlay** and **Replace logo** are greyed out and the line above the controls reads "Fix the corners in Perspective first." They used to stay live: a chosen file did nothing and said nothing, and **Use saved overlay** added a logo that wasn't drawn.
 - Two messages about a logo now say "logo", as the Overlay step's buttons do: "That file is 6.0 MB. The logo limit is 5 MB." and "This logo works on this photo, but it can’t be saved in this browser." They said "overlay".
 - Opened from a link that lowers the logo size limit, the Overlay step's hint gives that limit, in KB when it is under 1 MB (such as "up to 1.5 MB." or "up to 64 KB."). It used to say "up to 5 MB." whatever the limit was. The message for a file over the limit gives it the same way ("The logo limit is 64 KB."); it used to read "0.0625 MB".
+- Export's note for an output held to the browser's size limit now reads "Scaled down to fit the 16.7 MP limit." It used to read "Clamped to fit the 16.8 MP canvas limit.", a figure rounded up past the real limit of 16,777,216 pixels.
+- For a pair saved **Separately**, that note now covers both files. It used to look only at the side you were on, so when the other side was the one scaled down, nothing said why its size was smaller. When the side scaled down isn't the one on screen the note names it, "The back is scaled down to fit the 16.7 MP limit." (or the front), and when both are it reads "Both sides are scaled down to fit the 16.7 MP limit."
 
 ## [1.9.0] - 2026-11-10
 

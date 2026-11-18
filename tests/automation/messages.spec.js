@@ -343,11 +343,13 @@ const SEPARATE_FILES = [
 const TURNED_EDITS = '01_chrome_flat_black-turned-edits.json';
 // The error the stand-in encoder makes the export raise (support/messages.js, failEncoding).
 const ENCODING_FAILED = 'Encoding failed (image too large for this browser?)';
-// The canvas-limit note, in the wording Rich approved (rulings R14 and R15). The pair's note
-// names the front; its limit is the one the case's link sets.
+// The canvas-limit note, in the wording Rich approved (rulings R14 and R15).
 const SCALED_DOWN = 'Scaled down to fit the 16.7 MP limit.';
-// MSG-72.2's link lowers the limit to 1 MP; the note gives the limit in force (R47).
+// MSG-72.2's and MSG-72.3's link lowers the limit to 1 MP; the note gives the limit in force
+// (R47). For a pair saved Separately it names the side not on screen, or says both.
+const SCALED_DOWN_1MP = 'Scaled down to fit the 1 MP limit.';
 const FRONT_SCALED_DOWN = 'The front is scaled down to fit the 1 MP limit.';
+const BOTH_SCALED_DOWN = 'Both sides are scaled down to fit the 1 MP limit.';
 // MSG-51.1's drag of the top-left corner, and how close its end must be, in CSS px.
 const MOVE_PX = 40;
 const MOVE_TOLERANCE_PX = 2;
@@ -2083,26 +2085,23 @@ test('MSG-72.1 The canvas-limit note says 16.7 MP [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-011');
   await start(page, testInfo, { photo: SLAB_PHOTO, address: CLAMP_LINK });
-  await page.locator('#exportMessage .export-note').first().waitFor();
-  // A plain reading: the known defect fails at once rather than waiting.
-  const notes = (await exportNotesNow(page)).map(note => note.text);
-  await check(`Under the size line, led by the amber warning mark: "${SCALED_DOWN}"`, () => {
-    expect(notes).toEqual([SCALED_DOWN]);
+  await check(`Under the size line, led by the amber warning mark: "${SCALED_DOWN}"`, async () => {
+    await expectExportNote(page, SCALED_DOWN);
   });
 });
 
 // The pair for MSG-72.2: a large front and a small back (EXP-06.4's), and the area limit that
-// clamps the front at Original but not the back.
+// clamps the front at Original but not the back. MSG-72.3's pair is the large photo twice, so
+// the limit clamps both sides.
 const CLAMP_PAIR = { front: SLAB_PHOTO, back: BACK };
+const CLAMP_BOTH_PAIR = { front: SLAB_PHOTO, back: SLAB_PHOTO };
 const AREA_LIMIT_LINK = 'index.html?maxOutputArea=1000000';
 
 test('MSG-72.2 With Separately, the note also covers the side not on screen [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-012');
   const hand = await makePair(page, testInfo, CLAMP_PAIR, AREA_LIMIT_LINK);
   await goToStep(page, 'export', hand);
   await chooseSize(page, hand, '0');
@@ -2110,12 +2109,33 @@ test('MSG-72.2 With Separately, the note also covers the side not on screen [pho
     expect(await selectedChoices(page, 'exportSize')).toEqual(['Original']);
   });
   await chooseSeparately(page, hand, check);
-  // A plain reading: the known defect fails at once rather than waiting.
-  const notes = (await exportNotesNow(page)).map(note => note.text);
-  await check(`With the back on screen, one amber note reads "${FRONT_SCALED_DOWN}", the `
-    + 'approved words with the limit in force, which this case\'s link lowers to 1 MP (ruling '
-    + 'R47)', () => {
-    expect(notes).toEqual([FRONT_SCALED_DOWN]);
+  await check('With the back on screen, one note, led by the amber warning mark, reads '
+    + `"${FRONT_SCALED_DOWN}", the approved words with the limit in force, which this case's `
+    + 'link lowers to 1 MP (ruling R47)', async () => {
+    expect((await editState(page)).source.name).toBe(BACK);
+    await expectExportNote(page, FRONT_SCALED_DOWN);
+  });
+  await switchTo(page, hand, 'front');
+  await check(`The front opens, and the one note reads "${SCALED_DOWN_1MP}": the side scaled `
+    + 'down is now the one on screen, so the note names no side', async () => {
+    expect((await editState(page)).source.name).toBe(SLAB_PHOTO);
+    await expectExportNote(page, SCALED_DOWN_1MP);
+  });
+});
+
+test('MSG-72.3 With Separately, the note says so when both sides are scaled down [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await makePair(page, testInfo, CLAMP_BOTH_PAIR, AREA_LIMIT_LINK);
+  await goToStep(page, 'export', hand);
+  await chooseSize(page, hand, '0');
+  await check('Original is selected (a white fill)', async () => {
+    expect(await selectedChoices(page, 'exportSize')).toEqual(['Original']);
+  });
+  await chooseSeparately(page, hand, check);
+  await check(`One note, led by the amber warning mark, reads "${BOTH_SCALED_DOWN}"`, async () => {
+    await expectExportNote(page, BOTH_SCALED_DOWN);
   });
 });
 
