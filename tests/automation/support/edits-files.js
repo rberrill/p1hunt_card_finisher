@@ -1,6 +1,6 @@
 // Helpers for the edits-file cases (tests/catalog/edits-files.md) that the shared
 // edits-drop-keys.js doesn't have: the committed files in tests/fixtures/ that the cases name,
-// the toast's text as the screen shows it (for the one combined warning of ruling R12), Undo
+// the toast's lines as the screen shows them (for Load edits' one message, ruling R12), Undo
 // and Redo as the top bar shows them, and the green logo as it is drawn on the photo.
 'use strict';
 const fs = require('fs');
@@ -33,11 +33,14 @@ function fixtureFile(name) {
 // commit.
 const fixtureEdits = name => JSON.parse(fs.readFileSync(fixturePath(name), 'utf8'));
 
-// The toast's text as the screen shows it, with every run of white space (a line break between
-// two lines too) made one space, so lines on separate rows and lines in one run read the same.
-function toastShownText(page) {
-  return page.locator('#toast .toast-text')
-    .evaluate(el => el.innerText.replace(/\s+/g, ' ').trim());
+// The toast's text as the screen shows it: { lines, isCut }. lines: its lines, top to bottom (a
+// long line the screen wraps onto a second row is still one line). isCut: true when some of the
+// text is cut off below the toast's last row, so a person could not read it all.
+function toastShownLines(page) {
+  return page.locator('#toast .toast-text').evaluate(el => ({
+    lines: el.innerText.split('\n').map(line => line.trim()),
+    isCut: el.scrollHeight > el.clientHeight + 1,
+  }));
 }
 
 // Whether Undo and Redo in the top bar are greyed out now: { undo, redo }, true when greyed.
@@ -67,7 +70,7 @@ module.exports = {
   fixturePath,
   fixtureFile,
   fixtureEdits,
-  toastShownText,
+  toastShownLines,
   undoRedoGreyed,
   isLogoGreen,
 };

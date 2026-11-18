@@ -883,9 +883,10 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 /* Over the photo's bottom edge: inset 16 px, 36 px up on the phone (12 px above the grabber's
    24 px tab), above every other layer. core.js sets --toast-lift to the height of the photo an
    open sheet covers, which puts the toast as far above that sheet's edge, so it clears the
-   sheet's tab too. The pill grows upward from its bottom edge, to three lines at most, and
-   never takes a touch. Motion M10: it rises 8 px as it fades in (160 ms) and fades out in
-   200 ms; one it replaces fades out in 80 ms; under reduced motion it only fades. */
+   sheet's tab too. The pill grows upward from its bottom edge, to three lines at most (a message
+   of several lines, below, shows them all), and never takes a touch. Motion M10: it rises 8 px
+   as it fades in (160 ms) and fades out in 200 ms; one it replaces fades out in 80 ms; under
+   reduced motion it only fades. */
 .toast-message {
   position: absolute;
   left: 16px;
@@ -939,6 +940,11 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   /* A word wider than the pill (a long file name) breaks, so it is never cut at the edge. */
   overflow-wrap: anywhere;
 }
+/* A message of several lines (toast.js, `lines`): each line is a block of its own, and none is
+   cut, since each says something of its own (Load edits: "Edits loaded.", then a line for each
+   problem with the file). A line break inside a line's text still shows as a space. */
+.toast-text.is-lines { display: block; -webkit-line-clamp: none; }
+.toast-line { display: block; }
 /* A wide screen: bottom center of the photo, 20 px up, as wide as its words up to 460 px
    (frame DT10). */
 @media (min-width: 761px) {

@@ -895,16 +895,15 @@ Before you start:
 - Edits file: pair-front-square-crop-edits.json from tests/fixtures/: edits saved with **Save edits** from 14_front_portrait_raw_white.JPEG on its own, turned 3.0° on Rotate, with its square **1:1** crop box dragged 30 px down by hand (in the file: `"fine": 3` and `"mode": "manual"`, `"preset": "1:1"`)
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back, then tap **Front** in the top bar and **Export** in the step tabs. The front is open on Export, its angle at 0.0°
 
-Open **Export options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls. Close them: on a phone, tap the × at the top right of the sheet; on a wide screen they stay shown.
+Open **Export options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Open **Export options** | **Save edits** and **Load edits** show |
 | 2 | Tap **Load edits** | The file picker opens |
-| 3 | Choose pair-front-square-crop-edits.json | The options stay open, with no red message |
-| 4 | Close **Export options** | The options are closed on a phone; on a wide screen, nothing changes |
-| 5 | Tap **Rotate** in the step tabs | The angle reads 3.0°: the file's edits were loaded |
-| 6 | Tap **Crop** in the step tabs | **5:7 card** is selected and the box is 5 wide to 7 high, fitted around the card: the file's square box was dropped |
+| 3 | Choose pair-front-square-crop-edits.json | No red message shows; on a phone the options have closed |
+| 4 | Tap **Rotate** in the step tabs | The angle reads 3.0°: the file's edits were loaded |
+| 5 | Tap **Crop** in the step tabs | **5:7 card** is selected and the box is 5 wide to 7 high, fitted around the card: the file's square box was dropped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

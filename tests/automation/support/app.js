@@ -30,9 +30,10 @@ const CROSS_PAST_PX = 60;
 // The full path of a sample photo.
 const samplePath = name => path.join(root, 'samples', name);
 
-// The lines of ruling R12's one Load edits warning, in the words Rich approved
-// (tests/catalog/wording.md). R48: they apply to every load with a problem; R59: the logo's
-// line says "Logo".
+// The lines of ruling R12's one Load edits message, in the words Rich approved
+// (tests/catalog/wording.md). R48: "Edits loaded." comes first on every load, alone and white
+// when nothing was wrong, with a line for each problem when something was; R59: the logo's line
+// says "Logo".
 const RULED_EDITS_LINES = {
   loaded: 'Edits loaded.',
   logoLeftOut: 'Logo left out; it couldn’t be read.',

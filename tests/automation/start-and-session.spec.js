@@ -1030,8 +1030,9 @@ async function saveTheEdits(page, hand) {
   return editsFile;
 }
 
-// STA-10.4's named action "Load the edits": on Export, opens its options, loads the edits file
-// `editsFile` (a download) and closes them once its logo is back on the photo.
+// STA-10.4's named action "Load the edits": on Export, opens its options and loads the edits
+// file `editsFile` (a download); returns once its logo is back on the photo and, on a phone,
+// the options have closed.
 async function loadTheEdits(page, hand, editsFile, logo) {
   await goToStep(page, 'export', hand);
   await openOptions(page, hand, 'export');
@@ -1042,7 +1043,8 @@ async function loadTheEdits(page, hand, editsFile, logo) {
   };
   await pickWith(page, hand, page.locator('#btnLoadEdits'), edits);
   await expect.poll(async () => (await editState(page)).overlay.id).toBe(logo);
-  await closeOptions(page, hand, 'export');
+  // On a phone the app closes Export options when it applies the file.
+  if (hand.isTouch) await page.locator('#exportSheet').waitFor({ state: 'hidden' });
 }
 
 test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webkit]', async ({

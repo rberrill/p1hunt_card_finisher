@@ -1379,13 +1379,9 @@ test('PAIR-18.2 An edits file with a hand-drawn square crop can\'t break the loc
   });
   await chooser.setFiles(SQUARE_CROP_EDITS);
   await page.waitForFunction(() => window.__straightener.app.state.rotation.fine === 3);
-  await check('the options stay open, with no red message', async () => {
-    await expect(page.locator('#btnLoadEdits')).toBeVisible();
+  await check('no red message shows; on a phone the options have closed', async () => {
     await expect(page.locator('#toast.is-shown.is-error')).toHaveCount(0);
-  });
-  await closeOptions(page, hand, 'export');
-  await check('the options are closed on a phone', async () => {
-    await expect(page.locator('#btnLoadEdits')).toBeHidden();
+    if (hand.isTouch) await expect(page.locator('#exportSheet')).toBeHidden();
   });
   await goToStep(page, 'rotate', hand);
   await check('the angle reads 3.0°: the file\'s edits were loaded', async () => {

@@ -148,15 +148,15 @@ On a fail, record: what differs from the description, the screenshot.
 
 ## MSG-04 Messages never block a touch
 
-Touches pass through a message to the photo beneath it. A long message is cut to three lines with an ellipsis, and a screen reader announces each message without interrupting.
+Touches pass through a message to the photo beneath it. A long message is cut to three lines with an ellipsis; a message of several lines, as **Load edits** shows, has every line on show, with none cut (MSG-38.2). A screen reader announces each message without interrupting.
 
 - Risk: medium
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#toast`, `.toast-text`
-- Source: `js/app/parts/toast.js` (`buildToast`); `css/app.css` (the toast part)
+- Source: `js/app/parts/toast.js` (`buildToast`, `setToastText`, `setToastLines`); `css/app.css` (the toast part)
 - Cases: 3
 
 ### MSG-04.1 A drag that starts on a message moves the photo beneath it   [auto: phone]
@@ -1262,21 +1262,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-37 Edits for a photo of another size
 
-An error message, for 6 seconds, when the edits file was saved for a photo of another size; nothing is applied: "These edits are for a {width}×{height} photo; this one is {width}×{height}."
+An error message, for 6 seconds, when the edits file was saved for a photo of another size; nothing is applied: "These edits are for a {width} × {height} photo; this one is {width} × {height}."
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "These edits are for a ", " photo; this one is "
 - Source: `js/app/export.js` (`loadEdits`)
-- Ruling: R58. Every message writes sizes "W × H" and "N px", with spaces. The app differs today.
+- Ruling: R58. "W × H" and "N px" in every message. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-37.1 Edits for a photo of another size   [auto: phone]
-Written to ruling R58; it fails until that is built (BUG-282).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -1299,21 +1297,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-38 Edits saved for a file of another name
 
-A warning, for 5 seconds, when the edits file's photo name differs but the size matches; the edits are applied: "Edits were saved for “{name}”. Applied anyway — sizes match." The name is cut to 60 characters, or reads "another photo" when the file has none.
+When the edits file's photo name differs but the size matches, the edits are applied and **Load edits** shows one amber warning: "Edits loaded.", and under it the line "Saved for “{name}”; sizes match." Each problem with a file is a line of that one message, so a file with three problems shows four lines, in one message that no other replaces. The name is cut to 60 characters (SEC-11.2), and a line break or a direction mark in it shows as a space (SEC-11.3).
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Edits were saved for “", "Applied anyway — sizes match.", "another photo"
-- Source: `js/app/export.js` (`loadEdits`); `js/app/core.js` (`shortText`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Logo left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
+- Changed: 1.10.0
+- Anchors: "”; sizes match.", "another photo"
+- Source: `js/app/export.js` (`loadEdits`, `shownEditsName`); `js/app/core.js` (`shortText`, `toast`); `js/app/parts/toast.js` (`setToastLines`)
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-38.1 Edits saved for a file of another name   [auto: phone]
-Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -1335,8 +1331,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-38.2 Three problems in one edits file make one warning   [auto: phone]
-Written to ruling R12, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -1360,21 +1354,19 @@ On a fail, record: the row number, what you saw instead, a screenshot or a scree
 
 ## MSG-39 Settings in the edits file that were reset
 
-A warning, for 6 seconds, when some fields of the edits file weren't valid and fell back to their defaults: "Some settings in these edits weren’t valid and were reset: {fields}." The fields are a comma list of their names.
+When a setting in the edits file wasn't valid and fell back to its default, the rest of the file is applied and **Load edits** shows one amber warning: "Edits loaded.", and under it the line "Reset, not valid: {fields}.", which names what was reset.
 
 - Risk: medium
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Some settings in these edits weren’t valid and were reset: "
+- Changed: 1.10.0
+- Anchors: "Reset, not valid: "
 - Source: `js/app/export.js` (`loadEdits`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Logo left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-39.1 Settings in the edits file that were reset   [auto: phone]
-Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -1397,21 +1389,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-40 A logo in the edits file that can't be read
 
-A warning, for 5 seconds, when the logo inside the edits file is missing or unusable; the edits are applied without it: "The overlay in these edits couldn’t be read, so it was left out."
+When the logo inside the edits file can't be used, the edits are applied without it and **Load edits** shows one amber warning: "Edits loaded.", and under it the line "Logo left out; it couldn’t be read."
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "The overlay in these edits couldn’t be read, so it was left out."
+- Changed: 1.10.0
+- Anchors: "Logo left out; it couldn’t be read."
 - Source: `js/app/export.js` (`loadEdits`); `js/app/overlay.js` (`overlayFromEdits`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies, instead of up to three messages that replace each other before they can be read: "Edits loaded.", "Saved for “NAME”; sizes match.", "Reset, not valid: LIST.", "Logo left out; it couldn’t be read." (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today. R59. The logo's line says "Logo" (approved wording). The app differs today.
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0. R59. Messages say "logo"; R12's line becomes "Logo left out; it couldn’t be read." Button names are not touched. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-40.1 A logo in the edits file that can't be read   [auto: phone]
-Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -3258,6 +3248,41 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Open photo** on the start screen and choose 01_chrome_flat_black.JPEG | The console warns "[card-finisher] Web Worker unavailable, running on main thread:"; the photo still opens with its corner handles on the card |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+## MSG-93 "Edits loaded."
+
+An information message when **Load edits** has applied a file with nothing wrong in it: "Edits loaded." A file with a problem shows the same words as the first line of an amber warning (MSG-38, MSG-39, MSG-40).
+
+- Risk: low
+- Check: script
+- Layout: both.
+- Added: 1.10.0
+- Changed: none
+- Anchors: "Edits loaded."
+- Source: `js/app/export.js` (`loadEdits`)
+- Ruling: R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0.
+- Cases: 1
+
+### MSG-93.1 A loaded edits file says so   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Edits file: 01_chrome_flat_black-turned-edits.json from tests/fixtures/: 01_chrome_flat_black.JPEG's edits after **90° right** on Rotate, as **Save edits** saves them (the photo's name "01_chrome_flat_black.JPEG", its size 1536 × 2048 px, `"quarter": 1`)
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Load the edits file 01_chrome_flat_black-turned-edits.json | A white message reads "Edits loaded.", and no other message comes after it |
+| 2 | Look at the photo | It is turned a quarter clockwise: the edits were applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

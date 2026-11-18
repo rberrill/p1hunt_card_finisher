@@ -17,7 +17,7 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R9 | Compare badge with no levels | FIX: hold/C does nothing when no draft and no applied levels. Rich, 2026-11-17: the hold compares only while the photo on screen shows levels; with levels applied and Clear tapped but not applied, it does nothing |
 | R10 | 250–300 ms press is both compare and a tap | FIX: a press that showed compare is never a tap |
 | R11 | Overlay buttons live but no-op with invalid corners | FIX: dim the three buttons; label row reads "Fix the corners in Perspective first." |
-| R12 | Load edits: up to 3 toasts overwrite each other | FIX: one combined warning, up to three short lines (WORDING) |
+| R12 | Load edits: up to 3 toasts overwrite each other | FIX: one combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area |
 | R13 | "Wait for the export to finish…" during a side switch | FIX: "Wait for the other side to open, then open the photo." during a switch (WORDING); export wording kept |
 | R14 | Clamp note for pair Separately checks only open side | FIX: show if either side clamped; name the side when not on screen (WORDING) |
 | R15 | Note says 16.8 MP; docs say 16.7 | FIX: screen shows 16.7 MP (round down) |

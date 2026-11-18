@@ -194,12 +194,19 @@
   }
 
   // Shows a short message over the photo's bottom edge; a new one replaces the one that's up.
-  // kind: '' (info) | 'warn' | 'error' sets its color and icon. It stays durationMs, or as
-  // long as its kind does (TOAST_DURATIONS_MS).
-  function toast(text, kind = '', durationMs = TOAST_DURATIONS_MS[kind]) {
+  // message: its text, or an array of texts for a message of several lines, each shown on a
+  // line of its own (the Toast part's `lines`). kind: '' (info) | 'warn' | 'error' sets its
+  // color and icon. It stays durationMs, or as long as its kind does (TOAST_DURATIONS_MS).
+  function toast(message, kind = '', durationMs = TOAST_DURATIONS_MS[kind]) {
     const toastEl = mountToast();
     if (toastEl.classList.contains('is-shown')) fadeOutCopy(toastEl);
-    CF.updateToast(toastEl, { text, kind, isShown: false });
+    const isLines = Array.isArray(message);
+    CF.updateToast(toastEl, {
+      text: isLines ? undefined : message,
+      lines: isLines ? message : undefined,
+      kind,
+      isShown: false,
+    });
     placeToast();
     // Reading its size makes the browser take in the hidden state first, so each message
     // rises in afresh, from its place, even when it replaces one.

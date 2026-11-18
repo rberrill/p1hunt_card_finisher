@@ -600,54 +600,86 @@
     }
   }
 
-  async function loadEdits(file) {
+  // The characters taken out of a photo's name before a message shows it: the control
+  // characters (U+0000 to U+001F, U+007F), the line and paragraph separators (U+2028, U+2029) and
+  // the marks that change the direction text runs in (U+202A to U+202E, U+2066 to U+2069). A
+  // name from an edits file is untrusted: left in, they could break the line it is shown on, or
+  // turn the words after it round.
+  const UNSAFE_NAME_CHARACTERS = /[\u0000-\u001f\u007f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g;
+
+  // An edits file's photo name as a message shows it: each unsafe character replaced by a space,
+  // then cut to 60 characters (shortText). '' when the file holds no name.
+  function shownEditsName(name) {
+    if (typeof name !== 'string') return '';
+    return shortText(name.replace(UNSAFE_NAME_CHARACTERS, ' '));
+  }
+
+  // Reads an edits file (a File) for the open photo → the edits it holds, brought up to date, or
+  // null when it can't be used: too large, not JSON, not an edits file, no photo open, or saved
+  // for a photo of another size. A file that can't be used is refused with a message.
+  async function readEditsFile(file) {
     if (file.size > CONFIG.export.editsMaxBytes) {
       toast('That file is too large to be a Card Finisher edits file.', 'error');
-      return;
+      return null;
     }
     let edits;
     try {
       edits = JSON.parse(await file.text());
     } catch (error) {
       toast('That file isn’t valid JSON.', 'error');
-      return;
+      return null;
     }
     if (!looksLikeEdits(edits)) {
       toast('That isn’t a Card Finisher edits file.', 'error');
-      return;
+      return null;
     }
     if (!app.img) {
       toast('Open the matching photo first, then load its edits.', 'warn', 5000);
-      return;
+      return null;
     }
     upgradeEdits(edits);
     const { width, height } = edits.source;
     if (width !== app.img.width || height !== app.img.height) {
-      const photoSize = `${app.img.width}×${app.img.height}`;
-      const message = `These edits are for a ${width}×${height} photo; this one is ${photoSize}.`;
+      const photoSize = `${app.img.width} × ${app.img.height}`;
+      const message = `These edits are for a ${width} × ${height} photo; this one is ${photoSize}.`;
       toast(message, 'error', 6000);
-      return;
+      return null;
     }
+    return edits;
+  }
+
+  // Loads an edits file (a File) onto the open photo, as one undo step. A file that can't be
+  // used is refused and changes nothing (readEditsFile); on a phone it leaves Export's options
+  // open, with Load edits still at hand. A file that is used shows one message (rulings R12 and
+  // R48): "Edits loaded.", white, alone when nothing was wrong; with a problem, an amber warning
+  // with a line under it for each one (the file was saved for a photo of another name, settings
+  // that weren't valid were reset, its logo was left out). On a phone it also closes Export's
+  // options, so the message has the whole photo area (R12).
+  async function loadEdits(file) {
+    const edits = await readEditsFile(file);
+    if (!edits) return;
+    const problems = [];
     if (edits.source.name !== app.img.name) {
-      const savedFor = shortText(edits.source.name) || 'another photo';
-      toast(`Edits were saved for “${savedFor}”. Applied anyway — sizes match.`, 'warn', 5000);
+      const savedFor = shownEditsName(edits.source.name) || 'another photo';
+      problems.push(`Saved for “${savedFor}”; sizes match.`);
     }
     // Only well-formed fields are used; anything else in the file falls back to the default.
     const clean = CF.cleanState(edits, app.img);
     const next = clean.state;
-    if (clean.invalid.length) {
-      const fields = clean.invalid.join(', ');
-      toast(`Some settings in these edits weren’t valid and were reset: ${fields}.`, 'warn', 6000);
-    }
+    if (clean.invalid.length) problems.push(`Reset, not valid: ${clean.invalid.join(', ')}.`);
     next.overlayImage = edits.overlayImage;
     if (!(await CF.overlayFromEdits(next))) {
-      toast('The overlay in these edits couldn’t be read, so it was left out.', 'warn', 5000);
+      problems.push('Logo left out; it couldn’t be read.');
       next.overlay = null;
     }
     CF.commit(state => {
       for (const key of Object.keys(state)) delete state[key];
       Object.assign(state, next);
     });
+    CF.closeSheets();
+    // One message, so no line is replaced before it is read. It stays as long as its kind does:
+    // a warning's usual 5 s however many lines it has (R12).
+    toast(['Edits loaded.', ...problems], problems.length ? 'warn' : '');
   }
 
   Object.assign(CF, {

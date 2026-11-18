@@ -64,13 +64,17 @@ async function saveEdits(page, hand, testInfo) {
 }
 
 // On the Export step: opens Export options, taps Load edits and chooses `file` in the picker
-// that opens (a path, or a payload { name, mimeType, buffer }), then closes the options on a
-// phone. Returns the picker, so a case can read what it asked for. It does not wait for the
-// file to be applied: the case waits for what it expects.
+// that opens (a path, or a payload { name, mimeType, buffer }). Returns the picker, so a case
+// can read what it asked for. It does not wait for the file to be applied: the case waits for
+// what it expects.
+// It never closes the options itself. On a phone the app closes them when it applies a file
+// (ruling R12), and this waits until they have gone, so the case's next tap lands on the
+// controls; a file the app applies and leaves the options open over fails here. isRefused: the
+// case expects the file to be refused, which leaves the options open, so there is no wait.
 // A file named by its path is handed over with its bytes: given only the path, Chromium reads
 // the file from disk when the app asks for its text, and a just-written file can be locked for
 // a moment (a virus scan), which the app reports as a file that isn't JSON.
-async function loadEdits(page, hand, file) {
+async function loadEdits(page, hand, file, { isRefused = false } = {}) {
   const payload = typeof file === 'string'
     ? { name: path.basename(file), mimeType: 'application/json', buffer: fs.readFileSync(file) }
     : file;
@@ -79,7 +83,7 @@ async function loadEdits(page, hand, file) {
   await hand.tap(page.locator('#btnLoadEdits'));
   const chooser = await choosing;
   await chooser.setFiles(payload);
-  await closeOptions(page, hand, 'export');
+  if (hand.isTouch && !isRefused) await page.locator('#exportSheet').waitFor({ state: 'hidden' });
   return chooser;
 }
 

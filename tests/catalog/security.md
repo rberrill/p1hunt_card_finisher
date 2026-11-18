@@ -174,15 +174,13 @@ When **Load edits** reads a file, every field is checked; a malformed field is r
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnLoadEdits`, `"Some settings in these edits weren’t valid and were reset: "`
+- Changed: 1.10.0
+- Anchors: `#btnLoadEdits`, `"Reset, not valid: "`
 - Source: `js/app/export.js` (`loadEdits`), `js/app/state.js` (`cleanState`), `js/engine.js` (`sanitizeState`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0.
 - Cases: 1
 
 ### SEC-05.1 A malformed field is reset and named, the rest is applied   [auto: phone]
-Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -193,8 +191,7 @@ Before you start:
 
 The named actions:
 - Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo).
-- Close Export options: tap the **×** at their top right.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -232,8 +229,7 @@ Before you start:
 
 The named actions:
 - Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo).
-- Close Export options: tap the **×** at their top right.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -252,15 +248,13 @@ A logo carried inside an edits file must be a PNG, WebP, JPEG or SVG, and at mos
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `CONFIG.overlay.maxBytes`, `"The overlay in these edits couldn’t be read, so it was left out."`
-- Source: `js/app/overlay.js` (`overlayFromEdits`, `register`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today. R59. The logo's line reads "Logo left out; it couldn’t be read." (approved wording). The app differs today.
+- Changed: 1.10.0
+- Anchors: `CONFIG.overlay.maxBytes`, `"Logo left out; it couldn’t be read."`
+- Source: `js/app/overlay.js` (`overlayFromEdits`, `register`), `js/app/export.js` (`loadEdits`)
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0. R59. Messages say "logo"; R12's line becomes "Logo left out; it couldn’t be read." Button names are not touched. The app does this since 1.10.0.
 - Cases: 1
 
 ### SEC-07.1 An edits file's logo of the wrong type or over 5 MB is left out   [auto: phone]
-Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -273,8 +267,7 @@ Before you start:
 
 The named actions:
 - Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo).
-- Close Export options: tap the **×** at their top right.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -445,17 +438,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## SEC-11 File names are shown as plain text, cut short
 
-Names from photos and edits files are shown only as plain text, never as markup, and cut to 60 characters where they appear (the Resume card, the edits-file warning). A name kept for a reopened file is cut to 200 characters.
+Names from photos and edits files are shown only as plain text, never as markup, and cut to 60 characters where they appear (the Resume card, the edits-file warning). A name kept for a reopened file is cut to 200 characters. In the edits-file warning a line break or a direction mark in the name shows as a space, so a name can't add a line to the message or turn its words round.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#resumeName`, `"Edits were saved for “"`
-- Source: `js/app/core.js` (`shortText`), `js/app/start-screen.js` (`resumeName`, `resumeSession`), `js/app/export.js` (`loadEdits`), `js/app/pair.js` (`restorePair`)
-- Ruling: R12. Load edits shows one amber message with a line for each part that applies (wording approved by Rich, tests/catalog/wording.md). The app differs today. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
-- Cases: 2
+- Changed: 1.10.0
+- Anchors: `#resumeName`, `"”; sizes match."`, `.toast-line`
+- Source: `js/app/core.js` (`shortText`), `js/app/start-screen.js` (`resumeName`, `resumeSession`), `js/app/export.js` (`loadEdits`, `shownEditsName`), `js/app/parts/toast.js` (`setToastLines`), `js/app/pair.js` (`restorePair`)
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0.
+- Cases: 3
 
 ### SEC-11.1 A photo's name with markup shows as text on the Resume card, cut to 60   [auto: phone, webkit]
 Before you start:
@@ -480,8 +473,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### SEC-11.2 An edits file's name with markup shows as text in the warning, cut to 60   [auto: phone]
-Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the browser's developer tools open on the Console
 - Build: the build under test
@@ -492,13 +483,34 @@ Before you start:
 
 The named actions:
 - Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo).
-- Close Export options: tap the **×** at their top right.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Load the edits file IMG_9136-markup-name-edits.json | One amber message shows; its lines read "Edits loaded." and "Saved for “<b>bold</b> <img src=x onerror="window.testRan=1"> yyyyyyyy…”; sizes match.": the name's first 59 characters as typed, tags and all, then "…"; nothing in it is bold, and no picture shows |
 | 2 | In the Console, type `window.testRan` and press Enter | The Console answers undefined: nothing the name holds has run |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### SEC-11.3 A line break or a direction mark in an edits file's name can't forge a line of the warning   [auto: phone, webkit]
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Edits file: IMG_9136-forged-line-name-edits.json from tests/fixtures/: this photo's edits after **90° right** (IMG_9136-turned-edits.json), changed in a text editor so that `"name": "IMG_9136.JPEG"` under `"source"` reads `"name": "card\nLogo left out; it couldn’t be read.\u202e"`, typed as shown: in such a file `\n` stands for a line break, and `\u202e` for a mark that makes the text after it run from right to left
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo).
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Load the edits file IMG_9136-forged-line-name-edits.json | One amber message shows, with two lines and no more: "Edits loaded." and "Saved for “card Logo left out; it couldn’t be read. ”; sizes match."; the whole name is on the second line, and no line starts "Logo left out" |
+| 2 | Read the end of the second line | It ends "read. ”; sizes match.", reading left to right: a space stands where the name's direction mark was |
+| 3 | Look at the photo | It is turned a quarter right: the file's edits were applied |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

@@ -120,6 +120,7 @@ const {
   exportNotesNow,
   visibleTips,
 } = require('./support/messages.js');
+const { toastShownLines } = require('./support/edits-files.js');
 
 // The photo most cases use: a raw chrome card flat on a black mat. It is found the same in
 // Chromium and WebKit.
@@ -149,8 +150,8 @@ const NOT_AN_IMAGE = 'Couldn’t read that file as an image.';
 const RESUMED = 'Resumed where you left off.';
 const PHOTO_GONE = 'The saved photo is gone. Open it again.';
 const TAP_THE_CARD = 'Tap the card in the photo.';
-// The approved wording (tests/catalog/wording.md) of messages that rulings change. The app
-// doesn't show these yet: each case that checks one is marked with its bug.
+// The approved wording (tests/catalog/wording.md) of messages that rulings change. A case that
+// checks one the app doesn't show yet is marked with its bug.
 const OPENED_FRESH = 'Full edit history could not be restored, your photo has been opened '
   + 'fresh.';
 const DETECTION_FAILED = 'Detection failed.';
@@ -409,23 +410,25 @@ function clipboardPictureSize(page) {
 }
 
 // Loads 01_chrome_flat_black-<kind>-edits.json (tests/fixtures/) with Load edits, waits until
-// its quarter turn is on the photo and then long enough for any later message. Returns the
-// messages that showed from the load on.
+// its quarter turn is on the photo, reads its message off the screen, and then waits long
+// enough for any later message. Returns { shown, onScreen }: the messages that showed from the
+// load on, and the first one as the screen showed it ({ lines, isCut }, support/edits-files.js).
 async function loadAndSettle(page, hand, kind) {
   const before = (await messagesSoFar(page)).length;
   await loadEditsFile(page, hand, fixtureFile(`01_chrome_flat_black-${kind}-edits.json`));
   await page.waitForFunction(() => window.__straightener.app.state.rotation.quarter === 1);
+  await page.locator('#toast.is-shown').waitFor();
+  const onScreen = await toastShownLines(page);
   await page.waitForTimeout(NOTHING_WAIT_MS);
-  return (await messagesSoFar(page)).slice(before);
+  return { shown: (await messagesSoFar(page)).slice(before), onScreen };
 }
 
-// The row of a case written to rulings R12 and R48: of the messages `shown`, one amber message
-// shows and its lines are `lines`, in order. Spaces are left out of the comparison, since the
-// lines may be kept apart by line breaks that the recorded text doesn't hold.
-function expectOneWarning(shown, lines) {
-  expect(shown.map(message => message.kind)).toEqual(['warn']);
-  const withoutSpaces = text => text.replace(/\s+/g, '');
-  expect(withoutSpaces(shown[0].text)).toBe(withoutSpaces(lines.join('')));
+// The row of a load with a problem (rulings R12 and R48): of what loadAndSettle saw, one amber
+// message showed and no other, and the screen showed its lines as `lines`, each on a line of
+// its own, in order, with none cut off.
+function expectOneWarning(loaded, lines) {
+  expect(loaded.shown.map(message => message.kind)).toEqual(['warn']);
+  expect(loaded.onScreen).toEqual({ lines, isCut: false });
 }
 
 // Checks a row whose result is the photo turned a quarter clockwise (`description`).
@@ -1327,15 +1330,12 @@ test('MSG-37.1 Edits for a photo of another size [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-282');
   const hand = await start(page, testInfo, { photo: SLAB_PHOTO });
   await loadEditsFile(page, hand, fixtureFile(TURNED_EDITS));
   // Ruling R58: sizes are written "W × H".
   const text = 'These edits are for a 1536 × 2048 photo; this one is 1498 × 2098.';
-  // Awaited in either form, compared plainly, so the known defect fails at once.
-  const message = await waitForMessage(page, /^These edits are for a /);
+  const message = await waitForMessage(page, text);
   await check(`A red message reads "${text}"`, () => {
-    expect(message.text).toBe(text);
     expectKind(message, 'error');
   });
   await check('It is still upright: nothing was applied', async () => {
@@ -1347,13 +1347,12 @@ test('MSG-38.1 Edits saved for a file of another name [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   const hand = await start(page, testInfo);
-  const shown = await loadAndSettle(page, hand, 'another-name');
+  const loaded = await loadAndSettle(page, hand, 'another-name');
   const lines = [EDITS_LOADED, 'Saved for “another-card.JPEG”; sizes match.'];
   await check('One amber message shows, and no other comes after it; its lines read '
     + `"${lines[0]}" and "${lines[1]}", in that order`, () => {
-    expectOneWarning(shown, lines);
+    expectOneWarning(loaded, lines);
   });
   await expectTurned(page, check, 'It is turned a quarter clockwise: the edits were applied');
 });
@@ -1362,18 +1361,16 @@ test('MSG-38.2 Three problems in one edits file make one warning [phone]', async
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   const hand = await start(page, testInfo);
-  const shown = await loadAndSettle(page, hand, 'three-problems');
-  // Plain readings: the known defect fails at once rather than waiting.
+  const loaded = await loadAndSettle(page, hand, 'three-problems');
   await check('One amber message shows, and no other comes after it', () => {
-    expect(shown.map(message => message.kind)).toEqual(['warn']);
+    expect(loaded.shown.map(message => message.kind)).toEqual(['warn']);
   });
   const lines = [EDITS_LOADED, 'Saved for “another-card.JPEG”; sizes match.', RESET_CROP,
     LOGO_LEFT_OUT];
   await check(`Its lines read ${lines.map(line => `"${line}"`).join(', ')}, in that order`,
     () => {
-      expect(shown[0].text.replace(/\s+/g, ' ')).toBe(lines.join(' '));
+      expect(loaded.onScreen).toEqual({ lines, isCut: false });
     });
   await check('It is turned a quarter clockwise, with no logo: the rest was applied', async () => {
     const state = await editState(page);
@@ -1388,13 +1385,12 @@ test('MSG-39.1 Settings in the edits file that were reset [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   const hand = await start(page, testInfo);
-  const shown = await loadAndSettle(page, hand, 'crop-as-words');
+  const loaded = await loadAndSettle(page, hand, 'crop-as-words');
   const lines = [EDITS_LOADED, RESET_CROP];
   await check(`One amber message shows; its lines read "${lines[0]}" and "${lines[1]}", in that `
     + 'order', () => {
-    expectOneWarning(shown, lines);
+    expectOneWarning(loaded, lines);
   });
   await expectTurned(page, check, 'It is turned a quarter clockwise: the rest of the file was '
     + 'applied');
@@ -1404,13 +1400,12 @@ test('MSG-40.1 A logo in the edits file that can\'t be read [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   const hand = await start(page, testInfo);
-  const shown = await loadAndSettle(page, hand, 'gif-logo');
+  const loaded = await loadAndSettle(page, hand, 'gif-logo');
   const lines = [EDITS_LOADED, LOGO_LEFT_OUT];
   await check(`One amber message shows; its lines read "${lines[0]}" and "${lines[1]}", in that `
     + 'order', () => {
-    expectOneWarning(shown, lines);
+    expectOneWarning(loaded, lines);
   });
   await check('It is turned a quarter clockwise, with no logo: the rest was applied', async () => {
     const state = await editState(page);
@@ -1419,6 +1414,18 @@ test('MSG-40.1 A logo in the edits file that can\'t be read [phone]', async ({
       overlay: null,
     });
   });
+});
+
+test('MSG-93.1 A loaded edits file says so [phone]', async ({ page, check }, testInfo) => {
+  const hand = await start(page, testInfo);
+  const loaded = await loadAndSettle(page, hand, 'turned');
+  await check(`A white message reads "${EDITS_LOADED}", and no other message comes after it`,
+    () => {
+      expect(loaded.shown.map(message => message.text)).toEqual([EDITS_LOADED]);
+      expectKind(loaded.shown[0], 'info');
+      expect(loaded.onScreen).toEqual({ lines: [EDITS_LOADED], isCut: false });
+    });
+  await expectTurned(page, check, 'It is turned a quarter clockwise: the edits were applied');
 });
 
 // The tuning panel's link: it opens with the panel showing.

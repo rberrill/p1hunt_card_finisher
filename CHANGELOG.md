@@ -89,6 +89,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - For a pair saved **Separately**, **Upscale to … px?** names only the side that **Yes** would enlarge: "The front is 748 × 1047 px at the photo’s resolution." (or the back). It used to name both sides whenever either was under the Size, giving the other side's size after it had been scaled down to the Size as if that were the photo's resolution. When both sides are under the Size it names both, as before.
 - **Upscale to … px?** is asked only when **Yes** would save a bigger file than **No**, for a single photo and for a pair. Where the browser's size limit leaves no room to enlarge (which takes a link that lowers a limit, or one that turns upscaling on with a size past the limit), it used to ask and then save the same file whichever you answered. The file is now saved straight away.
 - Opened from a link that turns upscaling on (`?export.allowUpscale=1`), Export's size line no longer ends "· full crop, not upscaled" beside a crop that has been enlarged to the Size.
+- **Load edits** now shows one message, "Edits loaded." When something in the file wasn't taken as saved it is a warning, with a line under it for each thing: "Saved for “IMG_9136.JPEG”; sizes match." when the file was saved for a photo of another name, "Reset, not valid: export." naming the settings that weren't valid and went back to their defaults, and "Logo left out; it couldn’t be read." It used to show up to three warnings, each replacing the one before at once, so only the last could be read; and nothing at all when the file loaded without a problem.
+- On a phone, choosing an edits file that loads closes Export's options, so its message has the whole photo to sit over. A file that is refused leaves the options open, with **Load edits** still at hand.
+- The message for edits saved for a photo of another size writes the sizes as every other message does: "These edits are for a 1498 × 2098 photo; this one is 1536 × 2048." It wrote them without spaces ("1498×2098").
+
+### Security
+- The photo name read from an edits file is shown in the **Load edits** message with any line break, other control character or text-direction mark replaced by a space, so a crafted file can't add a line to the message or turn its words round.
 
 ## [1.9.0] - 2026-11-10
 

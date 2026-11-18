@@ -36,7 +36,7 @@ const {
   fixtureFile,
   fixturePath,
   fixtureEdits,
-  toastShownText,
+  toastShownLines,
 } = require('./support/edits-files.js');
 const { choiceButton, selectedChoices } = require('./support/export.js');
 const { presetChip, chipLabels, selectedChips } = require('./support/crop.js');
@@ -94,6 +94,7 @@ const NOTES = 'notes.json';
 const VERSION_3 = 'IMG_9136-version-3-edits.json';
 const GIF_LOGO = 'IMG_9136-gif-logo-edits.json';
 const MARKUP_NAME = 'IMG_9136-markup-name-edits.json';
+const FORGED_LINE_NAME = 'IMG_9136-forged-line-name-edits.json';
 const UNSIZED_SVG = 'unsized.svg';
 const SVG_WITH_SCRIPT = 'svg-with-script.svg';
 const NOISY_LOGO = 'noisy-logo.png';
@@ -138,12 +139,12 @@ async function messageAfter(page, before) {
 }
 
 // Waits for the message a loaded edits file shows after the first `before` messages, and
-// checks it in a case written to rulings R12 and R48: one amber message whose lines are
-// `lines`, in order. Plain readings, so the known defect fails at once.
+// checks it (rulings R12 and R48): one amber message, and the lines it shows are `lines`, each
+// on a line of its own, in order, with none cut off.
 async function expectLoadWarning(page, before, lines) {
   const shown = await messageAfter(page, before);
   expect(shown.kind).toBe('warn');
-  expect(await toastShownText(page)).toBe(lines.join(' '));
+  expect(await toastShownLines(page)).toEqual({ lines, isCut: false });
 }
 
 // Runs one verdict with `check`, then drops any security policy refusal its screenshot
@@ -340,7 +341,6 @@ test('SEC-05.1 A malformed field is reset and named, the rest is applied [phone]
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   await recordMessages(page);
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'export', hand);
@@ -389,7 +389,7 @@ test('SEC-06.1 A file too large, not JSON or not an edits file is refused, and n
   ];
   for (const { file, message } of files) {
     const count = await messageCount(page);
-    await loadEdits(page, hand, file);
+    await loadEdits(page, hand, file, { isRefused: true });
     const shown = await messageAfter(page, count);
     await check(`loading ${file.name}: a red message reads "${message}"; the photo is still `
       + 'turned a quarter right', async () => {
@@ -414,7 +414,6 @@ function bigLogoEditsFile() {
 
 test('SEC-07.1 An edits file\'s logo of the wrong type or over 5 MB is left out [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-190');
     await recordMessages(page);
     const hand = await startWith(page, testInfo);
     await goToStep(page, 'export', hand);
@@ -655,7 +654,6 @@ test('SEC-11.1 A photo\'s name with markup shows as text on the Resume card, cut
 
 test('SEC-11.2 An edits file\'s name with markup shows as text in the warning, cut to 60 '
   + '[phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-190');
   await recordMessages(page);
   const hand = await startWith(page, testInfo);
   await goToStep(page, 'export', hand);
@@ -667,12 +665,44 @@ test('SEC-11.2 An edits file\'s name with markup shows as text in the warning, c
   await check(`one amber message shows; its lines read "${lines[0]}" and "${lines[1]}"; nothing `
     + 'in it is bold, and no picture shows', async () => {
     await expectLoadWarning(page, before, lines);
-    // The lines may be elements of their own; none may be one the name's markup made.
+    // No element in the message may be one the name's markup made.
     const markup = await page.locator('#toast .toast-text').locator('b, img').count();
     expect(markup).toBe(0);
   });
   await check('window.testRan is undefined: nothing the name holds has run', async () => {
     expect(await page.evaluate(() => window.testRan)).toBeUndefined();
+  });
+});
+
+// The name in IMG_9136-forged-line-name-edits.json as a message may show it: a space where its
+// line break was and another where its direction mark was.
+const FORGED_NAME_SHOWN = 'card Logo left out; it couldn’t be read. ';
+// The characters a name may not bring into a message: control characters, the line and
+// paragraph separators, and the marks that change the direction text runs in.
+const UNSAFE_CHARACTERS = /[\u0000-\u001f\u007f\u2028\u2029\u202a-\u202e\u2066-\u2069]/;
+
+test('SEC-11.3 A line break or a direction mark in an edits file\'s name can\'t forge a line '
+  + 'of the warning [phone] [webkit]', async ({ page, check }, testInfo) => {
+  await recordMessages(page);
+  const hand = await startWith(page, testInfo);
+  await goToStep(page, 'export', hand);
+  const before = await messageCount(page);
+  await loadEdits(page, hand, fixtureFile(FORGED_LINE_NAME));
+  const lines = [RULED_EDITS_LINES.loaded, RULED_EDITS_LINES.savedFor(FORGED_NAME_SHOWN)];
+  await check(`one amber message shows, with two lines and no more: "${lines[0]}" and `
+    + `"${lines[1]}"; the whole name is on the second line, and no line starts "Logo left out"`,
+  async () => {
+    await expectLoadWarning(page, before, lines);
+  });
+  await check('the second line ends "read. ”; sizes match.", reading left to right: a space '
+    + 'stands where the name\'s direction mark was', async () => {
+    const written = await page.locator('#toast .toast-text')
+      .evaluate(el => [...el.children].map(line => line.textContent));
+    expect(written).toEqual(lines);
+    expect(written.some(line => UNSAFE_CHARACTERS.test(line))).toBe(false);
+  });
+  await check('the photo is turned a quarter right: the file\'s edits were applied', async () => {
+    expect(await quarterAfterLoad(page, 1)).toBe(1);
   });
 });
 

@@ -164,17 +164,17 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the e
 
 ## EDT-04 Load edits
 
-**Load edits** opens a file picker for a .json file.
+**Load edits** opens a file picker for a .json file and applies the file chosen; a white message then reads "Edits loaded." On a phone, applying a file closes Export's options, so the message has the whole photo area; a file that is refused leaves them open (EDT-05.2).
 
 - Risk: high
 - Check: script; phone (choosing the file from Files on an iPhone)
-- Layout: both. On a phone the button is in Export's options sheet; on a wide screen it is listed in the side panel.
+- Layout: both. On a phone the button is in Export's options sheet, which closes when a file is applied; on a wide screen it is listed in the side panel, and there is no sheet to close.
 - Added: 1.10 baseline
 - Changed: 1.10.0
-- Anchors: `#btnLoadEdits`, `#editsInput`, "Load edits"
-- Source: `js/app/export-controls.js` (`buildEditsGroup`, `bindExport`, `syncExportLock`), `js/app/shell.js` (`syncUI`)
-- Ruling: R17. While an export runs, Load edits is dimmed with the save buttons (as are Size, Format, the options sheet's settings, Undo, Redo and Add back); the tab bar stays live. The app does this since 1.10.0.
-- Cases: 3
+- Anchors: `#btnLoadEdits`, `#editsInput`, "Load edits", "Edits loaded."
+- Source: `js/app/export-controls.js` (`buildEditsGroup`, `bindExport`, `syncExportLock`), `js/app/shell.js` (`syncUI`), `js/app/export.js` (`loadEdits`)
+- Ruling: R17. While an export runs, Load edits is dimmed with the save buttons (as are Size, Format, the options sheet's settings, Undo, Redo and Add back); the tab bar stays live. The app does this since 1.10.0. R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0.
+- Cases: 4
 
 ### EDT-04.1 Load edits opens a picker for one .json file and applies it   [auto: phone, webkit]
 Before you start:
@@ -197,7 +197,7 @@ The named actions:
 | 4 | Tap **Undo** (the arrow curving left, at the top right) | The photo is upright again |
 | 5 | Open Export options | **Load edits** shows |
 | 6 | Tap **Load edits** | A file picker opens for one file, offering only .json files |
-| 7 | Choose IMG_9136-edits.json | The photo turns a quarter clockwise again |
+| 7 | Choose IMG_9136-edits.json | The photo turns a quarter clockwise again and a white message reads "Edits loaded."; on a phone, Export options have closed |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -243,9 +243,28 @@ Find the edits file: in what the iPhone offers, choose to browse files (not the 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
+### EDT-04.4 On a small phone a load with problems closes the options, and its whole message is over the photo   [auto: small]
+Before you start:
+- Device and browser: a narrow phone window, 375 × 667 px (an iPhone SE), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Edits file: IMG_9136-long-name-three-resets-edits.json from tests/fixtures/: this photo's edits after **90° right** (IMG_9136-turned-edits.json), changed in a text editor: `"name": "IMG_9136.JPEG"` reads `"name": "IMG_9136-front-of-the-card-photographed-on-the-black-mat-by-the-window.JPEG"` (a name of 75 characters); the whole `"crop": { … }` setting, from `"crop": {` to its closing `}`, reads `"crop": "the whole card"`; `"levels": null` reads `"levels": "bright please"`; and `"quality": 0.92` reads `"quality": 7`
+- Starting screen: the photo open, on the Export step
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap the options tab (the tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Export options rise, with **Load edits** |
+| 2 | Tap **Load edits** and choose IMG_9136-long-name-three-resets-edits.json | Export options close |
+| 3 | Read the message over the photo | One amber message shows; its lines read "Edits loaded.", "Saved for “IMG_9136-front-of-the-card-photographed-on-the-black-mat-by…”; sizes match." and "Reset, not valid: crop, levels, export.", in that order, with none cut off |
+| 4 | Look at where the message sits | Every line of it is inside the photo area, between the top bar and the controls |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
 ## EDT-05 Files that are not edits files
 
-A file over 8 MB, a file that is not JSON, and a JSON file that is not an edits file (it needs version 1 or 2, the photo's size and the corners) are refused with an error message, and nothing changes.
+A file over 8 MB, a file that is not JSON, and a JSON file that is not an edits file (it needs version 1 or 2, the photo's size and the corners) are refused with an error message, and nothing changes. On a phone, Export options stay open after a refused file.
 
 - Risk: medium
 - Check: script
@@ -267,8 +286,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -289,12 +307,11 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file notes.json | A red message reads "That file isn’t valid JSON." |
+| 1 | Load the edits file notes.json | A red message reads "That file isn’t valid JSON."; on a phone, Export options stay open |
 | 2 | Look at the photo, **Undo** and **Redo** | Nothing has changed: the photo is upright, and **Undo** and **Redo** are still greyed out |
 
 Pass: every row's result is seen.
@@ -311,8 +328,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -331,15 +347,13 @@ Edits saved for a photo whose pixel size differs from the open photo's are refus
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "These edits are for a "
 - Source: `js/app/export.js` (`loadEdits`)
-- Ruling: R58. Every message writes sizes "W × H" and "N px", with spaces. The app differs today.
+- Ruling: R58. "W × H" and "N px" in every message. The app does this since 1.10.0.
 - Cases: 1
 
 ### EDT-06.1 Edits for a photo of another size are refused, naming both sizes   [auto: phone]
-Written to ruling R58; it fails until that is built (BUG-282).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -349,8 +363,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -368,15 +381,13 @@ Edits saved for a photo with another name but the same pixel size are applied, w
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Edits were saved for “", "Applied anyway — sizes match."
+- Changed: 1.10.0
+- Anchors: "”; sizes match."
 - Source: `js/app/export.js` (`loadEdits`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md). R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today. The line for this file is "Saved for “NAME”; sizes match."
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0.
 - Cases: 2
 
 ### EDT-07.1 Edits for another photo of the same size are applied with a warning   [auto: phone]
-Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -386,8 +397,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -398,8 +408,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-07.2 Another photo's name and a damaged setting give one warning   [auto: phone]
-Written to ruling R12, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -410,8 +418,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -429,14 +436,13 @@ Settings in the file that are not valid are reset to their defaults and named in
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Some settings in these edits weren’t valid and were reset: "
+- Changed: 1.10.0
+- Anchors: "Reset, not valid: "
 - Source: `js/app/export.js` (`loadEdits`), `js/app/state.js` (`cleanState`), `js/engine.js` (`sanitizeState`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md). R42. One damaged value resets its whole settings group (one bad Quality resets every export setting), and the warning names the group: a damaged file is untrusted. The app already does this. R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today.
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R42. One damaged value resets its whole settings group (one bad Quality resets every export setting), and the warning names the group: a damaged file is untrusted. The app already does this. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0.
 - Cases: 2
 
 ### EDT-08.1 A damaged setting is reset and named; the rest is applied   [auto: phone]
-Written to rulings R12 and R48, in the wording Rich approved; it fails until that is built (BUG-190).
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -447,8 +453,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -460,8 +465,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-08.2 A damaged setting and an unreadable logo give one warning   [auto: phone]
-Written to ruling R12, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -472,8 +475,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -491,15 +493,13 @@ A logo in the file must be a known image type and at most 5 MB (or the lower lim
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "The overlay in these edits couldn’t be read, so it was left out.", `CONFIG.overlay.maxBytes`
+- Changed: 1.10.0
+- Anchors: "Logo left out; it couldn’t be read.", `CONFIG.overlay.maxBytes`
 - Source: `js/app/overlay.js` (`overlayFromEdits`), `js/app/export.js` (`loadEdits`)
-- Ruling: R12. Load edits shows one combined warning of up to three short lines, instead of up to three messages that replace each other. The app differs today. Wording approved by Rich (tests/catalog/wording.md). R48. The approved lines apply to every load with a problem, one problem or more: "Edits loaded." plus each line that applies. The app differs today. R59. The logo's line reads "Logo left out; it couldn’t be read." (approved wording). The app differs today.
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0. R59. Messages say "logo"; R12's line becomes "Logo left out; it couldn’t be read." Button names are not touched. The app does this since 1.10.0.
 - Cases: 6
 
 ### EDT-09.1 A logo of a type a logo can't be is left out with a warning   [auto: phone]
-Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -510,8 +510,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -522,8 +521,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-09.2 A logo over 5 MB is left out with a warning   [auto: phone]
-Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -534,8 +531,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -546,8 +542,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-09.3 A link's lower logo limit leaves a larger logo out   [auto: phone]
-Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -560,7 +554,7 @@ The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -588,21 +582,18 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Remove** | The logo goes from the photo |
 | 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows, with no logo on the photo |
-| 3 | Load the edits file IMG_9136-logo-placement-only-edits.json | The green logo is back on the photo, with no message |
+| 3 | Load the edits file IMG_9136-logo-placement-only-edits.json | The green logo is back on the photo; a white message reads "Edits loaded.", with no line about the logo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-09.5 A logo placement with no picture, the logo not loaded, is left out   [auto: phone]
-Written to rulings R12, R48 and R59, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -613,8 +604,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -625,8 +615,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EDT-09.6 Another photo's name, a damaged setting and an unreadable logo give one warning   [auto: phone]
-Written to ruling R12, in the wording Rich approved; it fails until that is built (BUG-190).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -637,8 +625,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -672,8 +659,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -710,12 +696,11 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Load the edits file IMG_9136-version-1-edits.json | No message shows: the file, with its Case target, is taken |
+| 1 | Load the edits file IMG_9136-version-1-edits.json | A white message reads "Edits loaded.", and no other message shows: the file, with its Case target, is taken |
 | 2 | Tap **Perspective** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Perspective step shows, with **Flatten** in the row of tools |
 | 3 | Look at **Flatten** | It reads 0% |
 
@@ -733,8 +718,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -770,7 +754,7 @@ The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 - Download without upscaling: tap **Download**, then **No** in the question box (the box over the dimmed photo with a question and two or three buttons) that asks "Upscale to 2000 px?".
 
 | # | Do this | You should see |
@@ -812,8 +796,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -874,8 +857,7 @@ Before you start:
 
 The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
-- Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -897,7 +879,7 @@ The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: open Export options, tap **Save edits**, then close Export options.
-- Load the edits file F: open Export options, tap **Load edits**, choose F in the file picker, then close Export options.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -905,7 +887,7 @@ The named actions:
 | 2 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens; **Front** and **Back** show in the top bar |
 | 3 | Tap **Front** in the top bar | The front shows, with **Front** selected |
 | 4 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows |
-| 5 | Load the edits file 14_front_portrait_raw_white-edits.json (the one saved in row 1) | No message shows |
+| 5 | Load the edits file 14_front_portrait_raw_white-edits.json (the one saved in row 1) | A white message reads "Edits loaded.", and no other message shows |
 | 6 | Tap **Crop** in the step tabs | **5:7 card** is selected and the box is taller than wide: the file's 1:1 was not taken |
 
 Pass: every row's result is seen.

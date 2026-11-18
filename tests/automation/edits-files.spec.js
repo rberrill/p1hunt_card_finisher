@@ -52,7 +52,7 @@ const {
 const {
   fixtureFile,
   fixtureEdits,
-  toastShownText,
+  toastShownLines,
   undoRedoGreyed,
   isLogoGreen,
 } = require('./support/edits-files.js');
@@ -74,6 +74,7 @@ const VERSION_1 = 'IMG_9136-version-1-edits.json';
 const OLDER_CROP = 'IMG_9136-older-crop-edits.json';
 const ROUND_TRIP = 'IMG_9136-round-trip-edits.json';
 const GREEN_LOGO_EDITS = 'IMG_9136-green-logo-edits.json';
+const LONG_NAME_THREE_RESETS = 'IMG_9136-long-name-three-resets-edits.json';
 const BACK_PNG_1080 = '14_back_portrait_raw_white-png-1080-edits.json';
 const NOTES = 'notes.json';
 // The logos in tests/fixtures/: a solid green square, 400 px; random colors, 165 px, 81,928
@@ -84,8 +85,9 @@ const NOISY_LOGO = 'noisy-logo.png';
 const TOO_LARGE = 'That file is too large to be a Card Finisher edits file.';
 const NOT_JSON = 'That file isn’t valid JSON.';
 const NOT_EDITS = 'That isn’t a Card Finisher edits file.';
-// The lines of ruling R12's one warning, in the wording Rich approved (tests/catalog/
-// wording.md). R48: they apply to a load with one problem too; R59: the logo's line.
+// The lines of Load edits' one message (ruling R12), in the wording Rich approved
+// (tests/catalog/wording.md). R48: "Edits loaded." comes first on every load, alone and white
+// when the load has no problem; R59: the logo's line.
 const LOADED_LINE = 'Edits loaded.';
 const SAVED_FOR_LINE = 'Saved for “IMG_9136.JPEG”; sizes match.';
 const RESET_LINE = 'Reset, not valid: export.';
@@ -103,6 +105,8 @@ const LOW_LOGO_LIMIT_LINK = 'index.html?overlay.maxBytes=65536';
 const PLACE_TOLERANCE_PX = 1;
 // How long to watch for a message that must not come, or for a second one, in ms.
 const QUIET_MS = 500;
+// How long a loaded file's message may take to show, in ms.
+const LOAD_MESSAGE_MS = 5000;
 // The size line before and after IMG_9136-older-crop-edits.json is loaded (EDT-11.2).
 const SIZE_BEFORE_OLDER_CROP = 'Output 1400 × 1400 px · JPEG · full crop, not upscaled';
 const SIZE_AFTER_OLDER_CROP = 'Output 1520 × 1216 px · JPEG · full crop, not upscaled';
@@ -114,8 +118,12 @@ async function turnQuarterRight(page, hand) {
 }
 
 // Loads the edits file `name` from tests/fixtures/ through Export options (the case's named
-// action "Load the edits file").
-const loadFixture = (page, hand, name) => loadEdits(page, hand, fixtureFile(name));
+// action "Load the edits file"). options: loadEdits' ({ isRefused } for a file the case expects
+// to be refused).
+const loadFixture = (page, hand, name, options) => (
+  loadEdits(page, hand, fixtureFile(name), options));
+// For a file the case expects the app to refuse: Export options stay open after it.
+const REFUSED = { isRefused: true };
 
 // Waits until loading a file has shown `count` messages in all (see recordMessages), then
 // gives the app a moment in case another follows, and returns them.
@@ -130,6 +138,48 @@ async function messagesSince(page, before) {
   await page.waitForTimeout(QUIET_MS);
   return (await messagesSoFar(page)).slice(before);
 }
+
+// The row of a load with no problem (ruling R48): since `before` messages had shown, one white
+// message has shown, and no other, and the screen shows it as the one line "Edits loaded.". It
+// gives the message time to show, then a quiet moment in which a second message would be
+// caught, then compares plainly.
+async function expectOnlyLoadedMessage(page, before) {
+  await page.waitForFunction(count => window.testMessages.length > count, before,
+    { timeout: LOAD_MESSAGE_MS }).catch(() => {});
+  await page.waitForTimeout(QUIET_MS);
+  const shown = (await messagesSoFar(page)).slice(before);
+  expect(shown).toEqual([{ text: LOADED_LINE, kind: '' }]);
+  expect(await toastShownLines(page)).toEqual({ lines: [LOADED_LINE], isCut: false });
+}
+
+// Whether Export options are open now (on a phone: the sheet is up).
+function isExportSheetOpen(page) {
+  return page.evaluate(() => window.CF.isSheetOpen(document.getElementById('exportSheet')));
+}
+
+// Where the message over the photo sits: { stage, toast, lines }, the photo area's box, the
+// message's and each of its lines', as { top, bottom, left, right } in CSS px.
+function messageBoxes(page) {
+  return page.evaluate(() => {
+    const boxOf = el => {
+      const rect = el.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
+    };
+    const toast = document.getElementById('toast');
+    return {
+      stage: boxOf(document.getElementById('stage')),
+      toast: boxOf(toast),
+      lines: [...toast.querySelectorAll('.toast-line')].map(boxOf),
+    };
+  });
+}
+
+// True when `inner` lies wholly inside `outer` (boxes from messageBoxes), to the rounding of
+// PLACE_TOLERANCE_PX.
+const isInside = (inner, outer) => inner.top >= outer.top - PLACE_TOLERANCE_PX
+  && inner.bottom <= outer.bottom + PLACE_TOLERANCE_PX
+  && inner.left >= outer.left - PLACE_TOLERANCE_PX
+  && inner.right <= outer.right + PLACE_TOLERANCE_PX;
 
 // The edits a case compares before and after a refused file: the whole edit state and how
 // many steps Undo and Redo can take.
@@ -289,6 +339,7 @@ test('EDT-03.2 In a pair the file leaves out the other side and Together or Sepa
 
 test('EDT-04.1 Load edits opens a picker for one .json file and applies it [phone] [webkit]',
   async ({ page, check }, testInfo) => {
+    await recordMessages(page);
     const hand = await startOn(page, testInfo, { step: 'rotate' });
     await turnQuarterRight(page, hand);
     await check('the photo turns a quarter clockwise', async () => {
@@ -317,16 +368,55 @@ test('EDT-04.1 Load edits opens a picker for one .json file and applies it [phon
       expect(chooser.isMultiple()).toBe(false);
       expect(await chooser.element().getAttribute('accept')).toBe('application/json,.json');
     });
+    const before = (await messagesSoFar(page)).length;
     // Handed over with its bytes: see loadEdits on a just-written file.
     await chooser.setFiles({
       name: saved.name,
       mimeType: 'application/json',
       buffer: fs.readFileSync(saved.file),
     });
-    await check('the photo turns a quarter clockwise again', async () => {
+    await check('the photo turns a quarter clockwise again and a white message reads '
+      + `"${LOADED_LINE}"; on a phone, Export options have closed`, async () => {
       await waitForEdits(page, { quarter: 1 });
+      await expectOnlyLoadedMessage(page, before);
+      if (hand.isTouch) await expect(page.locator('#exportSheet')).toBeHidden();
     });
   });
+
+test('EDT-04.4 On a small phone a load with problems closes the options, and its whole '
+  + 'message is over the photo [small]', async ({ page, check }, testInfo) => {
+  await recordMessages(page);
+  const hand = await startOn(page, testInfo);
+  await openOptions(page, hand, 'export');
+  await check('Export options rise, with Load edits', async () => {
+    expect(await isExportSheetOpen(page)).toBe(true);
+    await expect(page.locator('#btnLoadEdits')).toBeVisible();
+  });
+  const before = (await messagesSoFar(page)).length;
+  const choosing = page.waitForEvent('filechooser');
+  await hand.tap(page.locator('#btnLoadEdits'));
+  await (await choosing).setFiles(fixtureFile(LONG_NAME_THREE_RESETS));
+  await check('Export options close', async () => {
+    await expect(page.locator('#exportSheet')).toBeHidden();
+  });
+  const messages = (await messagesAfterLoad(page, before + 1)).slice(before);
+  const cut = `${fixtureEdits(LONG_NAME_THREE_RESETS).source.name.slice(0, 59)}…`;
+  const lines = [LOADED_LINE, `Saved for “${cut}”; sizes match.`,
+    'Reset, not valid: crop, levels, export.'];
+  await check(`one amber message shows; its lines read ${lines.map(line => `"${line}"`).join(', ')}`
+    + ', in that order, with none cut off', async () => {
+    expect(messages.map(message => message.kind)).toEqual(['warn']);
+    expect(await toastShownLines(page)).toEqual({ lines, isCut: false });
+  });
+  await waitForStill(page);
+  const boxes = await messageBoxes(page);
+  await check('every line of it is inside the photo area, between the top bar and the controls',
+    () => {
+      expect(boxes.lines.length).toBe(lines.length);
+      expect(isInside(boxes.toast, boxes.stage)).toBe(true);
+      expect(boxes.lines.every(line => isInside(line, boxes.toast))).toBe(true);
+    });
+});
 
 test('EDT-04.2 While an export runs, Load edits is dimmed and the step tabs stay live [phone]',
   async ({ page, check }, testInfo) => {
@@ -364,7 +454,7 @@ test('EDT-05.1 A file over 8 MB is refused before it is read [phone]', async ({
     buffer: Buffer.from(padded),
   };
   const before = await editsAndHistory(page);
-  await loadEdits(page, hand, file);
+  await loadEdits(page, hand, file, REFUSED);
   await check(`a red message reads "${TOO_LARGE}"`, async () => {
     expect(await waitForToast(page)).toEqual({ text: TOO_LARGE, kind: 'error', isShown: true });
   });
@@ -377,10 +467,12 @@ test('EDT-05.1 A file over 8 MB is refused before it is read [phone]', async ({
 test('EDT-05.2 A file that isn\'t JSON is refused [phone]', async ({ page, check }, testInfo) => {
   const hand = await startOn(page, testInfo);
   const before = await editsAndHistory(page);
-  await loadFixture(page, hand, NOTES);
-  await check(`a red message reads "${NOT_JSON}"`, async () => {
-    expect(await waitForToast(page)).toEqual({ text: NOT_JSON, kind: 'error', isShown: true });
-  });
+  await loadFixture(page, hand, NOTES, REFUSED);
+  await check(`a red message reads "${NOT_JSON}"; on a phone, Export options stay open`,
+    async () => {
+      expect(await waitForToast(page)).toEqual({ text: NOT_JSON, kind: 'error', isShown: true });
+      if (hand.isTouch) expect(await isExportSheetOpen(page)).toBe(true);
+    });
   await check('nothing has changed: the photo is upright, and Undo and Redo are still greyed '
     + 'out', async () => {
     await expectNothingChanged(page, before);
@@ -401,7 +493,7 @@ test('EDT-05.3 JSON that isn\'t an edits file is refused [phone]', async ({
     { name: WIDTH_AS_TEXT, message: 'the same red message shows again' },
   ];
   for (const [index, row] of rows.entries()) {
-    await loadFixture(page, hand, row.name);
+    await loadFixture(page, hand, row.name, REFUSED);
     const messages = await messagesAfterLoad(page, shownBefore + index + 1);
     await check(`${row.name}: ${row.message}; the photo is still upright, and Undo and Redo `
       + 'still greyed out', async () => {
@@ -413,10 +505,9 @@ test('EDT-05.3 JSON that isn\'t an edits file is refused [phone]', async ({
 
 test('EDT-06.1 Edits for a photo of another size are refused, naming both sizes [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-282');
     const hand = await startOn(page, testInfo, { photo: OTHER_SIZE_PHOTO });
     const before = await editsAndHistory(page);
-    await loadFixture(page, hand, TURNED);
+    await loadFixture(page, hand, TURNED, REFUSED);
     // Ruling R58: sizes are written "W × H".
     const expected = 'These edits are for a 1498 × 2098 photo; this one is 1536 × 2048.';
     await check(`a red message reads "${expected}"`, async () => {
@@ -430,7 +521,6 @@ test('EDT-06.1 Edits for a photo of another size are refused, naming both sizes 
 
 test('EDT-07.1 Edits for another photo of the same size are applied with a warning [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-190');
     const hand = await startOn(page, testInfo, { photo: SAME_SIZE_PHOTO });
     await loadFixture(page, hand, TURNED);
     await check(`one amber message shows; its lines read "${LOADED_LINE}" and `
@@ -442,18 +532,17 @@ test('EDT-07.1 Edits for another photo of the same size are applied with a warni
     });
   });
 
-// The row of a case written to rulings R12 and R48 for a load with one problem: one amber
-// message is up, and its lines are `lines`, in order. It reads plain values, so the known
-// defect fails at once.
+// The row of a load with one problem (rulings R12 and R48): one amber message is up, and the
+// lines it shows are `lines`, each on a line of its own, in order, with none cut off.
 async function expectLoadWarning(page, lines) {
   const toast = await waitForToast(page);
   expect(toast.kind).toBe('warn');
-  expect(await toastShownText(page)).toBe(lines.join(' '));
+  expect(await toastShownLines(page)).toEqual({ lines, isCut: false });
 }
 
-// The body of the cases written to ruling R12: loads the fixture `name` into the open photo
-// and expects one amber message whose lines are `lines`, in order. Both checks compare plain
-// values, so the known defect fails at once.
+// The body of the cases about a load with several problems (ruling R12): loads the fixture
+// `name` into the open photo and expects one amber message whose lines are `lines`, each on a
+// line of its own, in order, with none cut off.
 async function checkOneCombinedWarning(page, check, hand, name, lines) {
   const before = (await messagesSoFar(page)).length;
   await loadFixture(page, hand, name);
@@ -461,10 +550,10 @@ async function checkOneCombinedWarning(page, check, hand, name, lines) {
   await check('one amber message shows, and no other message comes after it', () => {
     expect(messages.map(message => message.kind)).toEqual(['warn']);
   });
-  const shown = await toastShownText(page);
+  const shown = await toastShownLines(page);
   const quoted = lines.map(line => `"${line}"`).join(', ');
   await check(`its lines read ${quoted}, in that order`, () => {
-    expect(shown).toBe(lines.join(' '));
+    expect(shown).toEqual({ lines, isCut: false });
   });
 }
 
@@ -472,7 +561,6 @@ test('EDT-07.2 Another photo\'s name and a damaged setting give one warning [pho
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   await recordMessages(page);
   const hand = await startOn(page, testInfo, { photo: SAME_SIZE_PHOTO });
   await checkOneCombinedWarning(page, check, hand, QUALITY_7,
@@ -483,7 +571,6 @@ test('EDT-08.1 A damaged setting is reset and named; the rest is applied [phone]
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   const hand = await startOn(page, testInfo);
   await loadFixture(page, hand, QUALITY_7);
   await check(`one amber message shows; its lines read "${LOADED_LINE}" and "${RESET_LINE}", in `
@@ -503,7 +590,6 @@ test('EDT-08.2 A damaged setting and an unreadable logo give one warning [phone]
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   await recordMessages(page);
   const hand = await startOn(page, testInfo);
   await checkOneCombinedWarning(page, check, hand, QUALITY_7_GIF_LOGO,
@@ -514,7 +600,6 @@ test('EDT-09.1 A logo of a type a logo can\'t be is left out with a warning [pho
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   const hand = await startOn(page, testInfo);
   await loadFixture(page, hand, GIF_LOGO);
   await check(LOGO_LINE_ROW, async () => {
@@ -532,7 +617,6 @@ test('EDT-09.2 A logo over 5 MB is left out with a warning [phone]', async ({
 }, testInfo) => {
   // The case's file, made from the fixture as the case says: the logo's type changed to PNG
   // and its data replaced by 5.5 MB of zero bytes, which its size alone refuses.
-  test.fail(true, 'BUG-190');
   const edits = fixtureEdits(GIF_LOGO);
   edits.overlayImage.type = 'image/png';
   edits.overlayImage.data = Buffer.alloc(OVER_LOGO_LIMIT_BYTES).toString('base64');
@@ -553,7 +637,6 @@ test('EDT-09.3 A link\'s lower logo limit leaves a larger logo out [phone]', asy
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-190');
   const hand = await startOn(page, testInfo, { step: 'overlay' });
   await chooseLogo(page, hand, page.locator('#btnOverlayAdd'), fixtureLogo(NOISY_LOGO));
   await check('the logo shows on the photo', async () => {
@@ -610,16 +693,16 @@ test('EDT-09.4 A logo placement with no picture keeps a logo the app already has
     });
     const before = (await messagesSoFar(page)).length;
     await loadFixture(page, hand, PLACEMENT_ONLY);
-    await check('the green logo is back on the photo, with no message', async () => {
+    await check(`the green logo is back on the photo; a white message reads "${LOADED_LINE}", `
+      + 'with no line about the logo', async () => {
       await waitForEdits(page, { hasLogo: true });
       await expect.poll(() => isLogoGreen(page)).toBe(true);
-      expect(await messagesSince(page, before)).toEqual([]);
+      await expectOnlyLoadedMessage(page, before);
     });
   });
 
 test('EDT-09.5 A logo placement with no picture, the logo not loaded, is left out [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-190');
     const hand = await startOn(page, testInfo);
     await loadFixture(page, hand, PLACEMENT_ONLY);
     await check(LOGO_LINE_ROW, async () => {
@@ -633,7 +716,6 @@ test('EDT-09.5 A logo placement with no picture, the logo not loaded, is left ou
 
 test('EDT-09.6 Another photo\'s name, a damaged setting and an unreadable logo give one '
   + 'warning [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-190');
   await recordMessages(page);
   const hand = await startOn(page, testInfo, { photo: SAME_SIZE_PHOTO });
   await checkOneCombinedWarning(page, check, hand, QUALITY_7_GIF_LOGO,
@@ -683,8 +765,9 @@ test('EDT-11.1 A version 1 file\'s Square up becomes Flatten 0% [phone]', async 
   await loadFixture(page, hand, VERSION_1);
   // The file is taken once the app holds its Flatten of 0% (row 3 shows it on screen).
   await page.waitForFunction(() => window.__straightener.app.state.strength === 0);
-  await check('no message shows: the file, with its Case target, is taken', async () => {
-    expect(await messagesSince(page, before)).toEqual([]);
+  await check(`a white message reads "${LOADED_LINE}", and no other message shows: the file, `
+    + 'with its Case target, is taken', async () => {
+    await expectOnlyLoadedMessage(page, before);
   });
   await goToStep(page, 'perspective', hand);
   await check('the Perspective step shows, with Flatten in the row of tools', async () => {
@@ -894,8 +977,8 @@ test('EDT-14.3 A single photo\'s edits loaded into a side keep the 5:7 lock [pho
   });
   const before = (await messagesSoFar(page)).length;
   await loadEdits(page, hand, saved.file);
-  await check('no message shows', async () => {
-    expect(await messagesSince(page, before)).toEqual([]);
+  await check(`a white message reads "${LOADED_LINE}", and no other message shows`, async () => {
+    await expectOnlyLoadedMessage(page, before);
   });
   await goToStep(page, 'crop', hand);
   await check('5:7 card is selected and the box is taller than wide: the file\'s 1:1 was not '

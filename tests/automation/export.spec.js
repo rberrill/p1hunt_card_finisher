@@ -246,7 +246,8 @@ async function checkUnlistedLongEdge(page, check, testInfo) {
     await expect(page.locator('#btnLoadEdits')).toBeVisible();
   });
   await loadEditsFile(page, hand, check, LONG_EDGE_1500_EDITS);
-  await closeOptions(page, hand, 'export');
+  // On a phone the app closes Export options when it applies the file.
+  if (hand.isTouch) await page.locator('#exportSheet').waitFor({ state: 'hidden' });
   await check('none of the four sizes is selected', async () => {
     expect(await selectedChoices(page, 'exportSize')).toEqual([]);
   });

@@ -637,7 +637,7 @@ The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls, the block of buttons under the photo); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen), open Export options, tap **Save edits**, then close Export options.
-- Load the edits: tap **Export** in the step tabs, open Export options, tap **Load edits** and choose the IMG_9136-edits.json you saved, then close Export options.
+- Load the edits: tap **Export** in the step tabs, open Export options, tap **Load edits** and choose the IMG_9136-edits.json you saved (on a phone, Export options close once it is loaded).
 
 This order leaves the photo's own stored logo different from the one on the photo, which is then the logo saved in the browser.
 
@@ -669,7 +669,7 @@ The named actions:
 - Open Export options: on a phone, tap the options tab (the tab with an up arrow on the top edge of the controls, the block of buttons under the photo); on a wide screen they are always shown under the controls.
 - Close Export options: on a phone, tap the **×** at their top right; on a wide screen there is nothing to close.
 - Save the edits: tap **Export** in the step tabs, open Export options, tap **Save edits**, then close Export options.
-- Load the edits: tap **Export** in the step tabs, open Export options, tap **Load edits** and choose the IMG_9136-edits.json you saved, then close Export options.
+- Load the edits: tap **Export** in the step tabs, open Export options, tap **Load edits** and choose the IMG_9136-edits.json you saved (on a phone, Export options close once it is loaded).
 
 As in STA-10.4, rows 1 to 3 leave the logo on the photo kept only as the logo saved in the browser. **Delete saved** then removes that one.
 
