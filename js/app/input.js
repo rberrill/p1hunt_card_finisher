@@ -725,6 +725,9 @@
       return;
     }
     if (app.tab !== 'perspective') return;
+    // Preview hides the handles, so the keys leave them alone (ruling R2): the arrows move
+    // nothing, and Tab moves the focus on as it does between controls.
+    if (app.previewMode) return;
     if (event.key === 'Tab') {
       if (stepHandleByTab(event.shiftKey)) event.preventDefault();
       return;

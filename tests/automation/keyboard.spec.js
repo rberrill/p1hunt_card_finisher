@@ -484,25 +484,34 @@ test('KEY-08.2 While Preview is on, Tab doesn\'t step through the handles [deskt
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-062');
   const hand = await startOn(page, testInfo, { step: 'perspective' });
   await hand.tap(page.locator('#toolPreview'));
   await check('Preview reads On: the corrected card shows, with no handles', async () => {
     await expect(page.locator('#toolPreview .tool-state')).toHaveText('On');
+    expect(await page.evaluate(() => window.__straightener.app.previewMode)).toBe(true);
   });
   await clickPhotoEdge(page, hand);
-  await check('a click on the photo: it has the focus; the line reads Corner 1 of 4', async () => {
-    await expect(page.locator('#view')).toBeFocused();
-    await expect(handleName(page)).toHaveText('Corner 1 of 4');
-  });
-  await page.keyboard.press('Tab');
-  const nameAfter = await handleName(page).textContent();
-  const isPhotoFocused = await page.locator('#view').evaluate(el => el === document.activeElement);
-  await check('Tab: the line still reads Corner 1 of 4, and the focus has moved on', () => {
-    expect({ nameAfter, isPhotoFocused }).toEqual({
-      nameAfter: 'Corner 1 of 4',
-      isPhotoFocused: false,
+  await check('a click on the photo: it has the focus, and the first handle is still selected',
+    async () => {
+      await expect(page.locator('#view')).toBeFocused();
+      expect(await selectedHandle(page)).toBe(TOP_LEFT);
     });
+  await page.keyboard.press('Tab');
+  await check('Tab: the focus moves from the photo to Candidate, with a white ring; the first '
+    + 'handle is still selected', async () => {
+    await expect(page.locator('#toolCandidate')).toBeFocused();
+    expect(await focusRingOf(page, '#toolCandidate')).toEqual({
+      width: '2px',
+      style: 'solid',
+      color: RING_WHITE,
+    });
+    expect(await selectedHandle(page)).toBe(TOP_LEFT);
+  });
+  await hand.tap(page.locator('#toolPreview'));
+  await check('Preview reads Off; the line reads Corner 1 of 4', async () => {
+    await expect(page.locator('#toolPreview .tool-state')).toHaveText('Off');
+    await expect(handleName(page)).toBeVisible();
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
   });
 });
 
@@ -625,17 +634,23 @@ test('KEY-10.2 While Preview is on, the arrow keys don\'t move the handle [deskt
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-062');
   const hand = await startOn(page, testInfo, { step: 'perspective' });
   const start = await cornersNow(page);
   await hand.tap(page.locator('#toolPreview'));
   await check('Preview reads On', async () => {
     await expect(page.locator('#toolPreview .tool-state')).toHaveText('On');
+    expect(await page.evaluate(() => window.__straightener.app.previewMode)).toBe(true);
   });
   for (let press = 0; press < 3; press++) await page.keyboard.press('ArrowRight');
-  const corners = await cornersNow(page);
-  await check('→ three times: the corners haven\'t moved', () => {
-    expect(corners).toEqual(start);
+  await check('→ three times: the corrected card doesn\'t change, and Undo is still greyed out',
+    async () => {
+      expect(await cornersNow(page)).toEqual(start);
+      await expect(page.locator('#btnUndo')).toBeDisabled();
+    });
+  await hand.tap(page.locator('#toolPreview'));
+  await check('Preview reads Off; the corners are where they were', async () => {
+    await expect(page.locator('#toolPreview .tool-state')).toHaveText('Off');
+    expect(await cornersNow(page)).toEqual(start);
   });
 });
 

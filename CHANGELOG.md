@@ -64,6 +64,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - On Perspective, with corners that can't be used, **Preview** now reads "Fix the corners first." in place of the card. It used to say "Fix the corners in Perspective first.", on Perspective itself; the other steps still say that.
 - Four rare faults used to show in the line above Perspective's controls in technical words ("Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty.", "Transform is not invertible."). The line now reads "Fix the corners first.", and the technical words go to the browser's console.
 - The line above Perspective's controls no longer says "Corrected frame clamped to 12000px on the long side.", a message with nothing to do about it. The browser's console notes it instead.
+- While Perspective's **Preview** is on, the keyboard's arrow keys no longer move a corner you can't see, and Tab no longer steps through the hidden handles: it moves on to the next control.
+- **Preview** turns off when you leave Perspective. It used to stay on, so the step came back showing the corrected card with no handles.
 
 ## [1.9.0] - 2026-11-10
 

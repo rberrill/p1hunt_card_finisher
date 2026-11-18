@@ -613,16 +613,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## TOP-13 What a step change resets
 
-Changing step closes any open options sheet, disarms Levels' picker and compare (when leaving Levels), cancels Tap to find card, hides the nudge magnifier, clears Overlay's file error (when leaving Overlay) and saves the edits shortly after, the step with them.
+Changing step closes any open options sheet, disarms Levels' picker and compare (when leaving Levels), cancels Tap to find card, turns Perspective's **Preview** off (when leaving Perspective), hides the nudge magnifier, clears Overlay's file error (when leaving Overlay) and saves the edits shortly after, the step with them.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `.step-tab`, `#btnFindCard`, `.sheet-layer`
+- Changed: 1.10.0
+- Anchors: `.step-tab`, `#btnFindCard`, `#toolPreview`, `.sheet-layer`
 - Source: `js/app/shell.js` (`setTab`, `closeSheets`)
-- Ruling: R88. A step change turns **Preview** off. The app differs today.
+- Ruling: R88. A step change turns **Preview** off. The app does this since 1.10.0.
 - Cases: 8
 
 ### TOP-13.1 Changing step cancels Tap to find card   [auto: phone]
@@ -683,8 +683,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-13.4 Preview turns off at a step change   [auto: phone]
-Written to ruling R88; it fails until that is built (BUG-294).
-
 Before you start:
 - Device and browser: a phone-width window
 - Build: the build under test

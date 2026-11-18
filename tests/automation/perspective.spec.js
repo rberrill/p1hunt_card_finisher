@@ -1799,61 +1799,73 @@ test('PER-26.2 While Preview is on, a pinch zooms the corrected card [phone]', a
   });
 });
 
-test('PER-26.3 While Preview is on, the arrow keys and Tab do nothing [desktop]', async ({
-  page,
-  check,
-}, testInfo) => {
-  test.fail(true, 'BUG-062');
-  const hand = await startOnPerspective(page, testInfo);
-  const corners = await cornersNow(page);
-  await hand.tap(page.locator('#toolPreview'));
-  await check('the corrected card shows, with no handles', async () => {
-    await expect(previewState(page)).toHaveText('On');
-  });
-  const box = await page.locator('#view').boundingBox();
-  await tapAt(page, hand, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
-  await check('a click on the card changes nothing', async () => {
-    expectSameCorners(await cornersNow(page), corners);
-  });
-  for (let press = 0; press < 3; press++) await page.keyboard.press('ArrowRight');
-  await check('three presses of the right arrow key change nothing; Undo is still greyed out',
-    async () => {
-      expectSameCorners(await cornersNow(page), corners);
-      expect(await page.locator('#btnUndo').isDisabled()).toBe(true);
+test('PER-26.3 While Preview is on, the arrow keys and Tab leave the handles alone [desktop]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startOnPerspective(page, testInfo);
+    const corners = await cornersNow(page);
+    const topLeft = await handleOnPage(page, TOP_LEFT);
+    const selectedHandle = () => page.evaluate(() => window.__straightener.app.selected);
+    await hand.tap(page.locator('#toolPreview'));
+    await check('the corrected card shows, with no handles', async () => {
+      await expect(previewState(page)).toHaveText('On');
+      expect(await page.evaluate(() => window.__straightener.app.previewMode)).toBe(true);
+      expect(await isHandleAt(page, topLeft)).toBe(false);
     });
-  await page.keyboard.press('Tab');
-  await check('Tab changes nothing', async () => {
-    expect(await page.evaluate(() => window.__straightener.app.selected)).toBe(TOP_LEFT);
+    const box = await page.locator('#view').boundingBox();
+    const viewBefore = await viewNow(page);
+    await tapAt(page, hand, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    await check('a click on the card: the photo has the focus, and the card doesn\'t move',
+      async () => {
+        await expect(page.locator('#view')).toBeFocused();
+        expect(await viewNow(page)).toEqual(viewBefore);
+        expect(await cornersNow(page)).toEqual(corners);
+        expect(await selectedHandle()).toBe(TOP_LEFT);
+      });
+    for (let press = 0; press < 3; press++) await page.keyboard.press('ArrowRight');
+    await check('three presses of the right arrow key move no corner; Undo is still greyed out',
+      async () => {
+        expect(await cornersNow(page)).toEqual(corners);
+        expect(await page.locator('#btnUndo').isDisabled()).toBe(true);
+      });
+    await page.keyboard.press('Tab');
+    await check('Tab: the focus moves from the photo to Candidate, with a ring; no other handle '
+      + 'is selected', async () => {
+      await expect(page.locator('#toolCandidate')).toBeFocused();
+      await expect(page.locator('#toolCandidate')).toHaveCSS('outline-style', 'solid');
+      expect(await selectedHandle()).toBe(TOP_LEFT);
+      expect(await cornersNow(page)).toEqual(corners);
+    });
+    await hand.tap(page.locator('#toolPreview'));
+    await check('the corners are where they were, Corner 1 of 4, Undo greyed out', async () => {
+      expect(await cornersNow(page)).toEqual(corners);
+      await expect(handleName(page)).toHaveText('Corner 1 of 4');
+      await expect(page.locator('#btnUndo')).toBeDisabled();
+    });
   });
-  await hand.tap(page.locator('#toolPreview'));
-  await check('the corners are where they were, Corner 1 of 4, Undo greyed out', async () => {
-    expectSameCorners(await cornersNow(page), corners);
-    await expect(handleName(page)).toHaveText('Corner 1 of 4');
-    await expect(page.locator('#btnUndo')).toBeDisabled();
-  });
-});
 
 test('PER-27.1 Preview turns off at a change of step [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-294');
   const hand = await startOnPerspective(page, testInfo);
+  const topLeft = await handleOnPage(page, TOP_LEFT);
+  const isPreviewOn = () => page.evaluate(() => window.__straightener.app.previewMode);
   await hand.tap(page.locator('#toolPreview'));
-  await check('Preview reads On', async () => {
+  await check('Preview reads On; the corrected card shows', async () => {
     await expect(previewState(page)).toHaveText('On');
+    expect(await isPreviewOn()).toBe(true);
+    expect(await isHandleAt(page, topLeft)).toBe(false);
   });
   await goToStep(page, 'rotate', hand);
   await check('the Rotate step shows', async () => {
     await expect(page.locator('#rotateArea')).toBeVisible();
   });
   await goToStep(page, 'perspective', hand);
-  // A plain reading, so the known defect fails at once.
-  const isPreviewOn = await page.evaluate(() => window.__straightener.app.previewMode);
   await check('Preview reads Off, the line reads NUDGE, and the photo shows with its outline and '
     + 'handles', async () => {
-    expect(isPreviewOn).toBe(false);
     await expect(previewState(page)).toHaveText('Off');
+    expect(await isPreviewOn()).toBe(false);
+    await expect(page.locator('#perspectiveLine')).toBeVisible();
     await expect(page.locator('#perspectiveLine .line-label')).toHaveText('Nudge');
     expect(await isHandleAt(page, await handleOnPage(page, TOP_LEFT))).toBe(true);
   });

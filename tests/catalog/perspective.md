@@ -1387,16 +1387,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-26 What Preview locks
 
-While Preview is on, **Nudge** and **Flatten** are off, the arrow buttons and the slider are hidden, the handles can't be grabbed, and dragging or pinching pans and zooms the corrected card.
+While Preview is on, **Nudge** and **Flatten** are off, the arrow buttons and the slider are hidden, the handles can't be grabbed, and dragging or pinching pans and zooms the corrected card. The keyboard's arrow keys move no corner, and Tab selects no handle: it moves the focus on from the photo.
 
 - Risk: medium
 - Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#toolPreview`, `#toolNudge`, `#toolFlatten`, `#perspectivePreviewRow`
-- Source: `js/app/perspective.js` (`syncPerspective`, `bindHandleNudge`); `js/app/input.js` (`stepGesture`, `hitsPhotoControl`)
-- Ruling: R2. The keyboard's arrow keys and Tab do nothing while Preview is on. The app differs today. R87. While Preview is on, **Nudge** and **Flatten** are dimmed. The app already does this.
+- Source: `js/app/perspective.js` (`syncPerspective`, `bindHandleNudge`); `js/app/input.js` (`stepGesture`, `hitsPhotoControl`, `onPhotoKey`)
+- Ruling: R2. While Preview is on, the keyboard's arrow keys and Tab do nothing to the handles. The app does this since 1.10.0. R87. While Preview is on, **Nudge** and **Flatten** are dimmed. The app already does this.
 - Cases: 4
 
 ### PER-26.1 While Preview is on, the modes are off and a drag moves the corrected card   [auto: phone, webkit]
@@ -1436,8 +1436,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-26.3 While Preview is on, the arrow keys and Tab do nothing   [auto: desktop]
-Written to ruling R2; it fails until that is built (BUG-062).
+### PER-26.3 While Preview is on, the arrow keys and Tab leave the handles alone   [auto: desktop]
 
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
@@ -1449,9 +1448,9 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **Preview** | The corrected card shows, with no handles |
-| 2 | Click the middle of the corrected card | Nothing changes |
-| 3 | Press the right arrow key (→) three times | Nothing changes, and **Undo** is still greyed out |
-| 4 | Press Tab | Nothing changes |
+| 2 | Click the middle of the corrected card | The card doesn't move; the photo has the focus |
+| 3 | Press the right arrow key (→) three times | The card doesn't change, and **Undo** is still greyed out |
+| 4 | Press Tab | The card doesn't change; the keyboard focus moves from the photo to **Candidate**, which shows a ring |
 | 5 | Click **Preview** again | The corners are where they were, the line reads Corner 1 of 4, and **Undo** is still greyed out |
 
 Pass: every row's result is seen.
@@ -1477,21 +1476,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-27 Preview's levels, and when it turns off
 
-Preview shows the applied levels, not an unapplied Levels draft. It turns off for a new photo, a switch to the other side of a pair and, by ruling R88, a change of step (today it stays on then).
+Preview shows the applied levels, not an unapplied Levels draft. It turns off for a new photo, a switch to the other side of a pair and a change of step.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#toolPreview`
-- Source: `js/app/levels.js` (`levelsShown`, `previewCanvas`); `js/app/state.js` (`resetPhotoState`); `js/app/pair.js` (`applySide`)
-- Ruling: R88. A step change turns **Preview** off. The app differs today.
+- Source: `js/app/levels.js` (`levelsShown`, `previewCanvas`); `js/app/state.js` (`resetPhotoState`); `js/app/pair.js` (`applySide`); `js/app/shell.js` (`setTab`)
+- Ruling: R88. A step change turns **Preview** off. The app does this since 1.10.0.
 - Cases: 5
 
 ### PER-27.1 Preview turns off at a change of step   [auto: phone]
-Written to ruling R88; it fails until that is built (BUG-294).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test

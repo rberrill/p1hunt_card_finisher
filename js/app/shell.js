@@ -40,6 +40,8 @@
       app.compare = false;
     }
     if (tab !== 'overlay') app.overlayMessage = '';
+    // Leaving Perspective turns Preview off, so the step comes back with its handles (R88).
+    if (tab !== 'perspective') app.previewMode = false;
     app.nudgeLoupeUntil = 0;
     app.findMode = false;
     closeSheets();

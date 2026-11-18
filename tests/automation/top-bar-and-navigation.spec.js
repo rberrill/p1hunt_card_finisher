@@ -921,25 +921,28 @@ test('TOP-13.4 Preview turns off at a step change [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-294');
   const hand = await startOn(page, testInfo);
   const previewState = page.locator('#toolPreview .tool-state');
   const isPreviewDrawn = () => page.evaluate(() => window.__straightener.app.previewMode);
+  // Whether a press at this place on the page would grab a corner ring.
+  const isRingAt = point => page.evaluate(({ x, y }) => window.CF.hitsPhotoControl(x, y), point);
+  const topLeft = await handleOnPage(page, 0);
   await hand.tap(page.locator('#toolPreview'));
   await check('Preview reads On; the corrected card shows with no corner rings', async () => {
     await expect(previewState).toHaveText('On');
     await expect(page.locator('#perspectivePreviewLine')).toBeVisible();
     expect(await isPreviewDrawn()).toBe(true);
+    expect(await isRingAt(topLeft)).toBe(false);
   });
   await tapStep(page, hand, check, 'rotate', 'Rotate');
   await goToStep(page, 'perspective', hand);
-  // A plain reading, so the known defect fails at once.
-  const isDrawn = await isPreviewDrawn();
   await check('back on Perspective, Preview reads Off, and the photo shows with its corner rings',
     async () => {
-      expect(isDrawn).toBe(false);
       await expect(previewState).toHaveText('Off');
+      expect(await isPreviewDrawn()).toBe(false);
       await expect(page.locator('#perspectivePreviewLine')).toBeHidden();
+      await expect(page.locator('#perspectiveLine')).toBeVisible();
+      expect(await isRingAt(await handleOnPage(page, 0))).toBe(true);
     });
 });
 

@@ -361,16 +361,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## KEY-08 Tab steps through the Perspective handles
 
-On Perspective, while the photo has the keyboard focus, Tab and Shift+Tab step through the eight handles (the four corners, then the four edges) and leave the photo after the last handle (Tab) or before the first (Shift+Tab). Tab or Shift+Tab into the photo keeps the handle that is selected: Corner 1 of 4 when a photo opens. With focus anywhere else, Tab moves between controls as usual.
+On Perspective, while the photo has the keyboard focus, Tab and Shift+Tab step through the eight handles (the four corners, then the four edges) and leave the photo after the last handle (Tab) or before the first (Shift+Tab). Tab or Shift+Tab into the photo keeps the handle that is selected: Corner 1 of 4 when a photo opens. With focus anywhere else, Tab moves between controls as usual. While **Preview** is on, the handles are hidden and Tab steps through none of them: it moves the focus on from the photo.
 
 - Risk: medium
 - Check: script
 - Layout: wide. Needs a keyboard.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `key:Tab`, `#view`, `.is-keyboard-focus`
 - Source: `js/app/input.js` (`onPhotoKey`, `stepHandleByTab`, `onCanvasFocus`)
-- Ruling: R2. While Preview is on, the keys do nothing to the handles. The app differs today. R54. Tab or Shift+Tab into the photo keeps the handle selected before, and the keyboard help needn't say the photo needs the focus first. The app already does this.
+- Ruling: R2. While Preview is on, the keys do nothing to the handles. The app does this since 1.10.0. R54. Tab or Shift+Tab into the photo keeps the handle selected before, and the keyboard help needn't say the photo needs the focus first. The app already does this.
 - Cases: 3
 
 ### KEY-08.1 Tab steps through the eight handles once the photo has the focus   [auto: desktop]
@@ -397,8 +397,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### KEY-08.2 While Preview is on, Tab doesn't step through the handles   [auto: desktop]
-Written to ruling R2; it fails until that is built (BUG-062).
-
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
@@ -409,8 +407,9 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **Preview** | It reads On: the corrected card shows, with no handles |
-| 2 | Click the photo area 20 px in from its top-left corner | The photo has the focus; the line still reads Corner 1 of 4 |
-| 3 | Press Tab | The line still reads Corner 1 of 4, and the focus has moved on from the photo |
+| 2 | Click the photo area 20 px in from its top-left corner | The photo has the focus |
+| 3 | Press Tab | The focus moves from the photo to **Candidate**, which shows a white ring |
+| 4 | Click **Preview** again | It reads Off; the line reads Corner 1 of 4, the handle that was selected before row 1 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -490,16 +489,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## KEY-10 Arrow keys nudge a Perspective handle
 
-On Perspective, the arrow keys move the selected handle by 1 photo pixel, or 10 with Shift; a side's handle moves the side straight in or out. Repeated presses make one undo step.
+On Perspective, the arrow keys move the selected handle by 1 photo pixel, or 10 with Shift; a side's handle moves the side straight in or out. Repeated presses make one undo step. While **Preview** is on, the handles are hidden and the arrow keys move none of them.
 
 - Risk: medium
 - Check: script
 - Layout: both. Needs a keyboard.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `key:ArrowLeft`, `key:ArrowUp`, `CONFIG.keys.nudge`, `CONFIG.keys.nudgeShift`
 - Source: `js/app/input.js` (`onPhotoKey`, `moveHandleBy`)
-- Ruling: R2. While Preview is on, the keys do nothing to the handles. The app differs today. R67. An arrow key moves a corner 1 photo pixel (10 with Shift) with no magnifier; the on-screen arrows move it 1 screen pixel and show the magnifier. The app already does this.
+- Ruling: R2. While Preview is on, the keys do nothing to the handles. The app does this since 1.10.0. R67. An arrow key moves a corner 1 photo pixel (10 with Shift) with no magnifier; the on-screen arrows move it 1 screen pixel and show the magnifier. The app already does this.
 - Cases: 2
 
 ### KEY-10.1 The arrow keys move the selected handle; a side moves straight; one undo step   [auto: desktop]
@@ -527,8 +526,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### KEY-10.2 While Preview is on, the arrow keys don't move the handle   [auto: desktop]
-Written to ruling R2; it fails until that is built (BUG-062).
-
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
 - Build: the build under test
@@ -539,7 +536,8 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **Preview** | It reads On |
-| 2 | Press → (the right arrow key) three times | The corners haven't moved |
+| 2 | Press → (the right arrow key) three times | The corrected card doesn't change, and **Undo** (the arrow curving left, at the top right) is still greyed out |
+| 3 | Click **Preview** again | It reads Off; the corners are where they were before row 1 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
