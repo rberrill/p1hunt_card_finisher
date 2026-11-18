@@ -79,6 +79,7 @@ const {
   cardCornerInShot,
   cardWidthInExport,
   makeCornerShotsImpossible,
+  makeCardTooSmallForCorners,
   installSwitchableShare,
   recordCornerProgress,
   cornerProgressSoFar,
@@ -118,8 +119,9 @@ const CROSSED_MESSAGE = 'Corners cross or fold inward. Drag them back into a con
 // The size line's endings under ruling R20, in its approved words (tests/catalog/wording.md).
 const TOO_SMALL_ENDING = ' · the card is too small';
 const FIX_CORNERS_ENDING = ' · fix the corners in Perspective first';
-// The engine's reasons for refusing corner shots (js/engine.js, cornerShots).
-const TOO_SMALL_REASON = 'The card is too small for corner shots.';
+// The engine's reason for refusing corner shots whose frame it can't invert (js/engine.js,
+// cornerShots). Its other reason, a card that is too small, comes from the engine itself
+// (makeCardTooSmallForCorners).
 const NOT_INVERTIBLE_REASON = 'Transform is not invertible.';
 // Where the card's corner sits in each shot, as a fraction of its side (insetFraction), and how
 // far a measured edge may be from it: 5 px of a 156 px shot.
@@ -182,6 +184,15 @@ const shareCorners = page => page.locator('#btnCornerShare');
 const shareCornersLabel = page => page.locator('#btnCornerShare .action-label');
 // True when a control has the red main look.
 const isRed = locator => locator.evaluate(el => el.classList.contains('is-main'));
+
+// Expects Share corners and Download corners to be greyed out: each shown, and not answering a
+// tap. A hidden button is not greyed out.
+async function expectSaveButtonsGreyedOut(page) {
+  for (const button of [shareCorners(page), downloadCorners(page)]) {
+    await expect(button).toBeVisible();
+    await expect(button).toBeDisabled();
+  }
+}
 
 // Taps Share corners and waits until the stand-in share sheet has had `count` calls in all.
 async function shareCornersOnce(page, hand, count) {
@@ -572,19 +583,15 @@ test('CNR-04.2 While the corners are invalid, the size line is empty [phone]', a
 
 test('CNR-04.3 When the corner shots can\'t be made, the line gives the real reason [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-120');
     const hand = await startOnExport(page, testInfo);
     await makeCornerShotsImpossible(page, NOT_INVERTIBLE_REASON);
     await openCornerSheet(page, hand);
-    // A plain comparison, not a retrying expect: the known defect fails at once.
-    const sheetLine = await cornerReadout(page);
     await check(`the corner size line reads "Sheet${FIX_CORNERS_ENDING}"`, async () => {
-      expect(sheetLine).toBe(`Sheet${FIX_CORNERS_ENDING}`);
+      expect(await cornerReadout(page)).toBe(`Sheet${FIX_CORNERS_ENDING}`);
     });
     await chooseCornerOutput(page, hand, '4 photos');
-    const photosLine = await cornerReadout(page);
     await check(`it reads "4 photos${FIX_CORNERS_ENDING}"`, async () => {
-      expect(photosLine).toBe(`4 photos${FIX_CORNERS_ENDING}`);
+      expect(await cornerReadout(page)).toBe(`4 photos${FIX_CORNERS_ENDING}`);
     });
   });
 
@@ -625,12 +632,12 @@ test('CNR-05.4 Share corners appears once the browser can share, as Share does [
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-121');
   await installSwitchableShare(page);
   const hand = await startOnExport(page, testInfo, { share: null });
   await openCornerSheet(page, hand);
-  await check('there is no Share corners', async () => {
+  await check('there is no Share corners, and Download corners is red', async () => {
     await expect(shareCorners(page)).toBeHidden();
+    expect(await isRed(downloadCorners(page))).toBe(true);
   });
   await closeSheetAndCheck(page, hand, check);
   // The stand-in browser can share from here on (the case's "now that the browser can share").
@@ -642,11 +649,12 @@ test('CNR-05.4 Share corners appears once the browser can share, as Share does [
     await expect(page.locator('#btnShare')).toBeVisible();
   });
   await openCornerSheet(page, hand);
-  // A plain reading, not a retrying expect: the known defect fails at once.
-  const isShareShown = await shareCorners(page).isVisible();
-  await check('Share corners shows too', async () => {
-    expect(isShareShown).toBe(true);
-  });
+  await check('Share corners shows too, in red, and Download corners is no longer red',
+    async () => {
+      await expect(shareCorners(page)).toBeVisible();
+      expect(await isRed(shareCorners(page))).toBe(true);
+      expect(await isRed(downloadCorners(page))).toBe(false);
+    });
 });
 
 test('CNR-06.1 Download corners saves the corner sheet as a plain download [phone] [webkit]',
@@ -812,24 +820,22 @@ test('CNR-08.2 For a card too small for corner shots, both buttons are dimmed [p
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-120');
   const hand = await startOnExport(page, testInfo);
-  await makeCornerShotsImpossible(page, TOO_SMALL_REASON);
+  // The reason is the real engine's, for a card with no size: the case fails if the app no
+  // longer knows the engine's words for it.
+  await makeCardTooSmallForCorners(page);
   await openCornerSheet(page, hand);
-  // Plain readings, not retrying expects: the known defect fails at once.
-  const seen = {
-    line: await cornerReadout(page),
-    isShareDimmed: await shareCorners(page).isDisabled(),
-    isDownloadDimmed: await downloadCorners(page).isDisabled(),
-  };
   await check(`the corner size line reads "Sheet${TOO_SMALL_ENDING}", and Share corners and `
     + 'Download corners are greyed out', async () => {
-    expect(seen).toEqual({
-      line: `Sheet${TOO_SMALL_ENDING}`,
-      isShareDimmed: true,
-      isDownloadDimmed: true,
-    });
+    expect(await cornerReadout(page)).toBe(`Sheet${TOO_SMALL_ENDING}`);
+    await expectSaveButtonsGreyedOut(page);
   });
+  await chooseCornerOutput(page, hand, '4 photos');
+  await check(`it reads "4 photos${TOO_SMALL_ENDING}", and both buttons are still greyed out`,
+    async () => {
+      expect(await cornerReadout(page)).toBe(`4 photos${TOO_SMALL_ENDING}`);
+      await expectSaveButtonsGreyedOut(page);
+    });
 });
 
 test('CNR-08.3 While the corner shots are saved, both buttons are dimmed [phone]', async ({

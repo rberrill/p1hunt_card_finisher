@@ -195,16 +195,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## CNR-04 The size line
 
-A line reads **4 photos · N × N px · FORMAT** or **Sheet W × H px · N px corners · FORMAT**; it is empty while the corners are invalid. When the corner shots can't be sized for any other reason, it reads **Sheet · the card is too small** or **4 photos · the card is too small**.
+A line reads **4 photos · N × N px · FORMAT** or **Sheet W × H px · N px corners · FORMAT**; it is empty while the corners are invalid. When the corner shots can't be made for a card whose corners are valid, it gives the reason after **Sheet** or **4 photos**: **· the card is too small** when that is the reason, **· fix the corners in Perspective first** for any other.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#cornerReadout`, " px corners · ", " · the card is too small"
+- Changed: 1.10.0
+- Anchors: `#cornerReadout`, " px corners · ", " · the card is too small", " · fix the corners in Perspective first"
 - Source: `js/app/corner-shots.js` (`readout`, `syncCornerShots`)
-- Ruling: R20. The line gives the real reason the corner shots can't be made, ending "· the card is too small" when that is the reason and "· fix the corners in Perspective first" for any other, and both save buttons are dimmed. The app differs today: it reads "· the card is too small" for any reason, and both buttons stay live.
+- Ruling: R20. The line gives the real reason the corner shots can't be made, ending "· the card is too small" when that is the reason and "· fix the corners in Perspective first" for any other, and both save buttons are dimmed. The app does this since 1.10.0.
 - Cases: 3
 
 ### CNR-04.1 The size line gives the sheet's or each photo's size, and the format   [auto: phone]
@@ -246,7 +246,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 ### CNR-04.3 When the corner shots can't be made, the line gives the real reason   [auto: phone]
 Script only
 Stand-in: no photo and no control makes the corner shots impossible for a card whose corners are valid, so the script makes the engine refuse them with "Transform is not invertible."
-Written to ruling R20; it fails until R20 is built (BUG-120).
 
 Before you start:
 - Device and browser: any; a phone-width window
@@ -265,16 +264,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## CNR-05 Share corners
 
-**Share corners** (red) opens one share sheet with the file or files; it is hidden where the browser can't share files.
+**Share corners** (red) opens one share sheet with the file or files. It is hidden where the browser can't share files, and shows once the browser can, as Export's **Share** does.
 
 - Risk: medium
 - Check: phone, script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnCornerShare`, "Share corners", "Share the corner shots (Save Image puts them in Photos)"
-- Source: `js/app/corner-shots.js` (`bindCornerShots`, `saveCornerShots`, `shareCornerShots`)
-- Ruling: R21. Corner shots check again whether Share can show each time the screen updates, as Export does. The app differs today.
+- Source: `js/app/corner-shots.js` (`syncCornerShots`, `bindCornerShots`, `saveCornerShots`, `shareCornerShots`)
+- Ruling: R21. Corner shots check again whether Share can show each time the screen updates, as Export does. The app does this since 1.10.0.
 - Cases: 4
 
 ### CNR-05.1 Share corners opens the iPhone's share sheet with the sheet, or all four photos   [phone]
@@ -342,7 +341,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 ### CNR-05.4 Share corners appears once the browser can share, as Share does   [auto: phone]
 Script only
 Stand-in: a script stands in for the browser's share feature: it says it can't share files when the page opens, and says it can once row 2 is done. No browser changes its answer while a page is open in a way a person can arrange.
-Written to ruling R21; it fails until R21 is built (BUG-121).
 
 Before you start:
 - Device and browser: a phone-width window
@@ -353,10 +351,10 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Corner shots** in the bottom row of buttons | There is no **Share corners** |
+| 1 | Tap **Corner shots** in the bottom row of buttons | There is no **Share corners**, and **Download corners** is red |
 | 2 | Tap the **×** at the sheet's top right | The sheet goes down |
 | 3 | Tap **PNG** (now that the browser can share) | **Share** shows on Export |
-| 4 | Tap **Corner shots** | **Share corners** shows too |
+| 4 | Tap **Corner shots** | **Share corners** shows too, in red, and **Download corners** is no longer red |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -369,9 +367,9 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Check: script, saved file; phone (Safari's download)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnCornerDownload`, "Download corners"
-- Source: `js/app/corner-shots.js` (`bindCornerShots`, `deliverCornerShots`)
+- Source: `js/app/corner-shots.js` (`syncCornerShots`, `bindCornerShots`, `deliverCornerShots`)
 - Cases: 3
 
 ### CNR-06.1 Download corners saves the corner sheet as a plain download   [auto: phone, webkit]
@@ -531,16 +529,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## CNR-08 When the buttons are dimmed
 
-Both buttons are dimmed while the corners are invalid, an export runs, or a pair's other side is opening. For a card too small for corner shots they stay live, and a tap says why.
+Both buttons are dimmed while the corner shots can't be made (the corners are invalid, the card is too small for them, or the engine can't make them for any other reason, which MSG-74.1 proves), an export runs, or a pair's other side is opening.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnCornerShare`, `#btnCornerDownload`, "The card is too small for corner shots."
+- Changed: 1.10.0
+- Anchors: `#btnCornerShare`, `#btnCornerDownload`
 - Source: `js/app/corner-shots.js` (`syncCornerShots`, `saveCornerShots`); `js/engine.js` (`cornerShots`)
-- Ruling: R20. The line gives the real reason the corner shots can't be made, ending "· the card is too small" when that is the reason and "· fix the corners in Perspective first" for any other, and both save buttons are dimmed. The app differs today: it reads "· the card is too small" for any reason, and both buttons stay live.
+- Ruling: R20. The line gives the real reason the corner shots can't be made, ending "· the card is too small" when that is the reason and "· fix the corners in Perspective first" for any other, and both save buttons are dimmed. The app does this since 1.10.0.
 - Cases: 4
 
 ### CNR-08.1 Invalid corners dim Share corners and Download corners   [auto: phone]
@@ -563,8 +561,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CNR-08.2 For a card too small for corner shots, both buttons are dimmed   [auto: phone]
 Script only
-Stand-in: no photo and no control makes the card too small for corner shots, so the script makes the engine refuse them with "The card is too small for corner shots."
-Written to ruling R20; it fails until R20 is built (BUG-120).
+Stand-in: no photo and no control makes the card too small for corner shots, so the script hands the app's own engine a card with no size (its four corners on one point), which it refuses as too small.
 
 Before you start:
 - Device and browser: a phone-width window
@@ -576,6 +573,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Corner shots** in the bottom row of buttons | The corner size line (under **4 photos** and **1 sheet**) reads "Sheet · the card is too small", and **Share corners** and **Download corners** are greyed out |
+| 2 | Tap **4 photos** | It reads "4 photos · the card is too small", and both buttons are still greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

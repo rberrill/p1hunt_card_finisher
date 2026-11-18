@@ -44,6 +44,7 @@ const {
   questionButton,
   expectQuestion,
   makeCornerShotsImpossible,
+  makeCardTooSmallForCorners,
   isCornerSheetOpen,
 } = require('./support/corner-shots.js');
 const {
@@ -386,11 +387,13 @@ async function chooseCornerChoice(page, hand, check, label) {
   });
 }
 
-// Whether Share corners and Download corners are greyed out: { share, download }.
+// Whether Share corners and Download corners are greyed out, each shown dim and not answering
+// a tap: { share, download }. A hidden button is not greyed out.
 async function cornerButtonsDimmed(page) {
+  const isGreyedOut = async button => (await button.isVisible()) && (await button.isDisabled());
   return {
-    share: await page.locator('#btnCornerShare').isDisabled(),
-    download: await page.locator('#btnCornerDownload').isDisabled(),
+    share: await isGreyedOut(page.locator('#btnCornerShare')),
+    download: await isGreyedOut(page.locator('#btnCornerDownload')),
   };
 }
 
@@ -1647,26 +1650,6 @@ test('MSG-48.1 A saved pair that couldn\'t be rebuilt [phone]', async ({
   });
 });
 
-test('MSG-49.1 Corner shots that can\'t be made can\'t be saved [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  test.fail(true, 'BUG-120');
-  // The page gets a stand-in share sheet (start's default), so Share corners shows.
-  const hand = await start(page, testInfo);
-  // Stand-in: no photo or control makes the engine refuse a card with valid corners.
-  await makeCornerShotsImpossible(page, 'The card is too small for corner shots.');
-  await openCornerSheet(page, hand);
-  // Plain readings: the known defect fails at once rather than waiting.
-  const readout = await cornerReadout(page);
-  const dimmed = await cornerButtonsDimmed(page);
-  await check('The corner size line reads "Sheet · the card is too small"; Share corners and '
-    + 'Download corners are greyed out (shown dim and not answering a tap)', () => {
-    expect(readout).toBe('Sheet · the card is too small');
-    expect(dimmed).toEqual({ share: true, download: true });
-  });
-});
-
 test('MSG-50.1 Failed corner shots say "Corner shots failed." [phone]', async ({
   page,
   check,
@@ -2184,18 +2167,35 @@ test('MSG-74.1 Corner shots that can\'t be made give the real reason [phone]', a
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-120');
   // The page gets a stand-in share sheet (start's default), so Share corners shows.
   const hand = await start(page, testInfo);
   // Stand-in: no photo or control makes the engine refuse a card with valid corners.
   await makeCornerShotsImpossible(page, 'Transform is not invertible.');
   await openCornerSheet(page, hand);
-  // Plain readings: the known defect fails at once rather than waiting.
   const readout = await cornerReadout(page);
   const dimmed = await cornerButtonsDimmed(page);
   await check('The corner size line reads "Sheet · fix the corners in Perspective first"; Share '
     + 'corners and Download corners are greyed out (shown dim and not answering a tap)', () => {
     expect(readout).toBe('Sheet · fix the corners in Perspective first');
+    expect(dimmed).toEqual({ share: true, download: true });
+  });
+});
+
+test('MSG-74.2 For a card too small for corner shots, the size line says so [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  // The page gets a stand-in share sheet (start's default), so Share corners shows.
+  const hand = await start(page, testInfo);
+  // Stand-in: no photo or control makes the card too small, so the real engine is handed a
+  // card with no size. Its reason is its own: the case fails if the app no longer knows it.
+  await makeCardTooSmallForCorners(page);
+  await openCornerSheet(page, hand);
+  const readout = await cornerReadout(page);
+  const dimmed = await cornerButtonsDimmed(page);
+  await check('The corner size line reads "Sheet · the card is too small"; Share corners and '
+    + 'Download corners are greyed out (shown dim and not answering a tap)', () => {
+    expect(readout).toBe('Sheet · the card is too small');
     expect(dimmed).toEqual({ share: true, download: true });
   });
 });

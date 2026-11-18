@@ -1674,39 +1674,6 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-49 Corner shots that can't be made
-
-An error message, for 5 seconds, when **Share corners** or **Download corners** is tapped and the engine can't make the corner shots. It carries the engine's reason: "The card is too small for corner shots." or, for a frame the engine can't invert, "Transform is not invertible."
-
-- Risk: low
-- Check: script
-- Layout: both.
-- Added: 1.10 baseline
-- Changed: none
-- Anchors: "The card is too small for corner shots.", `#btnCornerShare`, `#btnCornerDownload`
-- Source: `js/app/corner-shots.js` (`saveCornerShots`, `renderAndSave`); `js/engine.js` (`cornerShots`)
-- Ruling: R20. When corner shots can't be made, both save buttons are dimmed and the size line ends "· the card is too small" when that is the reason, "· fix the corners in Perspective first" for any other (wording approved by Rich, tests/catalog/wording.md). The app differs today. R80. This error stays 6 seconds, as other errors do. The app differs today (the time is set in `saveCornerShots` and `renderAndSave`). No case times it: once R20 is built both save buttons are dimmed whenever the engine refuses, so no control can raise the message.
-- Cases: 1
-
-### MSG-49.1 Corner shots that can't be made can't be saved   [auto: phone]
-Written to ruling R20, in the wording Rich approved; it fails until that is built (BUG-120). Once the buttons are greyed out the message itself can no longer be raised.
-Script only
-Stand-in: no photo or control makes the engine refuse a card with valid corners, so the script makes it refuse; and no case uses a desktop browser's own share sheet, so the page gets a stand-in share sheet, which shows **Share corners**.
-
-Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Export step; the engine refusing corner shots with "The card is too small for corner shots."
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Corner shots** | The corner size line reads "Sheet · the card is too small"; **Share corners** and **Download corners** are greyed out (shown dim and not answering a tap) |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
 ## MSG-50 "Corner shots failed."
 
 An error message, for 6 seconds, when corner shots can't be rendered or saved for a reason the app can't explain: "Corner shots failed." The error's own text goes to the console. A failure whose fix the app knows shows its advice instead: the photo not loaded after a pair's export (MSG-47).
@@ -2487,22 +2454,21 @@ Make the fill transparent: tap the options tab (the small tab with an up arrow o
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-74 "the card is too small" on Corner shots
+## MSG-74 "the card is too small" and "fix the corners in Perspective first" on Corner shots
 
-In the Corner shots sheet, when the engine can't make corner shots for any reason, the size line reads "Sheet · the card is too small" or "4 photos · the card is too small", and **Share corners** and **Download corners** stay live.
+In the Corner shots sheet, when the corner shots can't be made for a card whose corners are valid, the size line gives the reason: "Sheet · the card is too small" when that is the reason, "Sheet · fix the corners in Perspective first" for any other. **Share corners** and **Download corners** are greyed out.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "the card is too small", `#cornerReadout`
-- Source: `js/app/corner-shots.js` (`readout`, `syncCornerShots`, `currentShots`)
-- Ruling: R20. Both save buttons are dimmed, and the size line ends "· the card is too small" when that is the reason, "· fix the corners in Perspective first" for any other (wording approved by Rich, tests/catalog/wording.md). The app differs today.
-- Cases: 1
+- Changed: 1.10.0
+- Anchors: "the card is too small", "fix the corners in Perspective first", `#cornerReadout`, `#btnCornerShare`, `#btnCornerDownload`
+- Source: `js/app/corner-shots.js` (`readout`, `syncCornerShots`, `currentShots`); `js/engine.js` (`cornerShots`)
+- Ruling: R20. Both save buttons are dimmed, and the size line ends "· the card is too small" when that is the reason, "· fix the corners in Perspective first" for any other (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
+- Cases: 2
 
 ### MSG-74.1 Corner shots that can't be made give the real reason   [auto: phone]
-Written to ruling R20, in the wording Rich approved; it fails until that is built (BUG-120).
 Script only
 Stand-in: no photo or control makes the engine refuse a card with valid corners, so the script makes it refuse; and no case uses a desktop browser's own share sheet, so the page gets a stand-in share sheet, which shows **Share corners**.
 
@@ -2516,6 +2482,24 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Corner shots** | The corner size line reads "Sheet · fix the corners in Perspective first"; **Share corners** and **Download corners** are greyed out (shown dim and not answering a tap) |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-74.2 For a card too small for corner shots, the size line says so   [auto: phone]
+Script only
+Stand-in: no photo or control makes the card too small for corner shots, so the script hands the app's own engine a card with no size (its four corners on one point), which it refuses as too small; and no case uses a desktop browser's own share sheet, so the page gets a stand-in share sheet, which shows **Share corners**.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo open, on the Export step; the engine handed a card with no size, which it refuses as too small for corner shots
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Corner shots** | The corner size line reads "Sheet · the card is too small"; **Share corners** and **Download corners** are greyed out (shown dim and not answering a tap) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

@@ -303,15 +303,36 @@ async function cardWidthInExport(page, file) {
   return Math.round((right - left) * row.length);
 }
 
-// Makes the corner shots impossible from now on, as the engine says for a card too small to
-// frame: CardEngine.cornerShots answers { ok: false, reason }. A person can't bring this about
-// with today's controls and photos (the engine refuses only a frame it can't invert, or a card
-// with no size), so this one change is made in the page's code. The screen is updated after it.
+// Makes the corner shots impossible from now on, for the reason given: CardEngine.cornerShots
+// answers { ok: false, reason }. A person can't bring this about with today's controls and
+// photos (the engine refuses only a frame it can't invert, or a card with no size), so this one
+// change is made in the page's code. The screen is updated after it. For a card that is too
+// small, use makeCardTooSmallForCorners: its reason comes from the engine itself.
 async function makeCornerShotsImpossible(page, reason) {
   await page.evaluate(engineReason => {
     window.CardEngine.cornerShots = () => ({ ok: false, reason: engineReason });
     window.CF.syncReadouts();
   }, reason);
+}
+
+// Makes the card too small for corner shots from now on, in the engine's own words: every
+// call of CardEngine.cornerShots goes to the real engine with the card's four corners moved
+// onto one point, a card with no size, which it refuses as too small. The reason on screen is
+// then the engine's, not a copy of its sentence kept here, so a case fails if the app stops
+// recognizing it. A person can't bring this about with today's controls and photos. The screen
+// is updated after it.
+async function makeCardTooSmallForCorners(page) {
+  await page.evaluate(() => {
+    const realCornerShots = window.CardEngine.cornerShots;
+    window.CardEngine.cornerShots = (geometry, config, sizePx) => {
+      if (!geometry || !geometry.ok) return realCornerShots(geometry, config, sizePx);
+      const onePoint = geometry.cardRotated[0];
+      const noSizeCard = geometry.cardRotated.map(() => onePoint.slice());
+      const noSizeGeometry = Object.assign({}, geometry, { cardRotated: noSizeCard });
+      return realCornerShots(noSizeGeometry, config, sizePx);
+    };
+    window.CF.syncReadouts();
+  });
 }
 
 // Gives the page a stand-in share sheet whose "can this browser share files?" answer can change
@@ -492,6 +513,7 @@ module.exports = {
   cardCornerInShot,
   cardWidthInExport,
   makeCornerShotsImpossible,
+  makeCardTooSmallForCorners,
   installSwitchableShare,
   recordCornerProgress,
   cornerProgressSoFar,
