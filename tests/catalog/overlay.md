@@ -245,16 +245,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-03 Where a new logo lands
 
-A newly added logo lands in the center of the frame, a quarter of its width, at 100% opacity, as one undo step.
+A newly added logo lands in the center of the frame, a quarter of its width, at 100% opacity, as one undo step. Each logo added is an undo step of its own, even two added within 0.9 s.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnOverlayAdd`, `#overlayOpacityValue`
 - Source: `js/app/overlay.js` (`place`, `defaultPlacement`); `js/engine.js` (`OVERLAY_DEFAULTS`)
-- Ruling: R19. Each logo add is its own undo step, however quickly two come (and a dropped logo is accepted by its extension, as the picker accepts it). The app differs today.
+- Ruling: R19. Each add is its own undo step; a drop accepts by extension like the picker (the drops are DND-01 and DND-04). The app does this since 1.10.0.
 - Cases: 2
 
 ### OVL-03.1 A new logo lands in the middle, a quarter wide, at 100%   [auto: phone]
@@ -277,9 +277,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-03.2 Two logos added within 0.9 s are two undo steps   [auto: phone]
 Script only
-Stand-in: the script adds the two logos through the file picker less than 0.9 s apart; a person can't open the picker and choose a file twice that fast.
-
-Written to ruling R19; it fails until that is built (BUG-080).
+Stand-in: the script adds the two logos through the file picker less than 0.9 s apart, and measures the gap between the two; a person can't open the picker and choose a file twice that fast.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -289,11 +287,11 @@ Before you start:
 - Starting screen: the photo open, on the Overlay step, no logo placed
 - Browser data: none for this site (a private window, or the site's data cleared)
 
-"Add then replace, quickly": tap **Add logo** (the red button under the photo), choose blue-disc.png, tap **Replace logo** in the row of tools (the bottom row of buttons under the photo) and choose green-logo.png, all within 0.9 s.
+"Add then replace, quickly": tap **Add logo** (the red button under the photo), choose blue-disc.png, tap **Replace logo** in the row of tools (the bottom row of buttons under the photo) and choose green-logo.png, so that the second logo is added less than 0.9 s after the first.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Add then replace, quickly | The green square has taken the blue disc's place |
+| 1 | Add then replace, quickly | The green square has taken the blue disc's place, added less than 0.9 s after it |
 | 2 | Tap **Undo** (the arrow curving left, at the top right) | The blue disc is back |
 
 Pass: every row's result is seen.

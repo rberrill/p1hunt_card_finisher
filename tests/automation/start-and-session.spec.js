@@ -106,8 +106,6 @@ const CORNER_DRAG_PX = 40;
 // The logos: the app's own icons (icons/).
 const LOGO = 'icon.svg';
 const OTHER_LOGO = 'apple-touch-icon.png';
-// The wait between two logos, in ms: two added within 0.9 s are one undo step (ruling R19).
-const LOGO_GAP_MS = 1000;
 // The grid laid over a saved image to compare two of them: cells per side.
 const COMPARE_GRID = 16;
 // The messages for a file the browser can't open (js/app/adapters.js, ImageSource.load).
@@ -980,8 +978,6 @@ test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [w
   await check('the app icon shows on the photo as the logo', async () => {
     expect((await editState(page)).overlay.id).toBe(first);
   });
-  // Two logos added within 0.9 s are one undo step; a person is slower than that.
-  await page.waitForTimeout(LOGO_GAP_MS);
   const second = await addLogo(page, hand, page.locator('#toolOverlayReplace'), OTHER_LOGO);
   await check('Replace logo changes the logo to the other picture', async () => {
     expect(second).not.toBe(first);
@@ -1069,7 +1065,6 @@ test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webki
     expect(await stepNow(page)).toBe('overlay');
     expect((await editState(page)).overlay.id).toBe(pngLogo);
   });
-  await page.waitForTimeout(LOGO_GAP_MS);
   const svgLogo = await addLogo(page, hand, page.locator('#toolOverlayReplace'), LOGO);
   await check('the app icon is the logo now', async () => {
     expect(svgLogo).not.toBe(pngLogo);
@@ -1140,7 +1135,6 @@ test('STA-10.5 After Delete saved, Resume still brings the logo back [phone] [we
   const download = page.locator('#btnDownload');
   const deleteSaved = page.locator('#toolOverlayDeleteSaved');
   const { pngLogo, editsFile } = await startWithLogoAndSavedEdits(page, hand);
-  await page.waitForTimeout(LOGO_GAP_MS);
   const svgLogo = await addLogo(page, hand, page.locator('#toolOverlayReplace'), LOGO);
   await check('the app icon is the logo now', async () => {
     expect(svgLogo).not.toBe(pngLogo);

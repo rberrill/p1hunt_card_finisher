@@ -49,16 +49,22 @@
       app.fileIntent = null;
       CF.receivePhoto(file, name, intent);
     };
+    // Whether a dropped or pasted picture is a logo here: on the Overlay step, with a photo open.
+    const isLogoStep = () => app.tab === 'overlay' && !!app.img;
     // On the Overlay step, a dropped or pasted image becomes the overlay; elsewhere it opens a
     // new photo (asking first while a pair is open). While an export runs it becomes neither:
     // receivePhoto refuses it, on Overlay too, with the message a photo gets (ruling R32).
     const onDropOrPaste = (file, name) => {
-      const isLogo = app.tab === 'overlay' && !!app.img && !app.exporting;
+      const isLogo = isLogoStep() && !app.exporting;
       if (isLogo) CF.addOverlayFile(file);
       else CF.receivePhoto(file, name, 'open');
     };
+    // On the Overlay step a dropped file whose type isn't a picture type is taken by its name
+    // when Add logo would take it (ruling R19). bindDrop already takes a JPEG, PNG or WebP by
+    // its name on every step, so what this adds is an SVG, and only where a drop is a logo.
+    const isLogoDrop = file => isLogoStep() && CF.isLogoFile(file);
     CF.ImageSource.bindPicker(elements.fileInput, onFile);
-    CF.ImageSource.bindDrop(elements.stage, onDropOrPaste);
+    CF.ImageSource.bindDrop(elements.stage, onDropOrPaste, isLogoDrop);
     CF.ImageSource.bindPaste(onDropOrPaste);
     bindStrayDrop();
   }

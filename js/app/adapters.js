@@ -16,6 +16,11 @@
   const ImageSource = {
     isHeic: file => /image\/hei[cf]/i.test(file.type || '') || /\.hei[cf]$/i.test(file.name || ''),
 
+    // Whether a file's name says it is a JPEG, PNG or WebP photo. A drop asks this of a file
+    // whose type isn't a picture type: some systems hand a dragged file over with no type, or
+    // as plain bytes (ruling R19). The name is only a reason to try: load() must still decode it.
+    isPhotoName: file => /\.(jpe?g|png|webp)$/i.test(file.name || ''),
+
     // Decodes a photo, honoring its EXIF orientation. Returns { el, width, height, name, close }.
     async load(blob, name) {
       const photoName = name || blob.name || 'photo';
@@ -69,7 +74,11 @@
       });
     },
 
-    bindDrop(el, onFile) {
+    // Calls onFile with the first dropped file that is a photo: an image by its type, or else
+    // a JPEG, PNG, WebP or HEIC by its name, as Open photo takes one (ruling R19).
+    // `isAlsoTaken(file)`, when given, names other files the caller takes (an SVG logo on the
+    // Overlay step, by its name); a file neither takes is ignored.
+    bindDrop(el, onFile, isAlsoTaken) {
       el.addEventListener('dragover', event => {
         event.preventDefault();
         el.classList.add('drag-over');
@@ -78,8 +87,11 @@
       el.addEventListener('drop', event => {
         event.preventDefault();
         el.classList.remove('drag-over');
-        const isPhoto = file => file.type.startsWith('image/') || ImageSource.isHeic(file);
-        const file = [...(event.dataTransfer.files || [])].find(isPhoto);
+        const isPhoto = file => file.type.startsWith('image/')
+          || ImageSource.isHeic(file)
+          || ImageSource.isPhotoName(file);
+        const isTaken = file => isPhoto(file) || (!!isAlsoTaken && isAlsoTaken(file));
+        const file = [...(event.dataTransfer.files || [])].find(isTaken);
         if (file) onFile(file);
       });
     },

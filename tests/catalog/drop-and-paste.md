@@ -2,20 +2,21 @@
 
 Bringing a photo or a logo in by dragging a file onto the app or pasting an image.
 
-The files these cases drop or paste, other than the sample photos in `samples/`, are in `tests/fixtures/`: notes.txt (one line of text, "Notes about the card."), card.HEIC (a stand-in: a short text file named like a HEIC photo), green-logo.png (400 × 400 px, solid pure green) and blue-disc.png (400 × 400 px, see-through but for a pure blue disc).
+The files these cases drop or paste, other than the sample photos in `samples/`, are in `tests/fixtures/`: notes.txt (one line of text, "Notes about the card."), card.HEIC (a stand-in: a short text file named like a HEIC photo), not-a-photo.JPEG (a line of text, named like a photo), plain-grey.png (a plain grey picture, 1200 × 1600 px, with no card in it), green-logo.png (400 × 400 px, solid pure green), blue-disc.png (400 × 400 px, see-through but for a pure blue disc), overlay-blue-oval.webp (200 × 400 px, see-through except for a pure blue oval), logo.gif (a one-pixel GIF), not-a-logo.png (a line of text, named like a PNG) and svg-with-script.svg (a 200 × 100 red rectangle that carries a script).
 
 ## DND-01 Drop a photo to open it
 
-Drop an image file on the photo area to open it. Of several files dropped, the first image or HEIC file is used; anything else is ignored. While a pair is open, the app first asks **New photo** or to replace the side you are on.
+Drop an image file on the photo area to open it. Of several files dropped, the first photo is used: a file whose type is a picture type, or else one whose name ends .jpg, .jpeg, .png, .webp, .heic or .heif, on the start screen and on any step; anything else is ignored. A file taken by its name must still be a picture: one that isn't gets the red message **Couldn’t read that file as an image.** While a pair is open, the app first asks **New photo** or to replace the side you are on.
 
 - Risk: medium
 - Check: script
 - Layout: both. The cases use a computer: whether an iPhone lets a person drag a photo from Photos into Safari at all is find-out item Q-05.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#stage`, `.drag-over`
-- Source: `js/app/adapters.js` (`ImageSource.bindDrop`, `ImageSource.isHeic`), `js/app/main.js` (`bindPhotoInput`), `js/app/pair.js` (`receivePhoto`)
-- Cases: 5
+- Changed: 1.10.0
+- Anchors: `#stage`, `.drag-over`, "Couldn’t read that file as an image."
+- Source: `js/app/adapters.js` (`ImageSource.bindDrop`, `ImageSource.isPhotoName`, `ImageSource.isHeic`, `ImageSource.load`), `js/app/main.js` (`bindPhotoInput`), `js/app/pair.js` (`receivePhoto`)
+- Ruling: R19. Each add is its own undo step; a drop accepts by extension like the picker. Rich, 2026-11-18: a photo dropped with no file type is also accepted by its name, on any step, as Open photo takes it; it must still decode as an image. The app does this since 1.10.0.
+- Cases: 6
 
 ### DND-01.1 A photo dropped on the photo area opens   [auto: desktop]
 Before you start:
@@ -91,6 +92,30 @@ Before you start:
 | 1 | Look at the top bar | **Front** / **Back** shows |
 | 2 | Drag IMG_9136.JPEG onto the photo area and let go | The question box (the box over the dimmed photo with a question and two or three buttons) asks "New photo": "End the pair, or replace the side you’re on?", with **New photo** and **Replace back** |
 | 3 | Click **New photo** | IMG_9136.JPEG opens on its own; **Front** / **Back** is gone from the top bar |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### DND-01.6 A photo with no picture type is taken by its name   [auto: desktop, webkit]
+Script only
+Stand-in: the script drops each file with no picture type, so that only its name says what it is, as some systems hand a dragged file over: row 5 as a plain file of bytes (the type application/octet-stream), the other files with no file type at all. A file browser on a computer gives these files their types, so a person can't drop one without it.
+
+Before you start:
+- Device and browser: a computer with a mouse; a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Files, each handed over with no picture type: notes.txt (one line of text), not-a-photo.JPEG (a line of text, named like a photo), plain-grey.png (a plain grey picture, 1200 × 1600 px) and overlay-blue-oval.webp (a blue oval, 200 × 400 px) from tests/fixtures/; IMG_9136.JPEG and IMG_9075.JPEG from samples/
+- Starting screen: the start screen, with no photo open
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drop notes.txt onto the photo area | Nothing happens: no message, the start screen stays, and the browser doesn't open the file |
+| 2 | Drop not-a-photo.JPEG onto the photo area | A red message reads "Couldn’t read that file as an image."; the start screen stays, with no photo open |
+| 3 | Drop IMG_9136.JPEG onto the photo area | The photo opens on the Perspective step |
+| 4 | Click **Rotate** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Rotate step shows |
+| 5 | Drop IMG_9075.JPEG onto the photo area | IMG_9075.JPEG opens on the Perspective step, in place of IMG_9136.JPEG |
+| 6 | Drop plain-grey.png onto the photo area | plain-grey.png opens, in place of IMG_9075.JPEG |
+| 7 | Drop overlay-blue-oval.webp onto the photo area | overlay-blue-oval.webp opens, in place of plain-grey.png |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -191,7 +216,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## DND-04 On the Overlay step, a dropped or pasted image becomes the logo
 
-On the Overlay step with a photo open, a dropped or pasted image is added as the logo instead of opening as a photo. Dropped or pasted while a logo is placed, it replaces that logo and takes its position, width and opacity, as **Replace logo** does. In a pair it becomes the logo of the side you are on, with no question. While an export runs it is refused, with the warning a photo gets then: **Wait for the export to finish, then open the photo.**
+On the Overlay step with a photo open, a dropped or pasted image is added as the logo instead of opening as a photo. Dropped or pasted while a logo is placed, it replaces that logo and takes its position, width and opacity, as **Replace logo** does. In a pair it becomes the logo of the side you are on, with no question. While an export runs it is refused, with the warning a photo gets then: **Wait for the export to finish, then open the photo.** A dropped file whose type isn't a picture type is taken as the logo by its name (.png, .webp, .jpg, .jpeg or .svg), as **Add logo** takes it, and is checked as **Add logo** checks it. Two logos dropped within 0.9 s are two undo steps.
 
 - Risk: medium
 - Check: script
@@ -199,9 +224,9 @@ On the Overlay step with a photo open, a dropped or pasted image is added as the
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: `"Drop to add as the logo"`, `#overlayInput`, `"Wait for the export to finish, then open the photo."`
-- Source: `js/app/main.js` (`bindPhotoInput`), `js/app/overlay.js` (`addOverlayFile`, `place`), `js/app/pair.js` (`receivePhoto`)
-- Ruling: R18. A logo dropped or pasted on Overlay while one is placed is a replacement: it takes the old logo's position, width and opacity (a new logo of another shape keeps the old one's center and width, then is clamped inside the crop). The app does this since 1.10.0. R19. Each logo added is its own undo step, even two within 900 ms, and a dropped logo is accepted by its file extension, as the logo picker does. The app differs today. R32. While an export is running a dropped or pasted logo is refused, with the message a dropped photo gets. The app does this since 1.10.0.
-- Cases: 8
+- Source: `js/app/main.js` (`bindPhotoInput`), `js/app/adapters.js` (`ImageSource.bindDrop`, `ImageSource.isPhotoName`), `js/app/overlay.js` (`isLogoFile`, `addOverlayFile`, `place`), `js/app/pair.js` (`receivePhoto`)
+- Ruling: R18. A logo dropped or pasted on Overlay while one is placed is a replacement: it takes the old logo's position, width and opacity (a new logo of another shape keeps the old one's center and width, then is clamped inside the crop). The app does this since 1.10.0. R19. Each add is its own undo step; a drop accepts by extension like the picker. Rich, 2026-11-18: a photo dropped with no file type is also accepted by its name, on any step, as Open photo takes it; it must still decode as an image. The app does this since 1.10.0. R32. While an export is running a dropped or pasted logo is refused, with the message a dropped photo gets. The app does this since 1.10.0.
+- Cases: 9
 
 ### DND-04.1 On Overlay, a dropped picture becomes the logo   [auto: desktop]
 Before you start:
@@ -253,7 +278,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-04.4 Two logos dropped within 0.9 s are two undo steps   [auto: desktop]
-Written to ruling R19; it fails until that is built (BUG-080).
 Script only
 Stand-in: the script drops the second logo less than 0.9 s after the first has been added, and measures the gap between the two; dragging two files one after the other from a file browser takes a person longer than that.
 
@@ -275,7 +299,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-04.5 A dropped logo is taken by its name, as the logo picker takes it   [auto: desktop]
-Written to ruling R19; it fails until that is built (BUG-191).
 Script only
 Stand-in: the script drops green-logo.png with no file type, only its name saying PNG, as some systems hand a dragged file over. A file browser on a computer gives a PNG its type, so a person can't drop one without it.
 
@@ -356,6 +379,29 @@ Before you start:
 | 1 | Drag blue-disc.png onto the photo area and let go | The blue disc is the logo, in the middle of the photo, a quarter of its width, with OPACITY at 100% |
 | 2 | Change the logo | The disc's middle is 55% of the way across the photo (5% of the photo's width right of the middle), it is 28.9% of the photo's width (a quarter, times 1.05 three times), and OPACITY reads about 50% |
 | 3 | Drag green-logo.png onto the photo area and let go | The green square is the logo, where the disc was: its middle 55% of the way across, as far down as the disc's, 28.9% of the photo's width, at the same opacity |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### DND-04.9 A logo taken by its name is still checked as Add logo checks it   [auto: desktop]
+Script only
+Stand-in: the script drops each file with no picture type, only its name saying what it is, as some systems hand a dragged file over: svg-with-script.svg as a plain file of bytes (the type application/octet-stream), the other files with no file type at all. A file browser on a computer gives these files their types, so a person can't drop one without it. The script reads `window.testSvgRan` itself.
+
+Before you start:
+- Device and browser: a computer with a mouse; a wide window, with the browser's developer tools open on the Console
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Files, each handed over with no picture type: logo.gif (a one-pixel GIF), not-a-logo.png (a line of text, named like a PNG) and svg-with-script.svg (a 200 × 100 red rectangle whose `<svg>` carries `onload="window.parent.testSvgRan = 1"` and holds `<script>window.parent.testSvgRan = 2;</script>`) from tests/fixtures/; big-logo.png, a file of exactly 6 MB (6,291,456 bytes) whose name ends .png (it is too big to keep in tests/fixtures/; the script makes its own)
+- Starting screen: the photo open, on the Overlay step, with no logo
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drop logo.gif onto the photo area | Nothing happens: no logo is added and no message shows |
+| 2 | Drop not-a-logo.png onto the photo area | No logo is added; a red message in the line above the controls (the one line of text at the top of the controls, in the panel at the right) reads "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file." |
+| 3 | Drop big-logo.png onto the photo area | No logo is added; the red message reads "That file is 6.0 MB. The logo limit is 5 MB." |
+| 4 | Drop svg-with-script.svg onto the photo area | A red rectangle, twice as wide as it is high, shows on the photo as the logo; the red message has gone |
+| 5 | Wait a second, then type `window.testSvgRan` in the Console and press Enter | The Console answers undefined: neither the script nor the onload handler ran |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

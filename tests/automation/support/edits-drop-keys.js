@@ -317,11 +317,14 @@ function waitForExporting(page, isRunning) {
     isRunning);
 }
 
-// Whether an export's progress line shows now, on the top edge of the controls or of an open
-// sheet.
+// Whether a running export's progress line shows now, on the top edge of the controls or of
+// an open sheet. A line that is fading out (is-done) belongs to an export that has ended, so
+// it doesn't count.
 function isProgressShown(page) {
-  return page.evaluate(() => [...document.querySelectorAll('.progress-line')]
-    .some(line => !line.hidden && line.getBoundingClientRect().width > 0));
+  return page.evaluate(() => [...document.querySelectorAll('.progress-line')].some(line => (
+    !line.hidden
+    && !line.classList.contains('is-done')
+    && line.getBoundingClientRect().width > 0)));
 }
 
 // The question box's title now, or '' when none is up.
@@ -347,7 +350,9 @@ async function startHeldExport(page, hand, check) {
   await check('the export runs: a progress line crosses the top edge of the controls',
     async () => {
       await waitForExporting(page, true);
-      expect(await isProgressShown(page)).toBe(true);
+      // The line has no width until the export's first part is drawn and a frame has passed,
+      // so it is waited for, not read once.
+      await expect.poll(() => isProgressShown(page)).toBe(true);
     });
 }
 

@@ -96,8 +96,9 @@ const NUDGE_FRAC = 0.005;
 const SIZE_STEP = 1.05;
 // A snapped logo sits 3% of the crop's width in from the edges (OVERLAY_DEFAULTS.snapMargin).
 const SNAP_MARGIN_FRAC = 0.03;
-// Two presses closer together than this make one undo step, in ms (COALESCE_MS in state.js);
-// a person's pause between two separate changes is longer.
+// Two presses of one control closer together than this make one undo step, in ms (COALESCE_MS
+// in state.js); a person's pause between two separate changes is longer. Two logos added that
+// close together are still two steps (ruling R19).
 const UNDO_GAP_MS = 900;
 const PAUSE_MS = 1000;
 // How long a held pad key is held, in ms, and the fewest moves it must make in that time: the
@@ -572,19 +573,23 @@ test('OVL-03.1 A new logo lands in the middle, a quarter wide, at 100% [phone]',
   });
 });
 
+// When the last undo step was recorded, on the page's clock in ms: the gap between two logos
+// is measured in the page, where the app measures it, not from here.
+const lastStepTime = page => page.evaluate(() => window.CF.History.lastTime);
+
 test('OVL-03.2 Two logos added within 0.9 s are two undo steps [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-080');
   const hand = await startOnOverlay(page, testInfo);
-  const startedMs = Date.now();
   const firstId = await addDisc(page, hand);
+  const discAddedMs = await lastStepTime(page);
   const secondId = await replaceLogo(page, hand, GREEN_SQUARE);
-  const tookMs = Date.now() - startedMs;
-  await check('the green square has taken the blue disc\'s place', async () => {
+  const greenAddedMs = await lastStepTime(page);
+  await check('the green square has taken the blue disc\'s place, added less than 0.9 s after '
+    + 'it', async () => {
     expect(secondId).not.toBe(firstId);
-    expect(tookMs).toBeLessThan(UNDO_GAP_MS);
+    expect(greenAddedMs - discAddedMs).toBeLessThan(UNDO_GAP_MS);
     expectGreen(await colorOnPage(page, inDisc(await logoOnPage(page))));
   });
   await hand.tap(page.locator('#btnUndo'));

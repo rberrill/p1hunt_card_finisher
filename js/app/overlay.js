@@ -60,6 +60,11 @@
     return match ? TYPES_BY_EXTENSION[match[1].toLowerCase()] : null;
   }
 
+  // Whether a file is one Add logo takes: a supported image type, or else a supported
+  // extension. A drop on this step asks, so a logo whose type isn't a picture type is taken
+  // by its name (ruling R19); addOverlayFile still makes every check on it.
+  const isLogoFile = file => !!imageTypeOf(file);
+
   // FNV-1a over the bytes, plus the length: the same file always gets the same id.
   function hashBytes(buffer) {
     const bytes = new Uint8Array(buffer);
@@ -223,9 +228,10 @@
     CF.syncUI();
   }
 
-  // Places an image as the overlay (one undo step). `settings` ({ cx, cy, w, opacity }) is the
-  // saved logo's last placement or the placement of the logo it replaces; with none it lands
-  // at the starting place.
+  // Places an image as the overlay. `settings` ({ cx, cy, w, opacity }) is the saved logo's
+  // last placement or the placement of the logo it replaces; with none it lands at the
+  // starting place. Each logo placed is an undo step of its own, however soon after the last
+  // (ruling R19), so the commit names no control for History to merge it under.
   function place(image, settings) {
     const wanted = settings || {};
     // Stored before the commit, so the state change it makes finds the logo already written.
@@ -242,7 +248,7 @@
         w: unitOr(wanted.w, defaults.w) || defaults.w,
         opacity: unitOr(wanted.opacity, defaults.opacity),
       }));
-    }, 'overlayPlace');
+    });
   }
 
   // The fields of an image record that go into storage.
@@ -1170,6 +1176,7 @@
 
   Object.assign(CF, {
     buildOverlayControls,
+    isLogoFile,
     addOverlayFile,
     loadSavedOverlay,
     overlayStateChanged,
