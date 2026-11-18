@@ -81,10 +81,9 @@ How many at once: one `case-writer` or `fixer` at a time (Rich, 2026-11-16: seve
 at once hit his usage limit and collided; Rich, 2026-11-17: five fixers at once, each in
 its own worktree, loaded the machine until WebKit cases timed out and one run hung, so
 fixers went back to one at a time). The fixer works in the main checkout under its standing
-rules; the next one starts only when this one is reviewed and committed. Related bugs go to
-the same fixer in one brief: bugs that share a ruling, a function or the cases that prove
-them (Rich, 2026-11-17: not for speed, but so the same thing is not retested fix after
-fix). One reviewer then reads the whole diff, and it is one commit naming every bug. A fixer
+rules; the next one starts only when this one is reviewed and committed. Two or three bugs on
+the same flow go to the same fixer in one brief, never a whole area's worth (Rich,
+2026-11-17: not for speed, but so the same flow is not retested fix after fix). One reviewer then reads the whole diff, and it is one commit naming every bug. A fixer
 never runs the complete run: it runs its areas' specs and the related cases only. The main
 session runs the complete run once, when every fix of a cycle is in, to find what isn't fixed and any regression (Rich, 2026-11-17: a complete
 run per fix repeats nine minutes of tests each time). Several

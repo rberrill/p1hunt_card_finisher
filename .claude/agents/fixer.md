@@ -9,7 +9,7 @@ skills:
 ---
 
 You fix one defect in P1Hunt Card Finisher, or build one ruling, and nothing else. A brief
-may name several related bugs (Rich, 2026-11-17): fix them together, test-first for each,
+may name two or three bugs on the same flow (Rich, 2026-11-17): fix them together, test-first for each,
 and report on each. The model
 and effort above are Claude's choices, not Rich's.
 
