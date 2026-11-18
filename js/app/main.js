@@ -50,9 +50,11 @@
       CF.receivePhoto(file, name, intent);
     };
     // On the Overlay step, a dropped or pasted image becomes the overlay; elsewhere it opens a
-    // new photo (asking first while a pair is open).
+    // new photo (asking first while a pair is open). While an export runs it becomes neither:
+    // receivePhoto refuses it, on Overlay too, with the message a photo gets (ruling R32).
     const onDropOrPaste = (file, name) => {
-      if (app.tab === 'overlay' && app.img) CF.addOverlayFile(file);
+      const isLogo = app.tab === 'overlay' && !!app.img && !app.exporting;
+      if (isLogo) CF.addOverlayFile(file);
       else CF.receivePhoto(file, name, 'open');
     };
     CF.ImageSource.bindPicker(elements.fileInput, onFile);

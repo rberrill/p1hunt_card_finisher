@@ -4,16 +4,16 @@ Keyboard shortcuts and keyboard focus. Everything here also works by touch; the 
 
 ## KEY-01 Undo from the keyboard
 
-Ctrl+Z (Cmd+Z on a Mac) undoes the last edit, as **Undo** does.
+Ctrl+Z (Cmd+Z on a Mac) undoes the last edit, as **Undo** does. While an export runs it does nothing.
 
 - Risk: medium
 - Check: script
 - Layout: both. Needs a keyboard.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.keys.undo`, `#btnUndo`, `"Undo (Ctrl/Cmd+Z)"`
-- Source: `js/app/input.js` (`onKeyDown`, `keyMatches`)
-- Ruling: R32. The undo and redo keys do nothing while an export is running. The app differs today.
+- Source: `js/app/input.js` (`onKeyDown`, `keyMatches`), `js/app/state.js` (`undo`)
+- Ruling: R32. The undo and redo keys do nothing while an export is running. The app does this since 1.10.0.
 - Cases: 2
 
 ### KEY-01.1 Ctrl+Z undoes the last edit   [auto: desktop]
@@ -34,7 +34,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### KEY-01.2 During an export, Ctrl+Z does nothing   [auto: desktop]
-Written to ruling R32; it fails until that is built (BUG-193).
 Script only
 Stand-in: an export here lasts well under a second, too short for a person to press a key while it runs, so the script holds the export open until the key has been pressed and its result read, then lets it finish.
 
@@ -57,16 +56,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## KEY-02 Redo from the keyboard
 
-Shift+Ctrl+Z (Shift+Cmd+Z on a Mac), or Ctrl+Y (Cmd+Y), redoes, as **Redo** does.
+Shift+Ctrl+Z (Shift+Cmd+Z on a Mac), or Ctrl+Y (Cmd+Y), redoes, as **Redo** does. While an export runs neither does anything.
 
 - Risk: medium
 - Check: script
 - Layout: both. Needs a keyboard.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.keys.redo`, `CONFIG.keys.redoAlt`, `#btnRedo`, `"Redo (Shift+Ctrl/Cmd+Z)"`
-- Source: `js/app/input.js` (`onKeyDown`, `keyMatches`)
-- Ruling: R32. The undo and redo keys do nothing while an export is running. The app differs today. R66. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z. The app already does this.
+- Source: `js/app/input.js` (`onKeyDown`, `keyMatches`), `js/app/state.js` (`redo`)
+- Ruling: R32. The undo and redo keys do nothing while an export is running. The app does this since 1.10.0. R66. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z. The app already does this.
 - Cases: 2
 
 ### KEY-02.1 Shift+Ctrl+Z and Ctrl+Y redo   [auto: desktop]
@@ -91,7 +90,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### KEY-02.2 During an export, the redo keys do nothing   [auto: desktop]
-Written to ruling R32; it fails until that is built (BUG-193).
 Script only
 Stand-in: an export here lasts well under a second, too short for a person to press a key while it runs, so the script holds the export open until both keys have been pressed and their results read, then lets it finish.
 

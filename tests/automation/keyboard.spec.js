@@ -114,7 +114,6 @@ test('KEY-01.2 During an export, Ctrl+Z does nothing [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-193');
   const hand = await startOn(page, testInfo);
   await hand.tap(choiceButton(page, 'exportFormat', 'PNG'));
   await check('PNG is selected', async () => {
@@ -162,7 +161,6 @@ test('KEY-02.2 During an export, the redo keys do nothing [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-193');
   const hand = await startOn(page, testInfo);
   await hand.tap(choiceButton(page, 'exportFormat', 'PNG'));
   await check('PNG is selected', async () => {

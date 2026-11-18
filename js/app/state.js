@@ -141,16 +141,19 @@
     stateChanged();
   }
 
+  // Steps back one undo step. Nothing while an export runs: the Undo button is off then, and
+  // this keeps the undo key off with it (ruling R32).
   function undo() {
-    if (!History.undo.length) return;
+    if (app.exporting || !History.undo.length) return;
     History.redo.push(clone(app.state));
     app.state = History.undo.pop();
     History.lastKey = null;
     stateChanged();
   }
 
+  // Steps forward one undone step. Nothing while an export runs, as for undo.
   function redo() {
-    if (!History.redo.length) return;
+    if (app.exporting || !History.redo.length) return;
     History.undo.push(clone(app.state));
     app.state = History.redo.pop();
     History.lastKey = null;

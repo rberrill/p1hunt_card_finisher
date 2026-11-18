@@ -36,6 +36,7 @@ const {
   sideButton,
   switchTo,
   shownToast,
+  waitingPhotoName,
   holdNextOpening,
   releaseOpening,
   waitForOpening,
@@ -130,10 +131,14 @@ const CARD_ASPECT = 5 / 7;
 // How close a crop box's aspect must be to 5:7, as a fraction of it.
 const ASPECT_TOLERANCE = 0.01;
 const UNREADABLE_MESSAGE = 'Couldn’t read that file as an image.';
-// The message for a photo opened while an export runs (and, today, while a side opens).
+// The message for a photo opened while an export runs.
 const EXPORT_WAIT_MESSAGE = 'Wait for the export to finish, then open the photo.';
 // Ruling R13's approved words for a photo opened while a side opens (tests/catalog/wording.md).
 const SIDE_WAIT_MESSAGE = 'Wait for the other side to open, then open the photo.';
+// How long a case waits for the photo picker to open after a tap on Open, and for the warning
+// that refuses the photo chosen in it, in ms. Both come at once when they come at all.
+const PICKER_TIMEOUT_MS = 5000;
+const WARNING_TIMEOUT_MS = 5000;
 // Rulings R14 and R15's approved clamp notes. These cases lower the limit to 1 MP with a
 // link, and the note gives the limit in force (R47).
 const APPROVED_CLAMP_NOTE = 'Scaled down to fit the 1 MP limit.';
@@ -907,7 +912,6 @@ test('PAIR-09.3 A photo opened while a side opens is refused with its own messag
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-031');
   const hand = await makePair(page, testInfo);
   await holdNextOpening(page);
   await hand.tap(sideButton(page, 'front'));
@@ -915,23 +919,64 @@ test('PAIR-09.3 A photo opened while a side opens is refused with its own messag
   await check('"Opening the front…" shows', async () => {
     await expect(shownToast(page)).toHaveText('Opening the front…');
   });
-  await chooseInPicker(page, hand, page.locator('#btnOpen'), 'IMG_9136.JPEG');
-  const toastText = shownToast(page).locator('.toast-text');
-  await toastText.filter({ hasNotText: 'Opening' }).waitFor();
-  // A known defect: plain value comparisons, so the case fails at once rather than waiting.
-  const message = await toastText.textContent();
-  const isWarning = await shownToast(page).evaluate(toast => toast.classList.contains('is-warn'));
-  await check(`an amber warning reads "${SIDE_WAIT_MESSAGE}"`, async () => {
-    expect(isWarning, 'the message is a warning').toBe(true);
-    expect(message, 'not the export\'s words').not.toBe(EXPORT_WAIT_MESSAGE);
-    expect(message).toBe(SIDE_WAIT_MESSAGE);
-  });
+  await openWhileSideOpens(page, hand, check);
   await releaseOpening(page);
   await waitForSide(page, 'front', FRONT);
   await check('the front is open, still paired; IMG_9136.JPEG was not opened', async () => {
     await expect(page.locator('#sideSwitch')).toBeVisible();
     expect((await editState(page)).source.name).toBe(FRONT);
+    expect(await waitingPhotoName(page), 'the back is still the other side').toBe(BACK);
   });
+});
+
+// Two rows of PAIR-09.3 and PAIR-09.5, while a side's opening is held: taps Open and checks
+// the photo picker opens, then chooses IMG_9136.JPEG and checks the amber warning reads the
+// side's own words.
+async function openWhileSideOpens(page, hand, check) {
+  const filePicker = page.waitForEvent('filechooser', { timeout: PICKER_TIMEOUT_MS });
+  // Held until the check below awaits it, so a picker that never opens fails that row.
+  filePicker.catch(() => {});
+  await hand.tap(page.locator('#btnOpen'));
+  let chooser = null;
+  await check('the photo picker opens', async () => {
+    chooser = await filePicker;
+  });
+  await chooser.setFiles(samplePath('IMG_9136.JPEG'));
+  const warning = page.locator('#toast.is-shown.is-warn .toast-text');
+  await check(`an amber warning reads "${SIDE_WAIT_MESSAGE}"`, async () => {
+    await warning.waitFor({ timeout: WARNING_TIMEOUT_MS });
+    const message = await warning.textContent();
+    expect(message, 'not the export\'s words').not.toBe(EXPORT_WAIT_MESSAGE);
+    expect(message).toBe(SIDE_WAIT_MESSAGE);
+  });
+}
+
+test('PAIR-09.5 A photo opened while the back first opens is refused with the side\'s message '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  const hand = handFor(page, testInfo);
+  await openApp(page);
+  await openPhoto(page, FRONT);
+  await goToStep(page, 'export', hand);
+  await holdNextOpening(page);
+  await chooseInPicker(page, hand, page.locator('#btnAddBack'), BACK);
+  await waitForOpening(page);
+  await check('the back starts to open: Front / Back shows in the top bar, greyed out',
+    async () => {
+      await expect(sideButton(page, 'front')).toBeDisabled();
+      await expect(sideButton(page, 'back')).toBeDisabled();
+    });
+  await openWhileSideOpens(page, hand, check);
+  await check('the front is still the photo on screen', async () => {
+    expect((await editState(page)).source.name).toBe(FRONT);
+  });
+  await releaseOpening(page);
+  await waitForSide(page, 'back', BACK);
+  await check('the back is open, paired with the front; IMG_9136.JPEG was not opened',
+    async () => {
+      await expect(page.locator('#sideSwitch')).toBeVisible();
+      expect((await editState(page)).source.name).toBe(BACK);
+      expect(await waitingPhotoName(page), 'the front is the other side').toBe(FRONT);
+    });
 });
 
 test('PAIR-09.4 On a wide screen, a switch greys out the corner shots\' save buttons [desktop]',

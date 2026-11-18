@@ -1550,7 +1550,6 @@ test('MSG-46.1 A photo opened during an export is refused [phone]', async ({
 
 test('MSG-46.2 A photo opened while a side opens is refused with its own words [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-031');
     await watchMessages(page);
     const hand = await makePair(page, testInfo);
     // Stand-in: the front's opening is held until the photo has been chosen.
@@ -1563,7 +1562,7 @@ test('MSG-46.2 A photo opened while a side opens is refused with its own words [
     });
     await pickWith(page, hand, page.locator('#btnOpen'), SLAB_PHOTO);
     await page.waitForFunction(() => window.testMessages.some(message => message.kind === 'warn'));
-    // A plain reading: the known defect fails at once rather than waiting.
+    // The one warning shown while the front's opening is held.
     const message = (await messagesSoFar(page)).find(shown => shown.kind === 'warn');
     await check(`An amber warning reads "${SIDE_WAIT}"`, () => {
       expect(message.text).toBe(SIDE_WAIT);

@@ -191,16 +191,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## DND-04 On the Overlay step, a dropped or pasted image becomes the logo
 
-On the Overlay step with a photo open, a dropped or pasted image is added as the logo instead of opening as a photo. Dropped or pasted while a logo is placed, it replaces that logo and takes its position, width and opacity, as **Replace logo** does. In a pair it becomes the logo of the side you are on, with no question.
+On the Overlay step with a photo open, a dropped or pasted image is added as the logo instead of opening as a photo. Dropped or pasted while a logo is placed, it replaces that logo and takes its position, width and opacity, as **Replace logo** does. In a pair it becomes the logo of the side you are on, with no question. While an export runs it is refused, with the warning a photo gets then: **Wait for the export to finish, then open the photo.**
 
 - Risk: medium
 - Check: script
 - Layout: both. The cases use a computer: whether an iPhone lets a person drag a picture into Safari at all is find-out item Q-05.
 - Added: 1.10 baseline
 - Changed: 1.10.0
-- Anchors: `"Drop to add as the logo"`, `#overlayInput`
-- Source: `js/app/main.js` (`bindPhotoInput`), `js/app/overlay.js` (`addOverlayFile`, `place`)
-- Ruling: R18. A logo dropped or pasted on Overlay while one is placed is a replacement: it takes the old logo's position, width and opacity (a new logo of another shape keeps the old one's center and width, then is clamped inside the crop). The app does this since 1.10.0. R19. Each logo added is its own undo step, even two within 900 ms, and a dropped logo is accepted by its file extension, as the logo picker does. The app differs today. R32. While an export is running a dropped or pasted logo is refused, with the message a dropped photo gets. The app differs today.
+- Anchors: `"Drop to add as the logo"`, `#overlayInput`, `"Wait for the export to finish, then open the photo."`
+- Source: `js/app/main.js` (`bindPhotoInput`), `js/app/overlay.js` (`addOverlayFile`, `place`), `js/app/pair.js` (`receivePhoto`)
+- Ruling: R18. A logo dropped or pasted on Overlay while one is placed is a replacement: it takes the old logo's position, width and opacity (a new logo of another shape keeps the old one's center and width, then is clamped inside the crop). The app does this since 1.10.0. R19. Each logo added is its own undo step, even two within 900 ms, and a dropped logo is accepted by its file extension, as the logo picker does. The app differs today. R32. While an export is running a dropped or pasted logo is refused, with the message a dropped photo gets. The app does this since 1.10.0.
 - Cases: 8
 
 ### DND-04.1 On Overlay, a dropped picture becomes the logo   [auto: desktop]
@@ -295,7 +295,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-04.6 During an export, a dropped logo is refused   [auto: desktop]
-Written to ruling R32; it fails until that is built (BUG-192).
 Script only
 Stand-in: an export here lasts well under a second, too short for a person to change step and drop a file while it runs, so the script holds the export open until the drop has been checked, then lets it finish.
 
@@ -313,12 +312,12 @@ Before you start:
 | 2 | Click **No** | The export runs: a progress line crosses the top edge of the controls |
 | 3 | While it runs, click **Overlay** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Overlay step shows |
 | 4 | Still while it runs, drag green-logo.png onto the photo area and let go | No logo is added, and an amber message reads "Wait for the export to finish, then open the photo." |
+| 5 | Wait for the export to finish | IMG_9136.JPEG is still the photo open, with no logo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-04.7 During an export, a pasted logo is refused   [auto: desktop]
-Written to ruling R32; it fails until that is built (BUG-192).
 Script only
 Stand-in: an export here lasts well under a second, too short for a person to change step and paste while it runs, so the script holds the export open until the paste has been checked, then lets it finish.
 
@@ -336,6 +335,7 @@ Before you start:
 | 2 | Click **No** | The export runs: a progress line crosses the top edge of the controls |
 | 3 | While it runs, click **Overlay** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Overlay step shows |
 | 4 | Still while it runs, press Ctrl+V (Cmd+V on a Mac) | No logo is added, and an amber message reads "Wait for the export to finish, then open the photo." |
+| 5 | Wait for the export to finish | IMG_9136.JPEG is still the photo open, with no logo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -362,16 +362,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## DND-05 A photo arriving while the app is busy is refused
 
-A photo opened, dropped or pasted while an export runs or a pair's side is opening is refused with a warning, **Wait for the export to finish, then open the photo.** On the Overlay step a dropped or pasted image goes to the logo instead (DND-04). By ruling R32 it is refused there too while an export is running; today it is not.
+A photo dropped or pasted while an export runs is refused with a warning, **Wait for the export to finish, then open the photo.** A photo dropped while a pair's side is opening is refused with a warning of its own, **Wait for the other side to open, then open the photo.** The case here is a switch; the back's first opening after **Add back** gets the same warning (PAIR-09.5). A logo dropped or pasted on the Overlay step during an export is refused as a photo is (DND-04).
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `"Wait for the export to finish, then open the photo."`
-- Source: `js/app/pair.js` (`receivePhoto`)
-- Ruling: R13. While a side is opening the warning reads "Wait for the other side to open, then open the photo." (approved wording, tests/catalog/wording.md); the export wording stays for an export. The app differs today.
+- Changed: 1.10.0
+- Anchors: `"Wait for the export to finish, then open the photo."`, `"Wait for the other side to open, then open the photo."`
+- Source: `js/app/pair.js` (`receivePhoto`), `js/app/main.js` (`bindPhotoInput`)
+- Ruling: R13. While a side is opening the warning reads "Wait for the other side to open, then open the photo." (approved wording, tests/catalog/wording.md); the export wording stays for an export. The app does this since 1.10.0. R32. While an export is running a dropped or pasted logo is refused, with the message a dropped photo gets. The app does this since 1.10.0.
 - Cases: 3
 
 ### DND-05.1 A photo dropped during an export is refused   [auto: desktop]
@@ -417,7 +417,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DND-05.3 A photo dropped while a side is opening gets the side's own warning   [auto: desktop]
-Written to ruling R13; it fails until that is built (BUG-031).
 Script only
 Stand-in: a side opens in well under a second, too short for a person to drop a file while it does, so the script holds the front's opening until the drop has been checked, then lets it finish.
 

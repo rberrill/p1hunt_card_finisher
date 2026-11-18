@@ -423,17 +423,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PAIR-09 Busy while a side opens or an export runs
 
-**Front** / **Back** and **Unpair** are dimmed while an export runs or a side is opening. While a side is opening (a switch, or the back's first opening after **Add back**), **Share**, **Download**, **Copy**, **Together** / **Separately** and the corner-shots save buttons are dimmed too, and a photo opened then is refused with a message.
+**Front** / **Back** and **Unpair** are dimmed while an export runs or a side is opening. While a side is opening (a switch, or the back's first opening after **Add back**), **Share**, **Download**, **Copy**, **Together** / **Separately** and the corner-shots save buttons are dimmed too. A photo opened while a side is opening, in a switch or in the back's first opening, is refused with a warning of its own: **Wait for the other side to open, then open the photo.**
 
 - Risk: medium
 - Check: script
 - Layout: both. On a phone the Corner shots sheet covers the top bar while it is open, so its save buttons can be seen greyed out during a switch only on a wide screen, where Corner shots is listed in the side panel.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#sideSwitch`, `#btnUnpair`, `#btnDownload`, `#btnShare`, `#btnCornerDownload`, "Wait for the export to finish, then open the photo."
+- Changed: 1.10.0
+- Anchors: `#sideSwitch`, `#btnUnpair`, `#btnDownload`, `#btnShare`, `#btnCornerDownload`, "Wait for the other side to open, then open the photo."
 - Source: `js/app/pair.js` (`setSwitching`, `startPair`, `switchSide`, `syncPair`, `receivePhoto`), `js/app/export-controls.js` (`syncSaveButtons`), `js/app/corner-shots.js` (`syncCornerShots`), `js/app/export.js` (`doExport`)
-- Ruling: R13. A photo opened while a side is opening says "Wait for the other side to open, then open the photo." (approved wording); the export wording stays for a running export. The app differs today.
-- Cases: 4
+- Ruling: R13. A photo opened while a side is opening says "Wait for the other side to open, then open the photo." (approved wording); the export wording stays for a running export. The app does this since 1.10.0.
+- Cases: 5
 
 ### PAIR-09.1 While a side opens, the switch and save controls are greyed out   [auto: phone]
 Before you start:
@@ -483,8 +483,6 @@ Before you start:
 - Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
-Written to ruling R13, in the words Rich approved; it fails until R13 is built (BUG-031).
-
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Front** in the top bar | "Opening the front…" shows |
@@ -510,6 +508,27 @@ A side opens in a fraction of a second, so for row 2 watch closely, or record th
 | 1 | Click **Corner shots** in the side panel | The side panel shows the Corner shots part, with **Share corners** and **Download corners**; both can be clicked |
 | 2 | Click **Front** in the top bar | While "Opening the front…" shows, **Share corners** and **Download corners** are greyed out |
 | 3 | Wait for the front to open | **Share corners** and **Download corners** can be clicked again |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-09.5 A photo opened while the back first opens is refused with the side's message   [auto: phone]
+Script only
+Stand-in: the back opens in tens of milliseconds, too fast for a person to choose a photo in between, so the script holds the back's opening until row 4 is done.
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
+- Starting screen: 14_front_portrait_raw_white.JPEG open, on the Export step
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back starts to open: **Front** / **Back** shows in the top bar, greyed out |
+| 2 | Tap **Open** (the folder at the top left) | The photo picker opens |
+| 3 | Choose IMG_9136.JPEG | An amber warning reads "Wait for the other side to open, then open the photo." |
+| 4 | Look at the photo | The front is still the photo on screen |
+| 5 | Wait for the back to open | The back is open; **Front** / **Back** is still in the top bar; IMG_9136.JPEG was not opened |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

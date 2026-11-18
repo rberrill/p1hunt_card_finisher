@@ -1590,18 +1590,18 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-46 "Wait for the export to finish, then open the photo."
+## MSG-46 "Wait for the export to finish, then open the photo." and "Wait for the other side to open, then open the photo."
 
-A warning, for 5 seconds, when a photo arrives (picker, drop or paste) while an export runs: "Wait for the export to finish, then open the photo." The same message shows while a side switch or the back's first opening is under way, when no export runs.
+A warning, for 5 seconds, when a photo arrives (picker, drop or paste) while an export runs: "Wait for the export to finish, then open the photo." While a pair's side is opening after a tap on **Front** or **Back**, the warning reads "Wait for the other side to open, then open the photo." instead; the back's first opening after **Add back** gets the same warning (PAIR-09.5).
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Wait for the export to finish, then open the photo."
+- Changed: 1.10.0
+- Anchors: "Wait for the export to finish, then open the photo.", "Wait for the other side to open, then open the photo."
 - Source: `js/app/pair.js` (`receivePhoto`)
-- Ruling: R13. During a side switch the warning reads "Wait for the other side to open, then open the photo."; during an export the wording stays (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Ruling: R13. During a side switch the warning reads "Wait for the other side to open, then open the photo."; during an export the wording stays (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-46.1 A photo opened during an export is refused   [auto: phone]
@@ -1625,7 +1625,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-46.2 A photo opened while a side opens is refused with its own words   [auto: phone]
-Written to ruling R13, in the wording Rich approved; it fails until that is built (BUG-031).
 Script only
 Stand-in: a side opens in tens of milliseconds, too fast to open a photo in the middle of it, so the script holds the front's opening until row 2 is done.
 

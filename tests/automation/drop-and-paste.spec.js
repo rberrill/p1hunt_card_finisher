@@ -19,6 +19,7 @@ const { waitForQuestion } = require('./support/export.js');
 const {
   makePair,
   switchTo,
+  waitingPhotoName,
   holdNextOpening,
   releaseOpening,
   waitForOpening,
@@ -49,8 +50,8 @@ const {
 const STAGE = '#stage';
 // The message a photo arriving during an export gets, word for word.
 const WAIT_FOR_EXPORT = 'Wait for the export to finish, then open the photo.';
-// The message a photo arriving while a pair's side opens gets by ruling R13, word for word
-// (tests/catalog/wording.md).
+// The message a photo arriving while a pair's side opens gets, word for word (ruling R13;
+// tests/catalog/wording.md).
 const WAIT_FOR_SIDE = 'Wait for the other side to open, then open the photo.';
 // The message a HEIC file gets in a browser that can't open HEIC, word for word.
 const NO_HEIC = 'This browser can’t open HEIC. Save the photo as JPEG first (Safari opens HEIC '
@@ -381,7 +382,8 @@ test('DND-04.5 A dropped logo is taken by its name, as the logo picker takes it 
 
 // The body of DND-04.6 and DND-04.7: holds an export open (Download, then No), goes to
 // Overlay, brings green-logo.png in with `bringIn(logo)` and expects it refused with the
-// dropped photo's amber message.
+// dropped photo's amber message; then lets the export finish and expects IMG_9136.JPEG still
+// open, with no logo.
 async function checkLogoRefusedDuringExport(page, check, hand, bringIn) {
   const logo = greenLogo();
   await startHeldExport(page, hand, check);
@@ -399,13 +401,18 @@ async function checkLogoRefusedDuringExport(page, check, hand, bringIn) {
     expect(added).toBeNull();
     expect(message).toEqual({ text: WAIT_FOR_EXPORT, kind: 'warn', isShown: true });
   });
+  await page.waitForTimeout(NOTHING_HAPPENS_MS);
+  await check('once the export ends, IMG_9136.JPEG is still the photo open, with no logo',
+    async () => {
+      expect(await openPhotoName(page)).toBe(PHOTO);
+      expect(await logoId(page)).toBeNull();
+    });
 }
 
 test('DND-04.6 During an export, a dropped logo is refused [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-192');
   const hand = await startOn(page, testInfo);
   await checkLogoRefusedDuringExport(page, check, hand, logo => dragFiles(page, STAGE, [logo]));
 });
@@ -416,7 +423,6 @@ test('DND-04.7 During an export, a pasted logo is refused [desktop]', async ({
   browserName,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-192');
   await allowClipboard(context, browserName, test);
   const hand = await startOn(page, testInfo);
   // The logo is on the clipboard before the export: putting it there draws on a canvas.
@@ -523,7 +529,6 @@ test('DND-05.2 A photo pasted during an export is refused [desktop]', async ({
 
 test('DND-05.3 A photo dropped while a side is opening gets the side\'s own warning '
   + '[desktop]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-031');
   const hand = await makePair(page, testInfo);
   await holdNextOpening(page);
   await hand.tap(page.locator('#sideSwitch .segment[data-value="front"]'));
@@ -538,9 +543,10 @@ test('DND-05.3 A photo dropped while a side is opening gets the side\'s own warn
   await check(`an amber message reads "${WAIT_FOR_SIDE}"`, () => {
     expect(shown).toEqual({ text: WAIT_FOR_SIDE, kind: 'warn', isShown: true });
   });
-  await check('the front opens; no photo replaced either side', async () => {
+  await check('the front is open; IMG_9136.JPEG replaced neither side', async () => {
     await page.waitForFunction(() => !window.__straightener.app.isSwitching);
     expect(await openPhotoName(page)).toBe(PORTRAIT_PAIR.front);
+    expect(await waitingPhotoName(page)).toBe(PORTRAIT_PAIR.back);
   });
 });
 

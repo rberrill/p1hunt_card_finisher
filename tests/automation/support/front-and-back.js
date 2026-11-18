@@ -133,6 +133,14 @@ function openSide(page) {
   });
 }
 
+// The name of the photo on the pair's side that is not open, or null when no pair is open.
+function waitingPhotoName(page) {
+  return page.evaluate(() => {
+    const pair = window.__straightener.app.pair;
+    return pair ? pair.other.name : null;
+  });
+}
+
 // Holds the next photo the app reads (a side switch, the back after Add back) until
 // releaseOpening is called, so a case can look at the screen while a side is opening. A real
 // read takes a few tens of milliseconds, too short to look at, and no control can slow it, so
@@ -610,6 +618,7 @@ module.exports = {
   sideButton,
   switchTo,
   openSide,
+  waitingPhotoName,
   holdNextOpening,
   releaseOpening,
   waitForOpening,

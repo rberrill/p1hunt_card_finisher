@@ -303,10 +303,15 @@
   // Every photo that comes in (Open, Next card, Add back, drop, paste) goes through here.
   // intent: 'open', 'next' (Next card →, which ends a pair after its export without asking) or
   // 'addBack'. While paired, Open, drop and paste ask whether to end the pair or replace the
-  // side you're on.
+  // side you're on. While the app is busy the photo is refused, in words that say what it is
+  // busy with: an export, or a side of the pair opening (ruling R13).
   function receivePhoto(file, name, intent) {
-    if (app.exporting || app.isSwitching) {
+    if (app.exporting) {
       toast('Wait for the export to finish, then open the photo.', 'warn');
+      return;
+    }
+    if (app.isSwitching) {
+      toast('Wait for the other side to open, then open the photo.', 'warn');
       return;
     }
     hidePrompt();
