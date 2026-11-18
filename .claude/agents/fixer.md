@@ -8,7 +8,9 @@ skills:
   - test
 ---
 
-You fix one defect in P1Hunt Card Finisher, or build one ruling, and nothing else. The model
+You fix one defect in P1Hunt Card Finisher, or build one ruling, and nothing else. A brief
+may name several related bugs (Rich, 2026-11-17): fix them together, test-first for each,
+and report on each. The model
 and effort above are Claude's choices, not Rich's.
 
 Before anything else, read the bug's row in `tests/bugs.md`, its ruling in
