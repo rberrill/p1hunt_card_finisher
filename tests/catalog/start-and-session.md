@@ -546,7 +546,7 @@ A resumed photo that had a logo gets its logo image back: from the logo stored w
 - Layout: both
 - Added: 1.10 baseline
 - Changed: 1.10.0
-- Anchors: `#btnResume`, "The overlay image isn’t loaded. Open the Overlay step and add it again."
+- Anchors: `#btnResume`, "The logo isn’t loaded. Open the Overlay step and add it again."
 - Source: `js/app/overlay.js` (`ensureOverlayImage`, `keepPhotoOverlayStored`); `js/app/state.js` (`openFile`)
 - Ruling: R22. **Remove** leaves the photo's logo in storage, so Undo after a resume can bring it back. The app already does this. R35. Whatever logo Undo can bring back stays stored, so after Resume the photo exports as it looked: a logo that Undo, a pair's side switch (PAIR-40.2) or **Delete saved** leaves on the photo, and that is neither the photo's stored logo nor the saved one, becomes the photo's stored logo. The app does this since 1.10.0.
 - Cases: 5
@@ -721,20 +721,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## STA-12 Resume fails for another reason
 
-If Resume fails for any other reason, a red message shows "Couldn’t resume: " followed by the browser's error text, and the error is logged to the console.
+If Resume fails for any other reason, a red message shows "Couldn’t resume." and nothing more, and the error is logged to the console.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnResume`, "Couldn’t resume: "
+- Changed: 1.10.0
+- Anchors: `#btnResume`, "Couldn’t resume."
 - Source: `js/app/start-screen.js` (`resumeSession`)
-- Ruling: R24. The message is the fixed "Couldn’t resume." (wording approved by Rich, 16 November 2026: the short form, with no advice), and the error's detail always goes to the console. The app differs today.
+- Ruling: R24. The message is the fixed "Couldn’t resume." (wording approved by Rich, 16 November 2026: the short form, with no advice), and the error's detail always goes to the console. The app does this since 1.10.0.
 - Cases: 1
 
 ### STA-12.1 Resume that fails names no browser error   [auto: desktop]
-Written to ruling R24; it fails until that is built (BUG-051).
 
 Before you start:
 - Device and browser: a computer, Chrome or Edge; a wide window, in a private window
@@ -1595,7 +1594,6 @@ A 48 MP iPhone photo opens and stays usable: the screen works from smaller copie
 - Cases: 2
 
 ### STA-24.1 A 48 MP photo from the camera stays usable on an iPhone   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: an iPhone whose main camera takes 48 MP photos, Safari. Which iPhones do, and at which camera setting, is find-out item Q-02; until it is answered, row 6 confirms the photo is 48 MP
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/

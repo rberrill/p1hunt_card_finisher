@@ -28,7 +28,6 @@ const {
   questionButton,
   finishedMessage,
   copiedMessage,
-  ruledCopiedMessage,
 } = require('./support/app.js');
 const {
   installShareStandIn,
@@ -593,10 +592,13 @@ test('EXP-07.1 A note covers no button, before and after an export [phone] [webk
   });
 });
 
-// The message Download and Share show once the file is saved, giving 1400 × 1400 px: in today's
-// words ("Exported 1400 × 1400 px in N s.") or ruling R79's ("Photo downloaded: …", "Photo
-// shared: …"). These cases read only the size; MSG-22.1 and MSG-22.2 hold the words.
-const EXPORTED_MESSAGE = finishedMessage('photo', `${CROP_PX} × ${CROP_PX} px`);
+// The start of the message Download and Share show once the file is saved, giving 1400 × 1400
+// px: "Photo downloaded: 1400 × 1400 px in N s.", "Photo shared: …", and "Photo ready: …" while
+// a refused share waits for Share now.
+const CROP_SIZE = `${CROP_PX} × ${CROP_PX} px`;
+const DOWNLOADED_MESSAGE = finishedMessage('photo', 'downloaded', CROP_SIZE);
+const SHARED_MESSAGE = finishedMessage('photo', 'shared', CROP_SIZE);
+const READY_MESSAGE = finishedMessage('photo', 'ready', CROP_SIZE);
 
 test('EXP-08.1 Share hands the share sheet the finished photo [phone]', async ({
   page,
@@ -624,7 +626,7 @@ test('EXP-08.1 Share hands the share sheet the finished photo [phone]', async ({
       expect(await sharedImageSize(page)).toEqual({ width: CROP_PX, height: CROP_PX });
     });
   await check('a message begins "Photo shared: 1400 × 1400 px in"', async () => {
-    await expect.poll(() => toastMessage(page)).toMatch(EXPORTED_MESSAGE);
+    await expect.poll(() => toastMessage(page)).toMatch(SHARED_MESSAGE);
   });
 });
 
@@ -673,7 +675,7 @@ test('EXP-11.1 Download saves the photo as a plain download [phone] [webkit]', a
     + '1400 px in"; no share sheet',
     async () => {
       expect(saved.suggestedFilename()).toBe('IMG_9136-straight.jpg');
-      await expect.poll(() => toastMessage(page)).toMatch(EXPORTED_MESSAGE);
+      await expect.poll(() => toastMessage(page)).toMatch(DOWNLOADED_MESSAGE);
       expect(await sharesSoFar(page)).toEqual([]);
     });
   const file = await saved.path();
@@ -723,9 +725,8 @@ test('EXP-12.1 Copy puts a PNG on the clipboard though JPEG is chosen [phone]', 
   await hand.tap(copy);
   await checkAskedToUpscale(page, check);
   await hand.tap(questionButton(page, 'No'));
-  await check(`a message reads "${ruledCopiedMessage()}"`, async () => {
-    // Today's words or ruling R79's: MSG-29.1 holds the words.
-    await expect.poll(() => toastMessage(page)).toMatch(copiedMessage());
+  await check(`a message reads "${copiedMessage()}"`, async () => {
+    await expect.poll(() => toastMessage(page)).toBe(copiedMessage());
   });
   const pasted = await readClipboardImage(page);
   await check('the clipboard holds a PNG of 1400 × 1400 px', async () => {
@@ -750,9 +751,8 @@ test('EXP-12.2 With JPEG and a Transparent fill, Copy\'s empty areas are white [
     await hand.tap(page.locator('#btnCopy'));
     await checkAskedToUpscale(page, check);
     await hand.tap(questionButton(page, 'No'));
-    await check(`a message reads "${ruledCopiedMessage()}"`, async () => {
-      // Today's words or ruling R79's: MSG-29.1 holds the words.
-      await expect.poll(() => toastMessage(page)).toMatch(copiedMessage());
+    await check(`a message reads "${copiedMessage()}"`, async () => {
+      await expect.poll(() => toastMessage(page)).toBe(copiedMessage());
     });
     const pasted = await readClipboardImage(page);
     await check('the corners the tilt left empty are solid white; nothing is see-through',
@@ -855,8 +855,9 @@ test('EXP-14.2 Share, Download and Copy are dimmed while an export runs [phone]'
   });
 });
 
-// The finished message giving 1400 × 1400 px, then "Tap Share now to open the share sheet."
-const SHARE_NOW_MESSAGE = new RegExp(`${EXPORTED_MESSAGE.source} Tap Share now to open the `
+// The message while a refused share waits: "Photo ready: 1400 × 1400 px in N s. Tap Share now
+// to open the share sheet."
+const SHARE_NOW_MESSAGE = new RegExp(`${READY_MESSAGE.source} Tap Share now to open the `
   + 'share sheet\\.$');
 
 test('EXP-15.1 A refused share leaves Share now, which shares the same file [phone]', async ({
@@ -868,7 +869,8 @@ test('EXP-15.1 A refused share leaves Share now, which shares the same file [pho
   await checkAskedToUpscale(page, check);
   await hand.tap(questionButton(page, 'No'));
   await waitForShares(page, 1);
-  await check('the sheet is refused; the message says to tap Share now; Share reads Share now',
+  await check('the share is refused; a message reads "Photo ready: 1400 × 1400 px in N s. Tap '
+    + 'Share now to open the share sheet."; the red button reads Share now',
     async () => {
       await expect.poll(() => toastMessage(page)).toMatch(SHARE_NOW_MESSAGE);
       await expect(shareLabel(page)).toHaveText('Share now');
@@ -1355,8 +1357,8 @@ test('EXP-22.2 A failed share doesn\'t count as exported [phone]', async ({
   await hand.tap(questionButton(page, 'No'));
   await waitForShares(page, 1);
   await waitForExportEnd(page);
-  await check('a red message begins "Share failed"; Next card doesn\'t show', async () => {
-    await expect.poll(() => toastMessage(page)).toMatch(/^Share failed/);
+  await check('a red message reads "Share failed."; Next card doesn\'t show', async () => {
+    await expect.poll(() => toastMessage(page)).toBe('Share failed.');
     await expect(page.locator('#toast')).toHaveClass(/is-error/);
     await expect(nextCard(page)).toBeHidden();
   });
@@ -1373,9 +1375,8 @@ test('EXP-22.3 A finished Copy counts as exported [phone]', async ({
   await hand.tap(page.locator('#btnCopy'));
   await checkAskedToUpscale(page, check);
   await hand.tap(questionButton(page, 'No'));
-  await check(`"${ruledCopiedMessage()}"; Next card shows in white`, async () => {
-    // Today's words or ruling R79's: MSG-29.1 holds the words.
-    await expect.poll(() => toastMessage(page)).toMatch(copiedMessage());
+  await check(`a message reads "${copiedMessage()}"; Next card shows in white`, async () => {
+    await expect.poll(() => toastMessage(page)).toBe(copiedMessage());
     await expect(nextCard(page)).toBeVisible();
     expect(await hasWhiteFill(nextCard(page))).toBe(true);
   });
@@ -2256,11 +2257,12 @@ test('EXP-37.2 A pasted photo saves as pasted-photo-straight.jpg [desktop]', asy
 
 // The first four bytes of every PNG file (part of its signature).
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47];
-// The done message when WebP was saved as a PNG: the finished message giving 1080 × 1080 px
-// (today's words or ruling R79's), then "WEBP isn’t supported by this browser, so it was saved
-// as PNG."
-const WEBP_FALLBACK_MESSAGE = new RegExp(`${finishedMessage('photo', '1080 × 1080 px').source} `
-  + 'WEBP isn’t supported by this browser, so it was saved as PNG\\.$');
+// The done message when WebP was saved as a PNG: "Photo downloaded: 1080 × 1080 px in N s.",
+// then "WEBP isn’t supported by this browser, so it was saved as PNG."
+const WEBP_FALLBACK_MESSAGE = new RegExp(
+  `${finishedMessage('photo', 'downloaded', '1080 × 1080 px').source} `
+    + 'WEBP isn’t supported by this browser, so it was saved as PNG\\.$',
+);
 
 test('EXP-38.2 Where WebP can\'t be saved, Download saves a PNG and says so [phone]', async ({
   page,

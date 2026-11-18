@@ -164,7 +164,9 @@
 
   // Renders and saves the corner shots. isUpscaled: render every tile at the size that makes
   // the file CONFIG.cornerShots.upscaleTargetPx, bicubic whatever the export's interpolation,
-  // and sharpen it (renderShot).
+  // and sharpen it (renderShot). A failure shows a short fixed line, and its own words go to
+  // the console (ruling R24); one whose fix the app knows shows its advice instead
+  // (CF.failureText).
   async function renderAndSave(kind, isUpscaled) {
     const state = clone(app.state);
     const geometry = CardEngine.computeGeometry(state, geometryConfig());
@@ -188,17 +190,27 @@
       await deliverCornerShots(kind, files, startTime, shots, type);
     } catch (error) {
       console.error(error);
-      toast('Corner shots failed: ' + error.message, 'error', 6000);
+      toast(CF.failureText(error, 'Corner shots failed.'), 'error', 6000);
     }
   }
 
-  // Delivers finished corner files by Download or Share, with a toast saying how it went and,
-  // after an upscale, at what size. type: the requested MIME type (CF.toastSaved's note).
+  // What the finished message calls the saved corner files, and their size as it writes it
+  // (ruling R79): the sheet with its own size ("Corner sheet", "2008 × 2008 px"), or the four
+  // photos with one photo's size and "each" ("4 corner photos", "1000 × 1000 px each").
+  // isSheet: one sheet was saved, not four photos.
+  function savedCorners(shots, isSheet) {
+    const tilePx = shots.sizePx;
+    if (!isSheet) return { thing: '4 corner photos', size: `${tilePx} × ${tilePx} px each` };
+    const sheetPx = shots.isUpscaled ? CONFIG.cornerShots.upscaleTargetPx : 0;
+    const layout = CardEngine.cornerSheetLayout(tilePx, CONFIG.cornerShots, sheetPx);
+    return { thing: 'Corner sheet', size: `${layout.width} × ${layout.height} px` };
+  }
+
+  // Delivers finished corner files by Download or Share, with a toast saying how it went and
+  // at what size. type: the requested MIME type (CF.toastSaved's note).
   async function deliverCornerShots(kind, files, startTime, shots, type) {
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
-    const what = files.length === 1 ? 'the corner sheet' : `${files.length} corner shots`;
-    const size = shots.isUpscaled ? ` at ${CONFIG.cornerShots.upscaleTargetPx} px` : '';
-    const done = `Saved ${what}${size} in ${seconds} s.`;
+    const saved = Object.assign(savedCorners(shots, files.length === 1), { seconds });
     if (kind === 'download') {
       // Saved first, since a download can leave the page on iPhone.
       CF.Session.flush();
@@ -206,11 +218,11 @@
         if (i) await new Promise(resolve => setTimeout(resolve, DOWNLOAD_GAP_MS));
         CF.Exporter.download(files[i], files[i].name);
       }
-      CF.toastSaved(done, files, type, 'saved');
+      CF.toastSaved(saved, files, type, 'saved');
       return;
     }
     const outcome = await shareCornerShots(files);
-    CF.toastSaved(done, files, type, outcome);
+    CF.toastSaved(saved, files, type, outcome);
   }
 
   // Shares the corner files in one share sheet. On 'pending' (a slow render) the sheet's

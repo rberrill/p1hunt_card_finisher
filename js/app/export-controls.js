@@ -13,17 +13,13 @@
 
   // The step's tips (the plan's approved wording, 14 November). Export has no keyboard help
   // (frame DT6).
-  // The first and the last are for the phone, so a wide screen leaves them out (Rich,
-  // 2026-11-15).
+  // The first is for the phone, so a wide screen leaves it out (Rich, 2026-11-15). A fourth,
+  // about edits files, nearly repeated the hint under Save edits and Load edits, and went
+  // (ruling R61).
   const EXPORT_TIPS = [
     { text: 'Share’s Save Image puts the photo in Photos.', isPhoneOnly: true },
     'Original keeps the crop at the photo’s own resolution and never upscales.',
     'Next card shows once these edits are exported.',
-    {
-      text: 'An edits file is small. Re-open the same photo, load it, and the export is '
-        + 'identical.',
-      isPhoneOnly: true,
-    },
   ];
   const EXPORT_FORMATS = [
     { value: 'jpeg', label: 'JPEG' },

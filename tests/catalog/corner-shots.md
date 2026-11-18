@@ -278,7 +278,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 4
 
 ### CNR-05.1 Share corners opens the iPhone's share sheet with the sheet, or all four photos   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet in N s." and "Saved 4 corner shots in N s."), which this case also accepts: it reads only that a save finished, and MSG-25.1 and MSG-26.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test on the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP **Share corners** is hidden)
@@ -304,7 +303,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ### CNR-05.2 Share corners hands the share sheet the corner sheet   [auto: phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet in N s."), which this case also accepts: it reads only that the save finished, and MSG-25.1 holds the words.
 Script only
 Stand-in: a script stands in for the share sheet and records the files it is handed; no case uses a desktop browser's own share sheet (the iPhone's is CNR-05.1).
 
@@ -377,7 +375,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 3
 
 ### CNR-06.1 Download corners saves the corner sheet as a plain download   [auto: phone, webkit]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet in N s."), which this case also accepts: it reads only that the save finished, and MSG-25.1 holds the words.
 Before you start:
 - Device and browser: any; a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test, opened with `?cornerShots.upscaleTargetPx=0` (index.html?cornerShots.upscaleTargetPx=0)
@@ -412,7 +409,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CNR-06.3 On an iPhone, Download corners saves the sheet to Files   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet in N s."), which this case also accepts: it reads only that the save finished, and MSG-25.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test on the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -723,7 +719,6 @@ With **4 photos**, **Download corners** saves four files, 250 ms apart, and **Sh
 - Cases: 3
 
 ### CNR-11.1 One tap of Download corners saves four files, a quarter of a second apart   [auto: phone, webkit]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved 4 corner shots in N s."), which this case also accepts: it reads only that the save finished, and MSG-26.1 holds the words.
 Script only
 Stand-in: nothing is replaced; the files are a quarter of a second apart, too close to time by eye, so the script notes when each download starts.
 
@@ -764,7 +759,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### CNR-11.3 On an iPhone, Download corners saves all four photos to Files   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved 4 corner shots in N s."), which this case also accepts: it reads only that the save finished, and MSG-26.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test on the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/

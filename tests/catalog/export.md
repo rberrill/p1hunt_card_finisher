@@ -358,7 +358,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 2
 
 ### EXP-08.1 Share hands the share sheet the finished photo   [auto: phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.2 holds the words.
 Script only
 Stand-in: no person can see the size of the file a share sheet is handed, and no case uses a desktop browser's own share sheet, so the script gives the page a stand-in share sheet that records each file it is handed and finishes the share at once. EXP-08.2 and EXP-09.1 are the same on a real iPhone.
 
@@ -414,7 +413,6 @@ On an iPhone, **Save Image** in the share sheet puts the photo in Photos.
 - Cases: 1
 
 ### EXP-09.1 Save Image puts the photo in Photos   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.2 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP the Share button is hidden)
@@ -497,7 +495,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Cases: 3
 
 ### EXP-11.1 Download saves the photo as a plain download   [auto: phone, webkit]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: a phone-width or a wide window, in a browser that can share files (Safari on an iPhone over HTTPS, or, for the script, a desktop browser given a stand-in share sheet), with downloads saved to a folder you can open
 - Build: the build under test
@@ -531,7 +528,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-11.3 On an iPhone, Download saves the photo to Files   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -565,14 +561,13 @@ On a fail, record: the row number, what you saw instead, a screenshot (press the
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnCopy`, "Copied to clipboard (PNG)."
+- Changed: 1.10.0
+- Anchors: `#btnCopy`, "Photo copied (PNG)."
 - Source: `js/app/export.js` (`Exporter.copy`, `runExport`)
 - Ruling: R16. With JPEG chosen and a Transparent fill, Copy gives a PNG whose empty areas are white, matching the note and Download. The app already does this.
 - Cases: 2
 
 ### EXP-12.1 Copy puts a PNG on the clipboard though JPEG is chosen   [auto: phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Before you start:
 - Device and browser: a computer, Chrome or Edge; a phone-width or a wide window (the script runs this in Chromium only: Playwright's WebKit can't read the clipboard back)
 - Build: the build under test
@@ -592,7 +587,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-12.2 With JPEG and a Transparent fill, Copy's empty areas are white   [auto: phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Before you start:
 - Device and browser: a computer, Chrome or Edge; a phone-width or a wide window (the script runs this in Chromium only)
 - Build: the build under test
@@ -730,7 +724,6 @@ If the browser refuses to share because the tap was too long ago (a slow export)
 - Cases: 3
 
 ### EXP-15.1 A refused share leaves Share now, which shares the same file   [auto: phone]
-The words before "Tap Share now…" are the finished message's, which ruling R79 rewords (BUG-290); R79 doesn't say how the message reads while the share waits, so this case reads only the size, the time and the sentence added.
 Script only
 Stand-in: Safari refuses a share that starts too long after the tap, but an export of a sample photo is too quick for that, and no case uses a desktop browser's own share sheet; the script gives the page a stand-in share sheet that refuses the first share as Safari does, records each file it is handed, and finishes every later share at once.
 
@@ -744,7 +737,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | The share is refused; a message over the photo gives the saved size, 1400 × 1400 px, and the time it took, then reads "Tap Share now to open the share sheet."; the red button reads **Share now** |
+| 2 | Tap **No** | The share is refused; a message over the photo reads "Photo ready: 1400 × 1400 px in N s. Tap Share now to open the share sheet."; the red button reads **Share now** |
 | 3 | Tap **Share now** | The share sheet is handed IMG_9136-straight.jpg, the very file it was handed before: no new export starts |
 | 4 | Look at the red button, once the stand-in has finished the share | It reads **Share** again |
 
@@ -775,7 +768,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-15.3 On an iPhone, a slow export leaves Share now, which opens the share sheet   [phone]
-The words before "Tap Share now…" are the finished message's, which ruling R79 rewords (BUG-290); R79 doesn't say how the message reads while the share waits, so this case reads only the size, the time and the sentence added.
 Waiting on find-out Q-09: which photo is slow enough to save at **Original** that Safari refuses the share. The photo below is filled in from Rich's answer; until then the case can't be run.
 
 Before you start:
@@ -788,7 +780,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo); no share sheet rises |
-| 2 | Wait for the line to finish | A message over the photo gives the saved size (W × H px) and the time it took, then reads "Tap Share now to open the share sheet."; the red button reads **Share now** |
+| 2 | Wait for the line to finish | A message over the photo reads "Photo ready: W × H px in N s. Tap Share now to open the share sheet.", W × H the saved size and N the seconds it took; the red button reads **Share now** |
 | 3 | Tap **Share now** | The share sheet rises at once, with no red line first: nothing is rendered again |
 | 4 | Tap **Save Image** | The share sheet closes; the red button reads **Share** again, and **Next card** shows in white |
 
@@ -1148,18 +1140,15 @@ Before you start:
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Export step, with **2000** selected; **Next card** not showing
 
-The failure message's exact words are MSG-32's case (ruling R24 changes them); here it is enough that a red message beginning "Share failed" shows.
-
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | A red message over the photo begins "Share failed"; **Next card** doesn't show |
+| 2 | Tap **No** | A red message over the photo reads "Share failed."; **Next card** doesn't show |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-22.3 A finished Copy counts as exported   [auto: phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Before you start:
 - Device and browser: a computer, Chrome or Edge; a phone-width or a wide window (the script runs this in Chromium only, which lets it allow the clipboard)
 - Build: the build under test
@@ -1804,7 +1793,6 @@ A 48 MP photo saves at **Original** and at **3000** on an iPhone without the pag
 - Cases: 1
 
 ### EXP-35.1 A 48 MP photo saves at Original and at 3000 on an iPhone   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.2 holds the words.
 Waiting on find-out Q-02: which iPhone models take 48 MP photos, and the size the source line gives for one. The device and row 3's size are filled in from Rich's answer.
 
 Before you start:
@@ -1956,7 +1944,6 @@ When the browser can't encode the chosen format (WebP in Safari), the file is sa
 Playwright's WebKit can save WebP (a probe on 16 November 2026: its canvas encoded image/webp), so only a real iPhone shows the fallback; EXP-38.2 proves the app's side with a browser made unable to save WebP.
 
 ### EXP-38.1 On an iPhone, WebP is saved as a PNG and the message says so   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the sentence added, and MSG-22.1 holds the words.
 
 Before you start:
 - Device and browser: an iPhone, Safari
@@ -1975,7 +1962,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ### EXP-38.2 Where WebP can't be saved, Download saves a PNG and says so   [auto: phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the sentence added, and MSG-22.1 holds the words.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window, in a browser that can't save WebP (Safari, or, for the script, a browser whose WebP saving is taken away so that it hands back a PNG, as Safari does), with downloads saved to a folder you can open

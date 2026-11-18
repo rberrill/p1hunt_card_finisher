@@ -179,21 +179,18 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-04.2 A long message is cut to three lines   [auto: phone]
 Script only
-Stand-in: no photo or control makes card detection fail, so the script makes the detector report an error a paragraph long before the tap; a person can't make the app show a message that long.
+Stand-in: the script makes the reading of a photo fail with an error a paragraph long, which the app shows as it is; no photo fails with words that long.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
-- Starting screen: the photo open, on the Perspective step
-
-Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
+- Starting screen: the start screen, with **Open photo**
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Arm Tap to find card | the line above the controls reads "Tap the card in the photo." |
-| 2 | Tap the middle of the photo | the message over the photo shows three lines of text, the rest cut off |
+| 1 | Tap **Open photo** and choose the photo | a red message shows three lines of text, the rest cut off |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -379,22 +376,21 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-11 "Detection failed: …"
+## MSG-11 "Detection failed."
 
-An error message, for 6 seconds, when detection throws: "Detection failed: " followed by the error's own text. An error from the background worker arrives as its whole stack trace.
+An error message, for 6 seconds, when detection throws: "Detection failed." The error's own text goes to the console.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Detection failed: "
+- Changed: 1.10.0
+- Anchors: "Detection failed."
 - Source: `js/app/state.js` (`runDetect`); `js/app/adapters.js` (`EngineWorker.call`)
-- Ruling: R24. The message reads "Detection failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Ruling: R24. The message reads "Detection failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-11.1 A failed search says "Detection failed."   [auto: phone]
-Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
 Script only
 Stand-in: no photo or control makes card detection fail, so the script makes the detector report an error ("Stand-in failure 4417") before the tap.
 
@@ -446,22 +442,21 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-13 "Couldn’t resume: …"
+## MSG-13 "Couldn’t resume."
 
-An error message, for 6 seconds, when anything else fails during **Resume**: "Couldn’t resume: " followed by the error's own text.
+An error message, for 6 seconds, when anything else fails during **Resume**: "Couldn’t resume." The error's own text goes to the console.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Couldn’t resume: ", `#btnResume`
+- Changed: 1.10.0
+- Anchors: "Couldn’t resume.", `#btnResume`
 - Source: `js/app/start-screen.js` (`resumeSession`)
-- Ruling: R24. The message reads "Couldn’t resume.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Ruling: R24. The message reads "Couldn’t resume.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-13.1 A Resume that fails says "Couldn’t resume."   [auto: phone]
-Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
 Before you start:
 - Device and browser: Chrome in a phone-width window (390 × 844), touch, with the developer tools open
 - Build: the build under test
@@ -677,22 +672,21 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-22 "Exported … px in … s." for a single photo
+## MSG-22 "Photo downloaded: … px in … s." for a single photo
 
-An information message after a single photo's **Download**, or after **Share** finishes or waits for **Share now**: "Exported {width} × {height} px in {seconds} s." After **Yes** on the Upscale question it gives the upscaled size.
+An information message after a single photo's **Download** or **Share**: "Photo downloaded: {width} × {height} px in {seconds} s." or "Photo shared: {width} × {height} px in {seconds} s." After **Yes** on the Upscale question it gives the upscaled size. While a refused share waits for **Share now** it reads "Photo ready: …" (MSG-28).
 
 - Risk: medium
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Exported ", `#btnDownload`, `#btnShare`
+- Changed: 1.10.0
+- Anchors: `thing: 'Photo'`, `saved: 'downloaded'`, `shared: 'shared'`, `#btnDownload`, `#btnShare`
 - Source: `js/app/export.js` (`deliverExport`, `toastSaved`)
-- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s." (tests/catalog/wording.md): "Photo downloaded: W × H px in N s." or "Photo shared: W × H px in N s.". The app differs today.
+- Ruling: R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-22.1 A single photo's Download says what it saved   [auto: phone]
-Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -704,13 +698,12 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **No** | One file is saved: 01_chrome_flat_black-straight.jpg, 1074 × 1074 px |
-| 3 | Read the message over the photo | A white message reads "Photo downloaded: 1074 × 1074 px in N s.", N the seconds the export took, to one decimal place |
+| 3 | Read the message over the photo | A white message reads "Photo downloaded: 1074 × 1074 px in N s.", N the seconds it took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-22.2 A single photo's Share says what it shared   [auto: phone]
-Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
 Script only
 Stand-in: no case uses a desktop browser's own share sheet (Rich, 2026-11-15); the page gets a stand-in share sheet that takes the file and closes at once, as **Save Image** does on an iPhone.
 
@@ -725,25 +718,23 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Share** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **No** | The share sheet is handed one file, 01_chrome_flat_black-straight.jpg |
-| 3 | Read the message over the photo | A white message reads "Photo shared: 1074 × 1074 px in N s.", N the seconds the export took, to one decimal place |
+| 3 | Read the message over the photo | A white message reads "Photo shared: 1074 × 1074 px in N s.", N the seconds it took, to one decimal place |
 
-## MSG-23 "Exported the Together image in … s."
+## MSG-23 "Front and back downloaded: … px in … s." for a pair saved Together
 
-An information message after a pair's **Download** or **Share** with **Together** chosen: "Exported the Together image in {seconds} s."
+An information message after a pair's **Download** or **Share** with **Together** chosen: "Front and back downloaded: {width} × {height} px in {seconds} s." or "Front and back shared: …", the size the joined image's.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "the Together image", `#pairOutput`
-- Source: `js/app/pair.js` (`deliverPair`); `js/app/export.js` (`toastSaved`)
-- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s." (tests/catalog/wording.md): "Front and back downloaded: …" or "Front and back shared: …", the size the joined image's. The app differs today.
+- Changed: 1.10.0
+- Anchors: "Front and back", `pairSavedSize`, `#pairOutput`
+- Source: `js/app/pair.js` (`deliverPair`, `pairSavedSize`); `js/app/export.js` (`toastSaved`)
+- Ruling: R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-23.1 A pair's Together Download says so   [auto: phone]
-Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
-The approved words give the size as SIZE without saying how a pair writes it; the case checks the words before and after it.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -755,28 +746,26 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **No** | One file is saved: 14_front_portrait_raw_white-pair.jpg, 1583 × 1100 px |
-| 3 | Read the message over the photo | A white message begins "Front and back downloaded: ", gives the size, and ends "in N s.", N the seconds the export took, to one decimal place |
+| 3 | Read the message over the photo | A white message reads "Front and back downloaded: 1583 × 1100 px in N s.", N the seconds it took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-24 "Exported the front and back in … s."
+## MSG-24 "Front and back downloaded: … px and … px in … s." for a pair saved Separately
 
-An information message after a pair's **Download** or **Share** with **Separately** chosen: "Exported the front and back in {seconds} s."
+An information message after a pair's **Download** or **Share** with **Separately** chosen: "Front and back downloaded: {width} × {height} px and {width} × {height} px in {seconds} s." or "Front and back shared: …", the sizes the two files', the front's first.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "the front and back", `#pairOutput`
-- Source: `js/app/pair.js` (`deliverPair`); `js/app/export.js` (`toastSaved`)
-- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s." (tests/catalog/wording.md): "Front and back downloaded: …" or "Front and back shared: …". The app differs today.
+- Changed: 1.10.0
+- Anchors: "Front and back", `pairSavedSize`, `#pairOutput`
+- Source: `js/app/pair.js` (`deliverPair`, `pairSavedSize`); `js/app/export.js` (`toastSaved`)
+- Ruling: R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-24.1 A pair's Separately Download says so   [auto: phone]
-Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
-The approved words give the size as SIZE without saying how two files write it; the case checks the words before and after it.
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -788,29 +777,27 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Separately** | **Separately** is selected (a white fill) |
 | 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 3 | Tap **No** | Two files are saved: 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg |
-| 4 | Read the message over the photo | A white message begins "Front and back downloaded: ", gives the size, and ends "in N s.", N the seconds the export took, to one decimal place |
+| 3 | Tap **No** | Two files are saved: 14_front_portrait_raw_white-front.jpg, 748 × 1047 px, and 14_back_portrait_raw_white-back.jpg, 785 × 1100 px |
+| 4 | Read the message over the photo | A white message reads "Front and back downloaded: 748 × 1047 px and 785 × 1100 px in N s.", N the seconds it took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-25 "Saved the corner sheet in … s."
+## MSG-25 "Corner sheet downloaded: … px in … s."
 
-An information message after **Download corners** or **Share corners** with **1 sheet** chosen: "Saved the corner sheet in {seconds} s.", or after **Yes** on the Upscale question "Saved the corner sheet at 2000 px in {seconds} s."
+An information message after **Download corners** or **Share corners** with **1 sheet** chosen: "Corner sheet downloaded: {width} × {height} px in {seconds} s." or "Corner sheet shared: …", the size the sheet's; after **Yes** on the Upscale question, the upscaled sheet's.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "the corner sheet", `#btnCornerDownload`, `#btnCornerShare`, `CONFIG.cornerShots.upscaleTargetPx`
-- Source: `js/app/corner-shots.js` (`deliverCornerShots`); `js/app/export.js` (`toastSaved`)
-- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s.": here "Corner sheet downloaded: …" or "Corner sheet shared: …". The app differs today.
+- Changed: 1.10.0
+- Anchors: "Corner sheet", `savedCorners`, `#btnCornerDownload`, `#btnCornerShare`, `CONFIG.cornerShots.upscaleTargetPx`
+- Source: `js/app/corner-shots.js` (`deliverCornerShots`, `savedCorners`); `js/app/export.js` (`toastSaved`)
+- Ruling: R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-25.1 Download corners with 1 sheet says so   [auto: phone]
-Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
-The approved words give the size as SIZE without saying how a sheet writes it; the case checks the words before and after it.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -823,29 +810,27 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Corner shots** | The Corner shots sheet rises |
 | 2 | Tap **1 sheet** | **1 sheet** is selected (a white fill) |
-| 3 | Tap **Download corners** | One file is saved: 01_chrome_flat_black-corners.jpg; no question box asks first |
-| 4 | Read the message | A white message begins "Corner sheet downloaded: ", gives the size, and ends "in N s.", N the seconds it took, to one decimal place |
+| 3 | Tap **Download corners** | One file is saved: 01_chrome_flat_black-corners.jpg, 314 × 314 px; no question box asks first |
+| 4 | Read the message | A white message reads "Corner sheet downloaded: 314 × 314 px in N s.", N the seconds it took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-26 "Saved 4 corner shots in … s."
+## MSG-26 "4 corner photos downloaded: … px each in … s."
 
-An information message after **Download corners** or **Share corners** with **4 photos** chosen: "Saved 4 corner shots in {seconds} s.", or after **Yes** on the Upscale question "Saved 4 corner shots at 2000 px in {seconds} s."
+An information message after **Download corners** or **Share corners** with **4 photos** chosen: "4 corner photos downloaded: {size} × {size} px each in {seconds} s." or "4 corner photos shared: …", the size one photo's; after **Yes** on the Upscale question, the upscaled photo's.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: " corner shots", `#btnCornerDownload`, `#btnCornerShare`, `CONFIG.cornerShots.upscaleTargetPx`
-- Source: `js/app/corner-shots.js` (`deliverCornerShots`); `js/app/export.js` (`toastSaved`)
-- Ruling: R79. The finished message says what was saved and how, in the approved form "THING ACTION: SIZE in N s.": here "4 corner photos downloaded: …" or "4 corner photos shared: …". The app differs today.
+- Changed: 1.10.0
+- Anchors: "4 corner photos", " px each", `#btnCornerDownload`, `#btnCornerShare`, `CONFIG.cornerShots.upscaleTargetPx`
+- Source: `js/app/corner-shots.js` (`deliverCornerShots`, `savedCorners`); `js/app/export.js` (`toastSaved`)
+- Ruling: R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-26.1 Download corners with 4 photos says so   [auto: phone]
-Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
-The approved words give the size as SIZE without saying how four photos write it; the case checks the words before and after it.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -858,8 +843,8 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Corner shots** | The Corner shots sheet rises |
 | 2 | Tap **4 photos** | **4 photos** is selected (a white fill) |
-| 3 | Tap **Download corners** | Four files are saved: 01_chrome_flat_black-corner-tl.jpg, -corner-tr.jpg, -corner-bl.jpg and -corner-br.jpg |
-| 4 | Read the message | A white message begins "4 corner photos downloaded: ", gives the size, and ends "in N s.", N the seconds it took, to one decimal place |
+| 3 | Tap **Download corners** | Four files are saved, each 156 × 156 px: 01_chrome_flat_black-corner-tl.jpg, -corner-tr.jpg, -corner-bl.jpg and -corner-br.jpg |
+| 4 | Read the message | A white message reads "4 corner photos downloaded: 156 × 156 px each in N s.", N the seconds it took, to one decimal place |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -879,7 +864,6 @@ When the browser saves another format than the one chosen (Safari has no WebP en
 - Cases: 2
 
 ### MSG-27.1 A format the browser couldn't save is named   [auto: phone]
-The first sentence is the finished message (MSG-22) in ruling R79's words. Until R79 is built (BUG-290) it reads "Exported 1074 × 1074 px in N s.", which this case also accepts: its subject is the sentence added, and MSG-22.1 holds the words.
 Script only
 Stand-in: Chromium can save WebP, so the script makes it hand back a PNG when asked for WebP, as Safari does. On a real iPhone, where Safari can't save WebP, this is MSG-27.2.
 
@@ -903,7 +887,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-27.2 On an iPhone, a WebP export is saved as PNG and the message says so   [phone]
-The first sentence is the finished message (MSG-22) in ruling R79's words. Until R79 is built (BUG-290) it reads "Exported 1074 × 1074 px in N s.", which this case also accepts: its subject is the sentence added, and MSG-22.1 holds the words.
 
 Before you start:
 - Device and browser: an iPhone, Safari
@@ -923,20 +906,19 @@ On a fail, record: the row number, what you saw instead, a screenshot (press the
 
 ## MSG-28 "Tap Share now to open the share sheet."
 
-When the browser refuses to share because the tap was too long ago (a slow export), the finished-export message gains "Tap Share now to open the share sheet." and stays 6 seconds (white, or amber with MSG-27's sentence). Tapping **Share now** takes it down.
+When the browser refuses to share because the tap was too long ago (a slow export), the finished message says "ready" where it would say "shared", gains "Tap Share now to open the share sheet." ("Photo ready: {width} × {height} px in {seconds} s. Tap Share now to open the share sheet.") and stays 6 seconds (white, or amber with MSG-27's sentence). Tapping **Share now** takes it down.
 
 - Risk: low
 - Check: script; phone (a real refusal after a slow export, MSG-28.2)
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Tap Share now to open the share sheet.", `#btnShare`, `#btnCornerShare`
+- Changed: 1.10.0
+- Anchors: "Tap Share now to open the share sheet.", `pending: 'ready'`, `#btnShare`, `#btnCornerShare`
 - Source: `js/app/export.js` (`toastSaved`, `sharePending`); `js/app/corner-shots.js` (`shareCornerShots`)
-- Ruling: R78. A message may say "Tap" on a wide screen. The app already does this.
+- Ruling: R78. A message may say "Tap" on a wide screen. The app already does this. R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-28.1 A refused share says to tap Share now   [auto: phone]
-The words before "Tap Share now…" are the finished message's (MSG-22), which ruling R79 rewords; R79 doesn't say how the message reads while the share waits, so this case reads only the size, the time and the sentence added.
 Script only
 Stand-in: Safari refuses a share that starts too long after the tap, but an export of a sample photo is too quick for that, and no case uses a desktop browser's own share sheet; the script gives the page a stand-in share sheet that refuses the first share as Safari does and finishes every later one at once. On a real iPhone this is MSG-28.2.
 
@@ -950,14 +932,13 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | A white message gives the saved size, 1074 × 1074 px, and the seconds it took, then reads "Tap Share now to open the share sheet."; the red button reads **Share now** |
+| 2 | Tap **No** | A white message reads "Photo ready: 1074 × 1074 px in N s. Tap Share now to open the share sheet.", N the seconds the export took, to one decimal place; the red button reads **Share now** |
 | 3 | Tap **Share now** | The message goes at once, well before its 6 s are up |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-28.2 On an iPhone, a slow export says to tap Share now   [phone]
-The words before "Tap Share now…" are the finished message's (MSG-22), which ruling R79 rewords; R79 doesn't say how the message reads while the share waits, so this case reads only the size, the time and the sentence added.
 Waiting on find-out Q-09: which photo is slow enough to save at **Original** that Safari refuses the share. The photo below is filled in from Rich's answer; until then the case can't be run.
 
 Before you start:
@@ -971,29 +952,28 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo); no share sheet rises |
-| 2 | Wait for the line to finish | A white message over the photo gives the saved size (W × H px) and the seconds it took, then reads "Tap Share now to open the share sheet."; the red button reads **Share now** |
+| 2 | Wait for the line to finish | A white message over the photo reads "Photo ready: W × H px in N s. Tap Share now to open the share sheet.", W × H the saved size and N the seconds it took; the red button reads **Share now** |
 | 3 | Within 3 s of the message showing, tap **Share now** | The message goes at once; the share sheet rises |
 | 4 | Tap the **×** at the share sheet's top right | The share sheet closes; no message is over the photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screen recording (Control Center, the Screen Recording button).
 
-## MSG-29 "Copied to clipboard (PNG)."
+## MSG-29 "Photo copied (PNG)."
 
-An information message after **Copy** puts a single photo, or a pair's Together image, on the clipboard: "Copied to clipboard (PNG)."
+An information message after **Copy** puts a picture on the clipboard: "Photo copied (PNG)." for a single photo, "Front and back copied (PNG)." for a pair's Together image.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Copied to clipboard (PNG).", `#btnCopy`
+- Changed: 1.10.0
+- Anchors: "Photo copied (PNG).", "Front and back copied (PNG).", `#btnCopy`
 - Source: `js/app/export.js` (`runExport`); `js/app/pair.js` (`runPairExport`)
-- Ruling: R79. Copy reads "Photo copied (PNG).", and for a pair's joined image "Front and back copied (PNG)." (approved wording, tests/catalog/wording.md). The app differs today.
+- Ruling: R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-29.1 Copy says what it put on the clipboard   [auto: phone]
-Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -1010,7 +990,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-29.2 A pair's Copy says it copied the front and back   [auto: phone]
-Written to ruling R79, in the wording Rich approved; it fails until that is built (BUG-290).
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -1024,22 +1003,21 @@ Before you start:
 | 1 | Tap **Original** | **Original** is selected (a white fill): at the photos' own resolution no question box asks first |
 | 2 | Tap **Copy** | A white message reads "Front and back copied (PNG)." |
 
-## MSG-30 "Copy failed: …"
+## MSG-30 "Copy failed."
 
-An error message, for 6 seconds, when anything fails during **Copy**: "Copy failed: " followed by the error's own text.
+An error message, for 6 seconds, when **Copy** fails for a reason the app can't explain: "Copy failed." The error's own text goes to the console. A failure whose fix the app knows shows its advice instead: the logo's image not loaded (MSG-94), or the photo not loaded after a pair's export (MSG-47).
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Copy failed: ", `#btnCopy`
+- Changed: 1.10.0
+- Anchors: "Copy failed.", `#btnCopy`
 - Source: `js/app/export.js` (`runExport`); `js/app/pair.js` (`runPairExport`)
-- Ruling: R24. The message reads "Copy failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Ruling: R24. The message reads "Copy failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-30.1 A failed Copy says "Copy failed."   [auto: phone]
-Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
 Script only
 Stand-in: a person can't make the browser refuse the clipboard to the page on purpose, so the script makes every clipboard write fail with "Stand-in failure 4417", as a browser that blocks the page does.
 
@@ -1059,22 +1037,21 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-31 "Export failed: …"
+## MSG-31 "Export failed."
 
-An error message, for 6 seconds, when **Download** or **Share** fails, or when working out a pair's Upscale question fails: "Export failed: " followed by the error's text. The app's own texts that can follow are "Encoding failed (image too large for this browser?)", "The overlay image isn’t loaded. Open the Overlay step and add it again.", MSG-47's photo-not-loaded text, and a corner fault of a pair's waiting side, with the engine's dash kept.
+An error message, for 6 seconds, when **Download** or **Share** fails for a reason the app can't explain, or when working out a pair's Upscale question fails: "Export failed." The error's own text goes to the console; the app's own are "Encoding failed (image too large for this browser?)" and a corner fault of a pair's waiting side. A failure whose fix the app knows shows its advice instead: the logo's image not loaded (MSG-94), or the photo not loaded after a pair's export (MSG-47).
 
 - Risk: medium
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Export failed: ", "Encoding failed (image too large for this browser?)", "The overlay image isn’t loaded. Open the Overlay step and add it again."
-- Source: `js/app/export.js` (`runExport`, `toBlob`, `exportGeometry`, `renderWarped`); `js/app/overlay.js` (`compositeOverlay`); `js/app/pair.js` (`exportPair`, `runPairExport`, `renderSideInto`)
-- Ruling: R24. The message reads "Export failed.", with no advice, and the error's detail always goes to the console, which today misses a failed pair Upscale question (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Changed: 1.10.0
+- Anchors: "Export failed.", "Encoding failed (image too large for this browser?)"
+- Source: `js/app/export.js` (`runExport`, `failureText`, `toBlob`, `exportGeometry`); `js/app/pair.js` (`exportPair`, `runPairExport`, `renderSideInto`)
+- Ruling: R24. The message reads "Export failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0. R49. The six short lines stand for failures the app can't explain. A message whose fix the app knows keeps its advice ("The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back."). Rich, 2026-11-18: an export or corner-shots save that fails because the logo's image isn't loaded is one of these: it reads "The logo isn’t loaded. Open the Overlay step and add it again.", in place of the short line. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-31.1 A failed Download says "Export failed."   [auto: phone]
-Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
 Script only
 Stand-in: no control makes the browser fail to encode, so the script makes it hand back no file, as a canvas too big for it does.
 
@@ -1094,22 +1071,21 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-32 "Share failed: …"
+## MSG-32 "Share failed."
 
-An error message, for 6 seconds, when the share sheet fails for any reason other than the user cancelling it or a refusal that **Share now** can finish: "Share failed: " followed by the error's text. It covers the main export, a pair, corner shots and **Share now**; nothing is written to the console.
+An error message, for 6 seconds, when the share sheet fails for any reason other than the user cancelling it or a refusal that **Share now** can finish: "Share failed." The error's own text goes to the console. It covers the main export, a pair, corner shots and **Share now**.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Share failed: ", `#btnShare`
+- Changed: 1.10.0
+- Anchors: "Share failed.", `#btnShare`
 - Source: `js/app/export.js` (`shareFiles`)
-- Ruling: R24. The message reads "Share failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Ruling: R24. The message reads "Share failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-32.1 A failed share says "Share failed."   [auto: phone]
-Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
 Script only
 Stand-in: no case uses a desktop browser's own share sheet, and a real one can't be made to fail on purpose, so the script gives the page a stand-in share sheet that fails with "The stand-in share sheet failed".
 
@@ -1634,16 +1610,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-47 The photo isn't loaded after a pair's export
 
-A warning, for 8 seconds, when the open side's photo can't be decoded again after a pair's export, after two tries: "The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back."
+A warning, for 8 seconds, when the open side's photo can't be decoded again after a pair's export, after two tries: "The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back." A save tried while the photo is still not loaded shows the same words as a red error message, in place of "Export failed." (PAIR-36.1).
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "The photo isn’t loaded after the last export. ", "Tap Front or Back to switch sides, then switch back."
-- Source: `js/app/pair.js` (`runPairExport`, `reloadOpenPhoto`); `js/app/export.js` (`renderWarped`)
-- Ruling: R78. A message may say "Tap" on a wide screen. The app already does this. R49. A message whose fix the app knows keeps its advice. The app already does this.
+- Source: `js/app/pair.js` (`runPairExport`, `reloadOpenPhoto`); `js/app/export.js` (`renderWarped`, `adviceError`, `failureText`)
+- Ruling: R78. A message may say "Tap" on a wide screen. The app already does this. R49. The six short lines stand for failures the app can't explain. A message whose fix the app knows keeps its advice ("The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back."). Rich, 2026-11-18: an export or corner-shots save that fails because the logo's image isn't loaded is one of these: it reads "The logo isn’t loaded. Open the Overlay step and add it again.", in place of the short line. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-47.1 The photo isn't loaded after a pair's export   [auto: phone]
@@ -1731,22 +1707,21 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-50 "Corner shots failed: …"
+## MSG-50 "Corner shots failed."
 
-An error message, for 6 seconds, when anything fails while corner shots are rendered or saved: "Corner shots failed: " followed by the error's own text.
+An error message, for 6 seconds, when corner shots can't be rendered or saved for a reason the app can't explain: "Corner shots failed." The error's own text goes to the console. A failure whose fix the app knows shows its advice instead: the photo not loaded after a pair's export (MSG-47).
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Corner shots failed: "
+- Changed: 1.10.0
+- Anchors: "Corner shots failed."
 - Source: `js/app/corner-shots.js` (`renderAndSave`)
-- Ruling: R24. The message reads "Corner shots failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Ruling: R24. The message reads "Corner shots failed.", with no advice, and the error's detail always goes to the console (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-50.1 Failed corner shots say "Corner shots failed."   [auto: phone]
-Written to ruling R24, with Rich's approved wording; it fails until that is built (BUG-051).
 Script only
 Stand-in: no control makes the browser fail to encode, so the script makes it hand back no file, as a canvas too big for it does.
 
@@ -2968,20 +2943,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-88 Export's tips
 
-**Tips** in "Export options" opens three paragraphs: "Share’s Save Image puts the photo in Photos.", what **Original** does, and "Next card shows once these edits are exported." Today a fourth says what an edits file is; ruling R61 takes it away, since the hint under **Save edits** and **Load edits** says it (MSG-89).
+**Tips** in "Export options" opens three paragraphs: "Share’s Save Image puts the photo in Photos.", what **Original** does, and "Next card shows once these edits are exported."
 
 - Risk: low
 - Check: script
-- Layout: both. A wide screen lists the tips always open under "Tips" and leaves out the first (and the fourth, while there is one).
+- Layout: both. A wide screen lists the tips always open under "Tips" and leaves out the first.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#exportTips`, "Share’s Save Image puts the photo in Photos.", "Next card shows once these edits are exported."
 - Source: `js/app/export-controls.js` (`buildExportControls`); `js/app/parts/sheet.js` (`buildTipsRow`, `buildTipHint`)
-- Ruling: R62. The Next card tip need not mention the wait while **Share now** is pending. The app already does this. R61. Export's last tip, which nearly repeats the hint under **Save edits** and **Load edits**, goes; the hint stays. The app differs today.
+- Ruling: R62. The Next card tip need not mention the wait while **Share now** is pending. The app already does this. R61. Export's last tip, which nearly repeats the hint under **Save edits** and **Load edits**, goes; the hint stays. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-88.1 Export's tips   [auto: phone]
-Written to ruling R61; it fails until that is built (BUG-285).
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -3009,7 +2983,7 @@ The Corner shots sheet says "Close-ups of the card’s four corners, at the phot
 - Changed: none
 - Anchors: "Close-ups of the card’s four corners", "A small JSON file. Re-open the same photo, load it, and the export is identical.", `#editsPairHint`
 - Source: `js/app/corner-shots.js` (`buildCornerShotsControls`); `js/app/export-controls.js` (`buildEditsGroup`); `js/app/pair.js` (`syncPair`)
-- Ruling: R61. The hint under **Save edits** and **Load edits** stays; Export's last tip, which nearly repeats it, goes. The app differs today.
+- Ruling: R61. The hint under **Save edits** and **Load edits** stays; Export's last tip, which nearly repeats it, goes. The app does this since 1.10.0.
 - Cases: 3
 
 ### MSG-89.1 The Corner shots sheet's hint   [auto: phone]
@@ -3283,6 +3257,41 @@ The named actions:
 | --- | --- | --- |
 | 1 | Load the edits file 01_chrome_flat_black-turned-edits.json | A white message reads "Edits loaded.", and no other message comes after it |
 | 2 | Look at the photo | It is turned a quarter clockwise: the edits were applied |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+## MSG-94 "The logo isn’t loaded."
+
+An error message, for 6 seconds, when **Download**, **Share** or **Copy** can't draw the photo's logo because its image isn't loaded: "The logo isn’t loaded. Open the Overlay step and add it again." It takes the place of "Export failed." or "Copy failed." (MSG-31, MSG-30), for a single photo and for a pair.
+
+- Risk: low
+- Check: script
+- Layout: both.
+- Added: 1.10.0
+- Changed: none
+- Anchors: "The logo isn’t loaded. Open the Overlay step and add it again.", `adviceError`, `failureText`
+- Source: `js/app/overlay.js` (`compositeOverlay`); `js/app/export.js` (`adviceError`, `failureText`, `runExport`); `js/app/pair.js` (`runPairExport`)
+- Ruling: R49. The six short lines stand for failures the app can't explain. A message whose fix the app knows keeps its advice ("The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back."). Rich, 2026-11-18: an export or corner-shots save that fails because the logo's image isn't loaded is one of these: it reads "The logo isn’t loaded. Open the Overlay step and add it again.", in place of the short line. The app does this since 1.10.0.
+- Cases: 1
+
+### MSG-94.1 An export whose logo isn't loaded says how to get it back   [auto: phone]
+Script only
+Stand-in: no control takes a stored logo away and leaves it on the photo, so the script deletes the logo kept on the device before **Resume**, as a browser that clears part of a site's storage would.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site at the start (a private window, or the site's data cleared). The app keeps the open photo on the device, so the reload offers to resume it
+- Photo: 01_chrome_flat_black.JPEG from samples/; logo: icon.svg from the build's icons/ folder
+- Starting screen: the photo opened, **Overlay** tapped in the step tabs, the logo added with **Add logo**, two seconds' wait so it is kept on the device, then the page reloaded: the start screen offers **Resume**; then the logo kept on the device deleted
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Resume** | The photo opens on the Overlay step |
+| 2 | Tap **Export** in the step tabs (the six tabs along the bottom) | The Export step's controls show |
+| 3 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 4 | Tap **No** | No file is saved; one red message reads "The logo isn’t loaded. Open the Overlay step and add it again." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

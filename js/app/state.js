@@ -432,7 +432,8 @@
         clearRunMessage(detection, run);
         return;
       }
-      toast('Detection failed: ' + error.message, 'error');
+      // A short fixed line; the error's own words went to the console above (ruling R24).
+      toast('Detection failed.', 'error');
     }
     detection.pending = null;
     detection.isSearching = false;

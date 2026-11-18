@@ -504,12 +504,13 @@
   /* ---------- export compositing ---------- */
 
   // Draws the overlay onto the finished output canvas, before encoding. drawImage keeps the
-  // logo's own alpha; globalAlpha applies the opacity on top.
+  // logo's own alpha; globalAlpha applies the opacity on top. A logo whose image isn't loaded
+  // stops the save with advice the failed save shows as it is (CF.adviceError, ruling R49).
   function compositeOverlay(ctx, state, outputWidth, outputHeight) {
     if (!state.overlay) return;
     const image = images.get(state.overlay.id);
     if (!image) {
-      throw new Error('The overlay image isn’t loaded. Open the Overlay step and add it again.');
+      throw CF.adviceError('The logo isn’t loaded. Open the Overlay step and add it again.');
     }
     const placement = effective(state.overlay, outputWidth, outputHeight);
     const rect = CardEngine.overlayRect(placement, outputWidth, outputHeight);

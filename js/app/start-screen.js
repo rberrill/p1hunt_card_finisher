@@ -53,6 +53,9 @@
     byId('btnOpenEmpty').classList.add('is-main');
   }
 
+  // Resume: brings back the stored photo with its edits, and a pair's other side. A failure
+  // the app can't explain shows a short fixed line, and its own words go to the console
+  // (ruling R24).
   async function resumeSession() {
     hideResume();
     try {
@@ -76,7 +79,7 @@
       CF.finishResume();
     } catch (error) {
       console.error(error);
-      toast('Couldn’t resume: ' + error.message, 'error', 6000);
+      toast('Couldn’t resume.', 'error', 6000);
     }
   }
 

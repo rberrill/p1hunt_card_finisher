@@ -69,6 +69,22 @@
   const PHOTO_RELEASED_MESSAGE = 'The photo isn’t loaded after the last export. '
     + 'Tap Front or Back to switch sides, then switch back.';
 
+  // An error whose fix the app knows (ruling R49): its message is advice a person can act on,
+  // and a failed save shows it as it is (failureText). Only the app makes one, by calling
+  // this, so nothing is ever decided from a browser error's own words.
+  function adviceError(message) {
+    const error = new Error(message);
+    error.isAdvice = true;
+    return error;
+  }
+
+  // The red message for a save that failed with `error`: the error's own advice when the app
+  // threw it as an adviceError, in place of `shortLine`; else `shortLine`, the fixed line for
+  // a failure the app can't explain (ruling R24), whose own words go to the console.
+  function failureText(error, shortLine) {
+    return error && error.isAdvice === true ? error.message : shortLine;
+  }
+
   function toBlob(canvas, type, quality) {
     return new Promise((resolve, reject) => canvas.toBlob(blob => {
       if (blob) resolve(blob);
@@ -183,7 +199,7 @@
     const isTransparent = state.export.fill === 'transparent';
     const isJpegOnTransparent = state.export.format === 'jpeg' && isTransparent;
     const photo = options.photo || app.img.el;
-    if (!photo) throw new Error(PHOTO_RELEASED_MESSAGE);
+    if (!photo) throw adviceError(PHOTO_RELEASED_MESSAGE);
     const region = makeCanvas(1, 1);
     const target = options.target || null;
     const render = {
@@ -397,13 +413,23 @@
     return ` ${asked} isn’t supported by this browser, so it was saved as ${savedAs}.`;
   }
 
-  // Shows how a save went: `done` ("Exported … in N s."), with fallbackNote's sentence when the
-  // browser saved another format than the requested `type`, as a longer warning. The note used
-  // to be its own toast, which `done` replaced at once. outcome: 'saved' (Download) or
-  // shareFiles' outcome; 'pending' adds how to finish, 'cancelled' and 'failed' show nothing
-  // (shareFiles already said why).
-  function toastSaved(done, files, type, outcome) {
-    if (!['saved', 'shared', 'pending'].includes(outcome)) return;
+  // What a finished save did, as the finished message says it, by toastSaved's outcome: "ready"
+  // while a refused share waits for Share now (ruling R79).
+  const SAVED_ACTIONS = { saved: 'downloaded', shared: 'shared', pending: 'ready' };
+
+  // Shows how a save went, in the approved form "THING ACTION: SIZE in N s." (ruling R79,
+  // tests/catalog/wording.md), for example "Photo downloaded: 1074 × 1074 px in 0.4 s.".
+  // saved: { thing, size, seconds }: what was saved ('Photo', 'Front and back', 'Corner sheet'
+  // or '4 corner photos'), its size as the message writes it ("1074 × 1074 px") and the
+  // seconds it took. outcome: 'saved' (Download) or shareFiles' outcome, which gives the ACTION
+  // (SAVED_ACTIONS); 'pending' also adds how to finish, 'cancelled' and 'failed' show nothing
+  // (shareFiles already said why). fallbackNote's sentence follows when the browser saved
+  // another format than the requested `type`, as a longer warning. The note used to be its own
+  // toast, which the finished message replaced at once.
+  function toastSaved(saved, files, type, outcome) {
+    const action = SAVED_ACTIONS[outcome];
+    if (!action) return;
+    const done = `${saved.thing} ${action}: ${saved.size} in ${saved.seconds} s.`;
     const note = fallbackNote(files[0], type);
     const finish = outcome === 'pending' ? ' Tap Share now to open the share sheet.' : '';
     const text = done + note + finish;
@@ -417,18 +443,18 @@
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
     const name = `${exportBaseName(state)}${CONFIG.export.suffix}.${extension}`;
     const output = exportGeometry(state, isUpscaled).output;
-    const done = `Exported ${output.width} × ${output.height} px in ${seconds} s.`;
+    const saved = { thing: 'Photo', size: `${output.width} × ${output.height} px`, seconds };
     const file = new File([blob], name, { type: blob.type });
     if (kind === 'download') {
       // Saved before the download, which can leave the page on iPhone.
       markExported(state);
       CF.Session.flush();
       Exporter.download(blob, name);
-      toastSaved(done, [file], type, 'saved');
+      toastSaved(saved, [file], type, 'saved');
       return;
     }
     const outcome = await shareExport([file], () => markExported(state));
-    toastSaved(done, [file], type, outcome);
+    toastSaved(saved, [file], type, outcome);
   }
 
   // Records that these edits were exported (downloaded, copied or shared), which shows Next
@@ -502,7 +528,9 @@
   }
 
   // Renders, encodes and delivers one export of `state` (a copy of the edits). kind as for
-  // doExport; isUpscaled as for renderFull.
+  // doExport; isUpscaled as for renderFull. A failure shows a short fixed line, and its own
+  // words go to the console (ruling R24); one whose fix the app knows shows its advice instead
+  // (failureText).
   async function runExport(kind, state, isUpscaled) {
     const type = kind === 'copy' ? 'image/png' : MIME_TYPES[state.export.format];
     const startTime = performance.now();
@@ -512,20 +540,22 @@
         if (kind === 'copy') {
           await Exporter.copy(encoding);
           markExported(state);
-          toast('Copied to clipboard (PNG).');
+          toast('Photo copied (PNG).');
         } else {
           await deliverExport(kind, await encoding, state, type, startTime, isUpscaled);
         }
       });
     } catch (error) {
       console.error(error);
-      toast((kind === 'copy' ? 'Copy failed: ' : 'Export failed: ') + error.message, 'error', 6000);
+      const shortLine = kind === 'copy' ? 'Copy failed.' : 'Export failed.';
+      toast(failureText(error, shortLine), 'error', 6000);
     }
   }
 
   // Opens the share sheet for finished files. Returns 'shared', 'cancelled', 'pending' or
   // 'failed'. 'pending': the browser refused because the tap was too long ago (a slow export)
-  // and canWait is true, so the caller keeps the files for a fresh tap ("Share now").
+  // and canWait is true, so the caller keeps the files for a fresh tap ("Share now"). 'failed'
+  // has shown "Share failed." and written the error to the console (ruling R24).
   async function shareFiles(files, canWait) {
     try {
       await navigator.share({ files });
@@ -533,7 +563,8 @@
     } catch (error) {
       if (error.name === 'AbortError') return 'cancelled';
       if (error.name === 'NotAllowedError' && canWait) return 'pending';
-      toast('Share failed: ' + error.message, 'error', 6000);
+      console.error(error);
+      toast('Share failed.', 'error', 6000);
       return 'failed';
     }
   }
@@ -686,6 +717,8 @@
     Exporter,
     MIME_TYPES,
     PHOTO_RELEASED_MESSAGE,
+    adviceError,
+    failureText,
     renderFull,
     exportGeometry,
     sharpenUpscaled,

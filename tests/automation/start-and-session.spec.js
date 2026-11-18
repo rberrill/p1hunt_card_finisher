@@ -1225,7 +1225,6 @@ test('STA-12.1 Resume that fails names no browser error [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-051');
   const hand = await startWithSavedPhoto(page, testInfo);
   // The developer tools' Clear site data, through the same browser command they use.
   const devTools = await page.context().newCDPSession(page);

@@ -617,7 +617,8 @@
     try {
       offer = pairUpscaleOffer(sides, kind);
     } catch (error) {
-      toast('Export failed: ' + error.message, 'error', 6000);
+      console.error(error);
+      toast('Export failed.', 'error', 6000);
       return;
     }
     if (!offer) {
@@ -668,8 +669,26 @@
     return `The ${side} is ${size(side)} px at the photo’s resolution.`;
   }
 
+  // The size of what the pair's export saves, as the finished message writes it (ruling R79):
+  // the joined image's ("1583 × 1100 px") or, for two files, both sizes, front first
+  // ("748 × 1047 px and 771 × 1080 px"). isJoined: the Together image, not two files;
+  // isUpscaled as for runPairExport.
+  function pairSavedSize(sides, isJoined, isUpscaled) {
+    if (isJoined) {
+      const layout = togetherLayout(sides, isUpscaled ? sides.front.state.export.longEdge : 0);
+      return `${layout.width} × ${layout.height} px`;
+    }
+    const sizeOf = side => {
+      const output = CF.exportGeometry(sides[side].state, isUpscaled).output;
+      return `${output.width} × ${output.height} px`;
+    };
+    return `${sizeOf('front')} and ${sizeOf('back')}`;
+  }
+
   // Renders, encodes and delivers the pair's export of `sides` (copies of both sides' edits).
-  // kind as for exportPair; isUpscaled: the saved file enlarged to the chosen Size.
+  // kind as for exportPair; isUpscaled: the saved file enlarged to the chosen Size. A failure
+  // shows a short fixed line, and its own words go to the console (ruling R24); one whose fix
+  // the app knows shows its advice instead (CF.failureText).
   async function runPairExport(kind, sides, isUpscaled) {
     const key = pairKey();
     const type = kind === 'copy' ? 'image/png' : CF.MIME_TYPES[app.state.export.format];
@@ -679,17 +698,19 @@
         if (kind === 'copy') {
           await CF.Exporter.copy(encodeTogether(sides, type, onProgress, isUpscaled));
           markPairExported(key);
-          toast('Copied to clipboard (PNG).');
+          toast('Front and back copied (PNG).');
           return;
         }
-        const encode = isTogether() ? togetherFile : encodeSeparately;
+        const isJoined = isTogether();
+        const encode = isJoined ? togetherFile : encodeSeparately;
         const files = await encode(sides, type, onProgress, isUpscaled);
-        await deliverPair(kind, files, key, startTime, type);
+        const size = pairSavedSize(sides, isJoined, isUpscaled);
+        await deliverPair(kind, files, key, startTime, type, size);
       });
     } catch (error) {
       console.error(error);
-      const what = kind === 'copy' ? 'Copy failed: ' : 'Export failed: ';
-      toast(what + error.message, 'error', 6000);
+      const shortLine = kind === 'copy' ? 'Copy failed.' : 'Export failed.';
+      toast(CF.failureText(error, shortLine), 'error', 6000);
     }
     // The export's canvas is freed by now, so a reload that failed under memory pressure gets
     // one more try; if the photo is still missing, say how to get it back.
@@ -700,11 +721,11 @@
   }
 
   // Delivers the pair's files by Download (one after another) or one share sheet. type: the
-  // requested MIME type, for CF.toastSaved's note when the browser saved another.
-  async function deliverPair(kind, files, key, startTime, type) {
+  // requested MIME type, for CF.toastSaved's note when the browser saved another. size: what
+  // was saved, as the finished message writes it (pairSavedSize).
+  async function deliverPair(kind, files, key, startTime, type, size) {
     const seconds = ((performance.now() - startTime) / 1000).toFixed(1);
-    const what = files.length === 1 ? 'the Together image' : 'the front and back';
-    const done = `Exported ${what} in ${seconds} s.`;
+    const saved = { thing: 'Front and back', size, seconds };
     if (kind === 'download') {
       // Saved first, since a download can leave the page on iPhone.
       markPairExported(key);
@@ -713,11 +734,11 @@
         if (i) await new Promise(resolve => setTimeout(resolve, PAIR_DOWNLOAD_GAP_MS));
         CF.Exporter.download(files[i], files[i].name);
       }
-      CF.toastSaved(done, files, type, 'saved');
+      CF.toastSaved(saved, files, type, 'saved');
       return;
     }
     const outcome = await CF.shareExport(files, () => markPairExported(key));
-    CF.toastSaved(done, files, type, outcome);
+    CF.toastSaved(saved, files, type, outcome);
   }
 
   /* ---------- the Together preview (Export) ---------- */

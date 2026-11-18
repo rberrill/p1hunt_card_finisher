@@ -22,9 +22,8 @@ const {
   root,
   stepNow,
   questionCard,
-  finishedMessage,
+  wholeFinishedMessage,
   copiedMessage,
-  ruledCopiedMessage,
 } = require('./support/app.js');
 const {
   PORTRAIT_PAIR,
@@ -2020,8 +2019,8 @@ test('PAIR-30.1 Download saves one file for Together and two, a moment apart, fo
   await check('one file arrives; a message begins "Front and back downloaded: " and ends "in N '
     + 's."', async () => {
     expect(together).toHaveLength(1);
-    // Today's words or ruling R79's: MSG-23.1 holds the words.
-    await expect(shownToast(page)).toHaveText(finishedMessage('together'));
+    await expect(shownToast(page))
+      .toHaveText(wholeFinishedMessage('together', 'downloaded'));
   });
   await chooseOutput(page, hand, 'separately');
   await check('Separately is selected', async () => {
@@ -2035,8 +2034,8 @@ test('PAIR-30.1 Download saves one file for Together and two, a moment apart, fo
       expect(separately).toHaveLength(2);
       expect(starts).toHaveLength(2);
       expect(starts[1] - starts[0]).toBeGreaterThanOrEqual(DOWNLOAD_GAP_MIN_MS);
-      // Today's words or ruling R79's: MSG-24.1 holds the words.
-      await expect(shownToast(page)).toHaveText(finishedMessage('separately'));
+      await expect(shownToast(page))
+        .toHaveText(wholeFinishedMessage('separately', 'downloaded'));
     });
 });
 
@@ -2080,7 +2079,7 @@ test('PAIR-33.1 Copy puts the Together image on the clipboard, and hides for Sep
   await chooseSize(page, hand, '0');
   const [joined] = await readoutSizes(page);
   await hand.tap(page.locator('#btnCopy'));
-  await check(`a message reads "${ruledCopiedMessage(true)}"`, async () => {
+  await check(`a message reads "${copiedMessage(true)}"`, async () => {
     await expect(shownToast(page)).toHaveText(copiedMessage(true));
   });
   await check('a PNG image the size the size line gives', async () => {
@@ -2216,11 +2215,11 @@ test('PAIR-36.1 When the open photo can\'t be read again, saving waits for a sid
   await waitForExportEnd(page);
   await page.waitForTimeout(NO_DOWNLOAD_WAIT_MS);
   const messages = await toastsSoFar(page);
-  await check('no file: a red message begins "Export failed"', async () => {
+  await check('no file: a red message reads "The photo isn’t loaded after the last export. Tap '
+    + 'Front or Back to switch sides, then switch back."', async () => {
     expect(arrived).toEqual([]);
     const failures = messages.filter(message => message.kind === 'error');
-    expect(failures).toHaveLength(1);
-    expect(failures[0].text).toMatch(/^Export failed/);
+    expect(failures.map(message => message.text)).toEqual([PHOTO_RELEASED_MESSAGE]);
   });
   await allowReads(page);
   await switchTo(page, hand, 'front');

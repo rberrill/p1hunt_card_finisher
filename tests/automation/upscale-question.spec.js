@@ -11,7 +11,6 @@ const {
   goToStep,
   finishedMessage,
   copiedMessage,
-  ruledCopiedMessage,
 } = require('./support/app.js');
 const {
   waitForShares,
@@ -162,11 +161,10 @@ test('UPS-02.1 Yes saves the photo at the chosen size [phone] [webkit]', async (
   await askAndCheck(page, hand, check, downloadButton(page), FIRST_ASK, ASK_2000);
   const [saved] = await answerAndCollect(page, hand, 'Yes');
   await check('the question box closes and a 2000 × 2000 px file is saved; a message begins '
-    + '"Exported 2000 × 2000 px in"', async () => {
+    + '"Photo downloaded: 2000 × 2000 px in"', async () => {
     expect(await isQuestionUp(page)).toBe(false);
     await expectSize(page, saved.file, SIZE_PX);
-    // Today's words or ruling R79's: MSG-22.1 holds the words.
-    const finished = finishedMessage('photo', '2000 × 2000 px');
+    const finished = finishedMessage('photo', 'downloaded', '2000 × 2000 px');
     await expect.poll(() => toastMessage(page)).toMatch(finished);
   });
 });
@@ -274,11 +272,10 @@ test('UPS-03.1 No saves the photo at its own size [phone]', async ({ page, check
   await askAndCheck(page, hand, check, downloadButton(page), FIRST_ASK, ASK_2000);
   const [saved] = await answerAndCollect(page, hand, 'No');
   await check(`the question box closes and a ${CROP_PX} × ${CROP_PX} px file is saved; a `
-    + `message begins "Exported ${CROP_PX} × ${CROP_PX} px in"`, async () => {
+    + `message begins "Photo downloaded: ${CROP_PX} × ${CROP_PX} px in"`, async () => {
     expect(await isQuestionUp(page)).toBe(false);
     await expectSize(page, saved.file, CROP_PX);
-    // Today's words or ruling R79's: MSG-22.1 holds the words.
-    const finished = finishedMessage('photo', '1074 × 1074 px');
+    const finished = finishedMessage('photo', 'downloaded', '1074 × 1074 px');
     await expect.poll(() => toastMessage(page)).toMatch(finished);
   });
 });
@@ -489,10 +486,10 @@ test('UPS-07.1 For the sheet it names the sheet\'s size, and Yes saves a 2000 px
     `${FIRST_ASK} and reads "${SHEET_TEXT}"`, ASK_2000, SHEET_TEXT);
   const [saved] = await answerAndCollect(page, hand, 'Yes');
   await check('one file of exactly 2000 × 2000 px is saved; a message begins "Corner sheet '
-    + 'sheet at 2000 px in"', async () => {
+    + 'downloaded: 2000 × 2000 px in"', async () => {
     await expectSize(page, saved.file, SIZE_PX);
     await expect.poll(() => toastMessage(page))
-      .toMatch(finishedMessage('cornerSheet'));
+      .toMatch(finishedMessage('cornerSheet', 'downloaded', '2000 × 2000 px'));
   });
 });
 
@@ -657,10 +654,9 @@ test('UPS-10.2 Copy after Yes puts the enlarged photo on the clipboard [phone]',
   const hand = await startOnExport(page, testInfo);
   await askAndCheck(page, hand, check, copyButton(page), FIRST_ASK, ASK_2000);
   await hand.tap(questionButton(page, 'Yes'));
-  await check(`a message reads "${ruledCopiedMessage()}"; the clipboard holds a PNG of `
+  await check(`a message reads "${copiedMessage()}"; the clipboard holds a PNG of `
     + '2000 × 2000 px', async () => {
-    // Today's words or ruling R79's: MSG-29.1 holds the words.
-    await expect.poll(() => toastMessage(page)).toMatch(copiedMessage());
+    await expect.poll(() => toastMessage(page)).toBe(copiedMessage());
     const copied = await readClipboardImage(page);
     expect(copied.types).toContain('image/png');
     expect([copied.width, copied.height]).toEqual([SIZE_PX, SIZE_PX]);

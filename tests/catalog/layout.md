@@ -507,7 +507,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, the knob's size, a screenshot.
 
 ### LAY-10.5 Under reduced motion the export's progress line still moves   [auto: phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only that the save finished, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open
 - Build: the build under test, opened with `?export.bandPx=65536` (index.html?export.bandPx=65536), which makes the app save the picture in small bands of rows, so a save takes about a second

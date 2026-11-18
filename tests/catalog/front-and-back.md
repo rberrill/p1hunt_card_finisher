@@ -1389,13 +1389,12 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Check: script, saved file
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnDownload`, "the Together image", "the front and back"
+- Changed: 1.10.0
+- Anchors: `#btnDownload`, "Front and back"
 - Source: `js/app/pair.js` (`deliverPair`)
 - Cases: 1
 
 ### PAIR-30.1 Download saves one file for Together and two, a moment apart, for Separately   [auto: phone, webkit]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported the Together image in N s." and "Exported the front and back in N s."), which this case also accepts: it reads only that each save finished, and MSG-23.1 and MSG-24.1 holds the words.
 Script only
 Stand-in: nothing is replaced; the two files are a quarter of a second apart, too close to time by eye, so the script notes when each download starts. On a real iPhone, PAIR-31.1.
 
@@ -1429,7 +1428,6 @@ On an iPhone, both of Separately's downloads arrive.
 - Cases: 1
 
 ### PAIR-31.1 Both of Separately's downloads arrive on an iPhone   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported the front and back in N s."), which this case also accepts: it reads only that the save finished, and MSG-24.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -1466,7 +1464,6 @@ On a fail, record: the row number, what you saw instead, how many times Safari a
 - Cases: 2
 
 ### PAIR-32.1 Share opens one share sheet with the pair's file or files   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported the Together image in N s." and "Exported the front and back in N s."), which this case also accepts: it reads only that each share finished, and MSG-23.1 and MSG-24.1 holds the words.
 Waiting on find-out Q-08: what the top of the iPhone's share sheet shows for shared pictures (a small picture of each, their names). Rows 1 and 4 gain those words once Rich has seen it on the phone.
 
 Before you start:
@@ -1519,13 +1516,12 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Check: script
 - Layout: both. Copy shows only on a secure page whose browser can copy images.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnCopy`, "Copied to clipboard (PNG)."
+- Changed: 1.10.0
+- Anchors: `#btnCopy`, "Front and back copied (PNG)."
 - Source: `js/app/pair.js` (`runPairExport`, `encodeTogether`), `js/app/export.js` (`doExport`), `js/app/export-controls.js` (`syncSaveButtons`)
 - Cases: 1
 
 ### PAIR-33.1 Copy puts the Together image on the clipboard, and hides for Separately   [auto: phone]
-The message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.2 holds the words.
 Before you start:
 - Device and browser: a phone-width window, in a browser that can copy images on a secure page
 - Build: the build under test
@@ -1617,7 +1613,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PAIR-35.2 A pair of the iPhone's largest photos exports without the page reloading   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported the Together image in N s." and "Exported the front and back in N s."), which this case also accepts: it reads only that each save finished, and MSG-23.1 and MSG-24.1 holds the words.
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -1648,9 +1643,10 @@ If the open side's photo can't be read again after a pair's export (two tries), 
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "The photo isn’t loaded after the last export. ", "Tap Front or Back to switch sides, then switch back."
-- Source: `js/app/pair.js` (`reloadOpenPhoto`, `runPairExport`), `js/app/export.js` (`renderWarped`)
+- Source: `js/app/pair.js` (`reloadOpenPhoto`, `runPairExport`), `js/app/export.js` (`renderWarped`, `adviceError`, `failureText`)
+- Ruling: R49. The six short lines stand for failures the app can't explain. A message whose fix the app knows keeps its advice ("The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back."). Rich, 2026-11-18: an export or corner-shots save that fails because the logo's image isn't loaded is one of these: it reads "The logo isn’t loaded. Open the Overlay step and add it again.", in place of the short line. The app does this since 1.10.0.
 - Cases: 1
 
 ### PAIR-36.1 When the open photo can't be read again, saving waits for a side switch   [auto: phone]
@@ -1668,7 +1664,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Download** | The file arrives; then an amber warning reads "The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back." |
 | 2 | Look at the photo | The joined image is still drawn on screen |
-| 3 | Tap **Download** | No file: a red message begins "Export failed" (the rest of its words are ruling R24's, checked under Messages, MSG-31) |
+| 3 | Tap **Download** | No file: a red message reads "The photo isn’t loaded after the last export. Tap Front or Back to switch sides, then switch back." |
 | 4 | Tap **Front** in the top bar (the back's photo can be read again from now on) | The front opens |
 | 5 | Tap **Back** in the top bar | The back opens |
 | 6 | Tap **Download** | The file arrives: 14_front_portrait_raw_white-pair.jpg |

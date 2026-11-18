@@ -21,10 +21,7 @@ const {
   cornerOnPage,
   waitForStill,
   stepNow,
-  finishedMessage,
-  ruledFinishedMessage,
   copiedMessage,
-  ruledCopiedMessage,
 } = require('./support/app.js');
 const {
   pickWith,
@@ -110,6 +107,8 @@ const {
   watchStatus,
   statusesSoFar,
   refuseDetection,
+  refusePhotos,
+  loseStoredLogo,
   failEncoding,
   slowEncoding,
   refuseClipboard,
@@ -150,8 +149,7 @@ const NOT_AN_IMAGE = 'Couldn’t read that file as an image.';
 const RESUMED = 'Resumed where you left off.';
 const PHOTO_GONE = 'The saved photo is gone. Open it again.';
 const TAP_THE_CARD = 'Tap the card in the photo.';
-// The approved wording (tests/catalog/wording.md) of messages that rulings change. A case that
-// checks one the app doesn't show yet is marked with its bug.
+// The approved wording (tests/catalog/wording.md) of messages that rulings changed.
 const OPENED_FRESH = 'Full edit history could not be restored, your photo has been opened '
   + 'fresh.';
 const DETECTION_FAILED = 'Detection failed.';
@@ -187,9 +185,9 @@ const PLACE_TOLERANCE_PX = 1;
 const TOAST_LINE_PX = 18;
 const TOAST_LINES_MAX = 3;
 // A stand-in failure long enough to need more than three lines of the toast on a phone.
-const LONG_ERROR = 'Stand-in failure with a long explanation: the engine stopped part of the '
-  + 'way through the search for the card, after reading every edge it found in the photo, and '
-  + 'gave up before it could say which of them belonged to the card and which to the mat.';
+const LONG_ERROR = 'Stand-in failure with a long explanation: the browser stopped part of the '
+  + 'way through reading the photo, after taking in every row of it but the last few, and gave '
+  + 'up before it could say whether the file was a picture at all or something else.';
 // How long a case waits for something that should not come, in ms.
 const NOTHING_WAIT_MS = 3000;
 
@@ -333,12 +331,10 @@ const UPSCALE_2000 = 'Upscale to 2000 px?';
 const CROP_PX = 1074;
 const SINGLE_FILE = '01_chrome_flat_black-straight.jpg';
 // The files a pair of 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG
-// saves: Together, and Separately (in name order).
+// saves: Together, and Separately.
 const TOGETHER_FILE = '14_front_portrait_raw_white-pair.jpg';
-const SEPARATE_FILES = [
-  '14_back_portrait_raw_white-back.jpg',
-  '14_front_portrait_raw_white-front.jpg',
-];
+const FRONT_FILE = '14_front_portrait_raw_white-front.jpg';
+const BACK_FILE = '14_back_portrait_raw_white-back.jpg';
 // The edits file the Load edits cases start from (tests/fixtures/): 01_chrome_flat_black's edits
 // after a quarter turn right. Its changed copies are named 01_chrome_flat_black-<kind>-edits.json.
 const TURNED_EDITS = '01_chrome_flat_black-turned-edits.json';
@@ -642,14 +638,15 @@ test('MSG-04.2 A long message is cut to three lines [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  const hand = await start(page, testInfo, { step: 'perspective' });
-  // Stand-in: no photo makes detection fail, so the detector is made to throw a long error.
-  await refuseDetection(page, LONG_ERROR);
-  await armFindCard(page, hand, check);
-  await tapAt(page, hand, await photoAreaMiddle(page));
-  await waitForMessage(page, /^Detection failed: /);
-  await check('the message over the photo shows three lines of text, the rest cut off',
+  const hand = await startOnStartScreen(page, testInfo);
+  // Stand-in: no file makes the app show a message this long, so reading a photo is made to
+  // fail with a long error, which the app shows as it is.
+  await refusePhotos(page, LONG_ERROR);
+  await pickWith(page, hand, page.locator('#btnOpenEmpty'), PHOTO);
+  await waitForMessage(page, LONG_ERROR);
+  await check('a red message shows three lines of text, the rest cut off',
     async () => {
+      await expect(page.locator('#toast')).toHaveClass(/is-error/);
       const text = await page.locator('#toast .toast-text').evaluate(element => ({
         shownPx: element.clientHeight,
         wholePx: element.scrollHeight,
@@ -784,7 +781,7 @@ test('MSG-09.2 Edits that don\'t fit the photo say it was opened fresh [phone]',
 
 // Checks a red message that ruling R24 words (`approvedText`), then that the error's own words
 // (`detail`) went to the console. The red message is the first error the toast showed; it is a
-// plain reading, so the known defect fails at once.
+// plain reading.
 async function expectPlainError(page, check, approvedText, detail) {
   await page.waitForFunction(() => window.testMessages.some(message => message.kind === 'error'));
   const message = (await messagesSoFar(page)).find(shown => shown.kind === 'error');
@@ -802,7 +799,6 @@ test('MSG-11.1 A failed search says "Detection failed." [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-051');
   const hand = await start(page, testInfo, { step: 'perspective' });
   // Stand-in: no photo makes detection fail, so the detector is made to throw.
   await refuseDetection(page, STAND_IN_ERROR);
@@ -840,7 +836,6 @@ test('MSG-13.1 A Resume that fails says "Couldn’t resume." [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-051');
   const hand = await startWithSavedPhoto(page, testInfo);
   // The developer tools' Clear site data, through the same browser command they use.
   const devTools = await page.context().newCDPSession(page);
@@ -994,11 +989,28 @@ function listenToConsole(page) {
   return lines;
 }
 
+// Any finished message: it gives the seconds the save took, to one decimal place.
+const ANY_FINISHED = / in \d+\.\d s\./;
+
+// A finished message with its seconds written as N, as the cases' rows write it ("Photo
+// downloaded: 1074 × 1074 px in N s."). The seconds must have one decimal place.
+const withSecondsAsN = text => text.replace(/ in \d+\.\d s\./, ' in N s.');
+
+// Waits for the next finished message and checks the row's result: a white message reads
+// `wanted` (the seconds written as N), N the seconds the save took, to one decimal place.
+async function expectFinished(page, check, wanted) {
+  const message = await waitForMessage(page, ANY_FINISHED);
+  await check(`A white message reads "${wanted}", N the seconds it took, to one decimal place`,
+    () => {
+      expect(withSecondsAsN(message.text)).toBe(wanted);
+      expectKind(message, 'info');
+    });
+}
+
 test('MSG-22.1 A single photo\'s Download says what it saved [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-290');
   const hand = await start(page, testInfo);
   await tapAndExpectUpscale(page, hand, check, page.locator('#btnDownload'));
   const [saved] = await tapAndCollect(page, hand, questionButton(page, 'No'), 1);
@@ -1010,20 +1022,13 @@ test('MSG-22.1 A single photo\'s Download says what it saved [phone]', async ({
       height: CROP_PX,
     });
   });
-  // Awaited in today's words or R79's, then held to R79's: the known defect fails at once.
-  const message = await waitForMessage(page, finishedMessage('photo', '1074 × 1074 px'));
-  await check('A white message reads "Photo downloaded: 1074 × 1074 px in N s.", N the seconds '
-    + 'the export took, to one decimal place', () => {
-    expect(message.text).toMatch(ruledFinishedMessage('photo', 'downloaded', '1074 × 1074 px'));
-    expectKind(message, 'info');
-  });
+  await expectFinished(page, check, 'Photo downloaded: 1074 × 1074 px in N s.');
 });
 
 test('MSG-22.2 A single photo\'s Share says what it shared [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-290');
   // The page gets a stand-in share sheet (start's default) that takes the file at once.
   const hand = await start(page, testInfo);
   await tapAndExpectUpscale(page, hand, check, page.locator('#btnShare'));
@@ -1033,19 +1038,13 @@ test('MSG-22.2 A single photo\'s Share says what it shared [phone]', async ({
   await check(`The share sheet is handed one file, ${SINGLE_FILE}`, () => {
     expect(shared).toEqual([SINGLE_FILE]);
   });
-  const message = await waitForMessage(page, finishedMessage('photo', '1074 × 1074 px'));
-  await check('A white message reads "Photo shared: 1074 × 1074 px in N s.", N the seconds the '
-    + 'export took, to one decimal place', () => {
-    expect(message.text).toMatch(ruledFinishedMessage('photo', 'shared', '1074 × 1074 px'));
-    expectKind(message, 'info');
-  });
+  await expectFinished(page, check, 'Photo shared: 1074 × 1074 px in N s.');
 });
 
 test('MSG-23.1 A pair\'s Together Download says so [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-290');
   await watchMessages(page);
   const hand = await makePair(page, testInfo);
   await goToStep(page, 'export', hand);
@@ -1059,80 +1058,72 @@ test('MSG-23.1 A pair\'s Together Download says so [phone]', async ({
       height: 1100,
     });
   });
-  const message = await waitForMessage(page, finishedMessage('together'));
-  await check('A white message begins "Front and back downloaded: ", gives the size, and ends '
-    + '"in N s.", N the seconds the export took, to one decimal place', () => {
-    expect(message.text).toMatch(ruledFinishedMessage('together', 'downloaded'));
-    expectKind(message, 'info');
-  });
+  await expectFinished(page, check, 'Front and back downloaded: 1583 × 1100 px in N s.');
 });
 
 test('MSG-24.1 A pair\'s Separately Download says so [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-290');
   await watchMessages(page);
   const hand = await makePair(page, testInfo);
   await goToStep(page, 'export', hand);
   await chooseSeparately(page, hand, check);
   await tapAndExpectUpscale(page, hand, check, page.locator('#btnDownload'));
   const saved = await tapAndCollect(page, hand, questionButton(page, 'No'), 2);
-  await check(`Two files are saved: ${SEPARATE_FILES.join(' and ')}`, () => {
-    expect(saved.map(file => file.name).sort()).toEqual(SEPARATE_FILES);
+  const sizes = {};
+  for (const file of saved) {
+    const { width, height } = await readSavedImage(page, file.file);
+    sizes[file.name] = `${width} × ${height} px`;
+  }
+  await check(`Two files are saved: ${FRONT_FILE}, 748 × 1047 px, and ${BACK_FILE}, 785 × 1100 `
+    + 'px', () => {
+    expect(sizes).toEqual({ [FRONT_FILE]: '748 × 1047 px', [BACK_FILE]: '785 × 1100 px' });
   });
-  const message = await waitForMessage(page, finishedMessage('separately'));
-  await check('A white message begins "Front and back downloaded: ", gives the size, and ends '
-    + '"in N s.", N the seconds the export took, to one decimal place', () => {
-    expect(message.text).toMatch(ruledFinishedMessage('separately', 'downloaded'));
-    expectKind(message, 'info');
-  });
+  await expectFinished(page, check,
+    'Front and back downloaded: 748 × 1047 px and 785 × 1100 px in N s.');
 });
 
 test('MSG-25.1 Download corners with 1 sheet says so [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-290');
   const hand = await start(page, testInfo, { address: NO_CORNER_QUESTION });
   await openCornerSheetAndSee(page, hand, check);
   await chooseCornerChoice(page, hand, check, '1 sheet');
   const saved = await tapAndCollect(page, hand, page.locator('#btnCornerDownload'), 1);
   const isAsked = await page.locator('#pairPrompt').isVisible();
-  await check('One file is saved: 01_chrome_flat_black-corners.jpg; no question box asks first',
-    () => {
-      expect(saved.map(file => file.name)).toEqual(['01_chrome_flat_black-corners.jpg']);
-      expect(isAsked).toBe(false);
-    });
-  const message = await waitForMessage(page, finishedMessage('cornerSheet'));
-  await check('A white message begins "Corner sheet downloaded: ", gives the size, and ends "in '
-    + 'N s.", N the seconds it took, to one decimal place', () => {
-    expect(message.text).toMatch(ruledFinishedMessage('cornerSheet', 'downloaded'));
-    expectKind(message, 'info');
+  const { width, height } = await readSavedImage(page, saved[0].file);
+  await check('One file is saved: 01_chrome_flat_black-corners.jpg, 314 × 314 px; no question '
+    + 'box asks first', () => {
+    expect(saved.map(file => file.name)).toEqual(['01_chrome_flat_black-corners.jpg']);
+    expect({ width, height }).toEqual({ width: 314, height: 314 });
+    expect(isAsked).toBe(false);
   });
+  await expectFinished(page, check, 'Corner sheet downloaded: 314 × 314 px in N s.');
 });
 
 test('MSG-26.1 Download corners with 4 photos says so [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-290');
   const hand = await start(page, testInfo, { address: NO_CORNER_QUESTION });
   await openCornerSheetAndSee(page, hand, check);
   await chooseCornerChoice(page, hand, check, '4 photos');
   const saved = await tapAndCollect(page, hand, page.locator('#btnCornerDownload'), 4);
-  await check('Four files are saved: 01_chrome_flat_black-corner-tl.jpg, -corner-tr.jpg, '
-    + '-corner-bl.jpg and -corner-br.jpg', () => {
+  const sizes = [];
+  for (const file of saved) {
+    const { width, height } = await readSavedImage(page, file.file);
+    sizes.push(`${width} × ${height} px`);
+  }
+  await check('Four files are saved, each 156 × 156 px: 01_chrome_flat_black-corner-tl.jpg, '
+    + '-corner-tr.jpg, -corner-bl.jpg and -corner-br.jpg', () => {
     const names = ['bl', 'br', 'tl', 'tr'].map(corner => `01_chrome_flat_black-corner-${corner}`
       + '.jpg');
     expect(saved.map(file => file.name).sort()).toEqual(names);
+    expect(sizes).toEqual(names.map(() => '156 × 156 px'));
   });
-  const message = await waitForMessage(page, finishedMessage('cornerPhotos'));
-  await check('A white message begins "4 corner photos downloaded: ", gives the size, and ends '
-    + '"in N s.", N the seconds it took, to one decimal place', () => {
-    expect(message.text).toMatch(ruledFinishedMessage('cornerPhotos', 'downloaded'));
-    expectKind(message, 'info');
-  });
+  await expectFinished(page, check, '4 corner photos downloaded: 156 × 156 px each in N s.');
 });
 
 // The sentence a WebP export gains where the browser saved a PNG instead.
@@ -1156,11 +1147,10 @@ test('MSG-27.1 A format the browser couldn\'t save is named [phone]', async ({
     expect(fs.readFileSync(saved[0].file).subarray(1, 4).toString()).toBe('PNG');
   });
   const message = await waitForMessage(page, / s\. WEBP isn’t supported/);
-  // The first sentence in today's words or R79's (MSG-22.1 holds them).
   await check('An amber warning reads "Photo downloaded: 1074 × 1074 px in N s. '
     + `${WEBP_AS_PNG}"`, () => {
-    expect(message.text).toMatch(finishedMessage('photo', '1074 × 1074 px'));
-    expect(message.text.endsWith(` ${WEBP_AS_PNG}`)).toBe(true);
+    expect(withSecondsAsN(message.text))
+      .toBe(`Photo downloaded: 1074 × 1074 px in N s. ${WEBP_AS_PNG}`);
     expectKind(message, 'warn');
   });
   const gone = await waitUntilGone(page, message.text, ERROR_MS * 2);
@@ -1178,11 +1168,11 @@ test('MSG-28.1 A refused share says to tap Share now [phone]', async ({
   await tapAndExpectUpscale(page, hand, check, page.locator('#btnShare'));
   await hand.tap(questionButton(page, 'No'));
   const message = await waitForMessage(page, /Tap Share now to open the share sheet\.$/);
-  await check('A white message gives the saved size, 1074 × 1074 px, and the seconds it took, '
-    + 'then reads "Tap Share now to open the share sheet."; the red button reads Share now',
-  async () => {
-    expect(message.text).toMatch(finishedMessage('photo', '1074 × 1074 px'));
-    expect(message.text.endsWith(' Tap Share now to open the share sheet.')).toBe(true);
+  await check('A white message reads "Photo ready: 1074 × 1074 px in N s. Tap Share now to open '
+    + 'the share sheet.", N the seconds the export took, to one decimal place; the red button '
+    + 'reads Share now', async () => {
+    expect(withSecondsAsN(message.text))
+      .toBe('Photo ready: 1074 × 1074 px in N s. Tap Share now to open the share sheet.');
     expectKind(message, 'info');
     await expect(page.locator('#btnShare')).toContainText('Share now');
   });
@@ -1194,21 +1184,23 @@ test('MSG-28.1 A refused share says to tap Share now [phone]', async ({
   });
 });
 
+// Any message a finished Copy shows: it names the format on the clipboard.
+const ANY_COPIED = /\(PNG\)\.$/;
+
 test('MSG-29.1 Copy says what it put on the clipboard [phone]', async ({
   page,
   context,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-290');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   const hand = await start(page, testInfo);
   await tapAndExpectUpscale(page, hand, check, page.locator('#btnCopy'));
   await hand.tap(questionButton(page, 'No'));
-  const message = await waitForMessage(page, copiedMessage());
+  const message = await waitForMessage(page, ANY_COPIED);
   const copied = await clipboardPictureSize(page);
-  await check(`A white message reads "${ruledCopiedMessage()}"; the clipboard holds a 1074 × 1074 `
+  await check(`A white message reads "${copiedMessage()}"; the clipboard holds a 1074 × 1074 `
     + 'px picture', () => {
-    expect(message.text).toBe(ruledCopiedMessage());
+    expect(message.text).toBe(copiedMessage());
     expectKind(message, 'info');
     expect(copied).toEqual({ width: CROP_PX, height: CROP_PX });
   });
@@ -1219,7 +1211,6 @@ test('MSG-29.2 A pair\'s Copy says it copied the front and back [phone]', async 
   context,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-290');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await watchMessages(page);
   const hand = await makePair(page, testInfo);
@@ -1230,10 +1221,9 @@ test('MSG-29.2 A pair\'s Copy says it copied the front and back [phone]', async 
     expect(await selectedChoices(page, 'exportSize')).toEqual(['Original']);
   });
   await hand.tap(page.locator('#btnCopy'));
-  // Awaited in today's words or R79's, then held to R79's: the known defect fails at once.
-  const message = await waitForMessage(page, copiedMessage(true));
-  await check(`A white message reads "${ruledCopiedMessage(true)}"`, () => {
-    expect(message.text).toBe(ruledCopiedMessage(true));
+  const message = await waitForMessage(page, ANY_COPIED);
+  await check(`A white message reads "${copiedMessage(true)}"`, () => {
+    expect(message.text).toBe(copiedMessage(true));
     expectKind(message, 'info');
   });
 });
@@ -1242,7 +1232,6 @@ test('MSG-30.1 A failed Copy says "Copy failed." [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-051');
   // Stand-in: the clipboard refuses every write, as a browser that blocks the page does.
   await refuseClipboard(page, STAND_IN_ERROR);
   const hand = await start(page, testInfo);
@@ -1255,7 +1244,6 @@ test('MSG-31.1 A failed Download says "Export failed." [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-051');
   const hand = await start(page, testInfo);
   // Stand-in: the browser hands back no file, as when a canvas is too big for it.
   await failEncoding(page);
@@ -1268,12 +1256,46 @@ test('MSG-32.1 A failed share says "Share failed." [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-051');
   // Stand-in: a share sheet that fails with an error of its own.
   const hand = await start(page, testInfo, { share: 'fail' });
   await tapAndExpectUpscale(page, hand, check, page.locator('#btnShare'));
   await hand.tap(questionButton(page, 'No'));
   await expectPlainError(page, check, SHARE_FAILED, SHARE_FAILURE_MESSAGE);
+});
+
+// The advice an export gives when the photo's logo isn't loaded (ruling R49).
+const LOGO_NOT_LOADED = 'The logo isn’t loaded. Open the Overlay step and add it again.';
+
+test('MSG-94.1 An export whose logo isn\'t loaded says how to get it back [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  await watchMessages(page);
+  const hand = await startOnOverlay(page, testInfo, { photo: PHOTO });
+  const logo = await addLogo(page, hand, page.locator('#btnOverlayAdd'), 'icon.svg');
+  await waitForSaved(page, { name: PHOTO, tab: 'overlay', overlayId: logo });
+  await reloadToStart(page);
+  // Stand-in: the logo kept on the device goes, as when a browser clears part of a site's
+  // storage; the saved edits still place it on the photo.
+  await loseStoredLogo(page);
+  await resumeAs(page, hand, PHOTO);
+  await check('The photo opens on the Overlay step', async () => {
+    expect(await stepNow(page)).toBe('overlay');
+  });
+  await goToExportStep(page, hand, check);
+  await tapAndExpectUpscale(page, hand, check, page.locator('#btnDownload'));
+  const arrived = [];
+  page.on('download', download => arrived.push(download.suggestedFilename()));
+  await hand.tap(questionButton(page, 'No'));
+  await page.waitForFunction(() => window.testMessages.some(message => message.kind === 'error'));
+  await waitForExportEnd(page);
+  await page.waitForTimeout(NOTHING_WAIT_MS);
+  const errors = (await messagesSoFar(page)).filter(message => message.kind === 'error');
+  await check(`No file is saved; one red message reads "${LOGO_NOT_LOADED}"`, () => {
+    expect(arrived).toEqual([]);
+    expect(errors.map(message => message.text)).toEqual([LOGO_NOT_LOADED]);
+    expectKind(errors[0], 'error');
+  });
 });
 
 // The largest edits file the app reads, in bytes (CONFIG.export.editsMaxBytes: 8 MB).
@@ -1649,7 +1671,6 @@ test('MSG-50.1 Failed corner shots say "Corner shots failed." [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-051');
   const hand = await start(page, testInfo, { address: NO_CORNER_QUESTION });
   await openCornerSheetAndSee(page, hand, check);
   // Stand-in: the browser hands back no file, as when a canvas is too big for it.
@@ -2463,10 +2484,9 @@ test('MSG-87.1 Overlay\'s tips [phone]', async ({ page, check }, testInfo) => {
 });
 
 test('MSG-88.1 Export\'s tips [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-285');
   const hand = await start(page, testInfo);
   const tips = await openTips(page, hand, check, 'export');
-  // Ruling R61: the fourth tip, which nearly repeated the edits hint, goes.
+  // Ruling R61: the fourth tip, which nearly repeated the edits hint, has gone.
   await check(`Three paragraphs open in place, in this order: ${quoted(EXPORT_TIPS)}; none says `
     + '"An edits file is small."', () => {
     expect(tips).toEqual(EXPORT_TIPS);

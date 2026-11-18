@@ -604,8 +604,8 @@ test('CNR-05.2 Share corners hands the share sheet the corner sheet [phone]', as
     + 'sheet shared: "', async () => {
     const [share] = await sharesSoFar(page);
     expect(share.files.map(file => [file.name, file.type])).toEqual([[SHEET_NAME, 'image/jpeg']]);
-    // Today's words or ruling R79's: MSG-25.1 holds the words.
-    await expect.poll(() => toastMessage(page)).toMatch(finishedMessage('cornerSheet'));
+    await expect.poll(() => toastMessage(page))
+      .toMatch(finishedMessage('cornerSheet', 'shared'));
   });
 });
 
@@ -661,8 +661,8 @@ test('CNR-06.1 Download corners saves the corner sheet as a plain download [phon
       expect(saved).toHaveLength(1);
       expect([...fs.readFileSync(saved[0].file).subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
       expect(await imageSize(page, saved[0].file)).toEqual([SHEET_PX, SHEET_PX]);
-      // Today's words or ruling R79's: MSG-25.1 holds the words.
-      await expect.poll(() => toastMessage(page)).toMatch(finishedMessage('cornerSheet'));
+      await expect.poll(() => toastMessage(page))
+        .toMatch(finishedMessage('cornerSheet', 'downloaded'));
     });
   });
 
@@ -1099,8 +1099,8 @@ test('CNR-11.1 One tap of Download corners saves four files, a quarter of a seco
     expect(saved.map(file => file.name)).toEqual(SHOT_LABELS.map(label => shotName(label)));
     expect(starts).toHaveLength(4);
     expect(Math.min(...gaps)).toBeGreaterThanOrEqual(DOWNLOAD_GAP_MIN_MS);
-    // Today's words or ruling R79's: MSG-26.1 holds the words.
-    await expect.poll(() => toastMessage(page)).toMatch(finishedMessage('cornerPhotos'));
+    await expect.poll(() => toastMessage(page))
+      .toMatch(finishedMessage('cornerPhotos', 'downloaded'));
   });
 });
 

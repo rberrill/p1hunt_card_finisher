@@ -234,6 +234,28 @@ function refuseDetection(page, errorText) {
   }, errorText);
 }
 
+// Makes every photo fail to open from now on, as a file the browser can't read does, but with
+// the words `errorText`: the app shows a failed open's own words, and no file gives it words
+// this long, so this one change is made in the page's code.
+function refusePhotos(page, errorText) {
+  return page.evaluate(text => {
+    window.CF.ImageSource.load = async () => {
+      throw new Error(text);
+    };
+  }, errorText);
+}
+
+// Deletes the logo kept on the device, the open photo's and the saved one, as a browser that
+// has cleared part of the site's storage would. No control takes a stored logo away and leaves
+// it on the photo, so this one change is made in the page's storage.
+function loseStoredLogo(page) {
+  return page.evaluate(async () => {
+    const Session = window.__straightener.Session;
+    await Session.del('photoOverlay');
+    await Session.del('overlay');
+  });
+}
+
 // Makes every image encoding fail from now on, as a browser that runs out of memory for a big
 // canvas does: the canvas hands back no file. No control can make the browser fail to encode,
 // so this one change is made in the page's code.
@@ -372,6 +394,8 @@ module.exports = {
   watchStatus,
   statusesSoFar,
   refuseDetection,
+  refusePhotos,
+  loseStoredLogo,
   failEncoding,
   slowEncoding,
   refuseClipboard,

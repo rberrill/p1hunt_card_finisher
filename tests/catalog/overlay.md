@@ -1655,8 +1655,8 @@ In the saved file the logo is drawn last: Levels and the upscale sharpening neve
 - Check: script, saved file
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "The overlay image isn’t loaded. Open the Overlay step and add it again."
+- Changed: 1.10.0
+- Anchors: "The logo isn’t loaded. Open the Overlay step and add it again."
 - Source: `js/app/overlay.js` (`compositeOverlay`); `js/app/export.js` (`renderFull`)
 - Cases: 3
 

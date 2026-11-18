@@ -16,7 +16,7 @@ const {
   goToStep,
   handFor,
   readSavedImage,
-  finishedMessage,
+  wholeFinishedMessage,
 } = require('./support/app.js');
 const {
   pickWith,
@@ -113,11 +113,10 @@ function msFromLine(messages, start) {
   return Number(lines[0].text.slice(start.length).replace(' ms', ''));
 }
 
-// The pattern of the finished message for a saved picture `width` × `height` px, in today's
-// words ("Exported W × H px in N s.") or ruling R79's ("Photo downloaded: W × H px in N s.");
-// its one group is the time, in seconds to a tenth. MSG-22.1 holds the words.
+// The pattern of the finished message for a downloaded picture `width` × `height` px ("Photo
+// downloaded: W × H px in N s."); its one group is the time, in seconds to a tenth.
 function exportedPattern(width, height) {
-  return finishedMessage('photo', `${width} × ${height} px`);
+  return wholeFinishedMessage('photo', 'downloaded', `${width} × ${height} px`);
 }
 
 // Waits for the finished message of a picture `width` × `height` px and returns its time in

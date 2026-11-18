@@ -674,8 +674,7 @@ test('LAY-10.5 Under reduced motion the export\'s progress line still moves [pho
   });
   await recordProgress(page, EXPORT_PROGRESS_ID);
   await answerForFile(page, hand, 'Yes', downloading);
-  // Today's words or ruling R79's: MSG-22.1 holds the words.
-  const finished = finishedMessage('photo', '2000 × 2000 px');
+  const finished = finishedMessage('photo', 'downloaded', '2000 × 2000 px');
   await expect(page.locator('#toast .toast-text')).toHaveText(finished);
   const changes = await progressRecorded(page);
   await check('a thin red line on the top edge of the controls grows from left to right in '

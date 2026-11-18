@@ -57,7 +57,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 EXP-36.2 (in `export.md`) shows that an upscale is bicubic whatever Interpolation says.
 
 ### UPS-02.1 Yes saves the photo at the chosen size   [auto: phone, webkit]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: any; a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -134,7 +133,6 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the s
 - Cases: 3
 
 ### UPS-03.1 No saves the photo at its own size   [auto: phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Exported W × H px in N s."), which this case also accepts: it reads only the size it gives, and MSG-22.1 holds the words.
 Before you start:
 - Device and browser: any; a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -385,7 +383,6 @@ For corner shots it is asked when the file (the sheet, or each photo) would be u
 - Cases: 4
 
 ### UPS-07.1 For the sheet it names the sheet's size, and Yes saves a 2000 px sheet   [auto: phone, webkit]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Saved the corner sheet at 2000 px in N s."), which this case also accepts: it reads only that the save finished, and MSG-25.1 holds the words.
 Before you start:
 - Device and browser: any; a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test
@@ -397,7 +394,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Corner shots** in the bottom row of buttons | The Corner shots sheet rises, with **1 sheet** selected (white) |
 | 2 | Tap **Download corners** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" and reads "The sheet is 314 px at the photo’s resolution." |
-| 3 | Tap **Yes** | One file of exactly 2000 × 2000 px is saved; a message begins "Corner sheet downloaded: " |
+| 3 | Tap **Yes** | One file of exactly 2000 × 2000 px is saved; a message begins "Corner sheet downloaded: 2000 × 2000 px in" |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.
@@ -582,7 +579,6 @@ After **Yes** or **No**, **Copy** still reaches the clipboard within the tap tha
 - Cases: 2
 
 ### UPS-10.1 On an iPhone, Copy after Yes or No reaches the clipboard   [phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Waiting on find-out Q-03: where iOS shows a picture's pixel size. Rows 4 and 9 gain the steps that read the pasted picture's size (2000 × 2000 px after **Yes**, 1074 × 1074 px after **No**) once Rich has seen where it shows.
 
 Before you start:
@@ -610,7 +606,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ### UPS-10.2 Copy after Yes puts the enlarged photo on the clipboard   [auto: phone]
-The finished message is in ruling R79's words. Until R79 is built (BUG-290) the app writes today's ("Copied to clipboard (PNG)."), which this case also accepts: it reads only that the copy finished, and MSG-29.1 holds the words.
 Before you start:
 - Device and browser: a phone-width window, in a browser that lets the case read the clipboard back (the automated case runs in Chromium only)
 - Build: the build under test

@@ -904,7 +904,7 @@ Export's options sheet has an **Edits** heading with **Save edits** and **Load e
 - Changed: none
 - Anchors: `#exportSheet`, `#exportEditsRow`, `#editsPairHint`, "Export options"
 - Source: `js/app/export-controls.js` (`buildEditsGroup`, `buildEditsButton`), `js/app/pair.js` (`syncPair`)
-- Ruling: R61. The hint under **Save edits** and **Load edits** stays; Export's last tip, which nearly repeats it, goes. The app differs today.
+- Ruling: R61. The hint under **Save edits** and **Load edits** stays; Export's last tip, which nearly repeats it, goes. The app does this since 1.10.0.
 - Cases: 2
 
 ### EDT-15.1 Export options group Save edits and Load edits under Edits, with a hint   [auto: both]

@@ -28,7 +28,8 @@ const MIME_TYPES = { '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/
 //   'fail'        it fails with another error
 //   'none'        the browser has no share sheet at all
 const SHARE_BEHAVIORS = ['share', 'cancel', 'refuseOnce', 'fail', 'none'];
-// The error message the 'fail' stand-in gives, which the app shows after "Share failed: ".
+// The error message the 'fail' stand-in gives. The app writes it to the console; its own
+// message reads "Share failed."
 const SHARE_FAILURE_MESSAGE = 'The stand-in share sheet failed';
 // The controls whose state recordExports keeps for each export, by id.
 const WATCHED_CONTROLS = [
