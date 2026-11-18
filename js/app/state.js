@@ -270,6 +270,7 @@
 
   // A photo's detection results before the first run. index, isOnCandidate, wasMovedByHand and
   // cornersAfterRun say where the corners stand against the last run: see noteDetectedCorners.
+  // pending is the run that has not ended on this photo, as { keepCorners, seed }: see runDetect.
   function emptyDetection() {
     return {
       candidates: [],
@@ -279,6 +280,7 @@
       cornersAfterRun: '',
       last: null,
       running: 0,
+      pending: null,
       message: '',
       snapPoints: [],
       snapLines: [],
@@ -386,13 +388,20 @@
   // (on open). keepCorners: find candidates (for Candidate n/3 and snapping) without moving
   // the corners (session resume). seed: a source-px point the card should contain (Find card);
   // it's used for this run only.
+  // A run is dropped, with no result and no message, when a newer one starts or its photo is
+  // no longer the open one. One dropped because a pair's side was left stays in
+  // detection.pending, and detectReopenedSide runs it again (ruling R45).
   async function runDetect({ auto = false, keepCorners = false, seed = null } = {}) {
     if (!app.img) return;
     const img = app.img;
-    const run = ++app.detection.running;
+    // This photo's record: after a pair switches sides, app.detection is the other side's.
+    const detection = app.detection;
+    const run = ++detection.running;
     const startTime = performance.now();
-    app.detection.message = 'Detecting…';
+    detection.pending = { keepCorners, seed };
+    detection.message = 'Detecting…';
     CF.syncUI();
+    const isDropped = () => run !== detection.running || app.img !== img;
     try {
       const candidates = await CF.Detector.detect(app.work.data, {
         ratio: CONFIG.card.w / CONFIG.card.h,
@@ -402,46 +411,89 @@
         getRegion: CF.readRegion,
         debug: app.debugOverlay || CONFIG.debug,
       });
-      // A newer run has started, or a pair switched to its other side.
-      if (run !== app.detection.running || app.img !== img) return;
-      const last = CF.JSDetector.last;
-      app.detection.candidates = candidates;
-      app.detection.index = 0;
-      app.detection.last = last;
-      app.detection.durationMs = performance.now() - startTime;
-      buildSnapTargets(last);
-      app.edgeCanvas = null;
-      const bestCorners = () => candidates[0].corners.map(point => point.slice());
-      if (!candidates.length) {
-        if (!auto) {
-          const message = 'No card-shaped edges found. '
-            + 'Drag the corners into place, or tap to find card and tap the card again.';
-          toast(message, 'warn', 5000);
-        }
-      } else if (keepCorners) {
-        // Leave the resumed corners alone.
-      } else if (auto) {
-        app.state.corners = bestCorners();
-        stateChanged();
-      } else {
-        commit(state => {
-          state.corners = bestCorners();
-        });
+      if (isDropped()) {
+        clearRunMessage(detection, run);
+        return;
       }
-      app.detection.cornersAfterRun = JSON.stringify(app.state.corners);
-      noteDetectedCorners();
-      // A new run's warnings show until the corners are next moved by hand (ruling R7).
-      app.detection.wasMovedByHand = false;
-      app.detection.message = '';
-      if (CONFIG.debug) console.info('[card-finisher] detect', last && last.timing, candidates);
+      detection.durationMs = performance.now() - startTime;
+      takeDetection(candidates, { auto, keepCorners });
     } catch (error) {
       console.error(error);
-      app.detection.message = '';
+      if (isDropped()) {
+        clearRunMessage(detection, run);
+        return;
+      }
       toast('Detection failed: ' + error.message, 'error');
     }
+    detection.pending = null;
+    detection.message = '';
     CF.syncUI();
     CF.requestRender();
     CF.updateDebugPanel();
+  }
+
+  // Takes a finished run's result for the open photo: its candidates and snap targets, and the
+  // corners moved to the best candidate as runDetect's auto and keepCorners say.
+  function takeDetection(candidates, { auto, keepCorners }) {
+    const detection = app.detection;
+    const last = CF.JSDetector.last;
+    detection.candidates = candidates;
+    detection.index = 0;
+    detection.last = last;
+    buildSnapTargets(last);
+    app.edgeCanvas = null;
+    const bestCorners = () => candidates[0].corners.map(point => point.slice());
+    if (!candidates.length || keepCorners) {
+      // The corners stay: nothing was found, or they are to be kept. That nothing was found
+      // is said by the line above the controls alone, with no pop-up (ruling R77).
+    } else if (auto) {
+      app.state.corners = bestCorners();
+      stateChanged();
+    } else {
+      commit(state => {
+        state.corners = bestCorners();
+      });
+    }
+    detection.cornersAfterRun = JSON.stringify(app.state.corners);
+    noteDetectedCorners();
+    // A new run's warnings show until the corners are next moved by hand (ruling R7).
+    detection.wasMovedByHand = false;
+    if (CONFIG.debug) console.info('[card-finisher] detect', last && last.timing, candidates);
+  }
+
+  // Ends a dropped run. Its "Detecting…" must not stay on its photo's record: a pair's
+  // waiting side keeps the record and shows its message when the side is opened again (ruling
+  // R45). detection: the record the run started on; run: its number there. A newer run on the
+  // same record owns the message, so it is left alone.
+  function clearRunMessage(detection, run) {
+    if (detection.running !== run) return;
+    detection.message = '';
+    if (detection === app.detection) CF.syncUI();
+  }
+
+  // True when the open photo's corners are where a hand put them: on neither a candidate of
+  // its last finished run nor the rectangle every photo starts on. (wasMovedByHand can't say:
+  // it is set before a photo's first run ends, and every run clears it.)
+  function areCornersHandPlaced() {
+    const start = insetCorners(app.img.width, app.img.height);
+    const isAtStart = JSON.stringify(app.state.corners) === JSON.stringify(start);
+    return !app.detection.isOnCandidate && !isAtStart;
+  }
+
+  // Detection for a pair's side that has just been opened again (switchSide).
+  // A run that had not ended when the side was left was dropped, so it runs again. It moves
+  // the corners, with no undo step, only if they are not hand-placed; hand-placed corners stay
+  // and the result is there for Candidate to cycle through (ruling R45).
+  // A side restored from a session has no candidates yet (for Candidate and snapping): its run
+  // keeps the resumed corners.
+  function detectReopenedSide() {
+    const pending = app.detection.pending;
+    if (pending) {
+      const keepCorners = pending.keepCorners || areCornersHandPlaced();
+      runDetect({ auto: true, keepCorners, seed: pending.seed });
+    } else if (!app.detection.last) {
+      runDetect({ auto: true, keepCorners: true });
+    }
   }
 
   // Notes where the corners (source px) stand against the last detection, after any change to
@@ -534,6 +586,7 @@
     liveChanged,
     openFile,
     runDetect,
+    detectReopenedSide,
     findCardAt,
     useCandidate,
   });

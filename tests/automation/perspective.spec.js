@@ -67,8 +67,11 @@ const {
   PORTRAIT_PAIR,
   makePair,
   addBack,
+  chooseInPicker,
   sideButton,
   switchTo,
+  recordToasts,
+  toastsSoFar,
 } = require('./support/front-and-back.js');
 
 // The plain picture with no card in it (tests/fixtures/plain-grey.png, 1200 × 1600 px) and
@@ -92,6 +95,8 @@ const SCREEN_TOLERANCE_PX = 1;
 const PHOTO_TOLERANCE_PX = 0.01;
 // How long the case waits for a search that it expects to have been thrown away.
 const SEARCH_SETTLE_MS = 2000;
+// The words PER-03.5's held search fails with: nothing the app would say itself.
+const SEARCH_FAILURE = 'Stand-in search failure 2291';
 // A double tap on a handle zooms to this many times the fitted size (CONFIG.handleZoom), and
 // the magnifier is never wider than this share of the photo area (CONFIG.loupeMaxFrac).
 const HANDLE_ZOOM = 6;
@@ -206,12 +211,13 @@ test('PER-03.1 A second photo opened during the search keeps its own corners [ph
   await openPicture(page, blank);
   await check('the grey picture opens, while the first search was still running', async () => {
     expect(await editState(page)).toHaveProperty('source.name', blank.name);
-    expect(await page.evaluate(() => window.testFirstSearch.message)).toBe('Detecting…');
+    // Had the first search ended before the grey picture opened, its result would be on its
+    // record. (Its "Detecting…" is no proof: it is cleared when the search ends, R45.)
+    expect(await page.evaluate(() => window.testFirstSearch.last)).toBeNull();
   });
   await page.waitForTimeout(SEARCH_SETTLE_MS);
   await check('the first search\'s result was thrown away: the outline is the rectangle a fifth '
     + 'in from each edge', async () => {
-    expect(await page.evaluate(() => window.testFirstSearch.last)).toBeNull();
     expectSameCorners(await cornersNow(page), BLANK_INSET_CORNERS);
   });
   await check(`the line reads "${NOTHING_DETECTED}"`, async () => {
@@ -220,7 +226,7 @@ test('PER-03.1 A second photo opened during the search keeps its own corners [ph
 });
 
 // Waits until a pair's `side` is open. Unlike switchTo it doesn't wait for the side's search
-// to finish: in PER-03.2 the side left behind has a search that never reports back.
+// to finish: the PER-03 cases look at a side while its search is held open or runs again.
 function waitForSideOpen(page, side) {
   return page.waitForFunction(wanted => {
     const app = window.__straightener.app;
@@ -228,56 +234,186 @@ function waitForSideOpen(page, side) {
   }, side);
 }
 
-test('PER-03.2 A search still running when a pair switches sides is thrown away [phone]',
-  async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-241');
-    const hand = handFor(page, testInfo);
-    await openApp(page);
-    await openPhoto(page, PORTRAIT_PAIR.front);
-    const frontCorners = await cornersNow(page);
-    await addBack(page, hand, PORTRAIT_PAIR.back);
-    const backMiddle = await cardMiddle(page);
-    const topLeft = await handleOnPage(page, TOP_LEFT);
-    await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
-    await check('that corner is off the back card\'s corner', async () => {
-      expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 40, 40);
-    });
-    const dragged = await cornersNow(page);
-    await openOptions(page, hand, 'perspective');
-    await check('Tap to find card shows', async () => {
-      await expect(page.locator('#btnFindCard')).toBeVisible();
-    });
-    await tapFindCard(page, hand);
-    await check(`the line reads "${FIND_PROMPT}"`, async () => {
-      await expectStatus(page, FIND_PROMPT);
-    });
-    await holdNextSearch(page);
-    await tapAt(page, hand, backMiddle);
-    await check('the line reads "Detecting…"', async () => {
-      await expectStatus(page, 'Detecting…');
-    });
-    await hand.tap(sideButton(page, 'front'));
-    await waitForSideOpen(page, 'front');
-    await check('the front opens on Perspective, its corners on the front card', async () => {
-      await expect(page.locator('#perspectiveArea')).toBeVisible();
-      expectSameCorners(await cornersNow(page), frontCorners);
-    });
-    await releaseSearch(page);
-    await page.waitForTimeout(SEARCH_SETTLE_MS);
-    await check('the front\'s corners have not moved', async () => {
-      expectSameCorners(await cornersNow(page), frontCorners);
-    });
-    await hand.tap(sideButton(page, 'back'));
-    await waitForSideOpen(page, 'back');
-    await check('the back opens; its top-left corner is still where it was dragged in row 1: the '
-      + 'search\'s result was thrown away', async () => {
-      expectSameCorners(await cornersNow(page), dragged);
-    });
-    await check('the line above the controls reads the normal Nudge line, NUDGE and Corner 1 of '
-      + '4, not "Detecting…"', async () => {
-      expect(await isNudgeLineNow(page)).toBe(true);
-    });
+// The rectangle a photo's corners start on, a fifth in from each edge, in photo px.
+async function startingRectangle(page) {
+  const { width, height } = (await editState(page)).source;
+  return [
+    [width * 0.2, height * 0.2],
+    [width * 0.8, height * 0.2],
+    [width * 0.8, height * 0.8],
+    [width * 0.2, height * 0.8],
+  ];
+}
+
+// PER-03.2 to PER-03.5: taps Front while the back's search is still held open, lets the search
+// end (holdNextSearch decides how) and waits two seconds. The front must open with its corners
+// where they were and keep them.
+async function leaveForFront(page, hand, check, frontCorners) {
+  await hand.tap(sideButton(page, 'front'));
+  await waitForSideOpen(page, 'front');
+  await check('the front opens on Perspective, its corners on the front card', async () => {
+    await expect(page.locator('#perspectiveArea')).toBeVisible();
+    expectSameCorners(await cornersNow(page), frontCorners);
   });
+  await releaseSearch(page);
+  await page.waitForTimeout(SEARCH_SETTLE_MS);
+  await check('the front\'s corners have not moved', async () => {
+    expectSameCorners(await cornersNow(page), frontCorners);
+  });
+}
+
+// PER-03.2 to PER-03.5: taps Back and waits until the search that runs again has ended. The
+// line must have read "Detecting…" on the way.
+async function returnToBack(page, hand, check) {
+  await recordStatuses(page);
+  await switchTo(page, hand, 'back');
+  await check('the back opens and the line reads "Detecting…" for a moment: the search runs '
+    + 'again', async () => {
+    expect(await openSideNow(page)).toBe('back');
+    expect(await readStatuses(page)).toContain('Detecting…');
+  });
+}
+
+// The side of the pair that is open: 'front' or 'back'.
+const openSideNow = page => page.evaluate(() => window.__straightener.app.pair.current);
+
+test('PER-03.2 A find tap cut short by a side switch runs again on return, and a corner placed '
+  + 'by hand stays [phone]', async ({ page, check }, testInfo) => {
+  const hand = handFor(page, testInfo);
+  await openApp(page);
+  await openPhoto(page, PORTRAIT_PAIR.front);
+  const frontCorners = await cornersNow(page);
+  await addBack(page, hand, PORTRAIT_PAIR.back);
+  const backMiddle = await cardMiddle(page);
+  const topLeft = await handleOnPage(page, TOP_LEFT);
+  await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
+  await check('that corner is off the back card\'s corner', async () => {
+    expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 40, 40);
+  });
+  const dragged = await cornersNow(page);
+  await openOptions(page, hand, 'perspective');
+  await check('Tap to find card shows', async () => {
+    await expect(page.locator('#btnFindCard')).toBeVisible();
+  });
+  await tapFindCard(page, hand);
+  await check(`the line reads "${FIND_PROMPT}"`, async () => {
+    await expectStatus(page, FIND_PROMPT);
+  });
+  await recordSearchPoints(page);
+  await holdNextSearch(page);
+  await tapAt(page, hand, backMiddle);
+  await check('the line reads "Detecting…"', async () => {
+    await expectStatus(page, 'Detecting…');
+  });
+  await leaveForFront(page, hand, check, frontCorners);
+  await returnToBack(page, hand, check);
+  await check('the search that ran again was for the point tapped in row 4', async () => {
+    const points = await readSearchPoints(page);
+    expect(points).toHaveLength(2);
+    expect(points[0]).not.toBeNull();
+    expect(points[1]).toEqual(points[0]);
+  });
+  await check('the top-left corner is still where it was dragged in row 1, and the line reads '
+    + 'NUDGE and Corner 1 of 4', async () => {
+    expectSameCorners(await cornersNow(page), dragged);
+    expect(await isNudgeLineNow(page)).toBe(true);
+  });
+});
+
+// The start of PER-03.3 to PER-03.5. Opens the pair's back on its own to learn where its
+// search puts the corners, then opens the front and adds the back with the back's first search
+// held open (holdNextSearch; failure: the words that search fails with when let go, or '' for
+// one that works). Returns the hand, the front's corners and the back's corners as found on
+// its own. The back is open on Perspective, still searching.
+async function addBackStillSearching(page, check, testInfo, failure = '') {
+  const hand = handFor(page, testInfo);
+  await openApp(page);
+  await openPhoto(page, PORTRAIT_PAIR.back);
+  const backFound = await cornersNow(page);
+  await openPhoto(page, PORTRAIT_PAIR.front);
+  const frontCorners = await cornersNow(page);
+  await goToStep(page, 'export', hand);
+  await holdNextSearch(page, failure);
+  await chooseInPicker(page, hand, page.locator('#btnAddBack'), PORTRAIT_PAIR.back);
+  await waitForSideOpen(page, 'back');
+  await check('the back opens on Perspective, its outline on the rectangle a fifth in from each '
+    + 'edge, and the line reads "Detecting…"', async () => {
+    await expect(page.locator('#perspectiveArea')).toBeVisible();
+    expectSameCorners(await cornersNow(page), await startingRectangle(page));
+    await expectStatus(page, 'Detecting…');
+  });
+  return { hand, frontCorners, backFound };
+}
+
+test('PER-03.3 A side left before its first search ends is searched again on return, and its '
+  + 'corners land on the card [phone]', async ({ page, check }, testInfo) => {
+  const { hand, frontCorners, backFound } = await addBackStillSearching(page, check, testInfo);
+  await leaveForFront(page, hand, check, frontCorners);
+  await returnToBack(page, hand, check);
+  await check('the four corners are on the back card\'s corners, and Candidate reads 1/3',
+    async () => {
+      expectSameCorners(await cornersNow(page), backFound);
+      await expect(candidateNumber(page)).toHaveText('1/3');
+    });
+  await check('the line reads NUDGE and Corner 1 of 4 with Confidence at its right, and Undo is '
+    + 'greyed out', async () => {
+    expect(await isNudgeLineNow(page)).toBe(true);
+    await expect(page.locator('#perspectiveLine .line-readout')).toHaveText(/^Confidence \d+%$/);
+    await expect(page.locator('#btnUndo')).toBeDisabled();
+  });
+});
+
+test('PER-03.4 A corner dragged before the side is left stays through the search on return, '
+  + 'and Candidate cycles [phone]', async ({ page, check }, testInfo) => {
+  const { hand, frontCorners, backFound } = await addBackStillSearching(page, check, testInfo);
+  const topLeft = await handleOnPage(page, TOP_LEFT);
+  await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
+  await check('that corner has moved 40 px right and 40 px down', async () => {
+    expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 40, 40);
+  });
+  const dragged = await cornersNow(page);
+  await leaveForFront(page, hand, check, frontCorners);
+  await returnToBack(page, hand, check);
+  const candidate = page.locator('#toolCandidate');
+  await check('the corners are still as they were after the drag in row 2; Candidate shows no '
+    + 'number and is not greyed out', async () => {
+    expectSameCorners(await cornersNow(page), dragged);
+    await expect(candidateNumber(page)).toBeHidden();
+    await expect(candidate).toBeEnabled();
+  });
+  await hand.tap(candidate);
+  await check('the four corners go to the back card\'s corners, and Candidate reads 1/3',
+    async () => {
+      expectSameCorners(await cornersNow(page), backFound);
+      await expect(candidateNumber(page)).toHaveText('1/3');
+    });
+  await hand.tap(candidate);
+  await check('Candidate reads 2/3 and the outline has moved to another candidate', async () => {
+    await expect(candidateNumber(page)).toHaveText('2/3');
+    expect(JSON.stringify(await cornersNow(page))).not.toBe(JSON.stringify(backFound));
+  });
+});
+
+test('PER-03.5 A search that fails after its side is left shows no message, and runs again '
+  + 'on return [phone]', async ({ page, check }, testInfo) => {
+  const { hand, frontCorners, backFound } = await addBackStillSearching(page, check, testInfo,
+    SEARCH_FAILURE);
+  await recordToasts(page);
+  await leaveForFront(page, hand, check, frontCorners);
+  await check('the search has failed (the failure is in the console), and no red message has '
+    + 'shown over the photo', async () => {
+    expect(check.consoleErrors().join('\n')).toContain(SEARCH_FAILURE);
+    const shown = await toastsSoFar(page);
+    expect(shown.filter(message => message.kind === 'error')).toEqual([]);
+  });
+  await returnToBack(page, hand, check);
+  await check('the four corners are on the back card\'s corners, and no red message shows',
+    async () => {
+      expectSameCorners(await cornersNow(page), backFound);
+      const shown = await toastsSoFar(page);
+      expect(shown.filter(message => message.kind === 'error')).toEqual([]);
+    });
+});
 
 test('PER-04.1 The corner outline, white or red and dashed, for a person to judge [phone]',
   async ({ page, check }, testInfo) => {

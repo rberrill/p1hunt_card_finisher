@@ -379,61 +379,6 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-10 "No card-shaped edges found."
-
-A warning, for 5 seconds, when a detection the user started finds nothing: "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again." The user starts one with **Tap to find card**, by turning on **Debug overlay**, or from the tuning panel (opening it, **Re-detect**, or a changed setting); detection on opening a photo never shows it.
-
-- Risk: medium
-- Check: script
-- Layout: both.
-- Added: 1.10 baseline
-- Changed: none
-- Anchors: "No card-shaped edges found.", "Drag the corners into place, or tap to find card and tap the card again."
-- Source: `js/app/state.js` (`runDetect`); `js/app/perspective.js` (`bindPerspective`); `js/app/debug-panel.js` (`toggleDebugPanel`, `buildDebugPanel`)
-- Ruling: R3. Turning on **Debug overlay** only draws; it runs no detection and leaves the corners alone. The app differs today. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today. R78. A message may say "Tap" on a wide screen. The app already does this.
-- Cases: 2
-
-### MSG-10.1 A search that finds no card says so in the line alone   [auto: phone]
-Written to ruling R77; it fails until that is built (BUG-289).
-
-Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
-- Starting screen: the start screen
-
-Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Open photo** on the start screen and choose plain-grey.png | The picture opens on the Perspective step; the line above the controls reads "Nothing detected. Drag the corners into place."; no message shows over the picture |
-| 2 | Arm Tap to find card | the line above the controls reads "Tap the card in the photo." |
-| 3 | Tap the middle of the picture | the line above the controls reads "Nothing detected. Drag the corners into place." |
-| 4 | Wait five seconds | No message has shown over the picture since the tap |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-### MSG-10.2 Re-detect in the tuning panel that finds no card shows no message   [auto: desktop]
-Written to ruling R77; it fails until that is built (BUG-289).
-
-Before you start:
-- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
-- Starting screen: the app opened from a link ending ?debug: the start screen, with the Detection tuning panel showing
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Click **Open photo** on the start screen and choose plain-grey.png | The picture opens; the Detection tuning panel still shows; no message shows over the picture |
-| 2 | Click **Re-detect** in the tuning panel | The search runs again and ends; the line above the controls still reads "Nothing detected. Drag the corners into place." |
-| 3 | Wait five seconds | No message has shown over the picture since the click |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
 ## MSG-11 "Detection failed: …"
 
 An error message, for 6 seconds, when detection throws: "Detection failed: " followed by the error's own text. An error from the background worker arrives as its whole stack trace.
@@ -2085,7 +2030,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-57 "Nothing detected. Drag the corners into place."
 
-After a detection run finds no card, the row above Perspective's controls reads "Nothing detected. Drag the corners into place." with an amber warning icon. It goes once the corners are moved by hand, by a drag or with the arrow buttons, and stays away until detection runs again, even if **Undo** puts the corners back.
+After a detection run finds no card, the row above Perspective's controls reads "Nothing detected. Drag the corners into place." with an amber warning icon. Nothing else says so: no pop-up shows, whether the search ran on opening the photo or the user started it (**Tap to find card**, or **Re-detect** in the tuning panel). It goes once the corners are moved by hand, by a drag or with the arrow buttons, and stays away until detection runs again, even if **Undo** puts the corners back.
 
 - Risk: medium
 - Check: script
@@ -2093,9 +2038,9 @@ After a detection run finds no card, the row above Perspective's controls reads 
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: "Nothing detected. Drag the corners into place.", `#perspectiveStatus`
-- Source: `js/app/perspective.js` (`perspectiveStatus`); `js/app/state.js` (`noteDetectedCorners`)
-- Ruling: R7. The warning clears after the first corner move, by drag or nudge. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today.
-- Cases: 1
+- Source: `js/app/perspective.js` (`perspectiveStatus`); `js/app/state.js` (`runDetect`, `noteDetectedCorners`)
+- Ruling: R7. The warning clears after the first corner move, by drag or nudge. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app does this since 1.10.0.
+- Cases: 3
 
 ### MSG-57.1 Nothing detected   [auto: phone]
 
@@ -2109,6 +2054,45 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Open photo** on the start screen and choose plain-grey.png | The picture opens on the Perspective step; the line above the controls reads "Nothing detected. Drag the corners into place." with an amber warning icon |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-57.2 A search that finds no card says so in the line alone   [auto: phone]
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
+- Starting screen: the start screen
+
+Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Open photo** on the start screen and choose plain-grey.png | The picture opens on the Perspective step; the line above the controls reads "Nothing detected. Drag the corners into place."; no message shows over the picture |
+| 2 | Arm Tap to find card | the line above the controls reads "Tap the card in the photo." |
+| 3 | Tap the middle of the picture | the line above the controls reads "Nothing detected. Drag the corners into place." |
+| 4 | Wait five seconds | No message has shown over the picture since the tap |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-57.3 Re-detect in the tuning panel that finds no card shows no message   [auto: desktop]
+
+Before you start:
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
+- Starting screen: the app opened from a link ending ?debug: the start screen, with the Detection tuning panel showing
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Click **Open photo** on the start screen and choose plain-grey.png | The picture opens; the Detection tuning panel still shows; no message shows over the picture |
+| 2 | Click **Re-detect** in the tuning panel | The search runs again and ends; the line above the controls still reads "Nothing detected. Drag the corners into place." |
+| 3 | Wait five seconds | No message has shown over the picture since the click |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

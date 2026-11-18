@@ -781,98 +781,6 @@ test('MSG-09.2 Edits that don\'t fit the photo say it was opened fresh [phone]',
   });
 });
 
-// The plain grey picture with no card in it (tests/fixtures/).
-const GREY_PICTURE = 'plain-grey.png';
-const NOTHING_DETECTED = 'Nothing detected. Drag the corners into place.';
-
-// Chooses the plain grey picture with Open photo on the start screen, and waits until its
-// search for a card has ended.
-async function openGreyPicture(page, hand) {
-  await pickWith(page, hand, page.locator('#btnOpenEmpty'), fixtureFile(GREY_PICTURE));
-  await waitForPhoto(page, GREY_PICTURE);
-}
-
-test('MSG-10.1 A search that finds no card says so in the line alone [phone]',
-  async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-289');
-    const hand = await startOnStartScreen(page, testInfo);
-    await openGreyPicture(page, hand);
-    await check('The picture opens on the Perspective step; the line above the controls reads '
-      + `"${NOTHING_DETECTED}"; no message shows over the picture`, async () => {
-      expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('perspective');
-      await expectStatus(page, PERSPECTIVE_STATUS, NOTHING_DETECTED, 'warn');
-      const shown = (await messagesSoFar(page)).map(message => message.text);
-      expect(shown.filter(text => text !== 'Loading…')).toEqual([]);
-      await expect(page.locator('#toast')).not.toHaveClass(/is-shown/);
-    });
-    await findNoCard(page, hand, check);
-  });
-
-test('MSG-10.2 Re-detect in the tuning panel that finds no card shows no message [desktop]',
-  async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-289');
-    await reDetectNoCard(page, check, testInfo);
-  });
-
-// MSG-10.2's rows: opens the grey picture with the tuning panel showing, clicks Re-detect and
-// checks that the line, alone, says nothing was found (ruling R77).
-async function reDetectNoCard(page, check, testInfo) {
-  await watchMessages(page);
-  await openApp(page, TUNING_LINK);
-  await waitForStart(page);
-  const hand = handFor(page, testInfo);
-  await openGreyPicture(page, hand);
-  await check('The picture opens; the Detection tuning panel still shows; no message shows over '
-    + 'the picture', async () => {
-    await expect(page.locator('#debugPanel')).toBeVisible();
-    const shown = (await messagesSoFar(page)).map(message => message.text);
-    expect(shown.filter(text => text !== 'Loading…')).toEqual([]);
-    await expect(page.locator('#toast')).not.toHaveClass(/is-shown/);
-  });
-  const runsBefore = await page.evaluate(() => window.__straightener.app.detection.running);
-  const before = (await messagesSoFar(page)).length;
-  await hand.tap(page.locator('#debugRun'));
-  await page.waitForFunction(runs => {
-    const detection = window.__straightener.app.detection;
-    return detection.running > runs && detection.message === '';
-  }, runsBefore);
-  await check('The search runs again and ends; the line above the controls still reads '
-    + `"${NOTHING_DETECTED}"`, async () => {
-    await expectStatus(page, PERSPECTIVE_STATUS, NOTHING_DETECTED, 'warn');
-  });
-  await expectNoMessageAfter(page, check, before, 'No message has shown over the picture since '
-    + 'the click');
-}
-
-// The last row of MSG-10.1 and MSG-10.2 (ruling R77): `before` messages had shown when the
-// search was started; five seconds on, none has shown since. A plain reading, so the known
-// defect fails at once.
-async function expectNoMessageAfter(page, check, before, description) {
-  await page.waitForTimeout(WARN_MS);
-  const shown = (await messagesSoFar(page)).slice(before).map(message => message.text);
-  await check(description, () => {
-    expect(shown).toEqual([]);
-  });
-}
-
-// MSG-10.1's rows 2 to 4: arms Tap to find card, taps the middle of the picture, and checks
-// that the line, alone, says nothing was found (ruling R77).
-async function findNoCard(page, hand, check) {
-  await armFindCard(page, hand, check);
-  const runsBefore = await page.evaluate(() => window.__straightener.app.detection.running);
-  const before = (await messagesSoFar(page)).length;
-  await tapAt(page, hand, await photoAreaMiddle(page));
-  await page.waitForFunction(runs => {
-    const detection = window.__straightener.app.detection;
-    return detection.running > runs && detection.message === '';
-  }, runsBefore);
-  await check(`the line above the controls reads "${NOTHING_DETECTED}"`, async () => {
-    await expectStatus(page, PERSPECTIVE_STATUS, NOTHING_DETECTED, 'warn');
-  });
-  await expectNoMessageAfter(page, check, before, 'No message has shown over the picture since '
-    + 'the tap');
-}
-
 // Checks a red message that ruling R24 words (`approvedText`), then that the error's own words
 // (`detail`) went to the console. The red message is the first error the toast showed; it is a
 // plain reading, so the known defect fails at once.
@@ -1917,6 +1825,17 @@ test('MSG-56.1 Low confidence [phone]', async ({ page, check }, testInfo) => {
     });
 });
 
+// The plain grey picture with no card in it (tests/fixtures/).
+const GREY_PICTURE = 'plain-grey.png';
+const NOTHING_DETECTED = 'Nothing detected. Drag the corners into place.';
+
+// Chooses the plain grey picture with Open photo on the start screen, and waits until its
+// search for a card has ended.
+async function openGreyPicture(page, hand) {
+  await pickWith(page, hand, page.locator('#btnOpenEmpty'), fixtureFile(GREY_PICTURE));
+  await waitForPhoto(page, GREY_PICTURE);
+}
+
 test('MSG-57.1 Nothing detected [phone]', async ({ page, check }, testInfo) => {
   const hand = await startOnStartScreen(page, testInfo);
   await openGreyPicture(page, hand);
@@ -1926,6 +1845,84 @@ test('MSG-57.1 Nothing detected [phone]', async ({ page, check }, testInfo) => {
     await expectStatus(page, PERSPECTIVE_STATUS, NOTHING_DETECTED, 'warn');
   });
 });
+
+test('MSG-57.2 A search that finds no card says so in the line alone [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startOnStartScreen(page, testInfo);
+    await openGreyPicture(page, hand);
+    await check('The picture opens on the Perspective step; the line above the controls reads '
+      + `"${NOTHING_DETECTED}"; no message shows over the picture`, async () => {
+      expect(await page.evaluate(() => window.__straightener.app.tab)).toBe('perspective');
+      await expectStatus(page, PERSPECTIVE_STATUS, NOTHING_DETECTED, 'warn');
+      const shown = (await messagesSoFar(page)).map(message => message.text);
+      expect(shown.filter(text => text !== 'Loading…')).toEqual([]);
+      await expect(page.locator('#toast')).not.toHaveClass(/is-shown/);
+    });
+    await findNoCard(page, hand, check);
+  });
+
+test('MSG-57.3 Re-detect in the tuning panel that finds no card shows no message [desktop]',
+  async ({ page, check }, testInfo) => {
+    await reDetectNoCard(page, check, testInfo);
+  });
+
+// MSG-57.3's rows: opens the grey picture with the tuning panel showing, clicks Re-detect and
+// checks that the line, alone, says nothing was found (ruling R77).
+async function reDetectNoCard(page, check, testInfo) {
+  await watchMessages(page);
+  await openApp(page, TUNING_LINK);
+  await waitForStart(page);
+  const hand = handFor(page, testInfo);
+  await openGreyPicture(page, hand);
+  await check('The picture opens; the Detection tuning panel still shows; no message shows over '
+    + 'the picture', async () => {
+    await expect(page.locator('#debugPanel')).toBeVisible();
+    const shown = (await messagesSoFar(page)).map(message => message.text);
+    expect(shown.filter(text => text !== 'Loading…')).toEqual([]);
+    await expect(page.locator('#toast')).not.toHaveClass(/is-shown/);
+  });
+  const runsBefore = await page.evaluate(() => window.__straightener.app.detection.running);
+  const before = (await messagesSoFar(page)).length;
+  await hand.tap(page.locator('#debugRun'));
+  await page.waitForFunction(runs => {
+    const detection = window.__straightener.app.detection;
+    return detection.running > runs && detection.message === '';
+  }, runsBefore);
+  await check('The search runs again and ends; the line above the controls still reads '
+    + `"${NOTHING_DETECTED}"`, async () => {
+    await expectStatus(page, PERSPECTIVE_STATUS, NOTHING_DETECTED, 'warn');
+  });
+  await expectNoMessageAfter(page, check, before, 'No message has shown over the picture since '
+    + 'the click');
+}
+
+// The last row of MSG-57.2 and MSG-57.3 (ruling R77): `before` messages had shown when the
+// search was started; five seconds on, none has shown since.
+async function expectNoMessageAfter(page, check, before, description) {
+  await page.waitForTimeout(WARN_MS);
+  const shown = (await messagesSoFar(page)).slice(before).map(message => message.text);
+  await check(description, () => {
+    expect(shown).toEqual([]);
+  });
+}
+
+// MSG-57.2's rows 2 to 4: arms Tap to find card, taps the middle of the picture, and checks
+// that the line, alone, says nothing was found (ruling R77).
+async function findNoCard(page, hand, check) {
+  await armFindCard(page, hand, check);
+  const runsBefore = await page.evaluate(() => window.__straightener.app.detection.running);
+  const before = (await messagesSoFar(page)).length;
+  await tapAt(page, hand, await photoAreaMiddle(page));
+  await page.waitForFunction(runs => {
+    const detection = window.__straightener.app.detection;
+    return detection.running > runs && detection.message === '';
+  }, runsBefore);
+  await check(`the line above the controls reads "${NOTHING_DETECTED}"`, async () => {
+    await expectStatus(page, PERSPECTIVE_STATUS, NOTHING_DETECTED, 'warn');
+  });
+  await expectNoMessageAfter(page, check, before, 'No message has shown over the picture since '
+    + 'the tap');
+}
 
 test('MSG-58.1 A corrected frame over the cap is noted in the console only [phone]', async ({
   page,

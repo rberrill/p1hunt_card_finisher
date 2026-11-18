@@ -259,8 +259,7 @@
     console.info(`[card-finisher] switched to the ${pair.current} in `
       + `${app.switchDurationMs.toFixed(0)} ms`);
     savePairSession(true);
-    // A side restored from a session has no candidates yet (for Candidate and snapping).
-    if (!app.detection.last) CF.runDetect({ auto: true, keepCorners: true });
+    CF.detectReopenedSide();
   }
 
   // Ends the pair, keeping `side` as a single photo. Its crop stays 5:7 and the preset unlocks;

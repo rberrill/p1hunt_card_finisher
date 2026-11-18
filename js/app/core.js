@@ -90,6 +90,7 @@
       cornersAfterRun: '',
       last: null,
       running: 0,
+      pending: null,
       message: '',
       snapPoints: [],
       snapLines: [],

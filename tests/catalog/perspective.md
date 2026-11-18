@@ -64,19 +64,19 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## PER-03 A newer search wins
+## PER-03 A newer search wins, and a search cut short by a side switch runs again
 
-If a new search for the card starts before an older one finishes, or a front and back pair switches sides meanwhile, the older search's result is thrown away.
+If a new search for the card starts before an older one finishes, or another photo is opened meanwhile, the older search's result is thrown away. A search still running when a front and back pair switches sides is thrown away too, leaving no "Detecting…" behind and showing no message if it fails, and it runs again when that side is next opened. That search puts the corners on the card, with no undo step, unless a corner on that side was moved by hand: then the corners stay, and **Candidate** steps through what it found.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: none
-- Source: `js/app/state.js` (`runDetect`); `js/app/pair.js` (`switchSide`)
-- Ruling: R45. Switching sides never leaves a stale message: the back's line is not left reading "Detecting…". The app differs today.
-- Cases: 2
+- Source: `js/app/state.js` (`runDetect`, `takeDetection`, `clearRunMessage`, `detectReopenedSide`, `areCornersHandPlaced`); `js/app/pair.js` (`switchSide`)
+- Ruling: R45. Switching sides never leaves a stale message: the back's line is not left reading "Detecting…". A search still running when its side is left is thrown away and runs again when that side is next opened; that run moves the corners only if none on that side was moved by hand, and otherwise its result becomes the candidates to cycle through. The app does this since 1.10.0.
+- Cases: 5
 
 ### PER-03.1 A second photo opened during the search keeps its own corners   [auto: phone]
 Script only
@@ -99,10 +99,9 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-03.2 A search still running when a pair switches sides is thrown away   [auto: phone]
+### PER-03.2 A find tap cut short by a side switch runs again on return, and a corner placed by hand stays   [auto: phone]
 Script only
-Stand-in: the script holds the back's search open until the switch to the front has finished, then lets it end. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain.
-Written to ruling R45; it fails until that is built (BUG-241).
+Stand-in: the script holds the back's search open until the switch to the front has finished, then lets it end, and reads which point each search was given. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -119,8 +118,80 @@ Before you start:
 | 4 | Tap the middle of the back card once, without moving | The line reads "Detecting…" |
 | 5 | Tap **Front** in the top bar, while the search runs | The front opens on Perspective, its corners on the front card |
 | 6 | Wait two seconds (the script lets the back's search end) | The front's corners have not moved |
-| 7 | Tap **Back** in the top bar | The back opens; its top-left corner is still where you dragged it in row 1: the search's result was thrown away |
-| 8 | Look at the line above the controls | It reads the normal Nudge line, NUDGE and Corner 1 of 4, not "Detecting…" |
+| 7 | Tap **Back** in the top bar | The back opens and the line reads "Detecting…" for a moment: the search runs again |
+| 8 | Wait until the line no longer reads "Detecting…" (the script reads which point that search was given) | The search that ran again was for the point tapped in row 4 |
+| 9 | Look at the back's outline and at the line above the controls | The top-left corner is still where you dragged it in row 1, and the line reads NUDGE and Corner 1 of 4 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-03.3 A side left before its first search ends is searched again on return, and its corners land on the card   [auto: phone]
+Script only
+Stand-in: the script holds the back's first search open until the switch to the front has finished, then lets it end. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Tap **Front** in the top bar, while the line still reads "Detecting…" | The front opens on Perspective, its corners on the front card |
+| 3 | Wait two seconds (the script lets the back's search end) | The front's corners have not moved |
+| 4 | Tap **Back** in the top bar | The back opens and the line reads "Detecting…" for a moment: the search runs again |
+| 5 | Wait until the line no longer reads "Detecting…" | The four corners are on the back card's corners, where they land when this photo is opened on its own, and **Candidate** reads 1/3 |
+| 6 | Look at the line above the controls and at **Undo** (the arrow curving left, at the top right) | The line reads NUDGE and Corner 1 of 4, with Confidence and a percentage at its right; **Undo** is greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-03.4 A corner dragged before the side is left stays through the search on return, and Candidate cycles   [auto: phone]
+Script only
+Stand-in: the script holds the back's first search open until the switch to the front has finished, then lets it end. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Drag the back's top-left corner ring 40 px right and 40 px down, and let go | That corner has moved 40 px right and 40 px down |
+| 3 | Tap **Front** in the top bar, while the line still reads "Detecting…" | The front opens on Perspective, its corners on the front card |
+| 4 | Wait two seconds (the script lets the back's search end) | The front's corners have not moved |
+| 5 | Tap **Back** in the top bar | The back opens and the line reads "Detecting…" for a moment: the search runs again |
+| 6 | Wait until the line no longer reads "Detecting…" | The corners are still as they were after the drag in row 2; **Candidate** shows no number and is not greyed out |
+| 7 | Tap **Candidate** | The four corners go to the back card's corners, where they land when this photo is opened on its own, and **Candidate** reads 1/3 |
+| 8 | Tap **Candidate** again | **Candidate** reads 2/3 and the outline has moved to another candidate |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-03.5 A search that fails after its side is left shows no message, and runs again on return   [auto: phone]
+Script only
+Stand-in: the script holds the back's first search open until the switch to the front has finished, then makes it fail with the words "Stand-in search failure 2291". No photo makes a search fail, and a person can't switch sides inside a search for certain. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Tap **Front** in the top bar, while the line still reads "Detecting…" | The front opens on Perspective, its corners on the front card |
+| 3 | Wait two seconds (the script makes the back's search fail) | The front's corners have not moved |
+| 4 | Look over the photo's bottom edge, and at the browser's console | No red message has shown over the photo; the console holds the failure, "Stand-in search failure 2291" |
+| 5 | Tap **Back** in the top bar | The back opens and the line reads "Detecting…" for a moment: the search runs again |
+| 6 | Wait until the line no longer reads "Detecting…" | The four corners are on the back card's corners, where they land when this photo is opened on its own, and no red message shows |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1569,16 +1640,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-29 The find tap
 
-While armed, a still tap on the photo, however long it is held, searches for the card at that point, moves the corners as one undo step and disarms. The point is used for that search only. If nothing is found, the corners stay and a pop-up says "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again."
+While armed, a still tap on the photo, however long it is held, searches for the card at that point, moves the corners as one undo step and disarms. The point is used for that search only. If nothing is found, the corners stay and the line above the controls reads "Nothing detected. Drag the corners into place."; no pop-up shows.
 
 - Risk: high
 - Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnFindCard`, `CONFIG.detect.seedMissFactor`, "No card-shaped edges found. "
+- Changed: 1.10.0
+- Anchors: `#btnFindCard`, `CONFIG.detect.seedMissFactor`
 - Source: `js/app/input.js` (`stepGesture`, `onPointerUp`); `js/app/state.js` (`findCardAt`, `runDetect`)
-- Ruling: R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today.
+- Ruling: R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app does this since 1.10.0.
 - Cases: 5
 
 ### PER-29.1 A tap on the card finds it, as one undo step, and disarms   [auto: phone, webkit]
@@ -1619,7 +1690,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-29.3 A find tap on a picture with no card leaves the corners   [auto: phone]
-Whether a pop-up shows as well is MSG-10.1's (ruling R77); this case doesn't look at it.
+That no pop-up shows as well is MSG-57.2's to check (ruling R77); this case doesn't look at it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
