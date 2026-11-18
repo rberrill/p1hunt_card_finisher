@@ -715,16 +715,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-14 Photo replaced by a message when the corners are wrong
 
-While the corners cross or fold inward, every step after Perspective (and Perspective's **Preview**) shows "Fix the corners in Perspective first." in the photo area instead of the photo. A pair's joined preview on Export shows "Fix the corners of both sides in Perspective first."
+While the corners cross or fold inward, every step after Perspective shows "Fix the corners in Perspective first." in the photo area instead of the photo, and Perspective's **Preview** shows "Fix the corners first." A pair's joined preview on Export shows "Fix the corners of both sides in Perspective first."
 
 - Risk: medium
 - Check: eye
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Fix the corners in Perspective first.", "Fix the corners of both sides in Perspective first.", `#view`
+- Changed: 1.10.0
+- Anchors: "Fix the corners in Perspective first.", "Fix the corners first.", "Fix the corners of both sides in Perspective first.", `#view`
 - Source: `js/app/view.js` (`draw`, `drawTogether`, `drawMessage`)
-- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app differs today.
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app does this since 1.10.0.
 - Cases: 3
 
 ### VIEW-14.1 With the corners crossed, the later steps show a message, for a person to judge   [eye]
@@ -744,7 +744,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-14.2 Preview with the corners crossed asks to fix them, for a person to judge   [eye]
-Written to ruling R82, in the wording Rich approved; it fails until that is built (BUG-292). The script reads the words drawn; the judge looks at how they look.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch

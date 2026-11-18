@@ -61,6 +61,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - "Low confidence (…%). Check the corners." and "Nothing detected. Drag the corners into place." now go from the line above Perspective's controls once you move a corner, by dragging or with the arrows, and stay away until the card is searched for again, even if **Undo** puts the corner back. They used to stay until another detection ran.
 - In a pair, switching to the other side while the card was still being searched for left "Detecting…" in the line above Perspective's controls on the side you left, still there when you came back; and a back left before its first search had ended kept its corners on the starting rectangle. The search now runs again when you come back to that side. It puts the corners on the card unless you had moved one by hand; then they stay where you put them, and **Candidate** steps through what it found.
 - When **Tap to find card** finds no card, only the line above the controls says so: "Nothing detected. Drag the corners into place." A pop-up used to say it a second time, in other words.
+- On Perspective, with corners that can't be used, **Preview** now reads "Fix the corners first." in place of the card. It used to say "Fix the corners in Perspective first.", on Perspective itself; the other steps still say that.
+- Four rare faults used to show in the line above Perspective's controls in technical words ("Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty.", "Transform is not invertible."). The line now reads "Fix the corners first.", and the technical words go to the browser's console.
+- The line above Perspective's controls no longer says "Corrected frame clamped to 12000px on the long side.", a message with nothing to do about it. The browser's console notes it instead.
 
 ## [1.9.0] - 2026-11-10
 

@@ -1778,14 +1778,12 @@ test('MSG-54.1 The engine\'s other corner faults [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-291, BUG-292');
   const lines = listenToConsole(page);
   await start(page, testInfo, { step: 'perspective' });
   for (const fault of OTHER_FAULTS) {
     // Stand-in: no control brings these faults about, so the engine is made to report one.
     await faultGeometry(page, fault);
-    // A plain reading of the line (it is redrawn as the fault is reported), so the known defect
-    // fails at once.
+    // A plain reading of the line: it is redrawn as the fault is reported.
     const status = await statusNow(page, PERSPECTIVE_STATUS);
     await check(`The line above the controls reads "${FIX_HERE}" with a red error icon; the `
       + `Console holds "${fault}"`, () => {
@@ -1928,20 +1926,20 @@ test('MSG-58.1 A corrected frame over the cap is noted in the console only [phon
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-288');
   const lines = listenToConsole(page);
   await start(page, testInfo, { photo: SLAB_PHOTO, address: CLAMPED_LINK, step: 'perspective' });
-  const text = 'Corrected frame clamped to 1000px on the long side.';
-  // Plain readings, so the known defect fails at once.
-  const status = await statusNow(page, PERSPECTIVE_STATUS);
-  await check(`It holds no message about the corrected frame: it doesn't read "${text}"`, () => {
-    expect(status.isShown && /Corrected frame/.test(status.text)).toBe(false);
+  await check('It holds no message: it reads NUDGE and "Corner 1 of 4"', async () => {
+    // The frame is clamped, so the line would have something to say if it still said it.
+    expect(await page.evaluate(() => window.__straightener.app.geometry.perspective.isClamped))
+      .toBe(true);
+    await expect(page.locator('#perspectiveStatus')).toBeHidden();
+    const line = page.locator('#perspectiveLine');
+    await expect(line.locator('.line-label')).toHaveText('Nudge');
+    await expect(line).toContainText('Corner 1 of 4');
   });
-  // Ruling R76 sets no words for the console: a line that names the cap and says it held.
-  const isCapLine = line => /1000 ?px/.test(line.text) && /clamp|cap/i.test(line.text);
-  await check('A line says the corrected frame was clamped (or capped) to 1000 px on its long '
-    + 'side', () => {
-    expect(lines.some(isCapLine)).toBe(true);
+  const note = '[card-finisher] Corrected frame clamped to 1000 px on the long side.';
+  await check(`One line reads "${note}"`, () => {
+    expect(lines.filter(line => line.text === note)).toHaveLength(1);
   });
 });
 

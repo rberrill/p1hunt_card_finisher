@@ -1738,7 +1738,7 @@ test('PER-25.2 Preview with crossed corners, for a person to judge [phone]', asy
   await crossTheCorners(page, hand);
   await check.eye('the outline crosses itself, red and dashed');
   await hand.tap(page.locator('#toolPreview'));
-  // Ruling R82's words; the judge fails this until it is built (BUG-292).
+  // Ruling R82's words: VIEW-14.2's script reads them, the judge looks at them here.
   await check.eye('the photo area is empty except for grey text in its middle: "Fix the corners '
     + 'first."');
   await check(`the line reads "${CROSSED}"`, async () => {
@@ -2600,11 +2600,9 @@ test('PER-35.2 A phone shows no Result picture [phone]', async ({ page, check },
 });
 
 const LOW_CONFIDENCE = 'Low confidence (99%). Check the corners.';
-const CLAMPED = 'Corrected frame clamped to 1000px on the long side.';
 // Links that make IMG_9136's 99% confidence count as low, and that clamp its corrected frame.
 const LOW_CONFIDENCE_LINK = 'index.html?detect.minConfidence=1';
 const CLAMPED_LINK = 'index.html?maxOutputPx=1000';
-const LOW_CONFIDENCE_AND_CLAMPED_LINK = 'index.html?detect.minConfidence=1&maxOutputPx=1000';
 
 // True when the line above the controls is back at rest (no message; NUDGE and a handle's
 // name), read once: the known-defect cases compare without waiting.
@@ -2691,25 +2689,15 @@ test('PER-36.5 A clamped corrected frame is not reported in the line [phone]', a
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-288');
   await startOnPerspective(page, testInfo, { address: CLAMPED_LINK });
-  // A plain reading, so the known defect fails at once.
-  const isShown = await statusLine(page).isVisible();
-  const text = await statusLine(page).locator('.status-text').textContent();
-  await check(`it holds no message about the corrected frame: it doesn't read "${CLAMPED}"`,
-    () => {
-      expect(isShown && /Corrected frame/.test(text)).toBe(false);
+  await check('it holds no message about the corrected frame: it reads NUDGE and Corner 1 of 4',
+    async () => {
+      // The frame is clamped, so the line would have something to say if it still said it.
+      expect(await page.evaluate(() => window.__straightener.app.geometry.perspective.isClamped))
+        .toBe(true);
+      await expectNudgeLine(page);
+      await expect(handleName(page)).toHaveText('Corner 1 of 4');
     });
-});
-
-test('PER-36.6 Low confidence takes the line over a clamped frame [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  await startOnPerspective(page, testInfo, { address: LOW_CONFIDENCE_AND_CLAMPED_LINK });
-  await check(`the line reads "${LOW_CONFIDENCE}", not the clamped-frame message`, async () => {
-    await expectStatus(page, LOW_CONFIDENCE);
-  });
 });
 
 // The messages recordStatuses has seen since the find tap: the prompt it starts on left out.
@@ -2771,18 +2759,6 @@ test('PER-36.8 "Detecting…" takes the line over low confidence [phone]', async
     + `message; then it reads "${LOW_CONFIDENCE}" again`, async () => {
     expect(await statusesAfterTap(page)).toEqual(['Detecting…', LOW_CONFIDENCE]);
     await expectStatus(page, LOW_CONFIDENCE);
-  });
-});
-
-test('PER-36.9 "Nothing detected" takes the line over a clamped frame [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  await startOnFixture(page, testInfo, BLANK_FIXTURE, CLAMPED_LINK);
-  await check(`the line reads "${NOTHING_DETECTED}", not the clamped-frame message`, async () => {
-    expect(await page.evaluate(() => window.__straightener.app.geometry.perspective.isClamped))
-      .toBe(true);
-    await expectStatus(page, NOTHING_DETECTED);
   });
 });
 

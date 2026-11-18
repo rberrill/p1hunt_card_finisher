@@ -1005,19 +1005,21 @@ async function checkMessageOnly(page, check, description, drawnText = null) {
 
 test('VIEW-14.1 With the corners crossed, the later steps show a message, for a person to '
   + 'judge [phone]', async ({ page, check }, testInfo) => {
+  await recordDrawnText(page);
   const hand = await startOn(page, testInfo);
   await crossTheCorners(page, hand);
   await check('the outline crosses itself', async () => {
     expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(false);
   });
   await goToStep(page, 'rotate', hand);
+  // Ruling R82 changed the words on Perspective only: every later step still names the step.
   await checkMessageOnly(page, check,
-    'on Rotate, no photo, only "Fix the corners in Perspective first."');
+    'on Rotate, no photo, only "Fix the corners in Perspective first."',
+    'Fix the corners in Perspective first.');
 });
 
 test('VIEW-14.2 Preview with the corners crossed asks to fix them, for a person to judge '
   + '[phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-292');
   await recordDrawnText(page);
   const hand = await startOn(page, testInfo);
   await crossTheCorners(page, hand);

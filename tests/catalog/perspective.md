@@ -1338,16 +1338,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-25 Preview
 
-**Preview** shows the corrected card in place of the photo and its handles. The line above the controls reads **Preview** and "The corrected card. Handles are hidden.", and the row under it "Pinch to zoom, drag to pan. Tap Preview again for the corners."
+**Preview** shows the corrected card in place of the photo and its handles. The line above the controls reads **Preview** and "The corrected card. Handles are hidden.", and the row under it "Pinch to zoom, drag to pan. Tap Preview again for the corners." While the corners are invalid there is no corrected card to show, and the photo area reads "Fix the corners first."
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#toolPreview`, "Show the corrected card", "The corrected card. Handles are hidden.", "Pinch to zoom, drag to pan. Tap Preview again for the corners."
+- Changed: 1.10.0
+- Anchors: `#toolPreview`, "Show the corrected card", "The corrected card. Handles are hidden.", "Pinch to zoom, drag to pan. Tap Preview again for the corners.", "Fix the corners first."
 - Source: `js/app/perspective.js` (`buildPerspectiveControls`, `bindPerspectiveTools`, `syncPerspective`, `syncPerspectiveReadouts`); `js/app/view.js` (`draw`)
-- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app differs today.
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app does this since 1.10.0.
 - Cases: 2
 
 ### PER-25.1 Preview shows the corrected card and its two lines   [auto: phone]
@@ -1368,7 +1368,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-25.2 Preview with crossed corners, for a person to judge   [eye]
-Written to ruling R82, in the wording Rich approved: on Perspective itself the words are "Fix the corners first." Until that is built (BUG-292) the photo area reads "Fix the corners in Perspective first.", and row 2 fails. VIEW-14.2's script reads the words.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
@@ -2041,7 +2040,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-36 Which message shows
 
-The line above the controls shows at most one message, in this order: Tap to find card armed, crossed corners, "Detecting…", low confidence, nothing detected, then the corrected frame clamped to 12000 px. Low confidence and nothing detected go once the corners are moved by hand, by a drag or with the arrow buttons, and stay away until detection runs again, even if **Undo** puts the corners back.
+The line above the controls shows at most one message, in this order: Tap to find card armed, crossed corners, "Detecting…", low confidence, then nothing detected. A corrected frame clamped to the 12000 px cap shows no message there: the browser's console notes it. Low confidence and nothing detected go once the corners are moved by hand, by a drag or with the arrow buttons, and stay away until detection runs again, even if **Undo** puts the corners back.
 
 - Risk: medium
 - Check: script
@@ -2049,11 +2048,11 @@ The line above the controls shows at most one message, in this order: Tap to fin
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: `#perspectiveStatus`, "Detecting…", "Low confidence (", "Corrected frame clamped to "
-- Source: `js/app/perspective.js` (`perspectiveStatus`, `asSentences`, `syncPerspectiveReadouts`); `js/app/state.js` (`noteDetectedCorners`)
-- Ruling: R7. "Low confidence" and "Nothing detected" clear after the first corner move, by drag or with the arrow buttons. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0. R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this. R76. "Corrected frame clamped to 12000px on the long side." goes from the line; the fact goes to the console. The app differs today.
-- Cases: 11
+- Source: `js/app/perspective.js` (`perspectiveStatus`, `faultText`, `asSentences`, `logGeometryNote`, `syncPerspectiveReadouts`); `js/app/state.js` (`noteDetectedCorners`)
+- Ruling: R7. "Low confidence" and "Nothing detected" clear after the first corner move, by drag or with the arrow buttons. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0. R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this. R76. "Corrected frame clamped to 12000px on the long side." goes from the line; the fact goes to the console. The app does this since 1.10.0.
+- Cases: 9
 
-None of the sample photos is found with low confidence, so the cases that need it open the app with a link setting that counts any confidence under 100% as low, and the ones that need a clamped frame with a setting that lowers the largest corrected frame to 1000 px. Low confidence needs a card found and "Nothing detected" needs none, so those two never compete for the line.
+None of the sample photos is found with low confidence, so the cases that need it open the app with a link setting that counts any confidence under 100% as low, and the one that needs a clamped frame with a setting that lowers the largest corrected frame to 1000 px. Low confidence needs a card found and "Nothing detected" needs none, so those two never compete for the line.
 
 ### PER-36.1 Tap to find card's prompt takes the line over the crossed-corners message   [auto: phone]
 Before you start:
@@ -2124,7 +2123,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-36.5 A clamped corrected frame is not reported in the line   [auto: phone]
-Written to ruling R76; it fails until that is built (BUG-288).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -2135,22 +2133,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It holds no message about the corrected frame: it doesn't read "Corrected frame clamped to 1000px on the long side." |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-### PER-36.6 Low confidence takes the line over a clamped frame   [auto: phone]
-Before you start:
-- Device and browser: any; a phone-width or a wide window
-- Build: the build under test
-- Photo: IMG_9136.JPEG from samples/ (detection is 99% sure of it)
-- Starting screen: the app opened with a link ending `?detect.minConfidence=1&maxOutputPx=1000` (two settings: any confidence under 100% counts as low, and the largest corrected frame is 1000 px on its long side), the photo open on the Perspective step
-- Browser data: none for this site (a private window, or the site's data cleared)
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Low confidence (99%). Check the corners.", not the clamped-frame message |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It holds no message about the corrected frame: it reads NUDGE and Corner 1 of 4 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2187,21 +2170,6 @@ Before you start:
 | 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
 | 3 | Tap **Tap to find card** | The line reads "Tap the card in the photo." |
 | 4 | Tap the middle of the card once, without moving | For a moment the line reads "Detecting…", in place of the low-confidence message; then it reads "Low confidence (99%). Check the corners." again |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-### PER-36.9 "Nothing detected" takes the line over a clamped frame   [auto: phone]
-Before you start:
-- Device and browser: any; a phone-width or a wide window
-- Build: the build under test
-- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it: the centered rectangle the corners fall back to makes a corrected frame longer than 1000 px, so it is clamped)
-- Starting screen: the app opened with a link ending `?maxOutputPx=1000` (a setting that makes the largest corrected frame 1000 px on its long side), the picture open on the Perspective step
-- Browser data: none for this site (a private window, or the site's data cleared)
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Nothing detected. Drag the corners into place.", not the clamped-frame message |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

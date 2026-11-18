@@ -49,6 +49,15 @@
     { value: 'portrait', label: 'Portrait' },
     { value: 'landscape', label: 'Landscape' },
   ];
+  // The engine's corner faults a person can see on the photo and put right by dragging, in the
+  // engine's words (js/engine.js, Quad.validate): the line above the controls shows these two.
+  // Any other fault of the engine's shows as FIX_CORNERS_HERE, the approved wording on
+  // Perspective itself, and its own words go to the console (rulings R81 and R82).
+  const DRAGGABLE_FAULTS = [
+    'Two corners are too close together.',
+    'Corners cross or fold inward — drag them back into a convex shape.',
+  ];
+  const FIX_CORNERS_HERE = 'Fix the corners first.';
 
   // The adjustment showing in the control area: 'nudge' (the resting line) or 'flatten'.
   // Preview, a switch, replaces both while it is on. Only this module reads it.
@@ -56,6 +65,9 @@
   // The mode whose rows are on screen. It trails lineMode for the 60 ms the old line takes to
   // fade after a mode tap (CF.swapLine), while the tapped tool is already lit.
   let shownLineMode = 'nudge';
+  // What the console was last told about the geometry (logGeometryNote), so a fault or a cap
+  // that lasts is written once.
+  let geometryNote = '';
 
   /* ---------- building ---------- */
   // Builds Perspective's control area and options sheet into its section of index.html, around
@@ -324,15 +336,36 @@
     return text.replace(/ — (\S)/, (match, letter) => '. ' + letter.toUpperCase());
   }
 
+  // The words the line shows for an engine fault: the engine's own for the two a person can
+  // see and drag right, and the approved line for any other (rulings R81 and R82).
+  function faultText(reason) {
+    return DRAGGABLE_FAULTS.includes(reason) ? asSentences(reason) : FIX_CORNERS_HERE;
+  }
+
+  // Writes to the console what the screen doesn't say: the engine's own words for a fault shown
+  // as "Fix the corners first." (ruling R81), or that the corrected frame was held to the cap
+  // (ruling R76). Once each time it changes, not at every update of the controls.
+  function logGeometryNote(geometry) {
+    let note = '';
+    if (geometry && !geometry.ok) {
+      if (!DRAGGABLE_FAULTS.includes(geometry.reason)) note = geometry.reason;
+    } else if (geometry && geometry.perspective.isClamped) {
+      note = `Corrected frame clamped to ${CONFIG.maxOutputPx} px on the long side.`;
+    }
+    if (note && note !== geometryNote) console.warn('[card-finisher]', note);
+    geometryNote = note;
+  }
+
   // The message to act on, as { kind, text, actionLabel }, or null for none. Only the armed
   // Tap to find card carries a button (Cancel). candidate: the detected candidate the corners
   // sit on, or null. Detection's two warnings go once the corners are moved by hand, and stay
-  // away until it runs again (ruling R7).
+  // away until it runs again (ruling R7). A corrected frame held to the cap is no message: there
+  // is nothing to act on (ruling R76).
   function perspectiveStatus(geometry, candidate) {
     if (app.findMode) {
       return { kind: 'info', text: 'Tap the card in the photo.', actionLabel: 'Cancel' };
     }
-    if (geometry && !geometry.ok) return { kind: 'error', text: asSentences(geometry.reason) };
+    if (geometry && !geometry.ok) return { kind: 'error', text: faultText(geometry.reason) };
     if (app.detection.message) return { kind: 'info', text: app.detection.message };
     const canWarn = !app.detection.wasMovedByHand;
     if (canWarn && candidate && candidate.confidence < CONFIG.detect.minConfidence) {
@@ -343,15 +376,12 @@
     if (canWarn && hasRun && !app.detection.candidates.length) {
       return { kind: 'warn', text: 'Nothing detected. Drag the corners into place.' };
     }
-    if (geometry && geometry.perspective.isClamped) {
-      const text = `Corrected frame clamped to ${CONFIG.maxOutputPx}px on the long side.`;
-      return { kind: 'info', text };
-    }
     return null;
   }
 
   // The label row (or the status in its place) and the confidence readout at its right.
   function syncPerspectiveReadouts() {
+    logGeometryNote(app.geometry);
     const detection = app.detection;
     // The candidate the corners sit on: none once they are moved by hand (ruling R6).
     const candidate = detection.isOnCandidate ? detection.candidates[detection.index] : null;

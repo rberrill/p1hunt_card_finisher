@@ -1935,20 +1935,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-54 The other corner faults
 
-For the engine's remaining faults the row above Perspective's controls shows, with a red error icon, "Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty." or "Transform is not invertible."
+For the engine's remaining faults ("Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty." and "Transform is not invertible.") the row above Perspective's controls reads "Fix the corners first." with a red error icon. The engine's own words go to the browser's console.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty.", "Transform is not invertible."
-- Source: `js/app/perspective.js` (`perspectiveStatus`); `js/engine.js` (`Quad.validate`, `computeGeometry`)
-- Ruling: R81. The screen shows "Fix the corners in Perspective first." (on Perspective itself, "Fix the corners first.", R82) in place of the engine's words, which go to the console. The app differs today.
+- Changed: 1.10.0
+- Anchors: "Fix the corners first.", "Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty.", "Transform is not invertible."
+- Source: `js/app/perspective.js` (`perspectiveStatus`, `faultText`, `logGeometryNote`); `js/engine.js` (`Quad.validate`, `computeGeometry`)
+- Ruling: R81. The screen shows "Fix the corners in Perspective first." (on Perspective itself, "Fix the corners first.", R82) in place of the engine's words, which go to the console. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-54.1 The engine's other corner faults   [auto: phone]
-Written to rulings R81 and R82; it fails until they are built (BUG-291, BUG-292). The case is on Perspective, so the line reads R82's "Fix the corners first."
 Script only
 Stand-in: no control brings these faults about, so the script makes the engine report each in turn.
 
@@ -2097,22 +2096,21 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-58 "Corrected frame clamped to 12000px on the long side."
+## MSG-58 "Corrected frame clamped to 12000 px on the long side." in the console
 
-When the perspective-corrected frame would be larger than the 12000 px cap, the row above Perspective's controls reads "Corrected frame clamped to 12000px on the long side." with a grey information icon.
+When the perspective-corrected frame would be larger than the 12000 px cap, the app writes "[card-finisher] Corrected frame clamped to 12000 px on the long side." to the browser's console, once while it lasts. Nothing on screen says so: the row above Perspective's controls shows no message for it.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Corrected frame clamped to ", "px on the long side.", `CONFIG.maxOutputPx`
-- Source: `js/app/perspective.js` (`perspectiveStatus`)
-- Ruling: R76. The line goes; the fact goes to the console. The app differs today.
+- Changed: 1.10.0
+- Anchors: "Corrected frame clamped to ", " px on the long side.", `CONFIG.maxOutputPx`
+- Source: `js/app/perspective.js` (`logGeometryNote`, `perspectiveStatus`)
+- Ruling: R76. The line goes; the fact goes to the console. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-58.1 A corrected frame over the cap is noted in the console only   [auto: phone]
-Written to ruling R76; it fails until that is built (BUG-288). The console's words are not set by the ruling: the case looks for a line that gives the cap.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch, with the browser's developer tools open on the Console
@@ -2123,8 +2121,8 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the line above the controls | It holds no message about the corrected frame: it doesn't read "Corrected frame clamped to 1000px on the long side." |
-| 2 | Read the Console | A line says the corrected frame was clamped (or capped) to 1000 px on its long side |
+| 1 | Read the line above the controls | It holds no message: it reads NUDGE and "Corner 1 of 4" |
+| 2 | Read the Console | One line reads "[card-finisher] Corrected frame clamped to 1000 px on the long side." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2809,16 +2807,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-81 "Fix the corners in Perspective first." on the photo
 
-When the corners are invalid, "Fix the corners in Perspective first." is drawn in grey at the center of the photo area in place of the picture, on every step except Perspective's corner view.
+When the corners are invalid, "Fix the corners in Perspective first." is drawn in grey at the center of the photo area in place of the picture, on every step after Perspective. Perspective's corner view keeps the photo; what its **Preview** reads is VIEW-14's.
 
 - Risk: medium
 - Check: eye
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Fix the corners in Perspective first."
+- Changed: 1.10.0
+- Anchors: "Fix the corners in Perspective first.", "Fix the corners first."
 - Source: `js/app/view.js` (`draw`, `drawMessage`)
-- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app differs today.
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-81.1 "Fix the corners in Perspective first." on the photo, for a person to judge   [eye]
