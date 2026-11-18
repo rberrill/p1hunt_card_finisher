@@ -192,10 +192,10 @@ The question is never asked for **Original**, nor when the file is already at or
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#exportSize`, `CONFIG.export.allowUpscale`
-- Source: `js/app/export.js` (`offeredUpscale`); `js/app/pair.js` (`pairUpscaleOffer`)
-- Ruling: R37, widened 16 November. The Upscale question is asked only when **Yes** would save a bigger file than **No**, so not with upscaling already switched on from a link, nor where a canvas cap leaves no room to enlarge. The app differs today.
+- Source: `js/app/export.js` (`offeredUpscale`, `isUpscaleBigger`); `js/app/pair.js` (`pairUpscaleOffer`)
+- Ruling: R37, widened 16 November. The Upscale question is asked only when **Yes** would save a bigger file than **No**, so not with upscaling already switched on from a link, nor where a canvas cap leaves no room to enlarge. The app does this since 1.10.0.
 - Cases: 4
 
 ### UPS-04.1 Original never asks   [auto: phone]
@@ -248,8 +248,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### UPS-04.4 With upscaling on from a link, a size the canvas limit holds back isn't asked about either   [auto: phone]
-Written to ruling R37; it fails until R37 is built (BUG-142).
-
 Before you start:
 - Device and browser: any; a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test, opened with `?export.allowUpscale=1&export.longEdge=12000` (index.html?export.allowUpscale=1&export.longEdge=12000): the output would be 12000 px, and the 16.7 MP canvas limit holds it at 4096 px
@@ -272,10 +270,10 @@ For a pair saved **Together**, it is asked when the joined image's long edge is 
 - Check: script, saved file
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#pairOutput`, "The image is ", " px at the photos’ resolution."
-- Source: `js/app/pair.js` (`pairUpscaleOffer`, `togetherLayout`, `encodeTogether`); `js/engine.js` (`pairLayout`)
-- Ruling: R37, widened. The question is asked only when **Yes** would save a bigger file than **No**: where a canvas cap leaves no room to enlarge the joined image, no question is asked. The app differs today: it asks, and **Yes** saves the same image as **No**. Only a link that lowers a cap brings this about with the sample photos.
+- Source: `js/app/pair.js` (`pairUpscaleOffer`, `togetherLayout`, `encodeTogether`); `js/app/export.js` (`isUpscaleBigger`); `js/engine.js` (`pairLayout`)
+- Ruling: R37, widened 16 November. The Upscale question is asked only when **Yes** would save a bigger file than **No**: where a canvas cap leaves no room to enlarge the joined image, no question is asked. The app does this since 1.10.0. Only a link that lowers a cap brings this about with the sample photos.
 - Cases: 2
 
 ### UPS-05.1 Together asks about the joined image, and Yes fits its long edge to the size   [auto: phone]
@@ -295,8 +293,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.
 
 ### UPS-05.2 Where a canvas cap leaves no room to enlarge the joined image, no question is asked   [auto: phone]
-Written to ruling R37, widened; it fails until that is built (BUG-142). No question is asked when **Yes** would not save a bigger file: today the question box asks "Upscale to 2000 px?", and **Yes** saves the same 1583 × 1100 px as **No**.
-
 Before you start:
 - Device and browser: a phone-width window, with downloads saved to a folder you can open
 - Build: the build under test, opened with `?maxOutputArea=2500000` (index.html?maxOutputArea=2500000), which caps a saved image at 2.5 MP: more than the joined image's 1.74 MP, less than the 2.78 MP it would be at 2000 px
@@ -313,17 +309,17 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the s
 
 ## UPS-06 A pair saved Separately
 
-For a pair saved **Separately**, it is asked when either side's file is under the chosen size; **Yes** gives each side that size, and a side already there is not sharpened.
+For a pair saved **Separately**, it is asked when either side's file is under the chosen size, and names only the side **Yes** would upscale (both when it would upscale both); **Yes** gives each side that size, and a side already there is not sharpened. Where a canvas cap leaves no room to enlarge either side's file, no question is asked (ruling R37).
 
 - Risk: medium
 - Check: script, saved file
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#pairOutput`, "The front is ", " px and the back "
-- Source: `js/app/pair.js` (`pairUpscaleOffer`, `encodeSeparately`, `renderSideInto`)
-- Ruling: R50. The question names only the side **Yes** would upscale ("The front is W × H px at the photo’s resolution.", approved wording, tests/catalog/wording.md); both sides only when both are under the size. The app differs today: it names both whenever either is under.
-- Cases: 2
+- Changed: 1.10.0
+- Anchors: `#pairOutput`, "The front is ", " px and the back ", " px at the photo’s resolution."
+- Source: `js/app/pair.js` (`pairUpscaleOffer`, `separatelyUpscaleText`, `encodeSeparately`, `renderSideInto`); `js/app/export.js` (`isUpscaleBigger`)
+- Ruling: R50. The question names only the side **Yes** would upscale ("The front is W × H px at the photo’s resolution.", approved wording, tests/catalog/wording.md); both only when both are under the size. The app does this since 1.10.0. R37, widened 16 November. The Upscale question is asked only when **Yes** would save a bigger file than **No**. The app does this since 1.10.0.
+- Cases: 3
 
 ### UPS-06.1 Separately names both sides, and Yes gives each the size   [auto: phone]
 Before you start:
@@ -342,7 +338,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved files.
 
 ### UPS-06.2 A side already at the size is saved the same after Yes as after No   [auto: phone]
-The question's words are ruling R50's. Until R50 is built (BUG-280) the app names the back as well ("The front is 748 × 1047 px and the back 771 × 1080 px at the photos’ resolution."), which this case also accepts: its subject is the saved files, and MSG-77.2 holds the words.
 Before you start:
 - Device and browser: a phone-width window, with downloads saved to a folder you can open and a way to compare two files byte for byte
 - Build: the build under test
@@ -357,6 +352,21 @@ Before you start:
 | 3 | Tap **No** | Two files are saved: the front 748 × 1047 px, the back 1080 px tall |
 | 4 | Tap **Download** | The question box asks "Upscale to 1080 px?" again |
 | 5 | Tap **Yes** | Two more files are saved: the front now 1080 px tall; the back byte for byte the same as after **No** |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot, and the saved files.
+
+### UPS-06.3 Where the canvas limit leaves no room to enlarge either side, no question is asked   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window, with downloads saved to a folder you can open
+- Build: the build under test, opened with `?export.allowUpscale=1&export.longEdge=12000` (index.html?export.allowUpscale=1&export.longEdge=12000): each side's file would be 12000 px tall, and the 16.7 MP canvas limit holds it at 4846 px
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair, as in UPS-05.1, on the Export step; **Separately** selected
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Download** | No question box (the box over the dimmed photo with a question and buttons) shows; two files are saved, 14_front_portrait_raw_white-front.jpg and 14_back_portrait_raw_white-back.jpg, each 3461 × 4846 px |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved files.

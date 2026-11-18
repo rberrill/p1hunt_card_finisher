@@ -148,7 +148,8 @@ const CONFIG = {
   },
   // The "Upscale to N px?" question. Download, Share and Copy ask it when the saved file's
   // long edge would be under the chosen Size (a pair's joined image, or either of its two
-  // files); the corner buttons when theirs would be under cornerShots.upscaleTargetPx.
+  // files); the corner buttons when theirs would be under cornerShots.upscaleTargetPx. It is
+  // asked only when Yes would save a bigger file than No.
   // Yes renders bicubic at the asked size, then runs this unsharp mask: the blur's sigma
   // in source px (scaled by the upscale factor, so it sharpens card edges, not the
   // interpolation grid), the amount (1 = add the full difference), and the luma difference

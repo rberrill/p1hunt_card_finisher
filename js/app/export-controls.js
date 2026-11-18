@@ -555,7 +555,10 @@
       return pair;
     }
     const longEdge = state.export.longEdge;
-    const isSmall = longEdge && output.scale >= 1 && Math.max(crop.width, crop.height) < longEdge;
+    // A crop under the chosen Size is saved as it is, and the tail says so. A link's
+    // export.allowUpscale enlarges it to the Size instead (the output's scale is then over 1),
+    // so there the tail goes (ruling R30).
+    const isSmall = longEdge && output.scale === 1 && Math.max(crop.width, crop.height) < longEdge;
     // The tail gives way on the phone while a note shows: the row holds one readout line then.
     const tail = makeEl('span', { class: 'export-readout-tail' }, ' · full crop, not upscaled');
     const outputSize = makeEl('b', null, `${output.width} × ${output.height}`);

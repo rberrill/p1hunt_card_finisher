@@ -114,16 +114,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## EXP-04 The size line for a single photo
 
-Under the size and format choices, a line reads **Output W × H px · FORMAT**, followed by **· full crop, not upscaled** when the crop is smaller than the chosen size.
+Under the size and format choices, a line reads **Output W × H px · FORMAT**, followed by **· full crop, not upscaled** when the crop is smaller than the chosen size and upscaling is off (the default). Opened from a link that turns upscaling on, the crop is enlarged to the size and the line has no such part.
 
 - Risk: medium
 - Check: script
 - Layout: both. On a wide screen the line is always whole; on a phone the "full crop, not upscaled" part is dropped while a note shows under it.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#exportReadout`, `.export-readout-tail`, " · full crop, not upscaled"
+- Changed: 1.10.0
+- Anchors: `#exportReadout`, `.export-readout-tail`, " · full crop, not upscaled", `CONFIG.export.allowUpscale`
 - Source: `js/app/export-controls.js` (`syncExportReadout`); `css/app.css` (the phone rules for the Export notes)
-- Ruling: R30. With upscaling turned on by a link, the "full crop, not upscaled" part goes. The app differs today.
+- Ruling: R30. The "not upscaled" tail goes when upscaling is on. The app does this since 1.10.0.
 - Cases: 3
 
 ### EXP-04.1 The size line gives the output size and format   [auto: phone]
@@ -165,8 +165,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-04.3 With upscaling on from a link, the size line has no "not upscaled" part   [auto: phone]
-Written to ruling R30; it fails until R30 is built (BUG-010).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test, opened with `?export.allowUpscale=1` added to its address (index.html?export.allowUpscale=1)
@@ -1748,17 +1746,15 @@ The saved photo is at most 12000 px on its long side and 16,777,216 px in area; 
 - Check: script, saved file
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.maxOutputPx`, `CONFIG.maxOutputArea`
-- Source: `js/engine.js` (`outputSize`)
-- Ruling: R37, widened 16 November. The Upscale question is asked only when **Yes** would save a bigger file than **No**: with upscaling already switched on from a link, and the area cap holding the output, it is not asked. The app differs today.
+- Source: `js/engine.js` (`outputSize`); `js/app/export.js` (`offeredUpscale`, `isUpscaleBigger`)
+- Ruling: R37, widened 16 November. The Upscale question is asked only when **Yes** would save a bigger file than **No**: with upscaling already switched on from a link, and the area cap holding the output, it is not asked. The app does this since 1.10.0.
 - Cases: 2
 
 The sample photos are too small to reach 12000 px on a side at their own resolution, and with upscaling on the area cap binds first, so EXP-34.2 lowers the side cap with a link to show the rule.
 
 ### EXP-34.1 The saved photo is at most 16,777,216 px in area   [auto: phone, webkit]
-Written to ruling R37; it fails until R37 is built (BUG-142).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder you can open
 - Build: the build under test, opened with `?export.longEdge=12000&export.allowUpscale=1` added to its address, so the output would be 12000 × 12000 px

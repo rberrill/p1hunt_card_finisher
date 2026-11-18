@@ -2232,7 +2232,6 @@ test('MSG-77.2 With one side over the size, the question names only the other [p
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-280');
   const hand = await makePair(page, testInfo);
   await goToStep(page, 'export', hand);
   await chooseSeparately(page, hand, check);
@@ -2242,7 +2241,7 @@ test('MSG-77.2 With one side over the size, the question names only the other [p
   });
   await hand.tap(page.locator('#btnDownload'));
   await page.locator('#pairPrompt .alert-text').waitFor({ state: 'visible' });
-  // Ruling R50's words. A plain reading, so the known defect fails at once.
+  // Ruling R50's words.
   const title = await page.locator('#pairPrompt .alert-title').textContent();
   const shown = await page.locator('#pairPrompt .alert-text').textContent();
   const text = 'The front is 748 × 1047 px at the photo’s resolution.';

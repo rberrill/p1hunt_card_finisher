@@ -606,8 +606,8 @@
   }
 
   // Exports the pair as chosen. kind: 'download', 'share' or 'copy' (the Together image as PNG;
-  // with Separately chosen, Copy copies the open side through the normal export). When the
-  // file would be under the chosen Size, the upscale question comes first (pairUpscaleOffer).
+  // with Separately chosen, Copy copies the open side through the normal export). When Yes
+  // would save a bigger file, the upscale question comes first (pairUpscaleOffer).
   function exportPair(kind) {
     if (!app.pair || app.exporting) return;
     const sides = sideStates();
@@ -627,25 +627,45 @@
     CF.askUpscale(offer.targetPx, offer.text, isUpscaled => runPairExport(kind, sides, isUpscaled));
   }
 
-  // The upscale the question offers for the pair's export: { targetPx, text } when the saved
-  // file's long edge is under the chosen Size (Together, and Copy: the joined image;
-  // Separately: either side's file), else null.
+  // The upscale the question offers for the pair's export: { targetPx, text } when Yes would
+  // save a bigger file than No (CF.isUpscaleBigger, ruling R37: a file under the chosen Size
+  // that a size limit leaves room to enlarge), else null. Together, and Copy: the joined
+  // image. Separately: either side's file (separatelyUpscaleText).
   function pairUpscaleOffer(sides, kind) {
     const targetPx = sides.front.state.export.longEdge;
     if (!targetPx) return null;
-    const size = ({ width, height }) => `${width} × ${height}`;
-    const isUnder = ({ width, height }) => Math.max(width, height) < targetPx;
     if (isTogether() || kind === 'copy') {
       const layout = togetherLayout(sides);
-      if (!isUnder(layout)) return null;
-      return { targetPx, text: `The image is ${size(layout)} px at the photos’ resolution.` };
+      // An image already at the Size is never offered, whatever the fit's rounding gives.
+      if (Math.max(layout.width, layout.height) >= targetPx) return null;
+      if (!CF.isUpscaleBigger(togetherLayout(sides, targetPx), layout)) return null;
+      const size = `${layout.width} × ${layout.height}`;
+      return { targetPx, text: `The image is ${size} px at the photos’ resolution.` };
     }
-    const front = CF.exportGeometry(sides.front.state, false).output;
-    const back = CF.exportGeometry(sides.back.state, false).output;
-    if (!isUnder(front) && !isUnder(back)) return null;
-    const text = `The front is ${size(front)} px and the back ${size(back)} px`
-      + ` at the photos’ resolution.`;
-    return { targetPx, text };
+    const text = separatelyUpscaleText(sides);
+    return text ? { targetPx, text } : null;
+  }
+
+  // The upscale question's text for a pair saved Separately, or '' when Yes would make neither
+  // side's file bigger. It names only the side Yes would upscale, and both only when Yes would
+  // upscale both (ruling R50; the words are the approved ones, tests/catalog/wording.md): a
+  // side already at the chosen Size is scaled down to it, so its size is not one to quote.
+  function separatelyUpscaleText(sides) {
+    const real = {};
+    const upscaled = {};
+    for (const side of SIDES) {
+      real[side] = CF.exportGeometry(sides[side].state, false).output;
+      upscaled[side] = CF.exportGeometry(sides[side].state, true).output;
+    }
+    const size = side => `${real[side].width} × ${real[side].height}`;
+    const named = SIDES.filter(side => CF.isUpscaleBigger(upscaled[side], real[side]));
+    if (!named.length) return '';
+    if (named.length > 1) {
+      return `The front is ${size('front')} px and the back ${size('back')} px`
+        + ` at the photos’ resolution.`;
+    }
+    const side = named[0];
+    return `The ${side} is ${size(side)} px at the photo’s resolution.`;
   }
 
   // Renders, encodes and delivers the pair's export of `sides` (copies of both sides' edits).

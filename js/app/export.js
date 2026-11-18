@@ -354,15 +354,25 @@
     });
   }
 
+  // True when the upscale question's Yes would save a bigger file than its No: `upscaled`, the
+  // file's size after Yes, has a longer long edge than `real`, its size after No (both
+  // { width, height } in px). The question is asked only then (ruling R37). Only a file under
+  // the chosen Size can be bigger after Yes, and not even that one where a size limit holds
+  // the output back, or where a link's export.allowUpscale has enlarged it already.
+  function isUpscaleBigger(upscaled, real) {
+    return Math.max(upscaled.width, upscaled.height) > Math.max(real.width, real.height);
+  }
+
   // The upscale the question offers for the open photo's export: { targetPx, text } when the
-  // crop's long edge is under the chosen Size (the readout's "full crop, not upscaled"), else
-  // null. With a link's export.allowUpscale the output is already at Size, so no question.
+  // output's long edge is under the chosen Size (the readout's "full crop, not upscaled") and
+  // Yes would save a bigger file than No (isUpscaleBigger), else null.
   function offeredUpscale(state) {
     const targetPx = state.export.longEdge;
     const geometry = app.geometry;
     if (!targetPx || !geometry || !geometry.ok) return null;
     const { width, height } = geometry.output;
     if (Math.max(width, height) >= targetPx) return null;
+    if (!isUpscaleBigger(exportGeometry(state, true).output, geometry.output)) return null;
     return {
       targetPx,
       text: `The crop is ${width} × ${height} px at the photo’s resolution.`,
@@ -473,8 +483,9 @@
   // Exports the current edits. kind: 'download', 'share' or 'copy' (PNG to the clipboard). A
   // pair exports both sides as chosen, except that Copy with Separately copies the open side
   // (the Copy button is hidden then, so only a caller in code reaches that).
-  // When the crop is under the chosen Size, the upscale question comes first (offeredUpscale);
-  // Copy still reaches the clipboard inside the tap that answers it.
+  // When the file would be under the chosen Size and Yes would save a bigger one, the upscale
+  // question comes first (offeredUpscale); Copy still reaches the clipboard inside the tap that
+  // answers it.
   function doExport(kind) {
     if (!app.img || app.exporting || app.isSwitching) return;
     if (app.pair && (kind !== 'copy' || app.pairOutput !== 'separately')) {
@@ -647,6 +658,7 @@
     exportGeometry,
     sharpenUpscaled,
     askUpscale,
+    isUpscaleBigger,
     renderWarped,
     encodeCanvas,
     exportBaseName,

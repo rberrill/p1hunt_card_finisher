@@ -337,7 +337,6 @@ test('EXP-04.2 While a note shows, a phone drops the "not upscaled" part [both]'
 
 test('EXP-04.3 With upscaling on from a link, the size line has no "not upscaled" part [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-010');
     await startOn(page, testInfo, { address: 'index.html?export.allowUpscale=1' });
     await check('it reads Output 2000 × 2000 px · JPEG, with no "not upscaled" part', async () => {
       expect(await readoutText(page)).toBe('Output 2000 × 2000 px · JPEG');
@@ -2096,7 +2095,6 @@ test('EXP-34.1 The saved photo is at most 16,777,216 px in area [phone] [webkit]
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-142');
   const hand = await startOn(page, testInfo, { address: OVER_LIMIT_LINK });
   await check('the size line begins Output 4096 × 4096 px · JPEG', async () => {
     expect(await readoutText(page)).toMatch(/^Output 4096 × 4096 px · JPEG/);

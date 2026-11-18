@@ -74,12 +74,13 @@ const TOGETHER_PX = [1583, 1100];
 const SEPARATELY_TEXT = 'The front is 748 × 1047 px and the back 785 × 1100 px at the photos’ '
   + 'resolution.';
 const FRONT_PX = [748, 1047];
-// The same line at 1080, where the back's file is held to 1080 px.
-// Ruling R50's words name only the front, the side Yes would upscale; today the app names the
-// back as well, which UPS-06.2 also accepts (MSG-77.2 holds the words).
+// The line at 1080, where the back's file is held to 1080 px: it names only the front, the
+// side Yes would upscale (ruling R50).
 const SEPARATELY_1080_TEXT = 'The front is 748 × 1047 px at the photo’s resolution.';
-const SEPARATELY_1080_EITHER = new RegExp('^The front is 748 × 1047 px (at the photo’s|and the '
-  + 'back 771 × 1080 px at the photos’) resolution\\.$');
+// A link that turns upscaling on and asks for 12000 px, which the 16.7 MP canvas limit holds
+// back; and the size the limit holds each of the pair's two files at, in px.
+const OVER_LIMIT_LINK = 'index.html?export.allowUpscale=1&export.longEdge=12000';
+const HELD_BACK_PX = [3461, 4846];
 // A link that caps a saved image's area at 2.5 MP: over the Together image (1.74 MP), under it
 // fitted to 2000 px (2.78 MP).
 const AREA_CAP_LINK = 'index.html?maxOutputArea=2500000';
@@ -366,11 +367,7 @@ test('UPS-04.3 With upscaling on from a link, there is no question [phone]', asy
 
 test('UPS-04.4 With upscaling on from a link, a size the canvas limit holds back isn\'t asked '
   + 'about either [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-142');
-  const hand = await startOnExport(page, testInfo, {
-    address: 'index.html?export.allowUpscale=1&export.longEdge=12000',
-  });
-  const collector = collectDownloads(page);
+  const hand = await startOnExport(page, testInfo, { address: OVER_LIMIT_LINK });
   const saved = await saveWithoutQuestion(page, hand);
   await check('no question box shows; a 4096 × 4096 px file is saved', async () => {
     expect(saved.wasAsked).toBe(false);
@@ -403,9 +400,8 @@ test('UPS-05.1 Together asks about the joined image, and Yes fits its long edge 
 
 test('UPS-05.2 Where a canvas cap leaves no room to enlarge the joined image, no question is '
   + 'asked [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-142');
   const hand = await startOnPair(page, testInfo, 'together', AREA_CAP_LINK);
-  // Today the question is asked; a Yes lets the file come so the case can report its size.
+  // If a question box does show, a Yes lets the file come so the case can report its size.
   const saved = await downloadAnswering(page, hand, 'Yes');
   const size = await imageSize(page, saved.file);
   await check('no question box shows; one file, 14_front_portrait_raw_white-pair.jpg, is saved '
@@ -442,7 +438,7 @@ test('UPS-06.2 A side already at the size is saved the same after Yes as after N
     await chooseAndCheck(page, hand, check, 'exportSize', '1080');
     await askAndCheck(page, hand, check, downloadButton(page),
       `${QUESTION_BOX} asks "${ASK_1080}" and reads "${SEPARATELY_1080_TEXT}"`, ASK_1080,
-      SEPARATELY_1080_EITHER);
+      SEPARATELY_1080_TEXT);
     const [frontNo, backNo] = await answerAndCollect(page, hand, 'No', 2);
     await check('two files are saved: the front 748 × 1047 px, the back 1080 px tall', async () => {
       expect(await imageSize(page, frontNo.file)).toEqual(FRONT_PX);
@@ -458,6 +454,32 @@ test('UPS-06.2 A side already at the size is saved the same after Yes as after N
       expect(isSameFile(backYes.file, backNo.file)).toBe(true);
     });
   });
+
+test('UPS-06.3 Where the canvas limit leaves no room to enlarge either side, no question is '
+  + 'asked [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOnPair(page, testInfo, 'separately', OVER_LIMIT_LINK);
+  const collector = collectDownloads(page);
+  let question;
+  let saved;
+  try {
+    // If a question box does show, a No lets the files come so the case can report them.
+    question = (await downloadAnswering(page, hand, 'No')).question;
+    saved = await downloadsArrived(page, collector, 2);
+  } finally {
+    collector.stop();
+  }
+  const sizes = [];
+  for (const file of saved) sizes.push(await imageSize(page, file.file));
+  await check('no question box shows; two files are saved, 14_front_portrait_raw_white-front.jpg '
+    + 'and 14_back_portrait_raw_white-back.jpg, each 3461 × 4846 px', async () => {
+    expect(question).toBe('');
+    expect(saved.map(file => file.name)).toEqual([
+      '14_front_portrait_raw_white-front.jpg',
+      '14_back_portrait_raw_white-back.jpg',
+    ]);
+    expect(sizes).toEqual([HELD_BACK_PX, HELD_BACK_PX]);
+  });
+});
 
 test('UPS-07.1 For the sheet it names the sheet\'s size, and Yes saves a 2000 px sheet '
   + '[phone] [webkit]', async ({ page, check }, testInfo) => {

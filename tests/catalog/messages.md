@@ -2613,16 +2613,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-77 The Upscale question for a pair saved Separately
 
-For a pair with **Separately** chosen, when either side's file would be under the chosen Size, the question box's text reads "The front is {width} × {height} px and the back {width} × {height} px at the photos’ resolution."
+For a pair with **Separately** chosen, the question box's text names only the side **Yes** would upscale: with the front alone under the chosen Size, "The front is {width} × {height} px at the photo’s resolution." When **Yes** would upscale both sides it reads "The front is {width} × {height} px and the back {width} × {height} px at the photos’ resolution."
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "The front is ", " px and the back ", `#pairPrompt`
-- Source: `js/app/pair.js` (`pairUpscaleOffer`, `exportPair`); `js/app/export.js` (`askUpscale`)
-- Ruling: R50. The question names only the side **Yes** would upscale ("The front is W × H px at the photo’s resolution.", approved wording, tests/catalog/wording.md); both sides only when both are under the size. The app differs today: it names both whenever either is under.
+- Changed: 1.10.0
+- Anchors: "The front is ", " px and the back ", " px at the photo’s resolution.", `#pairPrompt`
+- Source: `js/app/pair.js` (`pairUpscaleOffer`, `separatelyUpscaleText`, `exportPair`); `js/app/export.js` (`askUpscale`, `isUpscaleBigger`)
+- Ruling: R50. The question names only the side **Yes** would upscale ("The front is W × H px at the photo’s resolution.", approved wording, tests/catalog/wording.md); both only when both are under the size. The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-77.1 The Upscale question for a pair saved Separately   [auto: phone]
@@ -2642,8 +2642,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-77.2 With one side over the size, the question names only the other   [auto: phone]
-Written to ruling R50, in the wording Rich approved; it fails until that is built (BUG-280).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -2657,7 +2655,10 @@ At **1080** the front's card, 748 × 1047 px, is under the size; the back's, 785
 | --- | --- | --- |
 | 1 | Tap **Separately** | **Separately** is selected (a white fill) |
 | 2 | Tap **1080** | **1080** is selected (a white fill) |
-| 3 | Tap **Download** | The question box asks "Upscale to 1080 px?" and reads "The front is 748 × 1047 px at the photo’s resolution.": the back isn't named |
+| 3 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 1080 px?" and reads "The front is 748 × 1047 px at the photo’s resolution.": the back isn't named |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-78 The Upscale question for corner shots
 
