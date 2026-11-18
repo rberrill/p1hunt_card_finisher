@@ -246,16 +246,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## LEV-08 Aim and pick
 
-With a pick armed, a press on the photo aims, and the color is taken where the finger or pointer lifts. The photo doesn't pan.
+With a pick armed, a press on the photo aims, and the color is taken where the finger or pointer lifts. The photo doesn't pan. A second finger put down during the press cancels it: no color is taken, and the pick stays armed.
 
 - Risk: high
 - Check: script, touch
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Tap something white", "Tap something black", `CONFIG.levels.sampleRadiusPx`
-- Source: `js/app/input.js` (`stepGesture`, `onPointerMove`, `endGesture`); `js/app/levels.js` (`pickAt`)
-- Ruling: R8. A second finger cancels the pick and leaves the color picker armed. The app differs today. R72. While a pick is armed one finger can't pan, and the color is taken where the finger lifts. The app already does this.
+- Source: `js/app/input.js` (`stepGesture`, `onPointerMove`, `startPinch`, `endGesture`); `js/app/levels.js` (`pickAt`)
+- Ruling: R8. A second finger cancels the pick and leaves the color picker armed. The app does this since 1.10.0. R72. While a pick is armed one finger can't pan, and the color is taken where the finger lifts. The app already does this.
 - Cases: 2
 
 ### LEV-08.1 The color is taken where the finger lifts, and the photo does not move   [auto: phone, webkit]
@@ -276,7 +276,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-08.2 A second finger cancels the pick and leaves the picker armed   [auto: phone]
-Written to ruling R8; it fails until that is built (BUG-101).
 
 Before you start:
 - Device and browser: a phone, in its own browser (two fingers on the screen)
@@ -436,16 +435,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## LEV-12 A pick that can't work
 
-A pick that can't work shows a warning and leaves the color picker armed: a spot outside the photo; a white not at least 20 brighter than the black point; a black brighter than 100 (on a scale of 0 to 255); a black not at least 20 darker than the white point. A tap on the dark area around the visible picture, where the step hides the rest of the photo, is ignored and leaves the picker armed.
+A pick that can't work shows a warning and leaves the color picker armed: a spot outside the photo; a white not at least 20 brighter than the black point; a black brighter than 100 (on a scale of 0 to 255); a black not at least 20 darker than the white point. A tap on the dark area around the visible picture, where the step hides the rest of the photo, is ignored, with no warning, and leaves the picker armed.
 
 - Risk: medium
 - Check: script, touch
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "That spot is outside the photo.", "That spot is darker than the black point. Pick something brighter.", "That spot is too light to be a black point. ", "That spot is brighter than the white point. Pick something darker.", `CONFIG.levels.maxBlackLuma`
-- Source: `js/app/levels.js` (`pickAt`, `pickProblem`)
-- Ruling: R38. A tap outside the visible picture is ignored and the pick stays armed. The app differs today.
+- Source: `js/app/levels.js` (`pickAt`, `isInCrop`, `pickProblem`)
+- Ruling: R38. A tap outside the visible picture is ignored and the pick stays armed. The app does this since 1.10.0 where the tap is over the part of the photo the step hides; where it is past the photo's own edge it still warns (LEV-12.1).
 - Cases: 5
 
 ### LEV-12.1 A tap outside the photo warns and stays armed   [auto: phone]
@@ -523,7 +522,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-12.5 A tap on the empty area below the picture is ignored and the pick stays armed   [auto: phone]
-Written to ruling R38; it fails until that is built (BUG-230). On the Levels step the photo shows only inside the crop; the dark area around it hides the rest of the photo, and a tap there must not take a color from it.
 
 Before you start:
 - Device and browser: any; a phone-width window
@@ -532,10 +530,12 @@ Before you start:
 - Starting screen: the photo open, on the Levels step, no levels set
 - Browser data: none for this site (a private window, or the site's data cleared)
 
+On the Levels step the photo shows only inside the crop; the dark area around it hides the rest of the photo, and a tap there takes no color from it.
+
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Pick white** | **Pick white** is selected and the line between **Discard** and **Apply** reads "Tap something white" |
-| 2 | Tap the dark empty area 40 px below the middle of the picture's bottom edge | The color patch at the left of **Pick white** (the small mark that shows the color picked) is still dashed and empty |
+| 2 | Tap the dark empty area 40 px below the middle of the picture's bottom edge | The color patch at the left of **Pick white** (the small mark that shows the color picked) is still dashed and empty, and no warning shows |
 | 3 | Look at the picks and the line | **Pick white** is still selected and the line still reads "Tap something white" |
 
 Pass: every row's result is seen.

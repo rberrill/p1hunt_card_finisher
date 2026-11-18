@@ -470,7 +470,6 @@ test('VIEW-05.2 A second finger while a Levels pick is armed cancels the press [
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-101');
   const hand = await startOnLevels(page, testInfo);
   await hand.tap(pickButton(page, 'white'));
   await check('Pick white is selected', async () => {

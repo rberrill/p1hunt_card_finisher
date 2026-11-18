@@ -135,9 +135,19 @@
     return '';
   }
 
+  // Whether a point of the rotated frame is inside the crop, the part of the photo the Levels
+  // step shows. crop: { x, y, width, height } in rotated-frame px.
+  function isInCrop(crop, point) {
+    return point[0] >= crop.x
+      && point[0] < crop.x + crop.width
+      && point[1] >= crop.y
+      && point[1] < crop.y + crop.height;
+  }
+
   // The dropper: averages a patch of the full-resolution photo under the pick point. A pick
   // that sets the point disarms the dropper; one that can't work warns and stays armed, so the
-  // next tap can try again (frame L10).
+  // next tap can try again (frame L10). A tap outside the crop, on the photo the step hides, is
+  // ignored and stays armed (ruling R38).
   function pickAt(screenPoint) {
     const which = app.dropper;
     const view = CF.currentView();
@@ -156,9 +166,10 @@
       && point[1] >= 0
       && point[0] < app.img.width
       && point[1] < app.img.height;
-    if (!isOnPhoto) {
+    if (!isOnPhoto || !isInCrop(geometry.crop, world)) {
       app.dropper = which;
-      toast('That spot is outside the photo.', 'warn');
+      // Off the photo there is no color to take, so that warns; a hidden spot says nothing.
+      if (!isOnPhoto) toast('That spot is outside the photo.', 'warn');
       CF.syncUI();
       return;
     }

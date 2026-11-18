@@ -242,16 +242,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-05 A second finger turns a drag into a pinch
 
-Putting a second finger down during a one-finger drag ends that drag, keeping what it did, and starts a pinch.
+Putting a second finger down during a one-finger drag ends that drag, keeping what it did, and starts a pinch. A press that aims an armed Levels pick is cancelled instead: no color is taken, and the pick stays armed.
 
 - Risk: medium
 - Check: script, touch
 - Layout: both, by touch
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#view`
 - Source: `js/app/input.js` (`onPointerDown`, `startPinch`, `endGesture`)
-- Ruling: R8. A second finger while a Levels pick is armed cancels that press without picking, and the pick stays armed. The app differs today.
+- Ruling: R8. A second finger while a Levels pick is armed cancels that press without picking, and the pick stays armed. The app does this since 1.10.0.
 - Cases: 2
 
 ### VIEW-05.1 A second finger ends a corner drag, keeping it, and zooms   [auto: phone, webkit]
@@ -274,7 +274,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-05.2 A second finger while a Levels pick is armed cancels the press   [auto: phone]
-Written to ruling R8; it fails until that is built (BUG-101).
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch

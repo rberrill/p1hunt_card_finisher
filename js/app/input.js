@@ -172,8 +172,10 @@
     app.gesture = stepGesture(view, point, base, event.shiftKey) || panGesture(view, base);
   }
 
-  // A second finger turns any drag into a pinch.
+  // A second finger turns any drag into a pinch. A Levels pick being aimed is cancelled first:
+  // the press takes no color and the pick stays armed (ruling R8).
   function startPinch(view) {
+    if (app.gesture && app.gesture.type === 'dropper') app.gesture.isCancelled = true;
     endGesture();
     const [first, second] = [...pointers.values()];
     app.gesture = {
@@ -431,14 +433,15 @@
       || gesture.type.startsWith('overlay');
   }
 
-  // Ends the current gesture: stops a compare, drops a dropper pick, commits a drag.
+  // Ends the current gesture: stops a compare, takes a dropper's pick (unless a second finger
+  // cancelled it), commits a drag.
   function endGesture() {
     const gesture = app.gesture;
     app.gesture = null;
     if (!gesture) return;
     clearTimeout(gesture.holdTimer);
     if (gesture.comparing) CF.setCompare(false);
-    if (gesture.type === 'dropper') CF.pickAt(gesture.last);
+    if (gesture.type === 'dropper' && !gesture.isCancelled) CF.pickAt(gesture.last);
     if (isEditDrag(gesture)) CF.commitFrom(gesture.before);
     CF.requestRender();
   }

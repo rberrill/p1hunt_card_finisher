@@ -523,7 +523,6 @@ test('LEV-08.2 A second finger cancels the pick and leaves the picker armed [pho
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-101');
   const hand = await startOnLevels(page, testInfo);
   await hand.tap(pickButton(page, 'white'));
   await check('Pick white is selected; the line between Discard and Apply reads "Tap something '
@@ -533,8 +532,8 @@ test('LEV-08.2 A second finger cancels the pick and leaves the picker armed [pho
   });
   const first = await spotOnPage(page, SPOTS.white);
   const second = offsetBy(first, SECOND_FINGER_GAP_PX, 0);
-  // Plain reads, not retrying expects: today the second finger sets the point at once, so the
-  // known defect fails here without waiting out a timeout.
+  // Plain reads, not retrying expects: a pick fills the patch and disarms within the finger's
+  // own event, so a pick taken by any of these four would show at once.
   await sendTouch(page, '#view', 'pointerdown', first, FIRST_FINGER);
   await check('the color patch is still dashed and empty, with one finger down', async () => {
     expect(await isPatchEmpty(page, 'white')).toBe(true);
@@ -774,7 +773,6 @@ test('LEV-12.4 A black pick no darker than the white point warns and stays armed
 
 test('LEV-12.5 A tap on the empty area below the picture is ignored and the pick stays armed '
   + '[phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-230');
   const hand = await startOnLevels(page, testInfo);
   const bottomLeft = await spotOnPage(page, [0, 1]);
   const topRight = await spotOnPage(page, [1, 0]);
@@ -788,15 +786,18 @@ test('LEV-12.5 A tap on the empty area below the picture is ignored and the pick
     await expect(hintLine(page)).toHaveText(HINTS.white);
   });
   await tapPoint(page, hand, below);
-  // Plain reads, not retrying expects: today the tap sets the point at once, so the known
-  // defect fails here without waiting out a timeout.
-  await check('the color patch at the left of Pick white is still dashed and empty', async () => {
+  // Plain reads, not retrying expects: a pick fills the patch, and a refused one shows its
+  // warning, within the tap's own event, so either would show at once.
+  await check('the color patch at the left of Pick white is still dashed and empty, and no '
+    + 'warning shows', async () => {
     // The point tapped is on the photo, in the part the step hides.
     expect(hidden[0]).toBeGreaterThan(0);
     expect(hidden[0]).toBeLessThan(width);
     expect(hidden[1]).toBeGreaterThan(0);
     expect(hidden[1]).toBeLessThan(height);
     expect(await isPatchEmpty(page, 'white')).toBe(true);
+    expect(await swatchColor(page, 'white')).toBeNull();
+    expect((await toastNow(page)).isShown).toBe(false);
   });
   await check(`Pick white is still selected and the line still reads "${HINTS.white}"`,
     async () => {
