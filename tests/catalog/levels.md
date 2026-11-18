@@ -543,21 +543,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## LEV-13 Pick marks
 
-A ring labelled **W** or **B** marks where each point was picked (Auto's points have none). The marks hide while comparing.
+A ring labelled **W** or **B** marks where each point was picked (Auto's points have none). Each letter is white with a dark outline round it, so it can be read on a white spot as on a dark one. The marks hide while comparing.
 
 - Risk: low
 - Check: eye; script (whether the letter has a dark outline)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "W", "B"
 - Source: `js/app/levels.js` (`drawPickMarker`, `drawLevelsOverlay`)
-- Ruling: R39. The W and B are white letters with a dark outline, as the corner outline is drawn, so they can be read on a white spot. The app differs today.
+- Ruling: R39. The W and B are white letters with a dark outline, as the corner outline is drawn, so they can be read on a white spot. The app does this since 1.10.0.
 - Cases: 2
 
 ### LEV-13.1 The pick marks, for a person to judge   [eye]
-Written to ruling R39; until that is built, the judge fails row 2 by eye: the W is a plain white letter, hard to read on the white background (BUG-231). LEV-13.2 checks the outline by script.
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -582,8 +580,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Script only
 Stand-in: the script reads the screen's pixels in a small box beside each letter and counts the dark ones. Whether at least 20 device pixels round a 12 px letter are dark can't be told by eye; LEV-13.1 is the same mark judged by a person.
 
-Written to ruling R39; it fails until that is built (BUG-231).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -605,20 +601,20 @@ On a fail, record: the row number, what you saw instead, the screenshot.
 
 ## LEV-14 Auto
 
-**Auto** estimates the white and black points from the framed photo into the draft and removes the pick marks; with no clear black it sets the white point only. Today a pop-up says which it set; ruling R73 takes it away (MSG-16 and MSG-17 hold that).
+**Auto** estimates the white and black points from the framed photo into the draft and removes the pick marks; with no clear black it sets the white point only. When it works it shows no message, as a pick shows none; on a picture it can't estimate from, a warning says so.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#toolAutoLevels`, "Auto set white and black points. Check them, then Apply.", "Auto set the white point (no clear black). Check it, then Apply.", `CONFIG.levels.autoBlackMaxSpread`
+- Changed: 1.10.0
+- Anchors: `#toolAutoLevels`, `CONFIG.levels.autoBlackMaxSpread`
 - Source: `js/app/levels.js` (`autoLevelsDraft`, `renderSmall`); `js/engine.js` (`autoLevels`)
-- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app differs today. R64. The failure message, "Couldn’t estimate levels from this image.", explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
-- Cases: 3
+- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app does this since 1.10.0. R64. The failure message, "Couldn’t estimate levels from this image.", explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
+- Cases: 5
 
 ### LEV-14.1 Auto sets both points and removes the pick marks   [auto: phone]
-Whether Auto shows a pop-up is MSG-16.1's (ruling R73); this case doesn't look at it.
+Whether Auto shows a message is LEV-14.4's (ruling R73); this case doesn't look at it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -640,7 +636,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-14.2 With no clear black, Auto sets the white point only   [auto: phone]
-Whether Auto shows a pop-up is MSG-17.1's (ruling R73); this case doesn't look at it.
+Whether Auto shows a message is LEV-14.5's (ruling R73); this case doesn't look at it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -670,6 +666,40 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | A warning reads "Couldn’t estimate levels from this image." |
 | 2 | Look at the color patches (the small marks at the left of **Pick white** and **Pick black** that show the color picked) and **Apply** | Both color patches are still dashed and empty; **Apply** is greyed out (shown dim and not answering a tap) |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### LEV-14.4 Auto sets both points, with no message   [auto: phone]
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9075.JPEG from samples/
+- Starting screen: the photo open, on the Levels step, no levels set
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | The color patches of **Pick white** and **Pick black** (the small marks at their left that show the color picked) are filled: Auto set both points |
+| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### LEV-14.5 Auto sets the white point only, with no message   [auto: phone]
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: 13_front_landscape_onetouch_labeled_white.JPEG from samples/ (a card in a labelled one-touch on white, with no neutral black)
+- Starting screen: the photo open, on the Levels step, no levels set
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | The color patch of **Pick white** (the small mark at its left that shows the color picked) is filled, and the one of **Pick black** is still dashed and empty: Auto set the white point only |
+| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1191,16 +1221,16 @@ On a fail, record: the row number, what the script recorded instead.
 
 ## LEV-23 The sheet is the tips
 
-The options sheet, titled **Levels tips**, holds only the tips: no options, no Tips row and no reset.
+The options sheet, titled **Levels tips** on a phone, holds only the tips: no options, no Tips row and no reset.
 
 - Risk: low
 - Check: script
-- Layout: both. On a wide screen the tips show in the side panel, followed by the keyboard help under **Tips and keys**.
+- Layout: both. On a wide screen the tips show in the side panel under one heading, **Tips and keys**, followed by the keyboard help; the **Levels tips** title does not show there.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#levelsSheet`, "Levels tips", "Tips and keys"
-- Source: `js/app/levels.js` (`buildLevelsSheet`)
-- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app differs today.
+- Source: `js/app/levels.js` (`buildLevelsSheet`); `css/app.css` (the Levels step's block; the shell's wide block)
+- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app does this since 1.10.0.
 - Cases: 2
 
 ### LEV-23.1 The options sheet is the tips alone   [auto: phone]
@@ -1231,7 +1261,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the side panel under the controls | The three tips of LEV-23.1, then "Hold C, or press and hold the photo, to compare." under the heading TIPS AND KEYS |
+| 1 | Look at the side panel under the controls | The heading TIPS AND KEYS, then the three tips of LEV-23.1, then "Hold C, or press and hold the photo, to compare." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

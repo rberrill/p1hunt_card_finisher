@@ -1580,13 +1580,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## TOP-30 Options always open on a wide screen
 
-On a wide screen every step's options are always open, listed in the side panel under the step's controls, with no options tab, dim or close button. The sheet's title shows as a grey heading (none where the options are only tips, as on Overlay).
+On a wide screen every step's options are always open, listed in the side panel under the step's controls, with no options tab, dim or close button. The sheet's title shows as a grey heading (none where the options are only tips, as on Overlay; Levels is TOP-32's).
 
 - Risk: medium
 - Check: script
 - Layout: wide
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `.sheet-layer`, "Perspective options", "Export options", `#panel`
 - Source: `js/app/shell.js` (`placeLayout`); `css/app.css` (the shell's wide block)
 - Cases: 1
@@ -1642,16 +1642,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## TOP-32 Keyboard help
 
-Each step's keyboard help sits in its own block under **Tips and keys** (just **Tips** on a step without keys). Tips that only apply to touch are left out.
+Each step's keyboard help sits in its own block under **Tips and keys** (just **Tips** on a step without keys), after the step's tips. Tips that only apply to touch are left out. On Levels, whose options are only its tips, that heading is the only one.
 
 - Risk: low
 - Check: script
 - Layout: wide. A phone shows no keyboard help.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Tips and keys", `.sheet-keys`, `.is-phone-only`
 - Source: `js/app/parts/sheet.js` (`buildTipsRow`); `js/app/levels.js` (`buildLevelsSheet`); `css/app.css` (the shell's wide block)
-- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app differs today.
+- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app does this since 1.10.0.
 - Cases: 2
 
 ### TOP-32.1 Keyboard help under Tips and keys; touch-only tips left out   [auto: desktop]
@@ -1672,8 +1672,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-32.2 Levels shows one tips heading on a wide screen   [auto: desktop]
-Written to ruling R74; it fails until that is built (BUG-287).
-
 Before you start:
 - Device and browser: a wide window, 1280 × 800 px
 - Build: the build under test

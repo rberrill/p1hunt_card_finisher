@@ -102,6 +102,9 @@
     return CardEngine.warp(pixels, app.preview.data, outputToPreview, { fill: [0, 0, 0, 0] });
   }
 
+  // Auto: estimates both points from the framed image into the draft. When it works it says
+  // nothing, as a pick says nothing (ruling R73): the filled swatches and the photo show it.
+  // Only a picture it can't estimate from warns.
   function autoLevelsDraft() {
     const img = renderSmall(CONFIG.levels.autoSamplePx);
     const found = img && CardEngine.autoLevels(img, CONFIG.levels);
@@ -115,9 +118,6 @@
       draft.whiteAt = null;
       draft.blackAt = null;
     });
-    toast(found.black
-      ? 'Auto set white and black points. Check them, then Apply.'
-      : 'Auto set the white point (no clear black). Check it, then Apply.');
   }
 
   // Why a picked color can't be the `which` point, or '' if it can.
@@ -245,7 +245,13 @@
     return canvas;
   }
 
-  // A pick marker: a black and white ring labelled W or B.
+  // The width of the dark line drawn under a pick marker's letter, in CSS px: half of it shows
+  // round the letter as its outline, the rest lies under the white fill.
+  const PICK_LABEL_OUTLINE_PX = 3;
+
+  // A pick marker: a black and white ring labelled W or B. The letter is white over a dark
+  // outline, as the ring is, so it can be read on a white spot as on a dark one (ruling R39).
+  // point: [x, y] in screen px.
   function drawPickMarker(ctx, point, label) {
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#000';
@@ -258,6 +264,15 @@
     ctx.stroke();
     ctx.font = 'bold 12px system-ui, sans-serif';
     ctx.textAlign = 'left';
+    // The outline first, so the white letter lies over it. Round joins: a mitered outline
+    // would spike at the points of the W. Saved and restored, so the join and the width stay
+    // with the letter.
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = PICK_LABEL_OUTLINE_PX;
+    ctx.strokeStyle = '#000';
+    ctx.strokeText(label, point[0] + 11, point[1] - 9);
+    ctx.restore();
     ctx.fillStyle = '#fff';
     ctx.fillText(label, point[0] + 11, point[1] - 9);
   }
@@ -402,9 +417,11 @@
       }));
   }
 
-  // The sheet: the tips as paragraphs, then the keyboard help under "Tips and keys" in its own
-  // block, as every step's tips group is on a wide screen (frame DT5). The block carries the
-  // keys' class, so a phone hides it whole and its sheet is the tips alone.
+  // The sheet: one tips block, the heading "Tips and keys", the tips as paragraphs, then the
+  // keyboard help. The heading and the keys carry the wide screen's classes, so a phone's
+  // sheet is its title and the tips alone. On a wide screen the block is all the options hold,
+  // so css/app.css leaves the sheet's own title out, as on Overlay, and "Tips and keys" is the
+  // one heading (ruling R74).
   function buildLevelsSheet() {
     const heading = CF.buildSheetHeading('Tips and keys');
     heading.classList.add('sheet-tips-heading');
@@ -413,10 +430,11 @@
       hint.classList.add('sheet-keys');
       return hint;
     });
-    const keysGroup = makeEl('div', { class: 'sheet-tips-group sheet-keys' }, heading, ...keys);
-    return CF.buildSheet({ id: 'levelsSheet', title: 'Levels tips' },
+    const tipsGroup = makeEl('div', { class: 'sheet-tips-group levels-tips' },
+      heading,
       ...LEVELS_TIPS.map(tip => CF.buildSheetHint(tip)),
-      keysGroup);
+      ...keys);
+    return CF.buildSheet({ id: 'levelsSheet', title: 'Levels tips' }, tipsGroup);
   }
 
   // Arms the dropper for `which` ('white' or 'black'); a tap on the armed part disarms it.

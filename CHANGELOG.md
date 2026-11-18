@@ -72,6 +72,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - On Levels, a pick tapped on the dark area around the picture no longer takes a color from the part of the photo hidden there. The tap is ignored and the pick keeps waiting.
 - On Levels, while the photo shows no levels (none set, or **Clear** tapped and not yet applied), holding the photo or the C key no longer shows the **Before levels** badge over a photo that doesn’t change. There is nothing to compare, so the hold does nothing, and sliding the finger after it moves the photo as usual.
 - On Levels, a short press that showed the comparison is no longer also counted as a tap. A tap straight after it used to be taken as a double tap, which fitted a zoomed-in photo back to the screen.
+- On Levels, the **W** and **B** beside a pick's ring are now white letters with a black outline, so the W can be read on the white spot it marks. They were plain white.
+- On Levels, **Auto** no longer shows a message when it works ("Auto set white and black points. Check them, then Apply." or "Auto set the white point (no clear black). Check it, then Apply."), as a pick shows none: the color patches and the photo show what it set. It still warns when it can't estimate ("Couldn’t estimate levels from this image.").
+- On a wide screen, Levels' tips and its keyboard help sit under one heading, **Tips and keys**. They used to sit under two, **Levels tips** and **Tips and keys**.
 
 ## [1.9.0] - 2026-11-10
 

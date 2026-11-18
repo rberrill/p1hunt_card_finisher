@@ -66,6 +66,7 @@ const {
 } = require('./support/levels.js');
 const { exportStep, downloadStep, answerNo } = require('./support/export.js');
 const { fixturePath } = require('./support/edits-files.js');
+const { watchMessages, messagesSoFar } = require('./support/messages.js');
 
 // Another photo, a raw card on white, for the cases that open a second photo.
 const SECOND_PHOTO = '14_front_portrait_raw_white.JPEG';
@@ -105,6 +106,8 @@ const HINTS = {
   black: 'Tap something black',
   compare: 'Hold the photo to compare',
 };
+// How long a case waits for a message that should not come, in ms.
+const NOTHING_WAIT_MS = 3000;
 // The pop-ups and warnings the cases expect, word for word.
 const AUTO_FAILED = 'Couldn’t estimate levels from this image.';
 const OUTSIDE_PHOTO = 'That spot is outside the photo.';
@@ -819,8 +822,7 @@ test('LEV-13.1 The pick marks, for a person to judge [phone]', async ({
   await waitForStill(page);
   await check.eye('a small black and white ring labelled W sits on the white background left of '
     + 'the slab, and one labelled B on the card\'s dark background; each letter is white with a '
-    + 'dark outline round it, and the W can be read easily on the white background (ruling R39; '
-    + 'until it is built this fails by eye, BUG-231)');
+    + 'dark outline round it, and the W can be read easily on the white background (ruling R39)');
   const middle = await spotOnPage(page, [0.5, 0.5]);
   await holdPhoto(page, hand, middle);
   await check.eye('the picture shows without levels, the Before levels badge at its top left, '
@@ -837,7 +839,6 @@ test('LEV-13.2 The W on a white spot has a dark outline [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-231');
   const hand = await startOnLevels(page, testInfo);
   await pickSpot(page, hand, 'white', SPOTS.white);
   await check('the color patch of Pick white is filled with the background\'s white (within 3 '
@@ -918,6 +919,48 @@ test('LEV-14.3 Auto on a picture with nothing to go on warns, with no next step 
         await expect(page.locator('#btnApplyLevels')).toBeDisabled();
       });
   });
+
+// The second row of LEV-14.4 and LEV-14.5 (ruling R73): `before` messages had shown when Auto
+// was tapped; three seconds on, none has shown since. A plain reading of the record.
+async function expectNoMessageSince(page, check, before) {
+  await page.waitForTimeout(NOTHING_WAIT_MS);
+  const shown = (await messagesSoFar(page)).slice(before).map(message => message.text);
+  await check('no message has shown over the photo since Auto was tapped', () => {
+    expect(shown).toEqual([]);
+  });
+}
+
+test('LEV-14.4 Auto sets both points, with no message [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  await watchMessages(page);
+  const hand = await startOnLevels(page, testInfo);
+  const before = (await messagesSoFar(page)).length;
+  await hand.tap(page.locator('#toolAutoLevels'));
+  await check('the color patches of Pick white and Pick black are filled: Auto set both points',
+    async () => {
+      await expect.poll(() => patchFill(page, 'black')).not.toBeNull();
+      expect(await patchFill(page, 'white')).not.toBeNull();
+    });
+  await expectNoMessageSince(page, check, before);
+});
+
+test('LEV-14.5 Auto sets the white point only, with no message [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  await watchMessages(page);
+  const hand = await startOnLevels(page, testInfo, { photo: NO_BLACK_PHOTO });
+  const before = (await messagesSoFar(page)).length;
+  await hand.tap(page.locator('#toolAutoLevels'));
+  await check('the color patch of Pick white is filled, and the one of Pick black is still '
+    + 'dashed and empty: Auto set the white point only', async () => {
+    await expect.poll(() => patchFill(page, 'white')).not.toBeNull();
+    expect(await isPatchEmpty(page, 'black')).toBe(true);
+  });
+  await expectNoMessageSince(page, check, before);
+});
 
 test('LEV-15.1 Clear empties both points and disarms the picker [phone]', async ({
   page,
@@ -1665,10 +1708,14 @@ test('LEV-23.2 On a wide screen the tips are followed by the keyboard help [desk
 }, testInfo) => {
   await startOnLevels(page, testInfo);
   const sheet = page.locator('#levelsSheet');
-  await check('the three tips of LEV-23.1, then "Hold C, or press and hold the photo, to '
-    + 'compare." under the heading TIPS AND KEYS', async () => {
-    await expect(sheet.getByText('Tips and keys')).toBeVisible();
+  await check('the heading TIPS AND KEYS, then the three tips of LEV-23.1, then "Hold C, or '
+    + 'press and hold the photo, to compare."', async () => {
+    const heading = sheet.getByText('Tips and keys');
+    await expect(heading).toBeVisible();
     expect(await shownHints(page)).toEqual([...LEVELS_TIPS, LEVELS_KEY_HELP]);
+    const headingBox = await heading.boundingBox();
+    const firstTipBox = await sheet.locator('.sheet-hint').first().boundingBox();
+    expect(headingBox.y).toBeLessThan(firstTipBox.y);
   });
 });
 

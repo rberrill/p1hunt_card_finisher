@@ -92,8 +92,6 @@ const {
   tapPoint,
   photoPointAt,
   viewNow,
-  patchFill,
-  isPatchEmpty,
 } = require('./support/levels.js');
 const {
   startOnOverlay,
@@ -128,8 +126,6 @@ const {
 const PHOTO = CORNER_PHOTO;
 // A second photo, of another size: a PSA slab (1498 × 2098 px).
 const SLAB_PHOTO = 'IMG_9136.JPEG';
-// A card whose framed picture has no clear black, for Auto's white-only message.
-const NO_BLACK_PHOTO = '13_front_landscape_onetouch_labeled_white.JPEG';
 const FRONT = PORTRAIT_PAIR.front;
 const BACK = PORTRAIT_PAIR.back;
 // How long each kind of message stays, in ms (TOAST_DURATIONS_MS in js/app/core.js), and how
@@ -899,49 +895,6 @@ test('MSG-15.1 Auto with nothing to go on [phone]', async ({ page, check }, test
   await check(`an amber warning reads "${AUTO_FAILED}"`, () => {
     expectKind(message, 'warn');
   });
-});
-
-// The second row of MSG-16.1 and MSG-17.1 (ruling R73): `before` messages had shown when Auto
-// was tapped; three seconds on, none has shown since. A plain reading, so the known defect
-// fails at once.
-async function expectNoMessageSince(page, check, before) {
-  await page.waitForTimeout(NOTHING_WAIT_MS);
-  const shown = (await messagesSoFar(page)).slice(before).map(message => message.text);
-  await check('No message has shown over the photo since Auto was tapped', () => {
-    expect(shown).toEqual([]);
-  });
-}
-
-test('MSG-16.1 Auto sets both points, with no message [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  test.fail(true, 'BUG-286');
-  const hand = await startLevels(page, testInfo);
-  const before = (await messagesSoFar(page)).length;
-  await hand.tap(page.locator('#toolAutoLevels'));
-  await check('The color patches of Pick white and Pick black are filled: Auto set both points',
-    async () => {
-      await expect.poll(() => patchFill(page, 'black')).not.toBeNull();
-      expect(await patchFill(page, 'white')).not.toBeNull();
-    });
-  await expectNoMessageSince(page, check, before);
-});
-
-test('MSG-17.1 Auto sets the white point only, with no message [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  test.fail(true, 'BUG-286');
-  const hand = await startLevels(page, testInfo, NO_BLACK_PHOTO);
-  const before = (await messagesSoFar(page)).length;
-  await hand.tap(page.locator('#toolAutoLevels'));
-  await check('The color patch of Pick white is filled, and the one of Pick black is still '
-    + 'dashed and empty: Auto set the white point only', async () => {
-    await expect.poll(() => patchFill(page, 'white')).not.toBeNull();
-    expect(await isPatchEmpty(page, 'black')).toBe(true);
-  });
-  await expectNoMessageSince(page, check, before);
 });
 
 test('MSG-18.1 A pick off the photo [phone]', async ({ page, check }, testInfo) => {

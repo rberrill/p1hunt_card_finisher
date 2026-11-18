@@ -1323,6 +1323,8 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   color: var(--quiet);
   pointer-events: none;
 }
+/* The sheet's one block, its tips: spaced as paragraphs set straight in a sheet are. */
+.levels-tips { display: flex; flex-direction: column; gap: 10px; }
 
 /* ---- step: Overlay ---- */
 /* Owned by js/app/overlay.js's phase. Phone-only and wide-only rules go in a
@@ -1692,8 +1694,8 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
     padding: 12px 16px 0;
     border-top: 1px solid var(--edge);
   }
-  /* Where the options hold only the tips (Overlay), the sheet's own line and heading would
-     stand over nothing: the tips block takes the sheet's place under its line. */
+  /* Where the options hold only the tips (Overlay, Levels), the sheet's own line and heading
+     would stand over nothing: the tips block takes the sheet's place under its line. */
   .sheet:has(> .sheet-body > .sheet-tips-group:only-child) > .sheet-header { display: none; }
   .sheet-body > .sheet-tips-group:only-child { margin: 0; padding: 0; border-top: 0; }
   #debugPanel { right: 388px; top: 64px; }

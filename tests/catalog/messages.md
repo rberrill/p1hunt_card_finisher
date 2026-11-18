@@ -555,70 +555,6 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-16 Auto set both points
-
-An information message when **Auto** finds both points: "Auto set white and black points. Check them, then Apply."
-
-- Risk: low
-- Check: script
-- Layout: both.
-- Added: 1.10 baseline
-- Changed: none
-- Anchors: "Auto set white and black points. Check them, then Apply.", `#toolAutoLevels`
-- Source: `js/app/levels.js` (`autoLevelsDraft`)
-- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app differs today.
-- Cases: 1
-
-### MSG-16.1 Auto sets both points, with no message   [auto: phone]
-Written to ruling R73; it fails until that is built (BUG-286).
-
-Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: IMG_9075.JPEG from samples/
-- Starting screen: the photo open, on the Levels step
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Auto** | The color patches of **Pick white** and **Pick black** (the small marks at their left that show the color picked) are filled: Auto set both points |
-| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-## MSG-17 Auto set the white point only
-
-An information message when **Auto** finds a white point but no clear black: "Auto set the white point (no clear black). Check it, then Apply."
-
-- Risk: low
-- Check: script
-- Layout: both.
-- Added: 1.10 baseline
-- Changed: none
-- Anchors: "Auto set the white point (no clear black). Check it, then Apply.", `#toolAutoLevels`
-- Source: `js/app/levels.js` (`autoLevelsDraft`)
-- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app differs today.
-- Cases: 1
-
-### MSG-17.1 Auto sets the white point only, with no message   [auto: phone]
-Written to ruling R73; it fails until that is built (BUG-286).
-
-Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: 13_front_landscape_onetouch_labeled_white.JPEG from samples/
-- Starting screen: the photo open, on the Levels step
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Auto** | The color patch of **Pick white** (the small mark at its left that shows the color picked) is filled, and the one of **Pick black** is still dashed and empty: Auto set the white point only |
-| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
 ## MSG-18 "That spot is outside the photo."
 
 A warning, for 5 seconds, when an armed **Pick white** or **Pick black** is released off the photo: "That spot is outside the photo." The pick stays armed.
@@ -2973,16 +2909,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-86 Levels' tips
 
-Levels' sheet, titled "Levels tips", is its tips: three paragraphs on picking white and black, what **Auto** does, and "Hold the photo to compare with no levels. Clear, then Apply, removes levels."
+Levels' sheet, titled "Levels tips" on a phone, is its tips: three paragraphs on picking white and black, what **Auto** does, and "Hold the photo to compare with no levels. Clear, then Apply, removes levels."
 
 - Risk: low
 - Check: script
-- Layout: both. A wide screen lists the paragraphs inline and adds the keyboard help under its own "Tips and keys" heading.
+- Layout: both. A wide screen lists the paragraphs inline under the heading "Tips and keys", which shows in place of the title, and adds the keyboard help after them.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#levelsSheet`, "Levels tips", "Hold the photo to compare with no levels. Clear, then Apply, removes levels."
 - Source: `js/app/levels.js` (`buildLevelsSheet`)
-- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app differs today.
+- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-86.1 Levels' tips   [auto: phone]

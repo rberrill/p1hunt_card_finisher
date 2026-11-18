@@ -1905,21 +1905,49 @@ test('TOP-32.1 Keyboard help under Tips and keys; touch-only tips left out [desk
   });
 });
 
+// Levels' three tips and its keyboard help, word for word (LEVELS_TIPS and LEVELS_KEYS in
+// js/app/levels.js).
+const LEVELS_TIPS = [
+  'White: tap a grading label or the card’s white border; avoid foil and reflections. '
+    + 'Black is optional.',
+  'Auto estimates both from the framed image; colored backdrops can fool it, so check the '
+    + 'result.',
+  'Hold the photo to compare with no levels. Clear, then Apply, removes levels.',
+];
+const LEVELS_KEY_HELP = 'Hold C, or press and hold the photo, to compare.';
+
+// Every heading and paragraph that shows in a step's options, from the top of the screen down:
+// [{ kind: 'heading' | 'paragraph', text }]. A heading is the sheet's title or a heading in it.
+function shownOptionsText(page, step) {
+  return page.evaluate(id => {
+    const sheet = document.getElementById(id);
+    const isShown = el => el.getClientRects().length > 0;
+    return [...sheet.querySelectorAll('.sheet-title, .sheet-heading, .sheet-hint')]
+      .filter(isShown)
+      .map(el => ({
+        kind: el.matches('.sheet-hint') ? 'paragraph' : 'heading',
+        text: el.textContent.trim(),
+        top: el.getBoundingClientRect().top,
+      }))
+      .sort((first, second) => first.top - second.top)
+      .map(({ kind, text }) => ({ kind, text }));
+  }, `${step}Sheet`);
+}
+
 test('TOP-32.2 Levels shows one tips heading on a wide screen [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-287');
   await startOn(page, testInfo, 'levels');
-  // A plain reading of the headings, so the known defect fails at once.
-  const headings = await sheetOf(page, 'levels').locator('.sheet-title:visible, '
-    + '.sheet-heading:visible').allTextContents();
+  // A plain reading of what shows, so a second heading fails at once.
+  const shown = await shownOptionsText(page, 'levels');
   await check('one heading, TIPS AND KEYS, over the tips and then the compare key; no LEVELS '
-    + 'TIPS heading', async () => {
-    expect(headings.map(text => text.trim())).toEqual(['Tips and keys']);
-    await expect(sheetOf(page, 'levels').locator('.sheet-keys .sheet-hint')).toHaveText(
-      'Hold C, or press and hold the photo, to compare.',
-    );
+    + 'TIPS heading', () => {
+    expect(shown).toEqual([
+      { kind: 'heading', text: 'Tips and keys' },
+      ...LEVELS_TIPS.map(text => ({ kind: 'paragraph', text })),
+      { kind: 'paragraph', text: LEVELS_KEY_HELP },
+    ]);
   });
 });
 
