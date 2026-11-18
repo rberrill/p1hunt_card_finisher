@@ -1564,6 +1564,20 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
     );
     max-height: 40vh;
   }
+  /* Before a photo there is no control area: the panel sits 8 px above the screen's bottom
+     edge, a quarter of the screen tall at most, and the start screen stacks its content from
+     16 px above that room upward. So the panel never covers Open photo or the Resume box at any
+     height (ruling R51). It is absolute against the app's box, which is the screen here, as
+     nothing at the screen's bottom edge is position: fixed. */
+  #app:not(.has-img) #debugPanel {
+    position: absolute;
+    bottom: calc(env(safe-area-inset-bottom) + 8px);
+    max-height: 25vh;
+  }
+  #app:not(.has-img):has(> #debugPanel:not([hidden])) .start-screen {
+    justify-content: flex-end;
+    padding-bottom: calc(25vh + env(safe-area-inset-bottom) + 24px);
+  }
 }
 
 /* ---- shell: a wide screen ---- */
@@ -1683,6 +1697,9 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   .sheet:has(> .sheet-body > .sheet-tips-group:only-child) > .sheet-header { display: none; }
   .sheet-body > .sheet-tips-group:only-child { margin: 0; padding: 0; border-top: 0; }
   #debugPanel { right: 388px; top: 64px; }
+  /* Before a photo the side panel is empty: the tuning panel sits over it, off the start
+     screen, so it never covers Open photo or the Resume box (ruling R51). */
+  #app:not(.has-img) #debugPanel { right: calc(env(safe-area-inset-right) + 8px); }
 }
 /* The top bar on a narrower wide screen. In full it needs 1094 px with a pair open, 1109 with
    Levels' mark too. Up to 1119 px the name and Open's label go (the icons stay) and the step

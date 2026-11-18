@@ -136,7 +136,8 @@
     CF.offerResume();
     CF.loadSavedOverlay();
     if (CONFIG.debug) CF.toggleDebugPanel(true);
-    if (params.has('selftest')) runSelfTests();
+    // ?selftest=0 means off (ruling R28); any other value, or none, runs them.
+    if (params.has('selftest') && params.get('selftest') !== '0') runSelfTests();
     // PWA (phase two): register the service worker from its own file.
     // if ('serviceWorker' in navigator && location.protocol === 'https:') {
     //   navigator.serviceWorker.register('sw.js');

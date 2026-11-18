@@ -86,10 +86,10 @@ Before a photo is open, nothing that needs a photo is offered.
 - Check: script
 - Layout: both. On a phone there is no top bar, no controls and no step tabs at all; on a wide screen the top bar shows with the step tabs and **Fit to screen** dimmed, and the side panel's step sections are hidden.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#topBarHost`, `#tabBarHost`, `#panel`, `#btnFit`
-- Source: `css/app.css` (the shell's phone and wide blocks); `js/app/shell.js` (`syncUI`, `syncFitButton`)
-- Ruling: R51. On the start screen the tuning panel never covers **Open photo** or the Resume box. The app differs today. The backtick key may still open it with no photo open.
+- Source: `css/app.css` (the shell's phone and wide blocks, `#debugPanel`); `js/app/shell.js` (`syncUI`, `syncFitButton`)
+- Ruling: R51. On the start screen the tuning panel never covers **Open photo** or the Resume box (this entry's case proves Open photo; DEV-06.5 the Resume box). The backtick key may still open it with no photo open. The app does this since 1.10.0.
 - Cases: 3
 
 ### STA-03.1 On a phone, nothing but the start screen shows   [auto: phone]
@@ -125,9 +125,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### STA-03.3 The backtick key opens the tuning panel over the start screen   [auto: desktop]
-Written to ruling R51: the panel may open with no photo open, and never covers **Open photo**. It fails until that is built (BUG-281): today the panel covers the button's right end.
-
+### STA-03.3 The backtick key opens the tuning panel with no photo open   [auto: desktop]
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window, 1280 × 800 px
 - Build: the build under test
@@ -137,7 +135,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Press the backtick key (`` ` ``, left of 1) | The detection tuning panel opens, floating over the start screen, and leaves **Open photo** clear: no part of the panel is over the button |
+| 1 | Press the backtick key (`` ` ``, left of 1) | The detection tuning panel opens at the right, over the empty side panel; the start screen still shows, and no part of the panel is over **Open photo** |
 | 2 | Press the backtick key again | The tuning panel closes; the start screen is as it was |
 
 Pass: every row's result is seen.

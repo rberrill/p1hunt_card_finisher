@@ -875,13 +875,11 @@ test('MSG-14.1 The self-test result, from a link [phone]', async ({ page, check 
 });
 
 test('MSG-14.2 A link with selftest=0 runs no self-tests [phone]', async ({ page, check }) => {
-  test.fail(true, 'BUG-171');
   await watchMessages(page);
   const lines = listenToConsole(page);
   await openApp(page, 'index.html?selftest=0');
   await waitForStart(page);
   await page.waitForTimeout(NOTHING_WAIT_MS);
-  // Plain readings: the known defect fails at once rather than waiting.
   const shown = (await messagesSoFar(page)).map(message => message.text);
   await check('no message starting "Self-tests:" shows over the start screen', () => {
     expect(shown.filter(text => text.startsWith('Self-tests:'))).toEqual([]);
@@ -1495,13 +1493,11 @@ test('MSG-42.1 Copy CONFIG with the clipboard blocked [desktop]', async ({
   check,
 }, testInfo) => {
   // Stand-in: the clipboard refuses every write, as a browser that blocks the page does.
-  test.fail(true, 'BUG-284');
   await refuseClipboard(page, STAND_IN_ERROR);
   const lines = listenToConsole(page);
   const hand = await startTuning(page, testInfo);
   await hand.tap(page.locator('#debugCopy'));
-  // Ruling R60: two sentences, the same words. The message is awaited in either form and its
-  // words compared plainly, so the known defect fails at once.
+  // Ruling R60: two sentences. The message is awaited by its first words and compared whole.
   const text = 'Clipboard blocked. CONFIG printed to the console.';
   const message = await waitForMessage(page, /^Clipboard blocked/);
   await check(`An amber warning reads "${text}"`, () => {

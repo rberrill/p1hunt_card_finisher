@@ -67,6 +67,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - While Perspective's **Preview** is on, the keyboard's arrow keys no longer move a corner you can't see, and Tab no longer steps through the hidden handles: it moves on to the next control.
 - **Preview** turns off when you leave Perspective. It used to stay on, so the step came back showing the corrected card with no handles.
 - Turning **Debug overlay** on, under Developer in Perspective's options, no longer moves the corners. It used to put corners you had placed by hand back on the card it detected, as an undo step of its own, and to bring back "Nothing detected. Drag the corners into place." after you had cleared it by moving a corner.
+- Before a photo is open, the detection tuning panel (the backtick key) no longer covers **Open photo** or the **Resume** card. On a wide screen it sits over the empty panel on the right; in a phone-width window it sits along the bottom of the screen, with the start screen's buttons above it.
 
 ## [1.9.0] - 2026-11-10
 

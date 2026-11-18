@@ -479,16 +479,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-14 The self-test result
 
-Opening the app with `?selftest` in its link runs the engine's self-tests and shows "Self-tests: main {passed}/{total}, worker {passed}/{total}" (or "…, worker unavailable") for 8 seconds: white when every test passes, red when any fails.
+Opening the app with `?selftest` in its link runs the engine's self-tests and shows "Self-tests: main {passed}/{total}, worker {passed}/{total}" (or "…, worker unavailable") for 8 seconds: white when every test passes, red when any fails. A link with `?selftest=0` runs none and shows no message.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Self-tests: main ", ", worker unavailable"
 - Source: `js/app/main.js` (`runSelfTests`, `init`)
-- Ruling: R28. `?selftest=0` means off: no self-tests and no message. The app differs today.
+- Ruling: R28. `?selftest=0` means off: no self-tests and no message. The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-14.1 The self-test result, from a link   [auto: phone]
@@ -509,7 +509,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-14.2 A link with selftest=0 runs no self-tests   [auto: phone]
-Written to ruling R28; it fails until that is built (BUG-171).
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch, with the developer tools' console open
 - Build: the build under test
@@ -1512,7 +1511,7 @@ An information message after **Copy CONFIG** in the detection tuning panel puts 
 
 ### MSG-41.1 Copy CONFIG says it copied   [auto: desktop]
 Before you start:
-- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool)
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
@@ -1526,27 +1525,26 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-42 "Clipboard blocked — CONFIG printed to the console."
+## MSG-42 "Clipboard blocked. CONFIG printed to the console."
 
-A warning, for 5 seconds, when **Copy CONFIG** can't reach the clipboard and prints the settings to the console instead: "Clipboard blocked — CONFIG printed to the console."
+A warning, for 5 seconds, when **Copy CONFIG** can't reach the clipboard and prints the settings to the console instead: "Clipboard blocked. CONFIG printed to the console."
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Clipboard blocked — CONFIG printed to the console.", `#debugCopy`
+- Changed: 1.10.0
+- Anchors: "Clipboard blocked. CONFIG printed to the console.", `#debugCopy`
 - Source: `js/app/debug-panel.js` (`buildDebugPanel`)
-- Ruling: R60. The blocked-clipboard message is two sentences, in the same words: "Clipboard blocked. CONFIG printed to the console." The app differs today.
+- Ruling: R60. The blocked-clipboard message is two sentences: "Clipboard blocked. CONFIG printed to the console." The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-42.1 Copy CONFIG with the clipboard blocked   [auto: desktop]
-Written to ruling R60; it fails until that is built (BUG-284).
 Script only
 Stand-in: a person can't make the browser refuse the clipboard to the page on purpose, so the script makes every clipboard write fail, as a browser that blocks the page does.
 
 Before you start:
-- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen), with the developer tools' console open
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool), with the developer tools' console open
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
@@ -2081,7 +2079,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 ### MSG-57.3 Re-detect in the tuning panel that finds no card shows no message   [auto: desktop]
 
 Before you start:
-- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool)
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
@@ -3205,7 +3203,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-91.3 The nudge keys, Close tuning and the corner thumbnails have names   [auto: desktop]
 Before you start:
-- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool)
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/

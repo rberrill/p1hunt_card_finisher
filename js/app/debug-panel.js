@@ -59,7 +59,7 @@
         toast('CONFIG copied.');
       } catch (error) {
         console.log(text);
-        toast('Clipboard blocked — CONFIG printed to the console.', 'warn');
+        toast('Clipboard blocked. CONFIG printed to the console.', 'warn');
       }
     };
     const onSettingChanged = input => () => {

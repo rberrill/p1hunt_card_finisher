@@ -73,7 +73,7 @@ From the start of finding the card to the corners being placed.
 ### PERF-02.1 Detection on a 15 MP photo finishes   [auto: desktop]
 Limit (ruling R44): 8,750 ms, three times the median of five runs on the development PC (2,903 ms).
 Before you start:
-- Device and browser: a wide window, 1280 × 800 px. (In a phone-width window the Detection tuning panel covers **Open photo** on the start screen; detection's time doesn't depend on the window's width.)
+- Device and browser: a wide window, 1280 × 800 px. (Detection's time doesn't depend on the window's width.)
 - Build: the build under test, opened with the link index.html?debug=1, which shows the Detection tuning panel (a panel of detection settings, with the last detection's time below them)
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: IMG_9136-15MP.JPEG, the 15.2 MP copy of IMG_9136.JPEG that PERF-01.1 describes

@@ -297,22 +297,24 @@ test('STA-03.2 On a wide screen, the steps and Fit are greyed out [desktop]', as
   });
 });
 
-test('STA-03.3 The backtick key opens the tuning panel over the start screen [desktop]', async ({
+test('STA-03.3 The backtick key opens the tuning panel with no photo open [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-281');
   await startOnStartScreen(page, testInfo);
   await page.keyboard.press('Backquote');
-  await check('the detection tuning panel opens over the start screen, and leaves Open photo '
-    + 'clear: no part of the panel is over the button', async () => {
+  await check('the detection tuning panel opens at the right, over the empty side panel; the '
+    + 'start screen still shows, and no part of the panel is over Open photo', async () => {
     await expect(page.locator('#debugPanel')).toBeVisible();
     await expect(page.locator('#empty')).toBeVisible();
     const panel = await page.locator('#debugPanel').boundingBox();
     const open = await page.locator('#btnOpenEmpty').boundingBox();
+    const side = await page.locator('#panel').boundingBox();
     const isApartSideways = panel.x + panel.width <= open.x || open.x + open.width <= panel.x;
     const isApartUpDown = panel.y + panel.height <= open.y || open.y + open.height <= panel.y;
     expect(isApartSideways || isApartUpDown).toBe(true);
+    expect(panel.x).toBeGreaterThanOrEqual(side.x);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(side.x + side.width);
   });
   await page.keyboard.press('Backquote');
   await check('the backtick again closes it; the start screen is as it was', async () => {
