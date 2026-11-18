@@ -259,8 +259,7 @@
     console.info(`[card-finisher] switched to the ${pair.current} in `
       + `${app.switchDurationMs.toFixed(0)} ms`);
     savePairSession(true);
-    // A side restored from a session has no candidates yet (for Candidate and snapping).
-    if (!app.detection.last) CF.runDetect({ auto: true, keepCorners: true });
+    CF.detectReopenedSide();
   }
 
   // Ends the pair, keeping `side` as a single photo. Its crop stays 5:7 and the preset unlocks;
@@ -304,10 +303,15 @@
   // Every photo that comes in (Open, Next card, Add back, drop, paste) goes through here.
   // intent: 'open', 'next' (Next card →, which ends a pair after its export without asking) or
   // 'addBack'. While paired, Open, drop and paste ask whether to end the pair or replace the
-  // side you're on.
+  // side you're on. While the app is busy the photo is refused, in words that say what it is
+  // busy with: an export, or a side of the pair opening (ruling R13).
   function receivePhoto(file, name, intent) {
-    if (app.exporting || app.isSwitching) {
+    if (app.exporting) {
       toast('Wait for the export to finish, then open the photo.', 'warn');
+      return;
+    }
+    if (app.isSwitching) {
+      toast('Wait for the other side to open, then open the photo.', 'warn');
       return;
     }
     hidePrompt();
@@ -443,7 +447,18 @@
     });
   }
 
+  // The waiting side ('front' or 'back') when its corners are invalid, so it has no export size
+  // and the pair can't be saved until it is fixed; else null. Null too with no pair. (The open
+  // side's own corners are app.geometry's.)
+  function waitingSideToFix() {
+    const pair = app.pair;
+    if (!pair) return null;
+    const geometry = CardEngine.computeGeometry(pair.other.state, geometryConfig());
+    return geometry.ok ? null : otherSide(pair.current);
+  }
+
   // The export's readout for a pair: the choice and its size, e.g. "Together · 2881 × 2000 px".
+  // Only for a pair whose sides both have valid corners (waitingSideToFix says when not).
   function pairReadout() {
     const sides = sideStates();
     if (isTogether()) {
@@ -975,6 +990,7 @@
     showPrompt,
     hidePrompt,
     isPairExported,
+    waitingSideToFix,
     pairReadout,
     exportPair,
     togetherPreview,

@@ -288,16 +288,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## SEC-08 A stored session is checked on Resume
 
-On **Resume**, the stored session is checked like an edits file: its edits are cleaned, its step must be a real step, the stored photo's size must match the photo, and a malformed pair is dropped with a warning while the open side resumes on its own.
+On **Resume**, the stored session is checked like an edits file: its edits are cleaned, its step must be a real step, the stored photo's size must match the photo (when it doesn't, the photo opens with fresh edits and an amber warning), and a malformed pair is dropped with a warning while the open side resumes on its own.
 
 - Risk: high
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnResume`, `"The saved pair wasn’t valid, so it was reset. "`, `"[card-finisher] pair not restored:"`
 - Source: `js/app/state.js` (`openFile`, `restoreLevelsDraft`), `js/app/start-screen.js` (`resumeSession`), `js/app/pair.js` (`restorePair`, `isPairRecord`, `finishResume`)
-- Ruling: R23. A Resume whose stored size doesn't match opens the photo fresh with an amber warning, in the wording Rich approved: "Full edit history could not be restored, your photo has been opened fresh." The app differs today (BUG-050; its case is STA-08.1).
+- Ruling: R23. A Resume whose stored size doesn't match opens the photo fresh with an amber warning, in the wording Rich approved: "Full edit history could not be restored, your photo has been opened fresh." Its case is STA-08.1. The app does this since 1.10.0.
 - Cases: 1
 
 ### SEC-08.1 Resume cleans a damaged field and an unknown step   [auto: phone, webkit]

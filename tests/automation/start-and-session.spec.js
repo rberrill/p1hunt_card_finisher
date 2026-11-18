@@ -76,7 +76,7 @@ const PHOTO_WIDTH = 1498;
 const PHOTO_HEIGHT = 2098;
 // The app's wait before saving a change, in ms (CONFIG.session.saveDelayMs), and the longer one
 // a link sets in STA-14.2.
-const SAVE_DELAY_MS = 400;
+const SAVE_DELAY_MS = 100;
 const LONG_SAVE_DELAY_MS = 1500;
 // How much earlier than its delay a timer may seem to fire, in ms (the clock's rounding), and
 // how much later a save may land after it (the timer, then opening the database).
@@ -86,9 +86,14 @@ const SAVE_LATE_MS = 150;
 // after opening a photo or a step (no save waiting), in ms.
 const SETTLE_AFTER_SAVE_MS = 700;
 const QUIET_MS = 700;
-// The longest gap between two quick taps, in ms: well inside the save delay, so the first
-// tap's save is still waiting when the second comes.
-const QUICK_TAP_GAP_MS = 300;
+// Two quick clicks: the shortest and longest gap between them, in ms. Inside the save delay,
+// so the first click's save is still waiting when the second comes, and long enough to tell a
+// save 0.1 s after the second click from one 0.1 s after the first. QUICK_CLICK_HOLD_MS is how
+// long the button is held down, and the pause between the two clicks; with the browser's own
+// time the gap measures about 30 ms in Chromium and 45 ms in WebKit.
+const QUICK_TAP_GAP_MIN_MS = 20;
+const QUICK_TAP_GAP_MS = 90;
+const QUICK_CLICK_HOLD_MS = 10;
 // A save made at once lands within this many ms.
 const QUICK_SAVE_MS = 100;
 // The longest a change may wait before it is saved, in ms (ruling R36: about 0.1 s, so a
@@ -101,8 +106,6 @@ const CORNER_DRAG_PX = 40;
 // The logos: the app's own icons (icons/).
 const LOGO = 'icon.svg';
 const OTHER_LOGO = 'apple-touch-icon.png';
-// The wait between two logos, in ms: two added within 0.9 s are one undo step (ruling R19).
-const LOGO_GAP_MS = 1000;
 // The grid laid over a saved image to compare two of them: cells per side.
 const COMPARE_GRID = 16;
 // The messages for a file the browser can't open (js/app/adapters.js, ImageSource.load).
@@ -292,22 +295,24 @@ test('STA-03.2 On a wide screen, the steps and Fit are greyed out [desktop]', as
   });
 });
 
-test('STA-03.3 The backtick key opens the tuning panel over the start screen [desktop]', async ({
+test('STA-03.3 The backtick key opens the tuning panel with no photo open [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-281');
   await startOnStartScreen(page, testInfo);
   await page.keyboard.press('Backquote');
-  await check('the detection tuning panel opens over the start screen, and leaves Open photo '
-    + 'clear: no part of the panel is over the button', async () => {
+  await check('the detection tuning panel opens at the right, over the empty side panel; the '
+    + 'start screen still shows, and no part of the panel is over Open photo', async () => {
     await expect(page.locator('#debugPanel')).toBeVisible();
     await expect(page.locator('#empty')).toBeVisible();
     const panel = await page.locator('#debugPanel').boundingBox();
     const open = await page.locator('#btnOpenEmpty').boundingBox();
+    const side = await page.locator('#panel').boundingBox();
     const isApartSideways = panel.x + panel.width <= open.x || open.x + open.width <= panel.x;
     const isApartUpDown = panel.y + panel.height <= open.y || open.y + open.height <= panel.y;
     expect(isApartSideways || isApartUpDown).toBe(true);
+    expect(panel.x).toBeGreaterThanOrEqual(side.x);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(side.x + side.width);
   });
   await page.keyboard.press('Backquote');
   await check('the backtick again closes it; the start screen is as it was', async () => {
@@ -699,7 +704,6 @@ test('STA-08.1 A size mismatch says the photo was opened fresh [phone]', async (
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-050');
   const hand = await startWithSavedTurn(page, testInfo);
   // Script only: no control changes a saved record (whether the developer tools can is Q-07).
   await changeSavedEdits(page, 'width', PHOTO_WIDTH + 1);
@@ -752,7 +756,8 @@ test('STA-09.1 Resume keeps corners placed by hand [phone] [webkit]', async ({
   check,
 }, testInfo) => {
   const hand = await startWithPhoto(page, testInfo);
-  const detected = (await editState(page)).corners[0];
+  const detectedCorners = (await editState(page)).corners;
+  const detected = detectedCorners[0];
   const start = await cornerOnPage(page, 0);
   await hand.drag(start, { x: start.x + CORNER_DRAG_PX, y: start.y + CORNER_DRAG_PX });
   const placed = (await editState(page)).corners;
@@ -769,9 +774,57 @@ test('STA-09.1 Resume keeps corners placed by hand [phone] [webkit]', async ({
   await check('the top-left handle is where it was left', async () => {
     expect((await editState(page)).corners).toEqual(placed);
   });
-  await check('Candidate reads 1/3 once settled, and the handles have not moved', async () => {
-    await expect(page.locator('#toolCandidate')).toContainText('1/3');
+  const candidate = page.locator('#toolCandidate');
+  await check('once settled Candidate can be tapped; it shows its icon and no number, and the '
+    + 'handles have not moved', async () => {
+    await expect(candidate).toBeEnabled();
+    await expect(candidate.locator('.tool-glyph')).toBeVisible();
+    await expect(candidate.locator('.tool-value')).toBeHidden();
     expect((await editState(page)).corners).toEqual(placed);
+  });
+  await hand.tap(candidate);
+  await check('Candidate reads 1/3, and the handles are on the card\'s four corners: the best '
+    + 'outline found', async () => {
+    await expect(candidate.locator('.tool-value')).toHaveText('1/3');
+    expect((await editState(page)).corners).toEqual(detectedCorners);
+  });
+});
+
+// Candidate's number and the confidence at the right of Perspective's line, as shown.
+function candidateAndConfidence(page) {
+  return page.evaluate(() => {
+    const number = document.querySelector('#toolCandidate .tool-value');
+    const line = document.querySelector('#perspectiveLine');
+    return {
+      candidate: number.hidden ? '' : number.textContent,
+      confidence: line.hidden ? '' : line.querySelector('.line-readout').textContent,
+    };
+  });
+}
+
+test('STA-09.2 Resume with corners nobody moved keeps Candidate\'s number and the confidence '
+  + '[phone] [webkit]', async ({ page, check }, testInfo) => {
+  const hand = await startWithPhoto(page, testInfo);
+  const detectedCorners = (await editState(page)).corners;
+  const before = await candidateAndConfidence(page);
+  await check('Candidate reads 1/3, and the line reads Confidence and a percentage', async () => {
+    expect(before.candidate).toBe('1/3');
+    expect(before.confidence).toMatch(/^Confidence \d+%$/);
+  });
+  await waitForSaved(page, { corners: detectedCorners });
+  await reloadToStart(page);
+  await check('the card offers "Resume IMG_9136.JPEG?"', async () => {
+    await expect(page.locator('#resumeName')).toHaveText(PHOTO);
+  });
+  await resumeAs(page, hand, PHOTO);
+  await check('the photo opens with its handles on the card, where they were', async () => {
+    expect((await editState(page)).corners).toEqual(detectedCorners);
+  });
+  await check('once settled Candidate reads 1/3, and the line reads the same confidence as in '
+    + 'row 1', async () => {
+    await expect(page.locator('#toolCandidate')).toBeEnabled();
+    expect(await candidateAndConfidence(page)).toEqual(before);
+    expect((await editState(page)).corners).toEqual(detectedCorners);
   });
 });
 
@@ -925,8 +978,6 @@ test('STA-10.3 After a replaced logo is undone, Resume keeps the logo [phone] [w
   await check('the app icon shows on the photo as the logo', async () => {
     expect((await editState(page)).overlay.id).toBe(first);
   });
-  // Two logos added within 0.9 s are one undo step; a person is slower than that.
-  await page.waitForTimeout(LOGO_GAP_MS);
   const second = await addLogo(page, hand, page.locator('#toolOverlayReplace'), OTHER_LOGO);
   await check('Replace logo changes the logo to the other picture', async () => {
     expect(second).not.toBe(first);
@@ -1014,7 +1065,6 @@ test('STA-10.4 Resume falls back to the logo saved in the browser [phone] [webki
     expect(await stepNow(page)).toBe('overlay');
     expect((await editState(page)).overlay.id).toBe(pngLogo);
   });
-  await page.waitForTimeout(LOGO_GAP_MS);
   const svgLogo = await addLogo(page, hand, page.locator('#toolOverlayReplace'), LOGO);
   await check('the app icon is the logo now', async () => {
     expect(svgLogo).not.toBe(pngLogo);
@@ -1085,7 +1135,6 @@ test('STA-10.5 After Delete saved, Resume still brings the logo back [phone] [we
   const download = page.locator('#btnDownload');
   const deleteSaved = page.locator('#toolOverlayDeleteSaved');
   const { pngLogo, editsFile } = await startWithLogoAndSavedEdits(page, hand);
-  await page.waitForTimeout(LOGO_GAP_MS);
   const svgLogo = await addLogo(page, hand, page.locator('#toolOverlayReplace'), LOGO);
   await check('the app icon is the logo now', async () => {
     expect(svgLogo).not.toBe(pngLogo);
@@ -1329,9 +1378,8 @@ async function expectOneSaveAfter(page, tapMs, delayMs) {
   return writes[0];
 }
 
-// Written to today's 0.4 s wait before a save; the catalog's note under the case says what
-// changes when ruling R36 is built.
-test('STA-14.1 A change is saved 0.4 s after the last one [desktop] [webkit]', async ({
+// Ruling R36 made the wait before a save 0.1 s.
+test('STA-14.1 A change is saved 0.1 s after the last one [desktop] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
@@ -1339,7 +1387,7 @@ test('STA-14.1 A change is saved 0.4 s after the last one [desktop] [webkit]', a
   const turn = page.locator('#toolRotateRight');
   const firstTapMs = await tapAndTime(page, hand, turn);
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS);
-  await check('the photo lies on its side; the edits are saved once, 0.40 to 0.55 s after the '
+  await check('the photo lies on its side; the edits are saved once, 0.10 to 0.25 s after the '
     + 'tap', async () => {
     expect((await editState(page)).rotation.quarter).toBe(1);
     const write = await expectOneSaveAfter(page, firstTapMs, SAVE_DELAY_MS);
@@ -1355,11 +1403,13 @@ test('STA-14.1 A change is saved 0.4 s after the last one [desktop] [webkit]', a
     expect(record.exported).toBe(false);
     expect(Math.abs(Date.now() - record.savedAt)).toBeLessThan(SAVED_AT_TOLERANCE_MS);
   });
-  // Straight after each other, as a person taps twice quickly.
-  const secondTapMs = await tapAndTime(page, hand, turn);
-  const thirdTapMs = await tapAndTime(page, hand, turn);
+  // Two clicks about 40 ms apart, made in one action (this case runs with a mouse only), so
+  // that a busy machine can't stretch the gap past the save delay.
+  await turn.dblclick({ delay: QUICK_CLICK_HOLD_MS });
+  const [secondTapMs, thirdTapMs] = await page.evaluate(() => window.clicksAtMs.slice(-2));
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS);
-  await check('two quick taps are saved once, 0.40 to 0.55 s after the second', async () => {
+  await check('two quick taps are saved once, 0.10 to 0.25 s after the second', async () => {
+    expect(thirdTapMs - secondTapMs).toBeGreaterThanOrEqual(QUICK_TAP_GAP_MIN_MS);
     expect(thirdTapMs - secondTapMs).toBeLessThan(QUICK_TAP_GAP_MS);
     const early = (await editsWritesAfter(page, secondTapMs))
       .filter(write => write.atMs < thirdTapMs + SAVE_DELAY_MS - TIMER_EARLY_MS);
@@ -1370,7 +1420,7 @@ test('STA-14.1 A change is saved 0.4 s after the last one [desktop] [webkit]', a
   await goToStep(page, 'crop', hand);
   const stepTapMs = await lastClickMs(page);
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS);
-  await check('a step change is saved once, 0.40 to 0.55 s after the tap, with the step crop',
+  await check('a step change is saved once, 0.10 to 0.25 s after the tap, with the step crop',
     async () => {
       const write = await expectOneSaveAfter(page, stepTapMs, SAVE_DELAY_MS);
       expect(write.tab).toBe('crop');
@@ -1397,39 +1447,12 @@ test('STA-14.2 A link can lengthen the wait before a save [phone]', async ({
   });
 });
 
-// Written to today's 0.4 s wait before a save; the catalog's note under the case says what
-// changes when ruling R36 is built.
-test('STA-15.1 Hiding the page saves at once [desktop] [webkit]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startWatched(page, testInfo, 'rotate');
-  await hand.tap(page.locator('#toolRotateRight'));
-  await check('the photo lies on its side', async () => {
-    expect((await editState(page)).rotation.quarter).toBe(1);
-  });
-  // A stand-in for switching to another tab or app: the page is told it is hidden.
-  const hiddenAtMs = await page.evaluate(() => {
-    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
-    document.dispatchEvent(new Event('visibilitychange'));
-    return performance.now();
-  });
-  await page.waitForTimeout(QUICK_SAVE_MS);
-  await check('the edits, with the turn, are saved within 0.1 s of hiding', async () => {
-    const writes = await editsWritesAfter(page, hiddenAtMs);
-    expect(writes.length).toBeGreaterThan(0);
-    expect(writes[0].delayMs).toBeLessThan(QUICK_SAVE_MS);
-    expect(writes[0].quarter).toBe(1);
-  });
-});
-
 // Ruling R36: a save started as a tab closes sometimes doesn't land (in Chromium, about one run
 // in twelve under load), so each change is saved soon after it is made. The tab is not left or
 // hidden here, so only the save after the change can be seen. The time is the moment the app
 // hands the edits to the device's storage.
 test('STA-15.3 A change is saved within 0.2 s, before the tab can be closed [phone] [webkit]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-141');
     const hand = await startWatched(page, testInfo, 'rotate');
     const tapMs = await tapAndTime(page, hand, page.locator('#toolRotateRight'));
     await page.waitForTimeout(SETTLE_AFTER_SAVE_MS);
@@ -1516,7 +1539,7 @@ test('STA-15.6 Hiding or leaving the page starts a save at once [phone] [webkit]
 
 // Expects the edits to have been saved as the last download started, in the same turn of the
 // page's work, before the page could do anything else; a save in any later turn (the usual one,
-// 0.4 s after a change) doesn't count. Returns those saves.
+// 0.1 s after a change) doesn't count. Returns those saves.
 async function expectSaveWithDownload(page) {
   const writes = await writesWithLastDownload(page, 'edits');
   expect(writes.length).toBeGreaterThan(0);
@@ -1588,7 +1611,7 @@ test('STA-15.5 A pair\'s download saves the edits first [phone] [webkit]', async
   await tapAndSeeQuestion(page, hand, check, page.locator('#btnDownload'),
     'a question box asks "Upscale to 2000 px?"');
   await answerAndSave(page, hand);
-  await check('the pair\'s file is saved; the edits were saved as its download started, not 0.4 s '
+  await check('the pair\'s file is saved; the edits were saved as its download started, not 0.1 s '
     + 'later', async () => {
     await expectSaveWithDownload(page);
   });
@@ -2306,7 +2329,7 @@ test('STA-22.3 After a failed open, the open photo\'s edits are still kept for R
   await check('the photo lies on its side', async () => {
     expect((await editState(page)).rotation.quarter).toBe(1);
   });
-  // A person waits two seconds; the save, if it comes, lands 0.4 s after the tap.
+  // A person waits two seconds; the save, if it comes, lands 0.1 s after the tap.
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS + SAVE_DELAY_MS);
   await reloadToStart(page);
   await check('the card offers "Resume IMG_9136.JPEG?"', async () => {

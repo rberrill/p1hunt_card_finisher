@@ -172,8 +172,10 @@
     app.gesture = stepGesture(view, point, base, event.shiftKey) || panGesture(view, base);
   }
 
-  // A second finger turns any drag into a pinch.
+  // A second finger turns any drag into a pinch. A Levels pick being aimed is cancelled first:
+  // the press takes no color and the pick stays armed (ruling R8).
   function startPinch(view) {
+    if (app.gesture && app.gesture.type === 'dropper') app.gesture.isCancelled = true;
     endGesture();
     const [first, second] = [...pointers.values()];
     app.gesture = {
@@ -230,7 +232,8 @@
   }
 
   // A pan, built on `base`. On Levels, pressing and holding the photo without moving compares
-  // it with no levels (the timer checks the gesture is still the live one).
+  // it with no levels (the timer checks the gesture is still the live one). With no levels to
+  // compare, setCompare starts nothing and the press stays an ordinary pan (ruling R9).
   function panGesture(view, base) {
     const gesture = Object.assign(base, {
       type: 'pan',
@@ -239,8 +242,8 @@
     if (app.tab === 'levels' && hasGeometry()) {
       gesture.holdTimer = setTimeout(() => {
         if (app.gesture !== gesture || gesture.moved) return;
-        gesture.comparing = true;
         CF.setCompare(true);
+        gesture.comparing = app.compare;
       }, CONFIG.levels.compareHoldMs);
     }
     return gesture;
@@ -372,7 +375,11 @@
       if (view) CF.findCardAt(CF.toWorld(view, gesture.start));
       return;
     }
-    const isTap = gesture && !gesture.moved && performance.now() - gesture.startTime < TAP_MS;
+    // A press that showed Levels' comparison is never a tap, however short it was (ruling R10).
+    const isTap = gesture
+      && !gesture.moved
+      && !gesture.comparing
+      && performance.now() - gesture.startTime < TAP_MS;
     if (isTap && gesture.type === 'pan') checkDoubleTap(gesture);
     if (isTap && gesture.type === 'handle') checkHandleDoubleTap(gesture);
     endGesture();
@@ -431,14 +438,15 @@
       || gesture.type.startsWith('overlay');
   }
 
-  // Ends the current gesture: stops a compare, drops a dropper pick, commits a drag.
+  // Ends the current gesture: stops a compare, takes a dropper's pick (unless a second finger
+  // cancelled it), commits a drag.
   function endGesture() {
     const gesture = app.gesture;
     app.gesture = null;
     if (!gesture) return;
     clearTimeout(gesture.holdTimer);
     if (gesture.comparing) CF.setCompare(false);
-    if (gesture.type === 'dropper') CF.pickAt(gesture.last);
+    if (gesture.type === 'dropper' && !gesture.isCancelled) CF.pickAt(gesture.last);
     if (isEditDrag(gesture)) CF.commitFrom(gesture.before);
     CF.requestRender();
   }
@@ -725,6 +733,9 @@
       return;
     }
     if (app.tab !== 'perspective') return;
+    // Preview hides the handles, so the keys leave them alone (ruling R2): the arrows move
+    // nothing, and Tab moves the focus on as it does between controls.
+    if (app.previewMode) return;
     if (event.key === 'Tab') {
       if (stepHandleByTab(event.shiftKey)) event.preventDefault();
       return;

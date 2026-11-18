@@ -141,16 +141,19 @@
     stateChanged();
   }
 
+  // Steps back one undo step. Nothing while an export runs: the Undo button is off then, and
+  // this keeps the undo key off with it (ruling R32).
   function undo() {
-    if (!History.undo.length) return;
+    if (app.exporting || !History.undo.length) return;
     History.redo.push(clone(app.state));
     app.state = History.undo.pop();
     History.lastKey = null;
     stateChanged();
   }
 
+  // Steps forward one undone step. Nothing while an export runs, as for undo.
   function redo() {
-    if (!History.redo.length) return;
+    if (app.exporting || !History.redo.length) return;
     History.undo.push(clone(app.state));
     app.state = History.redo.pop();
     History.lastKey = null;
@@ -219,6 +222,7 @@
   // applied first, so neither undo nor a loaded edits file can break them.
   function stateChanged() {
     if (app.state) CF.applyPairRules(app.state);
+    if (app.state) noteDetectedCorners();
     app.geometry = app.state ? CardEngine.computeGeometry(app.state, geometryConfig()) : null;
     if (app.state && alignCrop(app.state, app.geometry)) {
       app.geometry = CardEngine.computeGeometry(app.state, geometryConfig());
@@ -267,13 +271,22 @@
     return { preview, thumb, work };
   }
 
-  // A photo's detection results before the first run.
+  // A photo's detection results before the first run. index, isOnCandidate, wasMovedByHand and
+  // cornersAfterRun say where the corners stand against the last run: see noteDetectedCorners.
+  // pending is the run that has not ended on this photo, as runDetect's own options
+  // ({ auto, keepCorners, seed, isForOverlay }), and isSearching says whether it is still
+  // running (true) or was thrown away (false): see runDetect.
   function emptyDetection() {
     return {
       candidates: [],
       index: 0,
+      isOnCandidate: false,
+      wasMovedByHand: false,
+      cornersAfterRun: '',
       last: null,
       running: 0,
+      pending: null,
+      isSearching: false,
       message: '',
       snapPoints: [],
       snapLines: [],
@@ -308,7 +321,8 @@
   }
 
   // Opens a photo. restore: a saved session record ({ state, draft, tab, exported, width,
-  // height }) to reapply instead of starting fresh; it's used only if the photo's size matches.
+  // height }) to reapply instead of starting fresh; it's used only if the photo's size matches,
+  // and a warning says so when it doesn't (ruling R23).
   // Resolves true once the photo is open, false if it couldn't be read or another photo was
   // opened meanwhile (the open photo is then unchanged).
   async function openFile(file, name, restore) {
@@ -338,10 +352,10 @@
     if (!app.pair) app.isPairCrop = false;
     Object.assign(app, makeCopies(img));
     app.state = newState(img);
-    const resumed = !!(restore
-      && restore.state
+    const hasSavedEdits = !!(restore && restore.state);
+    const resumed = hasSavedEdits
       && restore.width === img.width
-      && restore.height === img.height);
+      && restore.height === img.height;
     if (resumed) {
       app.state = cleanState(restore.state, img).state;
       app.state.source.name = img.name;
@@ -366,6 +380,9 @@
     if (resumed) {
       toast('Resumed where you left off.');
       CF.ensureOverlayImage();
+    } else if (hasSavedEdits) {
+      // The edits were saved for a photo of another size, so none of them were used (R23).
+      toast('Full edit history could not be restored, your photo has been opened fresh.', 'warn');
     }
     runDetect({ auto: true, keepCorners: resumed });
     return true;
@@ -376,14 +393,24 @@
   // Finds card candidates and moves the corners to the best one. auto: without an undo step
   // (on open). keepCorners: find candidates (for Candidate n/3 and snapping) without moving
   // the corners (session resume). seed: a source-px point the card should contain (Find card);
-  // it's used for this run only.
-  async function runDetect({ auto = false, keepCorners = false, seed = null } = {}) {
+  // it's used for this run only. isForOverlay: the run is only for the debug overlay's drawing,
+  // so it doesn't count as a new run for detection's warnings (see takeDetection).
+  // A run is dropped, with no result and no message, when a newer one starts or its photo is
+  // no longer the open one. One dropped because a pair's side was left stays in
+  // detection.pending, and detectReopenedSide runs it again (ruling R45).
+  async function runDetect(options = {}) {
+    const { auto = false, keepCorners = false, seed = null, isForOverlay = false } = options;
     if (!app.img) return;
     const img = app.img;
-    const run = ++app.detection.running;
+    // This photo's record: after a pair switches sides, app.detection is the other side's.
+    const detection = app.detection;
+    const run = ++detection.running;
     const startTime = performance.now();
-    app.detection.message = 'Detecting…';
+    detection.pending = { auto, keepCorners, seed, isForOverlay };
+    detection.isSearching = true;
+    detection.message = 'Detecting…';
     CF.syncUI();
+    const isDropped = () => run !== detection.running || app.img !== img;
     try {
       const candidates = await CF.Detector.detect(app.work.data, {
         ratio: CONFIG.card.w / CONFIG.card.h,
@@ -393,42 +420,143 @@
         getRegion: CF.readRegion,
         debug: app.debugOverlay || CONFIG.debug,
       });
-      // A newer run has started, or a pair switched to its other side.
-      if (run !== app.detection.running || app.img !== img) return;
-      const last = CF.JSDetector.last;
-      app.detection.candidates = candidates;
-      app.detection.index = 0;
-      app.detection.last = last;
-      app.detection.durationMs = performance.now() - startTime;
-      buildSnapTargets(last);
-      app.edgeCanvas = null;
-      const bestCorners = () => candidates[0].corners.map(point => point.slice());
-      if (!candidates.length) {
-        if (!auto) {
-          const message = 'No card-shaped edges found. '
-            + 'Drag the corners into place, or tap to find card and tap the card again.';
-          toast(message, 'warn', 5000);
-        }
-      } else if (keepCorners) {
-        // Leave the resumed corners alone.
-      } else if (auto) {
-        app.state.corners = bestCorners();
-        stateChanged();
-      } else {
-        commit(state => {
-          state.corners = bestCorners();
-        });
+      if (isDropped()) {
+        clearRunMessage(detection, run);
+        return;
       }
-      app.detection.message = '';
-      if (CONFIG.debug) console.info('[card-finisher] detect', last && last.timing, candidates);
+      detection.durationMs = performance.now() - startTime;
+      takeDetection(candidates, { auto, keepCorners, isForOverlay });
     } catch (error) {
       console.error(error);
-      app.detection.message = '';
+      if (isDropped()) {
+        clearRunMessage(detection, run);
+        return;
+      }
       toast('Detection failed: ' + error.message, 'error');
     }
+    detection.pending = null;
+    detection.isSearching = false;
+    detection.message = '';
     CF.syncUI();
     CF.requestRender();
     CF.updateDebugPanel();
+  }
+
+  // Takes a finished run's result for the open photo: its candidates and snap targets, and the
+  // corners moved to the best candidate as runDetect's auto and keepCorners say.
+  function takeDetection(candidates, { auto, keepCorners, isForOverlay }) {
+    const detection = app.detection;
+    const last = CF.JSDetector.last;
+    detection.candidates = candidates;
+    detection.index = 0;
+    detection.last = last;
+    buildSnapTargets(last);
+    app.edgeCanvas = null;
+    const bestCorners = () => candidates[0].corners.map(point => point.slice());
+    if (!candidates.length || keepCorners) {
+      // The corners stay: nothing was found, or they are to be kept. That nothing was found
+      // is said by the line above the controls alone, with no pop-up (ruling R77).
+    } else if (auto) {
+      app.state.corners = bestCorners();
+      stateChanged();
+    } else {
+      commit(state => {
+        state.corners = bestCorners();
+      });
+    }
+    detection.cornersAfterRun = JSON.stringify(app.state.corners);
+    noteDetectedCorners();
+    // A new run's warnings show until the corners are next moved by hand (ruling R7). A run
+    // made only for the debug overlay's drawing is not a new run in that sense: a warning that
+    // a move has cleared stays away (ruling R3).
+    if (!isForOverlay) detection.wasMovedByHand = false;
+    if (CONFIG.debug) console.info('[card-finisher] detect', last && last.timing, candidates);
+  }
+
+  // Ends a dropped run. Its "Detecting…" must not stay on its photo's record: a pair's
+  // waiting side keeps the record and shows its message when the side is opened again (ruling
+  // R45). detection: the record the run started on; run: its number there. A newer run on the
+  // same record owns the message, so it is left alone. The run stays in detection.pending,
+  // marked as no longer running.
+  function clearRunMessage(detection, run) {
+    if (detection.running !== run) return;
+    detection.isSearching = false;
+    detection.message = '';
+    if (detection === app.detection) CF.syncUI();
+  }
+
+  // True when the open photo's corners are where a hand put them: on neither a candidate of
+  // its last finished run nor the rectangle every photo starts on. (wasMovedByHand can't say:
+  // it is set before a photo's first run ends, and every run clears it.)
+  function areCornersHandPlaced() {
+    const start = insetCorners(app.img.width, app.img.height);
+    const isAtStart = JSON.stringify(app.state.corners) === JSON.stringify(start);
+    return !app.detection.isOnCandidate && !isAtStart;
+  }
+
+  // Runs again a search that was thrown away before it ended (pending: its options, from
+  // detection.pending). It moves the corners, with no undo step, only if they are not
+  // hand-placed; hand-placed corners stay and the result is there for Candidate to cycle
+  // through (ruling R45).
+  function detectAgain(pending) {
+    runDetect({
+      auto: true,
+      keepCorners: pending.keepCorners || areCornersHandPlaced(),
+      seed: pending.seed,
+      isForOverlay: pending.isForOverlay,
+    });
+  }
+
+  // Detection for a pair's side that has just been opened again (switchSide).
+  // A run that had not ended when the side was left was dropped, so it runs again (see
+  // detectAgain).
+  // A side restored from a session has no candidates yet (for Candidate and snapping): its run
+  // keeps the resumed corners.
+  function detectReopenedSide() {
+    const pending = app.detection.pending;
+    if (pending) detectAgain(pending);
+    else if (!app.detection.last) runDetect({ auto: true, keepCorners: true });
+  }
+
+  // Detection for the debug overlay as it is turned on (the Debug overlay switch, or the tuning
+  // panel opening): a run that makes the edge map and the scored shapes the overlay draws. It
+  // only draws: the corners stay where they are, with no undo step, and a warning that a move
+  // by hand has cleared stays away (ruling R3).
+  // A search still running (the one on opening, a find tap) starts again as it was asked, now
+  // with that data, so the corners still go where it would have put them. One that was thrown
+  // away and never run again is no longer what the user is waiting for: it runs as
+  // detectAgain runs one, so corners placed by hand since then stay.
+  function detectForDebugOverlay() {
+    const detection = app.detection;
+    const pending = detection.pending;
+    if (pending && detection.isSearching) {
+      runDetect(pending);
+    } else if (pending) {
+      detectAgain(pending);
+    } else {
+      runDetect({ auto: true, keepCorners: true, isForOverlay: true });
+    }
+  }
+
+  // Notes where the corners (source px) stand against the last detection, after any change to
+  // the state and at the end of a run.
+  //   isOnCandidate    they sit on one of its candidates, which becomes detection.index. Moved
+  //                    by hand they are on none, which clears Candidate's number and the
+  //                    confidence; Undo, Redo and Reset perspective bring a candidate's corners
+  //                    back, and with them the right number and confidence (ruling R6).
+  //   wasMovedByHand   they have left both the candidates and the place the run left them
+  //                    (cornersAfterRun, as JSON) at some time since that run. It stays true
+  //                    when Undo puts them back, so detection's warnings, once cleared by a
+  //                    move, stay away until the next run (ruling R7).
+  // A candidate's corners are copied into the state unchanged, so the match is exact.
+  function noteDetectedCorners() {
+    const detection = app.detection;
+    const corners = JSON.stringify(app.state.corners);
+    const isSame = candidate => JSON.stringify(candidate.corners) === corners;
+    const index = detection.candidates.findIndex(isSame);
+    if (index >= 0) detection.index = index;
+    detection.isOnCandidate = index >= 0;
+    if (index < 0 && corners !== detection.cornersAfterRun) detection.wasMovedByHand = true;
   }
 
   // Find card: disarms it, then finds the card containing `point` (source px, where the photo
@@ -500,6 +628,8 @@
     liveChanged,
     openFile,
     runDetect,
+    detectReopenedSide,
+    detectForDebugOverlay,
     findCardAt,
     useCandidate,
   });

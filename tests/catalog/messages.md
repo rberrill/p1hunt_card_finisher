@@ -334,16 +334,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-09 "Resumed where you left off."
 
-An information message, "Resumed where you left off.", after **Resume**, when the stored photo is the same size as the saved edits. When the sizes differ, the photo opens with fresh edits and no message.
+An information message, "Resumed where you left off.", after **Resume**, when the stored photo is the same size as the saved edits. When the sizes differ, the photo opens with fresh edits and an amber warning: "Full edit history could not be restored, your photo has been opened fresh."
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Resumed where you left off.", `#btnResume`
+- Changed: 1.10.0
+- Anchors: "Resumed where you left off.", "Full edit history could not be restored, your photo has been opened fresh.", `#btnResume`
 - Source: `js/app/state.js` (`openFile`); `js/app/start-screen.js` (`resumeSession`)
-- Ruling: R23. When the saved edits don't fit the stored photo, an amber warning reads "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Ruling: R23. When the saved edits don't fit the stored photo, an amber warning reads "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-09.1 Resume says it resumed   [auto: phone]
@@ -362,7 +362,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-09.2 Edits that don't fit the photo say it was opened fresh   [auto: phone]
-Written to ruling R23, with Rich's approved wording; it fails until that is built (BUG-050).
 Script only
 Stand-in: the saved edits are kept inside the browser, where no control or file can change them; the script changes the photo width they were saved for to one pixel more than the photo's.
 
@@ -376,61 +375,6 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Resume** | one amber warning reads "Full edit history could not be restored, your photo has been opened fresh." |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-## MSG-10 "No card-shaped edges found."
-
-A warning, for 5 seconds, when a detection the user started finds nothing: "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again." The user starts one with **Tap to find card**, by turning on **Debug overlay**, or from the tuning panel (opening it, **Re-detect**, or a changed setting); detection on opening a photo never shows it.
-
-- Risk: medium
-- Check: script
-- Layout: both.
-- Added: 1.10 baseline
-- Changed: none
-- Anchors: "No card-shaped edges found.", "Drag the corners into place, or tap to find card and tap the card again."
-- Source: `js/app/state.js` (`runDetect`); `js/app/perspective.js` (`bindPerspective`); `js/app/debug-panel.js` (`toggleDebugPanel`, `buildDebugPanel`)
-- Ruling: R3. Turning on **Debug overlay** only draws; it runs no detection and leaves the corners alone. The app differs today. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today. R78. A message may say "Tap" on a wide screen. The app already does this.
-- Cases: 2
-
-### MSG-10.1 A search that finds no card says so in the line alone   [auto: phone]
-Written to ruling R77; it fails until that is built (BUG-289).
-
-Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
-- Starting screen: the start screen
-
-Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Open photo** on the start screen and choose plain-grey.png | The picture opens on the Perspective step; the line above the controls reads "Nothing detected. Drag the corners into place."; no message shows over the picture |
-| 2 | Arm Tap to find card | the line above the controls reads "Tap the card in the photo." |
-| 3 | Tap the middle of the picture | the line above the controls reads "Nothing detected. Drag the corners into place." |
-| 4 | Wait five seconds | No message has shown over the picture since the tap |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-### MSG-10.2 Re-detect in the tuning panel that finds no card shows no message   [auto: desktop]
-Written to ruling R77; it fails until that is built (BUG-289).
-
-Before you start:
-- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
-- Starting screen: the app opened from a link ending ?debug: the start screen, with the Detection tuning panel showing
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Click **Open photo** on the start screen and choose plain-grey.png | The picture opens; the Detection tuning panel still shows; no message shows over the picture |
-| 2 | Click **Re-detect** in the tuning panel | The search runs again and ends; the line above the controls still reads "Nothing detected. Drag the corners into place." |
-| 3 | Wait five seconds | No message has shown over the picture since the click |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -535,16 +479,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-14 The self-test result
 
-Opening the app with `?selftest` in its link runs the engine's self-tests and shows "Self-tests: main {passed}/{total}, worker {passed}/{total}" (or "…, worker unavailable") for 8 seconds: white when every test passes, red when any fails.
+Opening the app with `?selftest` in its link runs the engine's self-tests and shows "Self-tests: main {passed}/{total}, worker {passed}/{total}" (or "…, worker unavailable") for 8 seconds: white when every test passes, red when any fails. A link with `?selftest=0` runs none and shows no message.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Self-tests: main ", ", worker unavailable"
 - Source: `js/app/main.js` (`runSelfTests`, `init`)
-- Ruling: R28. `?selftest=0` means off: no self-tests and no message. The app differs today.
+- Ruling: R28. `?selftest=0` means off: no self-tests and no message. The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-14.1 The self-test result, from a link   [auto: phone]
@@ -565,7 +509,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-14.2 A link with selftest=0 runs no self-tests   [auto: phone]
-Written to ruling R28; it fails until that is built (BUG-171).
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch, with the developer tools' console open
 - Build: the build under test
@@ -608,70 +551,6 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Auto** | an amber warning reads "Couldn’t estimate levels from this image." |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-## MSG-16 Auto set both points
-
-An information message when **Auto** finds both points: "Auto set white and black points. Check them, then Apply."
-
-- Risk: low
-- Check: script
-- Layout: both.
-- Added: 1.10 baseline
-- Changed: none
-- Anchors: "Auto set white and black points. Check them, then Apply.", `#toolAutoLevels`
-- Source: `js/app/levels.js` (`autoLevelsDraft`)
-- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app differs today.
-- Cases: 1
-
-### MSG-16.1 Auto sets both points, with no message   [auto: phone]
-Written to ruling R73; it fails until that is built (BUG-286).
-
-Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: IMG_9075.JPEG from samples/
-- Starting screen: the photo open, on the Levels step
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Auto** | The color patches of **Pick white** and **Pick black** (the small marks at their left that show the color picked) are filled: Auto set both points |
-| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-## MSG-17 Auto set the white point only
-
-An information message when **Auto** finds a white point but no clear black: "Auto set the white point (no clear black). Check it, then Apply."
-
-- Risk: low
-- Check: script
-- Layout: both.
-- Added: 1.10 baseline
-- Changed: none
-- Anchors: "Auto set the white point (no clear black). Check it, then Apply.", `#toolAutoLevels`
-- Source: `js/app/levels.js` (`autoLevelsDraft`)
-- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app differs today.
-- Cases: 1
-
-### MSG-17.1 Auto sets the white point only, with no message   [auto: phone]
-Written to ruling R73; it fails until that is built (BUG-286).
-
-Before you start:
-- Device and browser: a phone-width window (390 × 844), touch
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: 13_front_landscape_onetouch_labeled_white.JPEG from samples/
-- Starting screen: the photo open, on the Levels step
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Auto** | The color patch of **Pick white** (the small mark at its left that shows the color picked) is filled, and the one of **Pick black** is still dashed and empty: Auto set the white point only |
-| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1568,7 +1447,7 @@ An information message after **Copy CONFIG** in the detection tuning panel puts 
 
 ### MSG-41.1 Copy CONFIG says it copied   [auto: desktop]
 Before you start:
-- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool)
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
@@ -1582,27 +1461,26 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-42 "Clipboard blocked — CONFIG printed to the console."
+## MSG-42 "Clipboard blocked. CONFIG printed to the console."
 
-A warning, for 5 seconds, when **Copy CONFIG** can't reach the clipboard and prints the settings to the console instead: "Clipboard blocked — CONFIG printed to the console."
+A warning, for 5 seconds, when **Copy CONFIG** can't reach the clipboard and prints the settings to the console instead: "Clipboard blocked. CONFIG printed to the console."
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Clipboard blocked — CONFIG printed to the console.", `#debugCopy`
+- Changed: 1.10.0
+- Anchors: "Clipboard blocked. CONFIG printed to the console.", `#debugCopy`
 - Source: `js/app/debug-panel.js` (`buildDebugPanel`)
-- Ruling: R60. The blocked-clipboard message is two sentences, in the same words: "Clipboard blocked. CONFIG printed to the console." The app differs today.
+- Ruling: R60. The blocked-clipboard message is two sentences: "Clipboard blocked. CONFIG printed to the console." The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-42.1 Copy CONFIG with the clipboard blocked   [auto: desktop]
-Written to ruling R60; it fails until that is built (BUG-284).
 Script only
 Stand-in: a person can't make the browser refuse the clipboard to the page on purpose, so the script makes every clipboard write fail, as a browser that blocks the page does.
 
 Before you start:
-- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen), with the developer tools' console open
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool), with the developer tools' console open
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/
@@ -1712,18 +1590,18 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-46 "Wait for the export to finish, then open the photo."
+## MSG-46 "Wait for the export to finish, then open the photo." and "Wait for the other side to open, then open the photo."
 
-A warning, for 5 seconds, when a photo arrives (picker, drop or paste) while an export runs: "Wait for the export to finish, then open the photo." The same message shows while a side switch or the back's first opening is under way, when no export runs.
+A warning, for 5 seconds, when a photo arrives (picker, drop or paste) while an export runs: "Wait for the export to finish, then open the photo." While a pair's side is opening after a tap on **Front** or **Back**, the warning reads "Wait for the other side to open, then open the photo." instead; the back's first opening after **Add back** gets the same warning (PAIR-09.5).
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Wait for the export to finish, then open the photo."
+- Changed: 1.10.0
+- Anchors: "Wait for the export to finish, then open the photo.", "Wait for the other side to open, then open the photo."
 - Source: `js/app/pair.js` (`receivePhoto`)
-- Ruling: R13. During a side switch the warning reads "Wait for the other side to open, then open the photo."; during an export the wording stays (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Ruling: R13. During a side switch the warning reads "Wait for the other side to open, then open the photo."; during an export the wording stays (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-46.1 A photo opened during an export is refused   [auto: phone]
@@ -1747,7 +1625,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-46.2 A photo opened while a side opens is refused with its own words   [auto: phone]
-Written to ruling R13, in the wording Rich approved; it fails until that is built (BUG-031).
 Script only
 Stand-in: a side opens in tens of milliseconds, too fast to open a photo in the middle of it, so the script holds the front's opening until row 2 is done.
 
@@ -1991,20 +1868,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-54 The other corner faults
 
-For the engine's remaining faults the row above Perspective's controls shows, with a red error icon, "Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty." or "Transform is not invertible."
+For the engine's remaining faults ("Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty." and "Transform is not invertible.") the row above Perspective's controls reads "Fix the corners first." with a red error icon. The engine's own words go to the browser's console.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty.", "Transform is not invertible."
-- Source: `js/app/perspective.js` (`perspectiveStatus`); `js/engine.js` (`Quad.validate`, `computeGeometry`)
-- Ruling: R81. The screen shows "Fix the corners in Perspective first." (on Perspective itself, "Fix the corners first.", R82) in place of the engine's words, which go to the console. The app differs today.
+- Changed: 1.10.0
+- Anchors: "Fix the corners first.", "Corners are missing or invalid.", "Could not solve the perspective for these corners.", "Crop is empty.", "Transform is not invertible."
+- Source: `js/app/perspective.js` (`perspectiveStatus`, `faultText`, `logGeometryNote`); `js/engine.js` (`Quad.validate`, `computeGeometry`)
+- Ruling: R81. The screen shows "Fix the corners in Perspective first." (on Perspective itself, "Fix the corners first.", R82) in place of the engine's words, which go to the console. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-54.1 The engine's other corner faults   [auto: phone]
-Written to rulings R81 and R82; it fails until they are built (BUG-291, BUG-292). The case is on Perspective, so the line reads R82's "Fix the corners first."
 Script only
 Stand-in: no control brings these faults about, so the script makes the engine report each in turn.
 
@@ -2057,16 +1933,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-56 "Low confidence (…%). Check the corners."
 
-When the detected card in use scores under 50% confidence, the row above Perspective's controls reads "Low confidence ({percent}%). Check the corners." with an amber warning icon. Today it stays until another detection runs.
+When the detected card in use scores under 50% confidence, the row above Perspective's controls reads "Low confidence ({percent}%). Check the corners." with an amber warning icon. It goes once the corners are moved by hand, by a drag or with the arrow buttons, and stays away until detection runs again, even if **Undo** puts the corners back.
 
 - Risk: medium
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Low confidence (", "%). Check the corners.", `CONFIG.detect.minConfidence`
-- Source: `js/app/perspective.js` (`perspectiveStatus`, `syncPerspectiveReadouts`)
-- Ruling: R7. The warning clears after the first corner move, by drag or nudge. The app differs today.
+- Source: `js/app/perspective.js` (`perspectiveStatus`, `syncPerspectiveReadouts`); `js/app/state.js` (`noteDetectedCorners`)
+- Ruling: R7. The warning clears after the first corner move, by drag or nudge. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-56.1 Low confidence   [auto: phone]
@@ -2086,17 +1962,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-57 "Nothing detected. Drag the corners into place."
 
-After a detection run finds no card, the row above Perspective's controls reads "Nothing detected. Drag the corners into place." with an amber warning icon. Today it stays until another detection runs.
+After a detection run finds no card, the row above Perspective's controls reads "Nothing detected. Drag the corners into place." with an amber warning icon. Nothing else says so: no pop-up shows, whether the search ran on opening the photo or the user started it (**Tap to find card**, or **Re-detect** in the tuning panel). It goes once the corners are moved by hand, by a drag or with the arrow buttons, and stays away until detection runs again, even if **Undo** puts the corners back.
 
 - Risk: medium
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Nothing detected. Drag the corners into place.", `#perspectiveStatus`
-- Source: `js/app/perspective.js` (`perspectiveStatus`)
-- Ruling: R7. The warning clears after the first corner move, by drag or nudge. The app differs today. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today.
-- Cases: 1
+- Source: `js/app/perspective.js` (`perspectiveStatus`); `js/app/state.js` (`runDetect`, `noteDetectedCorners`)
+- Ruling: R7. The warning clears after the first corner move, by drag or nudge. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app does this since 1.10.0.
+- Cases: 3
 
 ### MSG-57.1 Nothing detected   [auto: phone]
 
@@ -2114,22 +1990,60 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## MSG-58 "Corrected frame clamped to 12000px on the long side."
+### MSG-57.2 A search that finds no card says so in the line alone   [auto: phone]
 
-When the perspective-corrected frame would be larger than the 12000 px cap, the row above Perspective's controls reads "Corrected frame clamped to 12000px on the long side." with a grey information icon.
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
+- Starting screen: the start screen
+
+Arm Tap to find card: tap the options tab (the small tab with an up arrow on the top edge of the controls); in the sheet that rises, PERSPECTIVE OPTIONS, tap **Tap to find card** (the sheet closes).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Open photo** on the start screen and choose plain-grey.png | The picture opens on the Perspective step; the line above the controls reads "Nothing detected. Drag the corners into place."; no message shows over the picture |
+| 2 | Arm Tap to find card | the line above the controls reads "Tap the card in the photo." |
+| 3 | Tap the middle of the picture | the line above the controls reads "Nothing detected. Drag the corners into place." |
+| 4 | Wait five seconds | No message has shown over the picture since the tap |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-57.3 Re-detect in the tuning panel that finds no card shows no message   [auto: desktop]
+
+Before you start:
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool)
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: plain-grey.png from tests/fixtures/ (a plain grey picture, 1200 × 1600 px, with no card in it)
+- Starting screen: the app opened from a link ending ?debug: the start screen, with the Detection tuning panel showing
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Click **Open photo** on the start screen and choose plain-grey.png | The picture opens; the Detection tuning panel still shows; no message shows over the picture |
+| 2 | Click **Re-detect** in the tuning panel | The search runs again and ends; the line above the controls still reads "Nothing detected. Drag the corners into place." |
+| 3 | Wait five seconds | No message has shown over the picture since the click |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+## MSG-58 "Corrected frame clamped to 12000 px on the long side." in the console
+
+When the perspective-corrected frame would be larger than the 12000 px cap, the app writes "[card-finisher] Corrected frame clamped to 12000 px on the long side." to the browser's console, once while it lasts. Nothing on screen says so: the row above Perspective's controls shows no message for it.
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Corrected frame clamped to ", "px on the long side.", `CONFIG.maxOutputPx`
-- Source: `js/app/perspective.js` (`perspectiveStatus`)
-- Ruling: R76. The line goes; the fact goes to the console. The app differs today.
+- Changed: 1.10.0
+- Anchors: "Corrected frame clamped to ", " px on the long side.", `CONFIG.maxOutputPx`
+- Source: `js/app/perspective.js` (`logGeometryNote`, `perspectiveStatus`)
+- Ruling: R76. The line goes; the fact goes to the console. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-58.1 A corrected frame over the cap is noted in the console only   [auto: phone]
-Written to ruling R76; it fails until that is built (BUG-288). The console's words are not set by the ruling: the case looks for a line that gives the cap.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch, with the browser's developer tools open on the Console
@@ -2140,8 +2054,8 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the line above the controls | It holds no message about the corrected frame: it doesn't read "Corrected frame clamped to 1000px on the long side." |
-| 2 | Read the Console | A line says the corrected frame was clamped (or capped) to 1000 px on its long side |
+| 1 | Read the line above the controls | It holds no message: it reads NUDGE and "Corner 1 of 4" |
+| 2 | Read the Console | One line reads "[card-finisher] Corrected frame clamped to 1000 px on the long side." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2826,16 +2740,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-81 "Fix the corners in Perspective first." on the photo
 
-When the corners are invalid, "Fix the corners in Perspective first." is drawn in grey at the center of the photo area in place of the picture, on every step except Perspective's corner view.
+When the corners are invalid, "Fix the corners in Perspective first." is drawn in grey at the center of the photo area in place of the picture, on every step after Perspective. Perspective's corner view keeps the photo; what its **Preview** reads is VIEW-14's.
 
 - Risk: medium
 - Check: eye
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Fix the corners in Perspective first."
+- Changed: 1.10.0
+- Anchors: "Fix the corners in Perspective first.", "Fix the corners first."
 - Source: `js/app/view.js` (`draw`, `drawMessage`)
-- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app differs today.
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-81.1 "Fix the corners in Perspective first." on the photo, for a person to judge   [eye]
@@ -2863,10 +2777,10 @@ On Export for a pair with **Together** chosen, when either side's corners are in
 - Check: eye
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Fix the corners of both sides in Perspective first."
-- Source: `js/app/view.js` (`drawTogether`, `drawMessage`)
-- Ruling: R26. With the waiting side's corners invalid, Export's size line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…") and **Share**, **Download** and **Copy** are dimmed (wording approved by Rich, tests/catalog/wording.md). The app differs today.
+- Changed: 1.10.0
+- Anchors: "Fix the corners of both sides in Perspective first.", "’s corners in Perspective first."
+- Source: `js/app/view.js` (`drawTogether`, `drawMessage`); `js/app/export-controls.js` (`syncExportReadouts`); `js/app/pair.js` (`waitingSideToFix`)
+- Ruling: R26. With the waiting side's corners invalid, Export's size line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…") and **Share**, **Download** and **Copy** are dimmed (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-82.1 "Fix the corners of both sides in Perspective first." on the joined image, for a person to judge   [eye]
@@ -2886,7 +2800,6 @@ Pass: every row's result is seen.
 On a fail, record: what differs from the description, the screenshot.
 
 ### MSG-82.2 With the waiting side's corners crossed, Export names the side to fix   [auto: phone]
-Written to ruling R26, in the wording Rich approved; it fails until that is built (BUG-034).
 Script only
 Stand-in: no case uses a desktop browser's own share sheet, so the page gets a stand-in share sheet, which shows **Share**.
 
@@ -2995,16 +2908,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-86 Levels' tips
 
-Levels' sheet, titled "Levels tips", is its tips: three paragraphs on picking white and black, what **Auto** does, and "Hold the photo to compare with no levels. Clear, then Apply, removes levels."
+Levels' sheet, titled "Levels tips" on a phone, is its tips: three paragraphs on picking white and black, what **Auto** does, and "Hold the photo to compare with no levels. Clear, then Apply, removes levels."
 
 - Risk: low
 - Check: script
-- Layout: both. A wide screen lists the paragraphs inline and adds the keyboard help under its own "Tips and keys" heading.
+- Layout: both. A wide screen lists the paragraphs inline under the heading "Tips and keys", which shows in place of the title, and adds the keyboard help after them.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#levelsSheet`, "Levels tips", "Hold the photo to compare with no levels. Clear, then Apply, removes levels."
 - Source: `js/app/levels.js` (`buildLevelsSheet`)
-- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app differs today.
+- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-86.1 Levels' tips   [auto: phone]
@@ -3225,7 +3138,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-91.3 The nudge keys, Close tuning and the corner thumbnails have names   [auto: desktop]
 Before you start:
-- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool; on a phone it covers the start screen)
+- Device and browser: a wide window (1280 × 800), a mouse (the tuning panel is a developer's tool)
 - Build: the build under test
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 01_chrome_flat_black.JPEG from samples/

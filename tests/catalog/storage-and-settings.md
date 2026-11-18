@@ -10,10 +10,10 @@ The app remembers your crop preset, the export settings (Format, Quality, Size, 
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.storageKey`, `CONFIG.crop.defaultPreset`, `CONFIG.export.longEdge`, `CONFIG.export.format`
 - Source: `js/app/adapters.js` (`Prefs.load`, `Prefs.save`), `js/app/state.js` (`stateChanged`, `exportDefaults`, `cropDefaults`)
-- Ruling: R4. **Reset crop** goes back to the remembered preset and leaves the remembered preset unchanged. The app differs today. R5. Undoing an export setting also rewrites the remembered setting. The app already does this.
+- Ruling: R4. **Reset crop** goes back to the remembered preset and leaves the remembered preset unchanged. The app does this since 1.10.0. R5. Undoing an export setting also rewrites the remembered setting. The app already does this.
 - Cases: 3
 
 That the next photo starts from the settings used last, after a reload too, is STA-19.2; a pair's Together or Separately is PAIR-25.1.
@@ -39,8 +39,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STO-01.2 Reset crop leaves the remembered preset for after a reload   [auto: phone, webkit]
-Written to ruling R4; it fails until that is built (BUG-100).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test

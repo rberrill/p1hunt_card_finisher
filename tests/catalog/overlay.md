@@ -245,16 +245,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-03 Where a new logo lands
 
-A newly added logo lands in the center of the frame, a quarter of its width, at 100% opacity, as one undo step.
+A newly added logo lands in the center of the frame, a quarter of its width, at 100% opacity, as one undo step. Each logo added is an undo step of its own, even two added within 0.9 s.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnOverlayAdd`, `#overlayOpacityValue`
 - Source: `js/app/overlay.js` (`place`, `defaultPlacement`); `js/engine.js` (`OVERLAY_DEFAULTS`)
-- Ruling: R19. Each logo add is its own undo step, however quickly two come (and a dropped logo is accepted by its extension, as the picker accepts it). The app differs today.
+- Ruling: R19. Each add is its own undo step; a drop accepts by extension like the picker (the drops are DND-01 and DND-04). The app does this since 1.10.0.
 - Cases: 2
 
 ### OVL-03.1 A new logo lands in the middle, a quarter wide, at 100%   [auto: phone]
@@ -277,9 +277,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-03.2 Two logos added within 0.9 s are two undo steps   [auto: phone]
 Script only
-Stand-in: the script adds the two logos through the file picker less than 0.9 s apart; a person can't open the picker and choose a file twice that fast.
-
-Written to ruling R19; it fails until that is built (BUG-080).
+Stand-in: the script adds the two logos through the file picker less than 0.9 s apart, and measures the gap between the two; a person can't open the picker and choose a file twice that fast.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -289,11 +287,11 @@ Before you start:
 - Starting screen: the photo open, on the Overlay step, no logo placed
 - Browser data: none for this site (a private window, or the site's data cleared)
 
-"Add then replace, quickly": tap **Add logo** (the red button under the photo), choose blue-disc.png, tap **Replace logo** in the row of tools (the bottom row of buttons under the photo) and choose green-logo.png, all within 0.9 s.
+"Add then replace, quickly": tap **Add logo** (the red button under the photo), choose blue-disc.png, tap **Replace logo** in the row of tools (the bottom row of buttons under the photo) and choose green-logo.png, so that the second logo is added less than 0.9 s after the first.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Add then replace, quickly | The green square has taken the blue disc's place |
+| 1 | Add then replace, quickly | The green square has taken the blue disc's place, added less than 0.9 s after it |
 | 2 | Tap **Undo** (the arrow curving left, at the top right) | The blue disc is back |
 
 Pass: every row's result is seen.
@@ -540,21 +538,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-09 Replace logo
 
-**Replace logo** opens the file picker; the new logo takes the old one's position, width and opacity, and becomes the saved logo.
+**Replace logo** opens the file picker; the new logo takes the old one's position, width and opacity, and becomes the saved logo. A new logo of another shape keeps the old one's middle and width, and is pulled inside the photo's edge where it would cross it. A logo dropped or pasted while one is placed does the same (DND-04.8).
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#toolOverlayReplace`, "Choose another logo"
-- Source: `js/app/overlay.js` (`bindOverlayControls`, `addOverlayFile`, `place`, `saveToBrowser`)
-- Ruling: R18. The replacement logo takes the old logo's position, width and opacity. The app differs today: the new logo lands at the starting place (centered, a quarter of the width, 100%).
-- Cases: 2
+- Source: `js/app/overlay.js` (`bindOverlayControls`, `addOverlayFile`, `place`, `setPlacement`, `saveToBrowser`); `js/engine.js` (`clampOverlay`)
+- Ruling: R18. The replacement logo takes the old logo's position, width and opacity; a new logo of another shape keeps the old one's center and width, then is clamped inside the crop; a logo dropped or pasted on Overlay while one is placed is a replacement and does the same. The app does this since 1.10.0.
+- Cases: 3
 
 ### OVL-09.1 A replacement logo takes the old one's place, width and opacity   [auto: phone]
-Written to ruling R18; it fails until that is built (BUG-081).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -588,6 +584,26 @@ Before you start:
 | 2 | Choose green-logo.png | The green square takes the blue disc's place |
 | 3 | Tap **Remove** | The logo is gone; the thumbnail beside **Use saved overlay** is the green square |
 | 4 | Tap **Use saved overlay** | The green square is placed on the photo |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### OVL-09.3 A replacement of another shape keeps the old middle and width, pulled inside the photo's edge   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Logos, from tests/fixtures/: blue-disc.png (square); overlay-green-wide.jpg (three times as wide as it is high); overlay-blue-oval.webp (twice as high as it is wide)
+- Starting screen: the photo open, on the Overlay step, framed as a square (the 1:1 crop it opens with), blue-disc.png added (in the middle, a quarter of the photo's width)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"Replace with F": tap **Replace logo** in the row of tools (the bottom row of buttons under the photo), then choose the file F in the file picker. Places are given as a share of the framed photo: across from its left edge, down from its top edge.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap the bottom-right ring (a white circle with a dot in it, near the photo's bottom-right corner) | The disc goes to the bottom-right corner: its middle is 84.5% across and 84.5% down, its right and bottom edges 3% of the photo's width in from the photo's |
+| 2 | Replace with overlay-green-wide.jpg | A green box three times as wide as it is high, a quarter of the photo's width as the disc was, its middle where the disc's was: 84.5% across and 84.5% down |
+| 3 | Replace with overlay-blue-oval.webp | A blue oval in a box a quarter of the photo's width and half its height, its middle still 84.5% across. Kept 84.5% down it would cross the photo's bottom edge, so it is pulled up: its bottom edge is on the photo's bottom edge and its middle is 75% down |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1501,16 +1517,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-28 The saved logo is kept up to date
 
-Adding a logo by the button, a drop or a paste makes it the saved logo. While the placed logo is the saved one, its position, size and opacity are saved again 400 ms after each change.
+Adding a logo by the button, a drop or a paste makes it the saved logo. While the placed logo is the saved one, its position, size and opacity are saved again 100 ms after each change.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.session.saveDelayMs`, "This overlay works on this photo, but it can’t be saved in this browser."
 - Source: `js/app/overlay.js` (`addOverlayFile`, `saveToBrowser`, `overlayStateChanged`)
-- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today.
+- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today. R36. Changes are saved sooner (about 0.1 s after each); the saved logo's position, size and opacity share that wait. The app does this since 1.10.0.
 - Cases: 4
 
 ### OVL-28.1 A change to the saved logo's place is kept in the browser   [auto: phone, webkit]
@@ -1588,7 +1604,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### OVL-28.4 A change to the saved logo's place is stored 0.4 s later, once   [auto: phone, webkit]
+### OVL-28.4 A change to the saved logo's place is stored 0.1 s later, once   [auto: phone, webkit]
 Script only
 Stand-in: the script records each time the app stores the saved logo in the browser, and when; a person can't see a save, or time one to a tenth of a second. What the save brings back after a reload is OVL-28.1.
 
@@ -1605,7 +1621,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Add blue-disc.png | The logo is stored in the browser as the saved logo, in the middle |
-| 2 | A second or more later, tap **Move right** (the right arrow in the left-hand pad) | The new place is stored as the saved logo's once, 0.4 s after the tap and not before |
+| 2 | A second or more later, tap **Move right** (the right arrow in the left-hand pad) | The new place is stored as the saved logo's once, 0.1 s after the tap and not before |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

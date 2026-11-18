@@ -60,6 +60,11 @@
     return match ? TYPES_BY_EXTENSION[match[1].toLowerCase()] : null;
   }
 
+  // Whether a file is one Add logo takes: a supported image type, or else a supported
+  // extension. A drop on this step asks, so a logo whose type isn't a picture type is taken
+  // by its name (ruling R19); addOverlayFile still makes every check on it.
+  const isLogoFile = file => !!imageTypeOf(file);
+
   // FNV-1a over the bytes, plus the length: the same file always gets the same id.
   function hashBytes(buffer) {
     const bytes = new Uint8Array(buffer);
@@ -223,14 +228,18 @@
     CF.syncUI();
   }
 
-  // Places an image as the overlay (one undo step), at saved settings if given.
+  // Places an image as the overlay. `settings` ({ cx, cy, w, opacity }) is the saved logo's
+  // last placement or the placement of the logo it replaces; with none it lands at the
+  // starting place. Each logo placed is an undo step of its own, however soon after the last
+  // (ruling R19), so the commit names no control for History to merge it under.
   function place(image, settings) {
     const wanted = settings || {};
     // Stored before the commit, so the state change it makes finds the logo already written.
     storePhotoOverlay(image);
     CF.commit(state => {
       const defaults = defaultPlacement(image);
-      // Saved settings come from storage.
+      // The saved logo's settings come from storage, so each value is checked; a replaced
+      // logo's placement passes the same check.
       const isUnit = value => typeof value === 'number' && value >= 0 && value <= 1;
       const unitOr = (value, fallback) => (isUnit(value) ? value : fallback);
       setPlacement(state, Object.assign(defaults, {
@@ -239,7 +248,7 @@
         w: unitOr(wanted.w, defaults.w) || defaults.w,
         opacity: unitOr(wanted.opacity, defaults.opacity),
       }));
-    }, 'overlayPlace');
+    });
   }
 
   // The fields of an image record that go into storage.
@@ -265,8 +274,8 @@
     if (image) storePhotoOverlay(image);
   }
 
-  // Adds a logo (the button, or drop or paste on this step). Errors leave the current overlay
-  // as it was.
+  // Adds a logo (Add logo, Replace logo, or drop or paste on this step). Errors leave the
+  // current overlay as it was.
   async function addOverlayFile(file) {
     if (!app.img || !frame() || !file) return;
     const type = imageTypeOf(file);
@@ -288,7 +297,10 @@
       return;
     }
     app.overlayMessage = '';
-    place(image, null);
+    // A logo that replaces one on the photo takes its position, width and opacity (ruling R18);
+    // with none there it lands at the starting place.
+    const replaced = app.state.overlay;
+    place(image, replaced ? settingsOf(replaced) : null);
     saveToBrowser(image);
   }
 
@@ -1164,6 +1176,7 @@
 
   Object.assign(CF, {
     buildOverlayControls,
+    isLogoFile,
     addOverlayFile,
     loadSavedOverlay,
     overlayStateChanged,

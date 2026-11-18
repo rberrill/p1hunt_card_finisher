@@ -262,8 +262,10 @@ function readStatuses(page) {
 // Holds the next search for the card open until releaseSearch is called: the search runs, and
 // its result is handed back only on release. A search takes about half a second and no control
 // can slow it, so this one change is made in the page's code (the detector's entry point).
-function holdNextSearch(page) {
-  return page.evaluate(() => {
+// failure: words for the held search to fail with on release, where a case needs a search that
+// fails (no photo makes one fail); left out, the search hands back its result.
+function holdNextSearch(page, failure = '') {
+  return page.evaluate(failureText => {
     const detector = window.CF.Detector;
     const detect = detector.detect;
     window.testSearchHeld = new Promise(resolve => {
@@ -273,9 +275,10 @@ function holdNextSearch(page) {
       detector.detect = detect;
       const result = await detect.call(detector, imageData, options);
       await window.testSearchHeld;
+      if (failureText) throw new Error(failureText);
       return result;
     };
-  });
+  }, failure);
 }
 
 // Lets the search holdNextSearch held hand back its result.

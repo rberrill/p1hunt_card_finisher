@@ -470,7 +470,6 @@ test('VIEW-05.2 A second finger while a Levels pick is armed cancels the press [
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-101');
   const hand = await startOnLevels(page, testInfo);
   await hand.tap(pickButton(page, 'white'));
   await check('Pick white is selected', async () => {
@@ -778,7 +777,6 @@ test('VIEW-10.4 A double tap does nothing while Tap to find card is armed [phone
 
 test('VIEW-10.5 A press that showed Levels\' compare doesn\'t count toward a double tap [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-103');
     const hand = await startOnLevels(page, testInfo);
     await hand.tap(page.locator('#toolAutoLevels'));
     await check('a white dot shows on the Levels tab in the step tabs', async () => {
@@ -791,7 +789,7 @@ test('VIEW-10.5 A press that showed Levels\' compare doesn\'t count toward a dou
       expect(zoomed.isFitted).toBe(false);
     });
     const press = await pressThenTap(page, middle);
-    await check('the comparison showed (the Before levels badge), in under 0.3 seconds', () => {
+    await check('the comparison started, and the press lasted under 0.3 seconds in all', () => {
       expect(press.isCompared).toBe(true);
       expect(press.holdMs).toBeLessThan(TAP_MS);
     });
@@ -1005,19 +1003,21 @@ async function checkMessageOnly(page, check, description, drawnText = null) {
 
 test('VIEW-14.1 With the corners crossed, the later steps show a message, for a person to '
   + 'judge [phone]', async ({ page, check }, testInfo) => {
+  await recordDrawnText(page);
   const hand = await startOn(page, testInfo);
   await crossTheCorners(page, hand);
   await check('the outline crosses itself', async () => {
     expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(false);
   });
   await goToStep(page, 'rotate', hand);
+  // Ruling R82 changed the words on Perspective only: every later step still names the step.
   await checkMessageOnly(page, check,
-    'on Rotate, no photo, only "Fix the corners in Perspective first."');
+    'on Rotate, no photo, only "Fix the corners in Perspective first."',
+    'Fix the corners in Perspective first.');
 });
 
 test('VIEW-14.2 Preview with the corners crossed asks to fix them, for a person to judge '
   + '[phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-292');
   await recordDrawnText(page);
   const hand = await startOn(page, testInfo);
   await crossTheCorners(page, hand);

@@ -330,7 +330,6 @@ test('EDT-04.1 Load edits opens a picker for one .json file and applies it [phon
 
 test('EDT-04.2 While an export runs, Load edits is dimmed and the step tabs stay live [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-013');
     await recordExports(page);
     const hand = await startOn(page, testInfo);
     const saved = await downloadAnswering(page, hand);

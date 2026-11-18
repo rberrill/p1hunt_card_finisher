@@ -40,6 +40,8 @@
       app.compare = false;
     }
     if (tab !== 'overlay') app.overlayMessage = '';
+    // Leaving Perspective turns Preview off, so the step comes back with its handles (R88).
+    if (tab !== 'perspective') app.previewMode = false;
     app.nudgeLoupeUntil = 0;
     app.findMode = false;
     closeSheets();
@@ -192,7 +194,10 @@
         state.rotation = { quarter: 0, fine: 0, fillFrame: false };
         state.flip = { h: false, v: false };
       } else if (step === 'crop') {
-        state.crop = CF.cropDefaults(null);
+        // Back to the remembered preset, which stays the remembered one (ruling R4). It comes
+        // from storage, so it is checked like an edits file.
+        const remembered = CF.cropDefaults(CF.Prefs.load());
+        state.crop = CF.cleanState({ crop: remembered }, app.img).state.crop;
       } else if (step === 'export') {
         const defaults = CONFIG.export;
         state.export = {
@@ -211,10 +216,7 @@
     const hasPhoto = !!app.img;
     const state = app.state;
     elements.root.classList.toggle('has-img', hasPhoto);
-    CF.updateTopBar(elements.topBar, {
-      canUndo: CF.History.undo.length > 0,
-      canRedo: CF.History.redo.length > 0,
-    });
+    syncHistoryButtons();
     CF.updateTabBar(elements.tabBar, { current: app.tab, isDisabled: !hasPhoto });
     syncFitButton();
     document.querySelectorAll('.panel button, .panel select, .panel input').forEach(control => {
@@ -231,9 +233,21 @@
     syncReadouts();
   }
 
+  // Undo and Redo: each is on while there is a step for it to take, and both are off while an
+  // export runs, with the save buttons (ruling R17).
+  function syncHistoryButtons() {
+    const isExporting = !!app.exporting;
+    CF.updateTopBar(elements.topBar, {
+      canUndo: !isExporting && CF.History.undo.length > 0,
+      canRedo: !isExporting && CF.History.redo.length > 0,
+    });
+  }
+
   // The readouts and what follows from them. An export's start and end resync only these.
   function syncReadouts() {
     CF.syncSourceInfo();
+    // Here as well as in syncUI: Undo and Redo are off while an export runs.
+    syncHistoryButtons();
     // Here rather than in syncUI: the side switch is off while an export runs.
     CF.syncPair();
     if (!app.state) return;

@@ -194,6 +194,8 @@
     return app.perspectivePreview;
   }
 
+  // Draws the photo area for the step that is open: the photo with its corner handles, the
+  // corrected result, a pair's joined image, or a line of words when the corners are invalid.
   function draw() {
     CF.syncFitButton();
     const canvas = elements.canvas;
@@ -212,7 +214,12 @@
       return;
     }
     if (!view) {
-      drawMessage(ctx, 'Fix the corners in Perspective first.');
+      // Perspective's Preview is on the step that fixes the corners, so its words don't name
+      // the step (ruling R82).
+      const isOnPerspective = app.tab === 'perspective';
+      drawMessage(ctx, isOnPerspective
+        ? 'Fix the corners first.'
+        : 'Fix the corners in Perspective first.');
       return;
     }
     drawResult(ctx, view);

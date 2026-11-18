@@ -246,16 +246,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## LEV-08 Aim and pick
 
-With a pick armed, a press on the photo aims, and the color is taken where the finger or pointer lifts. The photo doesn't pan.
+With a pick armed, a press on the photo aims, and the color is taken where the finger or pointer lifts. The photo doesn't pan. A second finger put down during the press cancels it: no color is taken, and the pick stays armed.
 
 - Risk: high
 - Check: script, touch
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Tap something white", "Tap something black", `CONFIG.levels.sampleRadiusPx`
-- Source: `js/app/input.js` (`stepGesture`, `onPointerMove`, `endGesture`); `js/app/levels.js` (`pickAt`)
-- Ruling: R8. A second finger cancels the pick and leaves the color picker armed. The app differs today. R72. While a pick is armed one finger can't pan, and the color is taken where the finger lifts. The app already does this.
+- Source: `js/app/input.js` (`stepGesture`, `onPointerMove`, `startPinch`, `endGesture`); `js/app/levels.js` (`pickAt`)
+- Ruling: R8. A second finger cancels the pick and leaves the color picker armed. The app does this since 1.10.0. R72. While a pick is armed one finger can't pan, and the color is taken where the finger lifts. The app already does this.
 - Cases: 2
 
 ### LEV-08.1 The color is taken where the finger lifts, and the photo does not move   [auto: phone, webkit]
@@ -276,7 +276,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-08.2 A second finger cancels the pick and leaves the picker armed   [auto: phone]
-Written to ruling R8; it fails until that is built (BUG-101).
 
 Before you start:
 - Device and browser: a phone, in its own browser (two fingers on the screen)
@@ -436,16 +435,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## LEV-12 A pick that can't work
 
-A pick that can't work shows a warning and leaves the color picker armed: a spot outside the photo; a white not at least 20 brighter than the black point; a black brighter than 100 (on a scale of 0 to 255); a black not at least 20 darker than the white point. A tap on the dark area around the visible picture, where the step hides the rest of the photo, is ignored and leaves the picker armed.
+A pick that can't work shows a warning and leaves the color picker armed: a spot outside the photo; a white not at least 20 brighter than the black point; a black brighter than 100 (on a scale of 0 to 255); a black not at least 20 darker than the white point. A tap on the dark area around the visible picture, where the step hides the rest of the photo, is ignored, with no warning, and leaves the picker armed.
 
 - Risk: medium
 - Check: script, touch
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "That spot is outside the photo.", "That spot is darker than the black point. Pick something brighter.", "That spot is too light to be a black point. ", "That spot is brighter than the white point. Pick something darker.", `CONFIG.levels.maxBlackLuma`
-- Source: `js/app/levels.js` (`pickAt`, `pickProblem`)
-- Ruling: R38. A tap outside the visible picture is ignored and the pick stays armed. The app differs today.
+- Source: `js/app/levels.js` (`pickAt`, `isInCrop`, `pickProblem`)
+- Ruling: R38. A tap outside the visible picture is ignored and the pick stays armed. The app does this since 1.10.0 where the tap is over the part of the photo the step hides; where it is past the photo's own edge it still warns (LEV-12.1).
 - Cases: 5
 
 ### LEV-12.1 A tap outside the photo warns and stays armed   [auto: phone]
@@ -523,7 +522,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-12.5 A tap on the empty area below the picture is ignored and the pick stays armed   [auto: phone]
-Written to ruling R38; it fails until that is built (BUG-230). On the Levels step the photo shows only inside the crop; the dark area around it hides the rest of the photo, and a tap there must not take a color from it.
 
 Before you start:
 - Device and browser: any; a phone-width window
@@ -532,10 +530,12 @@ Before you start:
 - Starting screen: the photo open, on the Levels step, no levels set
 - Browser data: none for this site (a private window, or the site's data cleared)
 
+On the Levels step the photo shows only inside the crop; the dark area around it hides the rest of the photo, and a tap there takes no color from it.
+
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Pick white** | **Pick white** is selected and the line between **Discard** and **Apply** reads "Tap something white" |
-| 2 | Tap the dark empty area 40 px below the middle of the picture's bottom edge | The color patch at the left of **Pick white** (the small mark that shows the color picked) is still dashed and empty |
+| 2 | Tap the dark empty area 40 px below the middle of the picture's bottom edge | The color patch at the left of **Pick white** (the small mark that shows the color picked) is still dashed and empty, and no warning shows |
 | 3 | Look at the picks and the line | **Pick white** is still selected and the line still reads "Tap something white" |
 
 Pass: every row's result is seen.
@@ -543,21 +543,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## LEV-13 Pick marks
 
-A ring labelled **W** or **B** marks where each point was picked (Auto's points have none). The marks hide while comparing.
+A ring labelled **W** or **B** marks where each point was picked (Auto's points have none). Each letter is white with a dark outline round it, so it can be read on a white spot as on a dark one. The marks hide while comparing.
 
 - Risk: low
 - Check: eye; script (whether the letter has a dark outline)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "W", "B"
 - Source: `js/app/levels.js` (`drawPickMarker`, `drawLevelsOverlay`)
-- Ruling: R39. The W and B are white letters with a dark outline, as the corner outline is drawn, so they can be read on a white spot. The app differs today.
+- Ruling: R39. The W and B are white letters with a dark outline, as the corner outline is drawn, so they can be read on a white spot. The app does this since 1.10.0.
 - Cases: 2
 
 ### LEV-13.1 The pick marks, for a person to judge   [eye]
-Written to ruling R39; until that is built, the judge fails row 2 by eye: the W is a plain white letter, hard to read on the white background (BUG-231). LEV-13.2 checks the outline by script.
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -582,8 +580,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Script only
 Stand-in: the script reads the screen's pixels in a small box beside each letter and counts the dark ones. Whether at least 20 device pixels round a 12 px letter are dark can't be told by eye; LEV-13.1 is the same mark judged by a person.
 
-Written to ruling R39; it fails until that is built (BUG-231).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -605,20 +601,20 @@ On a fail, record: the row number, what you saw instead, the screenshot.
 
 ## LEV-14 Auto
 
-**Auto** estimates the white and black points from the framed photo into the draft and removes the pick marks; with no clear black it sets the white point only. Today a pop-up says which it set; ruling R73 takes it away (MSG-16 and MSG-17 hold that).
+**Auto** estimates the white and black points from the framed photo into the draft and removes the pick marks; with no clear black it sets the white point only. When it works it shows no message, as a pick shows none; on a picture it can't estimate from, a warning says so.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#toolAutoLevels`, "Auto set white and black points. Check them, then Apply.", "Auto set the white point (no clear black). Check it, then Apply.", `CONFIG.levels.autoBlackMaxSpread`
+- Changed: 1.10.0
+- Anchors: `#toolAutoLevels`, `CONFIG.levels.autoBlackMaxSpread`
 - Source: `js/app/levels.js` (`autoLevelsDraft`, `renderSmall`); `js/engine.js` (`autoLevels`)
-- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app differs today. R64. The failure message, "Couldn’t estimate levels from this image.", explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
-- Cases: 3
+- Ruling: R73. Auto's pop-up when it works goes, as a pick shows none; its failure message stays. The app does this since 1.10.0. R64. The failure message, "Couldn’t estimate levels from this image.", explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
+- Cases: 5
 
 ### LEV-14.1 Auto sets both points and removes the pick marks   [auto: phone]
-Whether Auto shows a pop-up is MSG-16.1's (ruling R73); this case doesn't look at it.
+Whether Auto shows a message is LEV-14.4's (ruling R73); this case doesn't look at it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -640,7 +636,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-14.2 With no clear black, Auto sets the white point only   [auto: phone]
-Whether Auto shows a pop-up is MSG-17.1's (ruling R73); this case doesn't look at it.
+Whether Auto shows a message is LEV-14.5's (ruling R73); this case doesn't look at it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -670,6 +666,40 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | A warning reads "Couldn’t estimate levels from this image." |
 | 2 | Look at the color patches (the small marks at the left of **Pick white** and **Pick black** that show the color picked) and **Apply** | Both color patches are still dashed and empty; **Apply** is greyed out (shown dim and not answering a tap) |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### LEV-14.4 Auto sets both points, with no message   [auto: phone]
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9075.JPEG from samples/
+- Starting screen: the photo open, on the Levels step, no levels set
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | The color patches of **Pick white** and **Pick black** (the small marks at their left that show the color picked) are filled: Auto set both points |
+| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### LEV-14.5 Auto sets the white point only, with no message   [auto: phone]
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: 13_front_landscape_onetouch_labeled_white.JPEG from samples/ (a card in a labelled one-touch on white, with no neutral black)
+- Starting screen: the photo open, on the Levels step, no levels set
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo; on a wide screen, the panel at the right) | The color patch of **Pick white** (the small mark at its left that shows the color picked) is filled, and the one of **Pick black** is still dashed and empty: Auto set the white point only |
+| 2 | Wait three seconds | No message has shown over the photo since **Auto** was tapped |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -730,17 +760,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## LEV-16 Hold to compare
 
-With no pick armed, press and hold the photo for 250 ms without moving to see it with no levels; letting go ends it. The view doesn't pan meanwhile.
+With no pick armed, press and hold the photo for 250 ms without moving to see it with no levels; letting go ends it. The view doesn't pan meanwhile, and the press is not a tap, so it never counts toward a double tap. While the photo on screen shows no levels (none set and none applied, or levels applied and **Clear** tapped but not applied), holding starts no comparison: the press stays an ordinary one, and sliding the finger pans the photo.
 
 - Risk: medium
 - Check: script, touch; phone (Safari's own long-press menu and magnifier)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.levels.compareHoldMs`, "Hold the photo to compare"
-- Source: `js/app/input.js` (`panGesture`, `onPointerMove`, `endGesture`); `js/app/levels.js` (`setCompare`)
-- Ruling: R9. Holding does nothing when there is no draft and no applied levels. R10. A press that showed the comparison never also counts as a tap. The app differs today.
-- Cases: 6
+- Source: `js/app/input.js` (`panGesture`, `onPointerMove`, `onPointerUp`, `endGesture`); `js/app/levels.js` (`setCompare`, `hasLevelsToCompare`)
+- Ruling: R9. The hold compares only while the photo on screen shows levels: with no draft and no applied levels, or with levels applied and **Clear** tapped but not applied, it does nothing. The app does this since 1.10.0. R10. A press that showed the comparison is never a tap. The app does this since 1.10.0.
+- Cases: 7
 
 ### LEV-16.1 Holding the photo shows it with no levels until it is let go   [auto: phone, webkit]
 Before you start:
@@ -760,8 +790,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-16.2 With no levels, holding the photo does nothing   [auto: phone]
-Written to ruling R9; it fails until that is built (BUG-102).
-
 Before you start:
 - Device and browser: a phone, in its own browser
 - Build: the build under test
@@ -772,7 +800,8 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Press and hold the middle of the photo, still, for half a second | There is no comparison: no **Before levels** badge at the top left of the photo area |
-| 2 | Let go | Nothing changes: still no badge |
+| 2 | Without lifting, slide the finger 60 px to the right | The photo follows the finger 60 px to the right, as on any press; no badge |
+| 3 | Lift the finger | The photo stays 60 px to the right; still no badge |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -780,8 +809,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 ### LEV-16.3 A press that showed the comparison is not also a tap   [auto: phone]
 Script only
 Stand-in: the script presses with a dispatched finger, lifts it the moment the comparison shows (under 0.3 s in all) and taps again at once. No person can time a press between 0.25 and 0.3 s.
-
-Written to ruling R10; it fails until that is built (BUG-103).
 
 Before you start:
 - Device and browser: a phone-width window with touch, 390 × 844 px
@@ -796,7 +823,7 @@ A double tap on the photo fits it to the screen; a single tap does nothing.
 | --- | --- | --- |
 | 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo) | The photo changes |
 | 2 | Put two fingers on the middle of the photo, 100 px apart, and spread them to 200 px | The photo zooms in; **Fit** shows in the top bar |
-| 3 | Press the middle of the photo until the comparison shows, and lift at once (under 0.3 seconds in all) | The comparison showed (the **Before levels** badge) |
+| 3 | Press the middle of the photo until the comparison shows, and lift at once (under 0.3 seconds in all) | The comparison started, and the press lasted under 0.3 seconds in all |
 | 4 | Straight away, tap the same place once | The photo stays zoomed in: the press and the tap were not a double tap |
 
 Pass: every row's result is seen.
@@ -859,18 +886,40 @@ Safari's own long press brings up a menu (Copy, Share, Save to Photos), a text m
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
+### LEV-16.7 With levels applied and Clear tapped, holding the photo does nothing   [auto: phone]
+Before you start:
+- Device and browser: a phone, in its own browser
+- Build: the build under test
+- Photo: IMG_9075.JPEG from samples/
+- Starting screen: the photo open, on the Levels step, no levels set and none applied; note how the photo looks
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+**Auto** and **Clear** are at the bottom of the controls (the block of buttons under the photo); **Discard** and **Apply** are at the two ends of the line above them.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Auto** | The photo changes |
+| 2 | Tap **Apply** | The photo keeps Auto's look; **Apply** is greyed out (shown dim and not answering a tap) |
+| 3 | Tap **Clear** | The photo looks as it did before Auto; **Apply** is no longer greyed out |
+| 4 | Press and hold the middle of the photo, still, for half a second | There is no comparison: no **Before levels** badge at the top left of the photo area |
+| 5 | Lift the finger and tap **Discard** | The photo has Auto's look again |
+| 6 | Press and hold the middle of the photo, still, for half a second | The photo looks as it did before Auto, with the **Before levels** badge at the top left of the photo area |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
 ## LEV-17 The Before levels badge
 
-While comparing, a badge reading **Before levels** shows at the top left of the photo.
+While comparing, a badge reading **Before levels** shows at the top left of the photo. While the photo on screen shows no levels (none set and none applied, or levels applied and **Clear** tapped but not applied) there is no comparison, so no badge.
 
 - Risk: low
 - Check: eye
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Before levels"
-- Source: `js/app/levels.js` (`drawCompareBadge`, `drawLevelsOverlay`, `setCompare`)
-- Ruling: R9. With no draft and no applied levels there is no comparison, so no badge. The app differs today. R71. Under reduced motion the **Before levels** badge still fades, the snap rings don't, and one fade is 60 ms. The app already does this.
+- Source: `js/app/levels.js` (`drawCompareBadge`, `drawLevelsOverlay`, `setCompare`, `hasLevelsToCompare`)
+- Ruling: R9. While the photo on screen shows no levels (no draft and no applied levels, or levels applied and **Clear** tapped but not applied) there is no comparison, so no badge. The app does this since 1.10.0. R71. Under reduced motion the **Before levels** badge still fades, the snap rings don't, and one fade is 60 ms. The app already does this.
 - Cases: 3
 
 ### LEV-17.1 The Before levels badge, for a person to judge   [eye]
@@ -912,8 +961,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-17.3 With no levels there is no badge   [auto: phone]
-Written to ruling R9; it fails until that is built (BUG-102).
-
 Before you start:
 - Device and browser: a phone, in its own browser
 - Build: the build under test
@@ -1174,16 +1221,16 @@ On a fail, record: the row number, what the script recorded instead.
 
 ## LEV-23 The sheet is the tips
 
-The options sheet, titled **Levels tips**, holds only the tips: no options, no Tips row and no reset.
+The options sheet, titled **Levels tips** on a phone, holds only the tips: no options, no Tips row and no reset.
 
 - Risk: low
 - Check: script
-- Layout: both. On a wide screen the tips show in the side panel, followed by the keyboard help under **Tips and keys**.
+- Layout: both. On a wide screen the tips show in the side panel under one heading, **Tips and keys**, followed by the keyboard help; the **Levels tips** title does not show there.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#levelsSheet`, "Levels tips", "Tips and keys"
-- Source: `js/app/levels.js` (`buildLevelsSheet`)
-- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app differs today.
+- Source: `js/app/levels.js` (`buildLevelsSheet`); `css/app.css` (the Levels step's block; the shell's wide block)
+- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app does this since 1.10.0.
 - Cases: 2
 
 ### LEV-23.1 The options sheet is the tips alone   [auto: phone]
@@ -1214,7 +1261,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the side panel under the controls | The three tips of LEV-23.1, then "Hold C, or press and hold the photo, to compare." under the heading TIPS AND KEYS |
+| 1 | Look at the side panel under the controls | The heading TIPS AND KEYS, then the three tips of LEV-23.1, then "Hold C, or press and hold the photo, to compare." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

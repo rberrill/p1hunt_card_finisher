@@ -96,8 +96,9 @@ const NUDGE_FRAC = 0.005;
 const SIZE_STEP = 1.05;
 // A snapped logo sits 3% of the crop's width in from the edges (OVERLAY_DEFAULTS.snapMargin).
 const SNAP_MARGIN_FRAC = 0.03;
-// Two presses closer together than this make one undo step, in ms (COALESCE_MS in state.js);
-// a person's pause between two separate changes is longer.
+// Two presses of one control closer together than this make one undo step, in ms (COALESCE_MS
+// in state.js); a person's pause between two separate changes is longer. Two logos added that
+// close together are still two steps (ruling R19).
 const UNDO_GAP_MS = 900;
 const PAUSE_MS = 1000;
 // How long a held pad key is held, in ms, and the fewest moves it must make in that time: the
@@ -132,7 +133,7 @@ const GROW_TO_FULL_MS = 2500;
 // The wait before a change to the saved logo's place is saved, in ms
 // (CONFIG.session.saveDelayMs); how much earlier a timer may seem to fire (the clock's
 // rounding), and how much later the save may land (the timer, then the database).
-const SAVE_DELAY_MS = 400;
+const SAVE_DELAY_MS = 100;
 const TIMER_EARLY_MS = 2;
 const SAVE_LATE_MS = 150;
 // How far a measured ratio of two sizes may be from the expected one, as a fraction.
@@ -572,19 +573,23 @@ test('OVL-03.1 A new logo lands in the middle, a quarter wide, at 100% [phone]',
   });
 });
 
+// When the last undo step was recorded, on the page's clock in ms: the gap between two logos
+// is measured in the page, where the app measures it, not from here.
+const lastStepTime = page => page.evaluate(() => window.CF.History.lastTime);
+
 test('OVL-03.2 Two logos added within 0.9 s are two undo steps [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-080');
   const hand = await startOnOverlay(page, testInfo);
-  const startedMs = Date.now();
   const firstId = await addDisc(page, hand);
+  const discAddedMs = await lastStepTime(page);
   const secondId = await replaceLogo(page, hand, GREEN_SQUARE);
-  const tookMs = Date.now() - startedMs;
-  await check('the green square has taken the blue disc\'s place', async () => {
+  const greenAddedMs = await lastStepTime(page);
+  await check('the green square has taken the blue disc\'s place, added less than 0.9 s after '
+    + 'it', async () => {
     expect(secondId).not.toBe(firstId);
-    expect(tookMs).toBeLessThan(UNDO_GAP_MS);
+    expect(greenAddedMs - discAddedMs).toBeLessThan(UNDO_GAP_MS);
     expectGreen(await colorOnPage(page, inDisc(await logoOnPage(page))));
   });
   await hand.tap(page.locator('#btnUndo'));
@@ -883,27 +888,48 @@ async function expectChanged(page, changed) {
   expect(percent).toBe(Math.round(changed.opacity * 100));
 }
 
+// A point inside a logo that is clear of the rings drawn on the photo's middle and sides: a
+// quarter of the logo's width right of and above its middle. placed: from logoOnPage.
+const upRightInLogo = placed => ({
+  x: placed.middle.x + placed.width / 4,
+  y: placed.middle.y - placed.width / 4,
+});
+
+// The channels of a drawn color ([r, g, b]).
+const GREEN = 1;
+const BLUE = 2;
+
+// Expects `channel` to be the strongest of a drawn color's three: how a pure blue or green
+// logo shows at about half opacity, whatever part of the photo is under it.
+function expectStrongest(color, channel) {
+  for (let other = 0; other < color.length; other++) {
+    if (other !== channel) expect(color[channel]).toBeGreaterThan(color[other]);
+  }
+}
+
 test('OVL-09.1 A replacement logo takes the old one\'s place, width and opacity [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-081');
     const hand = await startOnOverlay(page, testInfo);
     const first = await addDisc(page, hand);
     const changed = await changeTheLogo(page, hand);
     await check('the blue disc is right of the middle, larger, and OPACITY reads about 50%',
       async () => {
         await expectChanged(page, changed);
+        expectStrongest(await colorOnPage(page, upRightInLogo(await logoOnPage(page))), BLUE);
       });
     await page.waitForTimeout(PAUSE_MS);
     const second = await replaceLogo(page, hand, GREEN_SQUARE);
     const replaced = await logoPlacement(page);
-    // Read at once, with no waiting: a known-defect check.
     await check('the green square takes the disc\'s place: as far right, as wide, and at the '
-      + 'same opacity', () => {
+      + 'same opacity', async () => {
       expect(second).not.toBe(first);
+      expectStrongest(await colorOnPage(page, upRightInLogo(await logoOnPage(page))), GREEN);
       expectNear(replaced.cx, changed.cx, FRACTION_TOLERANCE);
       expectNear(replaced.cy, changed.cy, FRACTION_TOLERANCE);
       expectNear(replaced.w, changed.w, FRACTION_TOLERANCE);
       expect(replaced.opacity).toBe(changed.opacity);
+      const percent = parseInt(await page.locator('#overlayOpacityValue').textContent(), 10);
+      expect(percent).toBe(Math.round(changed.opacity * 100));
     });
   });
 
@@ -952,6 +978,61 @@ test('OVL-09.2 The replacement becomes the saved logo [phone] [webkit]', async (
   await check('the green square is placed on the photo', async () => {
     expect(await logoId(page)).toBe(second);
     expectGreen(await colorOnPage(page, inDisc(await logoOnPage(page))));
+  });
+});
+
+// Where the middle of a logo a quarter of the photo's width is, across and down a square
+// photo, after a snap to the bottom-right ring: 3% of the photo's width and half the logo's
+// own width in from the right and bottom edges, so 84.5%.
+const SNAPPED_MIDDLE = 1 - SNAP_MARGIN_FRAC - START_WIDTH / 2;
+// Where the middle of a logo half the photo's height is, down the photo, with its bottom edge
+// on the photo's bottom edge.
+const PULLED_UP_MIDDLE = 0.75;
+
+test('OVL-09.3 A replacement of another shape keeps the old middle and width, pulled inside '
+  + 'the photo\'s edge [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOnOverlay(page, testInfo);
+  await addDisc(page, hand);
+  await tapAt(page, hand, await ringOnPage(page, 'br'));
+  const disc = await logoPlacement(page);
+  const discBox = await logoBox(page);
+  await check('the disc goes to the bottom-right corner: its middle is 84.5% across and 84.5% '
+    + 'down, its right and bottom edges 3% of the photo\'s width in from the photo\'s', () => {
+    // The photo is framed as a square, so the same share is as far across as it is down.
+    expect(disc.cropWidth).toBe(disc.cropHeight);
+    expectNear(disc.cx, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    expectNear(disc.cy, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    const marginPx = SNAP_MARGIN_FRAC * disc.cropWidth;
+    expectNear(disc.cropWidth - discBox.right, marginPx, PICTURE_TOLERANCE_PX);
+    expectNear(disc.cropHeight - discBox.bottom, marginPx, PICTURE_TOLERANCE_PX);
+  });
+  await replaceLogo(page, hand, GREEN_WIDE);
+  const wide = await logoPlacement(page);
+  await check('a green box three times as wide as it is high, a quarter of the photo\'s width '
+    + 'as the disc was, its middle where the disc\'s was: 84.5% across and 84.5% down',
+  async () => {
+    expectNear(wide.w, START_WIDTH, FRACTION_TOLERANCE);
+    expectNear(wide.cx, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    expectNear(wide.cy, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    await expectLogoShape(page, 3);
+    // Read at the box's middle, which is clear of the rings once the box is in the corner.
+    expectGreen(await colorOnPage(page, (await logoOnPage(page)).middle));
+  });
+  await replaceLogo(page, hand, BLUE_OVAL);
+  const oval = await logoPlacement(page);
+  const ovalBox = await logoBox(page);
+  await check('a blue oval in a box a quarter of the photo\'s width and half its height, its '
+    + 'middle still 84.5% across. Kept 84.5% down it would cross the photo\'s bottom edge, so '
+    + 'it is pulled up: its bottom edge is on the photo\'s bottom edge and its middle is 75% '
+    + 'down', async () => {
+    expectNear(oval.w, START_WIDTH, FRACTION_TOLERANCE);
+    expectNear(ovalBox.height, oval.cropHeight / 2, PICTURE_TOLERANCE_PX);
+    expectNear(oval.cx, SNAPPED_MIDDLE, FRACTION_TOLERANCE);
+    expectNear(ovalBox.bottom, oval.cropHeight, PICTURE_TOLERANCE_PX);
+    expectNear(oval.cy, PULLED_UP_MIDDLE, FRACTION_TOLERANCE);
+    // Read a quarter of the way down the box, inside the oval and clear of the rings.
+    const placed = await logoOnPage(page);
+    expectBlue(await colorOnPage(page, { x: placed.middle.x, y: placed.y + placed.height / 4 }));
   });
 });
 
@@ -1051,7 +1132,7 @@ test('OVL-12.1 Delete saved forgets the saved logo and leaves the one on the pho
     await expect(page.locator('#overlayThumb')).toBeHidden();
     await expect(page.locator('#btnUseSaved')).toBeHidden();
   });
-  // A person reloads a moment later; the edits are saved 0.4 s after the change.
+  // A person reloads a moment later; the edits are saved 0.1 s after the change.
   await waitForSaved(page, { name: PHOTO, overlayId: null });
   await reloadStartFreshAndOpen(page, hand, check, SECOND_PHOTO);
   await goToStep(page, 'overlay', hand);
@@ -2015,7 +2096,7 @@ test('OVL-28.3 After Delete saved, moving the logo saves nothing [phone]', async
   });
 });
 
-test('OVL-28.4 A change to the saved logo\'s place is stored 0.4 s later, once [phone] [webkit]',
+test('OVL-28.4 A change to the saved logo\'s place is stored 0.1 s later, once [phone] [webkit]',
   async ({ page, check }, testInfo) => {
     await watchStorageAndDownloads(page);
     const hand = await startOnOverlay(page, testInfo);
@@ -2034,7 +2115,7 @@ test('OVL-28.4 A change to the saved logo\'s place is stored 0.4 s later, once [
     // Long enough for a second, unwanted save to land too.
     await page.waitForTimeout(PAUSE_MS);
     const writes = await storageWritesSince(page, 'overlay', beforeTapMs);
-    await check('the new place is stored as the saved logo\'s once, 0.4 s after the tap and not '
+    await check('the new place is stored as the saved logo\'s once, 0.1 s after the tap and not '
       + 'before', () => {
       expect(writes.length).toBe(1);
       expect(writes[0].atMs - beforeTapMs).toBeGreaterThanOrEqual(SAVE_DELAY_MS - TIMER_EARLY_MS);

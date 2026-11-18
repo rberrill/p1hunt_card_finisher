@@ -10,10 +10,10 @@ On Export, **Add back** keeps the open photo as the front, with its edits and un
 - Check: script
 - Layout: both. On a phone it sits in Export's bottom row; on a wide screen in the same row of the side panel.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnAddBack`, "Keep this photo as the front and open the back", `#fileInput`
-- Source: `js/app/pair.js` (`startPair`, `receivePhoto`, `bindPair`), `js/app/export-controls.js` (`buildMoreRow`)
-- Ruling: R17. While an export runs, Add back is dimmed with the save buttons (as are Size, Format, the options sheet's settings, Load edits, Undo and Redo); the tab bar stays live. The app differs today.
+- Source: `js/app/pair.js` (`startPair`, `receivePhoto`, `bindPair`), `js/app/export-controls.js` (`buildMoreRow`, `syncExportLock`)
+- Ruling: R17. While an export runs, Add back is dimmed with the save buttons (as are Size, Format, the options sheet's settings, Load edits, Undo and Redo); the tab bar stays live. The app does this since 1.10.0.
 - Cases: 2
 
 ### PAIR-01.1 Add back keeps the front and opens the back   [auto: phone, webkit]
@@ -46,8 +46,6 @@ Before you start:
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photo: 14_front_portrait_raw_white.JPEG from samples/
 - Starting screen: the photo open on its own, on the Export step, Size **Original** selected
-
-Written to ruling R17; it fails until R17 is built (BUG-030).
 
 An export takes well under a second, so watch the bottom row closely, or record the screen and step through it.
 
@@ -425,17 +423,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PAIR-09 Busy while a side opens or an export runs
 
-**Front** / **Back** and **Unpair** are dimmed while an export runs or a side is opening. While a side is opening (a switch, or the back's first opening after **Add back**), **Share**, **Download**, **Copy**, **Together** / **Separately** and the corner-shots save buttons are dimmed too, and a photo opened then is refused with a message.
+**Front** / **Back** and **Unpair** are dimmed while an export runs or a side is opening. While a side is opening (a switch, or the back's first opening after **Add back**), **Share**, **Download**, **Copy**, **Together** / **Separately** and the corner-shots save buttons are dimmed too. A photo opened while a side is opening, in a switch or in the back's first opening, is refused with a warning of its own: **Wait for the other side to open, then open the photo.**
 
 - Risk: medium
 - Check: script
 - Layout: both. On a phone the Corner shots sheet covers the top bar while it is open, so its save buttons can be seen greyed out during a switch only on a wide screen, where Corner shots is listed in the side panel.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#sideSwitch`, `#btnUnpair`, `#btnDownload`, `#btnShare`, `#btnCornerDownload`, "Wait for the export to finish, then open the photo."
+- Changed: 1.10.0
+- Anchors: `#sideSwitch`, `#btnUnpair`, `#btnDownload`, `#btnShare`, `#btnCornerDownload`, "Wait for the other side to open, then open the photo."
 - Source: `js/app/pair.js` (`setSwitching`, `startPair`, `switchSide`, `syncPair`, `receivePhoto`), `js/app/export-controls.js` (`syncSaveButtons`), `js/app/corner-shots.js` (`syncCornerShots`), `js/app/export.js` (`doExport`)
-- Ruling: R13. A photo opened while a side is opening says "Wait for the other side to open, then open the photo." (approved wording); the export wording stays for a running export. The app differs today.
-- Cases: 4
+- Ruling: R13. A photo opened while a side is opening says "Wait for the other side to open, then open the photo." (approved wording); the export wording stays for a running export. The app does this since 1.10.0.
+- Cases: 5
 
 ### PAIR-09.1 While a side opens, the switch and save controls are greyed out   [auto: phone]
 Before you start:
@@ -485,8 +483,6 @@ Before you start:
 - Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
-Written to ruling R13, in the words Rich approved; it fails until R13 is built (BUG-031).
-
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Front** in the top bar | "Opening the front…" shows |
@@ -512,6 +508,27 @@ A side opens in a fraction of a second, so for row 2 watch closely, or record th
 | 1 | Click **Corner shots** in the side panel | The side panel shows the Corner shots part, with **Share corners** and **Download corners**; both can be clicked |
 | 2 | Click **Front** in the top bar | While "Opening the front…" shows, **Share corners** and **Download corners** are greyed out |
 | 3 | Wait for the front to open | **Share corners** and **Download corners** can be clicked again |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-09.5 A photo opened while the back first opens is refused with the side's message   [auto: phone]
+Script only
+Stand-in: the back opens in tens of milliseconds, too fast for a person to choose a photo in between, so the script holds the back's opening until row 4 is done.
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9136.JPEG from samples/
+- Starting screen: 14_front_portrait_raw_white.JPEG open, on the Export step
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back starts to open: **Front** / **Back** shows in the top bar, greyed out |
+| 2 | Tap **Open** (the folder at the top left) | The photo picker opens |
+| 3 | Choose IMG_9136.JPEG | An amber warning reads "Wait for the other side to open, then open the photo." |
+| 4 | Look at the photo | The front is still the photo on screen |
+| 5 | Wait for the back to open | The back is open; **Front** / **Back** is still in the top bar; IMG_9136.JPEG was not opened |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1668,10 +1685,10 @@ On Export the size line reads **W × H px · FORMAT** for Together, and **front 
 - Check: script
 - Layout: both. On a phone, while a note shows, the note takes the size line's place; on a wide screen the size line stays.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#exportReadout`, `#exportMessage`, `#pairOutput`
-- Source: `js/app/export-controls.js` (`syncExportReadout`, `exportNotes`), `js/app/pair.js` (`pairReadout`, `togetherLayout`)
-- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen: "The back is scaled down to fit the 16.7 MP limit." (or "The front…"; "Both sides are scaled down to fit the 16.7 MP limit." when both are; approved wording). R26. When the waiting side's corners are invalid, the line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"; approved wording) and Share, Download and Copy are dimmed. The app differs today. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
+- Changed: 1.10.0
+- Anchors: `#exportReadout`, `#exportMessage`, `#pairOutput`, "’s corners in Perspective first."
+- Source: `js/app/export-controls.js` (`syncExportReadouts`, `syncExportReadout`, `exportNotes`), `js/app/pair.js` (`pairReadout`, `togetherLayout`, `waitingSideToFix`)
+- Ruling: R14. For a pair saved Separately, the clamp note shows if either side is scaled down, and names that side when it is not the one on screen: "The back is scaled down to fit the 16.7 MP limit." (or "The front…"; "Both sides are scaled down to fit the 16.7 MP limit." when both are; approved wording). The app differs today. R26. When the waiting side's corners are invalid, the line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"; approved wording) and Share, Download and Copy are dimmed. The app does this since 1.10.0. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app differs today.
 - Cases: 3
 
 ### PAIR-37.1 The size line gives the joined size, or the front's and the back's   [auto: phone]
@@ -1724,9 +1741,7 @@ Before you start:
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back. The back is open on the Perspective step
 
-Written to ruling R26, in the words Rich approved; it fails until R26 is built (BUG-034).
-
-Today the switch in row 2 doesn't finish: the app stops part-way with a script error (see BUG-034), so rows 2 to 4 fail. A corner's handle is the round handle on that corner of the outline; the line above the controls is the one line of text at the top of the controls (the block of buttons under the photo).
+A corner's handle is the round handle on that corner of the outline; the line above the controls is the one line of text at the top of the controls (the block of buttons under the photo).
 
 | # | Do this | You should see |
 | --- | --- | --- |

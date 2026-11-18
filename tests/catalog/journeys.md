@@ -49,7 +49,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Levels** in the step tabs | **Pick white**, **Pick black**, **Auto** and **Clear** show; **Apply** is greyed out |
-| 2 | Tap **Auto** | The picture's colors change; **Apply** turns red; a white dot shows on the **Levels** tab. (Whether a message shows is not part of this journey: ruling R73 takes Auto's message away, MSG-16.1) |
+| 2 | Tap **Auto** | The picture's colors change; **Apply** turns red; a white dot shows on the **Levels** tab. (Whether a message shows is not part of this journey: ruling R73 took Auto's message away, LEV-14.4) |
 | 3 | Press and hold on the picture for a second, then let go | While held, the picture shows as it was before, with the words **Before levels**; on letting go the corrected picture returns; no iOS magnifier or menu appears |
 | 4 | Tap **Apply** | The white dot leaves the **Levels** tab; **Apply** is greyed out again |
 | 5 | Tap **Overlay** in the step tabs | **Add logo** shows in red (with **Use saved overlay** beside it if a logo was saved before) |

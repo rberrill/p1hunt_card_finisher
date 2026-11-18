@@ -170,10 +170,10 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the e
 - Check: script; phone (choosing the file from Files on an iPhone)
 - Layout: both. On a phone the button is in Export's options sheet; on a wide screen it is listed in the side panel.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnLoadEdits`, `#editsInput`, "Load edits"
-- Source: `js/app/export-controls.js` (`buildEditsGroup`, `bindExport`), `js/app/shell.js` (`syncUI`)
-- Ruling: R17. While an export runs, Load edits is dimmed with the save buttons (as are Size, Format, the options sheet's settings, Undo, Redo and Add back); the tab bar stays live. The app differs today.
+- Source: `js/app/export-controls.js` (`buildEditsGroup`, `bindExport`, `syncExportLock`), `js/app/shell.js` (`syncUI`)
+- Ruling: R17. While an export runs, Load edits is dimmed with the save buttons (as are Size, Format, the options sheet's settings, Undo, Redo and Add back); the tab bar stays live. The app does this since 1.10.0.
 - Cases: 3
 
 ### EDT-04.1 Load edits opens a picker for one .json file and applies it   [auto: phone, webkit]
@@ -205,8 +205,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 ### EDT-04.2 While an export runs, Load edits is dimmed and the step tabs stay live   [auto: phone]
 Script only
 Stand-in: an export here lasts well under a second, too short for a person to look at the controls while it runs, so the script records them at the moment the export starts.
-Written to ruling R17; it fails until that is built (BUG-013).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test

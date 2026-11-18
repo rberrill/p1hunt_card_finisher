@@ -19,12 +19,19 @@ const { waitForQuestion } = require('./support/export.js');
 const {
   makePair,
   switchTo,
+  waitingPhotoName,
   holdNextOpening,
   releaseOpening,
   waitForOpening,
   PORTRAIT_PAIR,
 } = require('./support/front-and-back.js');
-const { logoId } = require('./support/overlay.js');
+const {
+  logoId,
+  logoPlacement,
+  slide,
+  oversizedPng,
+  fixtureLogo,
+} = require('./support/overlay.js');
 const {
   PHOTO,
   OTHER_SIZE_PHOTO,
@@ -49,20 +56,54 @@ const {
 const STAGE = '#stage';
 // The message a photo arriving during an export gets, word for word.
 const WAIT_FOR_EXPORT = 'Wait for the export to finish, then open the photo.';
-// The message a photo arriving while a pair's side opens gets by ruling R13, word for word
-// (tests/catalog/wording.md).
+// The message a photo arriving while a pair's side opens gets, word for word (ruling R13;
+// tests/catalog/wording.md).
 const WAIT_FOR_SIDE = 'Wait for the other side to open, then open the photo.';
 // The message a HEIC file gets in a browser that can't open HEIC, word for word.
 const NO_HEIC = 'This browser can’t open HEIC. Save the photo as JPEG first (Safari opens HEIC '
   + 'directly).';
+// The Overlay step's messages for a logo file that isn't a picture and for one over the 5 MB
+// limit (6 MB here), word for word. The second is read in ruling R59's words ("logo") or
+// today's ("overlay"): MSG-60.1 holds the words.
+const CANT_READ_LOGO = 'Couldn’t read that image. Try another PNG, WebP, JPG or SVG file.';
+const LOGO_TOO_BIG = /^That file is 6\.0 MB\. The (logo|overlay) limit is 5 MB\.$/;
+// The message a file that can't be read as a photo gets, word for word.
+const NOT_A_PICTURE = 'Couldn’t read that file as an image.';
+// The type some systems give a dragged file they know nothing about: a plain file of bytes.
+const PLAIN_BYTES_TYPE = 'application/octet-stream';
+// How long DND-04.9 waits for a script in an SVG logo to have run, had it been going to, in ms.
+const SCRIPT_WAIT_MS = 1000;
 // The name the app gives a pasted photo.
 const PASTED_NAME = 'pasted-photo';
 // How long a case waits to be sure nothing happened, in ms.
 const NOTHING_HAPPENS_MS = 800;
 // The drop outline's border: 2 px, dashed, the app's white (#f2f2f3).
 const OUTLINE_BORDER = '2px dashed rgb(242, 242, 243)';
-// Two logos added less than this far apart, in ms, would be one undo step today (ruling R19).
+// Two changes made with one control less than this far apart, in ms, are one undo step
+// (COALESCE_MS in state.js). Two logos added that close together are still two (ruling R19).
 const COALESCE_MS = 900;
+// The Overlay step's move pad's Move right key and size pad's Larger key, and how many times
+// "Change the logo" presses each.
+const MOVE_RIGHT = '#overlayMovePad [data-key="1,0"]';
+const LARGER = '#overlaySizePad [data-key="grow"]';
+const MOVE_TAPS = 10;
+const GROW_TAPS = 3;
+// A new logo's width as a fraction of the photo's (CardEngine.OVERLAY_DEFAULTS.width). One
+// Move right moves it 0.5% of the photo's width (CONFIG.overlay.nudgePct); one Larger makes it
+// 1.05 times as wide (CONFIG.overlay.sizeStep). So "Change the logo" leaves its middle 55% of
+// the way across and its width 28.9% of the photo's.
+const START_WIDTH = 0.25;
+const MOVED_CX = 0.5 + MOVE_TAPS * 0.005;
+const GROWN_WIDTH = START_WIDTH * 1.05 ** GROW_TAPS;
+// How close two fractions of the photo must be (a placement is kept as exact fractions).
+const FRACTION_TOLERANCE = 1e-6;
+// Where the Opacity slider's knob rests at 100% and its middle, as fractions of its width.
+const SLIDER_RIGHT_END = 0.98;
+const SLIDER_MIDDLE = 0.5;
+
+// A file payload ({ name, mimeType, buffer }) as it is handed over with no file type: only its
+// name says what it is.
+const withNoType = file => ({ ...file, mimeType: '' });
 
 // The fixtures the cases drop: a line of text, a stand-in for a HEIC photo and two logos.
 const notesFile = () => droppedFixture('notes.txt');
@@ -76,6 +117,14 @@ function waitForPhotoNamed(page, name) {
     const app = window.__straightener.app;
     const isDetected = app.detection.running > 0 && app.detection.message === '';
     return !!app.state && app.state.source.name === photoName && !!app.geometry && isDetected;
+  }, name);
+}
+
+// Waits until the photo named `name` is open, whether or not a card is found in it.
+function waitForOpenPhoto(page, name) {
+  return page.waitForFunction(photoName => {
+    const app = window.__straightener.app;
+    return !!app.img && !!app.state && app.state.source.name === photoName && !!app.geometry;
   }, name);
 }
 
@@ -182,6 +231,59 @@ test('DND-01.5 While a pair is open, a dropped photo asks New photo or Replace b
     await waitForPhotoNamed(page, PHOTO);
     await expect(page.locator('#sideSwitch')).toBeHidden();
   });
+});
+
+test('DND-01.6 A photo with no picture type is taken by its name [desktop] [webkit]', async ({
+  page,
+  check,
+}, testInfo) => {
+  await recordMessages(page);
+  const hand = await startEmpty(page, testInfo);
+  const textDrop = await dragFiles(page, STAGE, [withNoType(notesFile())]);
+  await page.waitForTimeout(NOTHING_HAPPENS_MS);
+  await check('notes.txt, dropped with no type: no message, the start screen stays, and the '
+    + 'page keeps the drop', async () => {
+    expect(textDrop.dropPrevented).toBe(true);
+    expect(await messagesSoFar(page)).toEqual([]);
+    await expect(page.locator('#btnOpenEmpty')).toBeVisible();
+    expect(await openPhotoName(page)).toBe('');
+  });
+  await dragFiles(page, STAGE, [withNoType(droppedFixture('not-a-photo.JPEG'))]);
+  await check(`not-a-photo.JPEG, dropped with no type: a red message reads "${NOT_A_PICTURE}"; `
+    + 'the start screen stays, with no photo open', async () => {
+    await expect.poll(() => toastNow(page)).toEqual({
+      text: NOT_A_PICTURE,
+      kind: 'error',
+      isShown: true,
+    });
+    await expect(page.locator('#btnOpenEmpty')).toBeVisible();
+    expect(await openPhotoName(page)).toBe('');
+  });
+  await dragFiles(page, STAGE, [withNoType(sampleFile(PHOTO))]);
+  await check('IMG_9136.JPEG, dropped with no type, opens on the Perspective step', async () => {
+    await waitForPhotoNamed(page, PHOTO);
+    expect(await stepNow(page)).toBe('perspective');
+  });
+  await goToStep(page, 'rotate', hand);
+  await check('Rotate in the step tabs: the Rotate step shows', async () => {
+    expect(await stepNow(page)).toBe('rotate');
+  });
+  const asPlainBytes = { ...sampleFile(OTHER_SIZE_PHOTO), mimeType: PLAIN_BYTES_TYPE };
+  await dragFiles(page, STAGE, [asPlainBytes]);
+  await check('IMG_9075.JPEG, dropped as a plain file of bytes, opens on the Perspective step, '
+    + 'in place of IMG_9136.JPEG', async () => {
+    await waitForPhotoNamed(page, OTHER_SIZE_PHOTO);
+    expect(await stepNow(page)).toBe('perspective');
+  });
+  await dragFiles(page, STAGE, [withNoType(droppedFixture('plain-grey.png'))]);
+  await check('plain-grey.png, dropped with no type, opens in place of IMG_9075.JPEG', async () => {
+    await waitForOpenPhoto(page, 'plain-grey.png');
+  });
+  await dragFiles(page, STAGE, [withNoType(fixtureLogo('overlay-blue-oval.webp'))]);
+  await check('overlay-blue-oval.webp, dropped with no type, opens in place of plain-grey.png',
+    async () => {
+      await waitForOpenPhoto(page, 'overlay-blue-oval.webp');
+    });
 });
 
 test('DND-02.1 A file held over the photo area shows the outline and Drop to open [desktop]',
@@ -323,7 +425,6 @@ test('DND-04.4 Two logos dropped within 0.9 s are two undo steps [desktop]', asy
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-080');
   const hand = await startOn(page, testInfo, { step: 'overlay' });
   const disc = blueDisc();
   const green = greenLogo();
@@ -350,20 +451,20 @@ test('DND-04.4 Two logos dropped within 0.9 s are two undo steps [desktop]', asy
 
 test('DND-04.5 A dropped logo is taken by its name, as the logo picker takes it [desktop]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-191');
     await startOn(page, testInfo, { step: 'overlay' });
     // A PNG handed over with no type, as some systems drag one: only its name says PNG.
-    await dragFiles(page, STAGE, [droppedFixture('green-logo.png', '')]);
-    await page.waitForTimeout(NOTHING_HAPPENS_MS);
+    await dragFiles(page, STAGE, [withNoType(greenLogo())]);
     await check('green-logo.png, dropped with no type, shows on the photo as the logo',
       async () => {
+        await waitForNewLogo(page, null);
         expect(await logoId(page)).not.toBeNull();
       });
   });
 
 // The body of DND-04.6 and DND-04.7: holds an export open (Download, then No), goes to
 // Overlay, brings green-logo.png in with `bringIn(logo)` and expects it refused with the
-// dropped photo's amber message.
+// dropped photo's amber message; then lets the export finish and expects IMG_9136.JPEG still
+// open, with no logo.
 async function checkLogoRefusedDuringExport(page, check, hand, bringIn) {
   const logo = greenLogo();
   await startHeldExport(page, hand, check);
@@ -381,13 +482,18 @@ async function checkLogoRefusedDuringExport(page, check, hand, bringIn) {
     expect(added).toBeNull();
     expect(message).toEqual({ text: WAIT_FOR_EXPORT, kind: 'warn', isShown: true });
   });
+  await page.waitForTimeout(NOTHING_HAPPENS_MS);
+  await check('once the export ends, IMG_9136.JPEG is still the photo open, with no logo',
+    async () => {
+      expect(await openPhotoName(page)).toBe(PHOTO);
+      expect(await logoId(page)).toBeNull();
+    });
 }
 
 test('DND-04.6 During an export, a dropped logo is refused [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-192');
   const hand = await startOn(page, testInfo);
   await checkLogoRefusedDuringExport(page, check, hand, logo => dragFiles(page, STAGE, [logo]));
 });
@@ -398,13 +504,113 @@ test('DND-04.7 During an export, a pasted logo is refused [desktop]', async ({
   browserName,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-192');
   await allowClipboard(context, browserName, test);
   const hand = await startOn(page, testInfo);
   // The logo is on the clipboard before the export: putting it there draws on a canvas.
   await copyImage(page, greenLogo());
   await checkLogoRefusedDuringExport(page, check, hand, () => page.keyboard.press('Control+V'));
 });
+
+// Expects two numbers to be within `tolerance` of each other.
+function expectNear(actual, expected, tolerance) {
+  expect(Math.abs(actual - expected)).toBeLessThanOrEqual(tolerance);
+}
+
+// The OPACITY readout beside the slider, as a number of percent.
+async function opacityReadout(page) {
+  return parseInt(await page.locator('#overlayOpacityValue').textContent(), 10);
+}
+
+test('DND-04.8 A logo dropped while one is placed takes its place, width and opacity '
+  + '[desktop]', async ({ page, check }, testInfo) => {
+  const hand = await startOn(page, testInfo, { step: 'overlay' });
+  await dragFiles(page, STAGE, [blueDisc()]);
+  await waitForNewLogo(page, null);
+  const discId = await logoId(page);
+  const start = await logoPlacement(page);
+  await check('blue-disc.png dropped: the blue disc is the logo, in the middle of the photo, a '
+    + 'quarter of its width, with OPACITY at 100%', async () => {
+    expectNear(start.cx, 0.5, FRACTION_TOLERANCE);
+    expectNear(start.cy, 0.5, FRACTION_TOLERANCE);
+    expectNear(start.w, START_WIDTH, FRACTION_TOLERANCE);
+    expect(start.opacity).toBe(1);
+    expect(await opacityReadout(page)).toBe(100);
+  });
+  // The named action "Change the logo".
+  for (let i = 0; i < MOVE_TAPS; i++) await hand.tap(page.locator(MOVE_RIGHT));
+  for (let i = 0; i < GROW_TAPS; i++) await hand.tap(page.locator(LARGER));
+  await slide(page, hand, page.locator('#overlayOpacity'), SLIDER_RIGHT_END, SLIDER_MIDDLE);
+  const changed = await logoPlacement(page);
+  await check('the disc\'s middle is 55% of the way across the photo, it is 28.9% of the '
+    + 'photo\'s width, and OPACITY reads about 50%', async () => {
+    expectNear(changed.cx, MOVED_CX, FRACTION_TOLERANCE);
+    expectNear(changed.cy, start.cy, FRACTION_TOLERANCE);
+    expectNear(changed.w, GROWN_WIDTH, FRACTION_TOLERANCE);
+    expect(changed.opacity).toBeGreaterThan(0.4);
+    expect(changed.opacity).toBeLessThan(0.6);
+    expect(await opacityReadout(page)).toBe(Math.round(changed.opacity * 100));
+  });
+  await dragFiles(page, STAGE, [greenLogo()]);
+  await waitForNewLogo(page, discId);
+  const replaced = await logoPlacement(page);
+  await check('green-logo.png dropped: the green square is the logo, where the disc was: its '
+    + 'middle 55% of the way across, as far down as the disc\'s, 28.9% of the photo\'s width, at '
+    + 'the same opacity', async () => {
+    expect(await logoId(page)).not.toBe(discId);
+    expectNear(replaced.cx, MOVED_CX, FRACTION_TOLERANCE);
+    expectNear(replaced.cy, changed.cy, FRACTION_TOLERANCE);
+    expectNear(replaced.w, GROWN_WIDTH, FRACTION_TOLERANCE);
+    expect(replaced.opacity).toBe(changed.opacity);
+    expect(await opacityReadout(page)).toBe(Math.round(changed.opacity * 100));
+  });
+});
+
+test('DND-04.9 A logo taken by its name is still checked as Add logo checks it [desktop]',
+  async ({ page, check }, testInfo) => {
+    await recordMessages(page);
+    await startOn(page, testInfo, { step: 'overlay' });
+    const status = page.locator('#overlayStatus');
+    const messagesBefore = await messagesSoFar(page);
+    // Each file is handed over with no picture type, as some systems drag one: only its name
+    // says what it is. A GIF's name is not a logo's, so the drop is not taken at all.
+    await dragFiles(page, STAGE, [withNoType(droppedFixture('logo.gif'))]);
+    await page.waitForTimeout(NOTHING_HAPPENS_MS);
+    await check('logo.gif, dropped with no type: no logo is added and no message shows',
+      async () => {
+        expect(await logoId(page)).toBeNull();
+        await expect(status).toBeHidden();
+        expect(await messagesSoFar(page)).toEqual(messagesBefore);
+      });
+    await dragFiles(page, STAGE, [withNoType(droppedFixture('not-a-logo.png'))]);
+    await check(`not-a-logo.png, dropped with no type: no logo is added; a red message in the `
+      + `line above the controls reads "${CANT_READ_LOGO}"`, async () => {
+      await expect(status).toHaveText(CANT_READ_LOGO);
+      await expect(status).toHaveClass(/is-error/);
+      expect(await logoId(page)).toBeNull();
+    });
+    await dragFiles(page, STAGE, [withNoType(oversizedPng())]);
+    await check('big-logo.png (6 MB), dropped with no type: no logo is added; the red message '
+      + 'reads "That file is 6.0 MB. The logo limit is 5 MB."', async () => {
+      await expect(status).toHaveText(LOGO_TOO_BIG);
+      await expect(status).toHaveClass(/is-error/);
+      expect(await logoId(page)).toBeNull();
+    });
+    // An SVG handed over as a plain file of bytes: its name alone says SVG. It is drawn as a
+    // picture, so the script and the onload handler it carries must never run.
+    const svg = { ...fixtureLogo('svg-with-script.svg'), mimeType: PLAIN_BYTES_TYPE };
+    await dragFiles(page, STAGE, [svg]);
+    await check('svg-with-script.svg, dropped as a plain file of bytes: a red rectangle twice as '
+      + 'wide as it is high is the logo, and the message has gone', async () => {
+      await waitForNewLogo(page, null);
+      expect((await logoPlacement(page)).aspect).toBeCloseTo(2, 3);
+      await expect(status).toBeHidden();
+    });
+    await page.waitForTimeout(SCRIPT_WAIT_MS);
+    await check('window.testSvgRan is undefined: neither the script nor the onload handler ran',
+      async () => {
+        expect(await page.evaluate(() => window.testSvgRan)).toBeUndefined();
+      });
+  });
 
 // The body of DND-05.1 and DND-05.2: holds an export open (Download, then No), brings
 // IMG_9075.JPEG in with `bringIn()`, expects the amber message, then lets the export finish
@@ -451,7 +657,6 @@ test('DND-05.2 A photo pasted during an export is refused [desktop]', async ({
 
 test('DND-05.3 A photo dropped while a side is opening gets the side\'s own warning '
   + '[desktop]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-031');
   const hand = await makePair(page, testInfo);
   await holdNextOpening(page);
   await hand.tap(page.locator('#sideSwitch .segment[data-value="front"]'));
@@ -466,9 +671,10 @@ test('DND-05.3 A photo dropped while a side is opening gets the side\'s own warn
   await check(`an amber message reads "${WAIT_FOR_SIDE}"`, () => {
     expect(shown).toEqual({ text: WAIT_FOR_SIDE, kind: 'warn', isShown: true });
   });
-  await check('the front opens; no photo replaced either side', async () => {
+  await check('the front is open; IMG_9136.JPEG replaced neither side', async () => {
     await page.waitForFunction(() => !window.__straightener.app.isSwitching);
     expect(await openPhotoName(page)).toBe(PORTRAIT_PAIR.front);
+    expect(await waitingPhotoName(page)).toBe(PORTRAIT_PAIR.back);
   });
 });
 

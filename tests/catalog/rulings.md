@@ -9,12 +9,12 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R1 | Typed angle empty/garbage + Done sets 0° | FIX: keep the old angle, no undo step (like cancel) |
 | R2 | Arrow keys/Tab move hidden corners during Preview | FIX: keys do nothing while Preview is on |
 | R3 | Debug overlay switch re-detects and moves hand-placed corners | FIX: leaves corners alone; only draws |
-| R4 | Reset crop → 1:1 and remembers 1:1 | FIX: reset to the remembered preset; remembered preset unchanged |
+| R4 | Reset crop → 1:1 and remembers 1:1 | FIX: reset to the remembered preset; remembered preset unchanged. On a side kept after Unpair, whose crop is still the pair's 5:7, Reset crop also goes to the remembered preset (Rich, 2026-11-17) |
 | R5 | Undo of an export setting rewrites the remembered setting | AS-IS |
-| R6 | Candidate n/3 + confidence stale after Undo/Reset/drag | FIX: clear number+confidence when hand-moved; Undo/Reset restore the right number |
-| R7 | Low confidence / Nothing detected never clears | FIX: clears after first corner move (drag or nudge) |
+| R6 | Candidate n/3 + confidence stale after Undo/Reset/drag | FIX: clear number+confidence when hand-moved; Undo/Reset restore the right number. Rich, 2026-11-17: with no number showing (corners moved by hand, also after Resume), the next tap on Candidate goes to 1/N, the best pick |
+| R7 | Low confidence / Nothing detected never clears | FIX: clears after first corner move (drag or nudge). Rich, 2026-11-17: once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back |
 | R8 | Cancelled pointer commits drag; 2nd finger during pick sets point | FIX: cancelled drag reverts with no undo step; 2nd finger cancels the pick, stays armed |
-| R9 | Compare badge with no levels | FIX: hold/C does nothing when no draft and no applied levels |
+| R9 | Compare badge with no levels | FIX: hold/C does nothing when no draft and no applied levels. Rich, 2026-11-17: the hold compares only while the photo on screen shows levels; with levels applied and Clear tapped but not applied, it does nothing |
 | R10 | 250–300 ms press is both compare and a tap | FIX: a press that showed compare is never a tap |
 | R11 | Overlay buttons live but no-op with invalid corners | FIX: dim the three buttons; label row reads "Fix the corners in Perspective first." |
 | R12 | Load edits: up to 3 toasts overwrite each other | FIX: one combined warning, up to three short lines (WORDING) |
@@ -23,8 +23,8 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R15 | Note says 16.8 MP; docs say 16.7 | FIX: screen shows 16.7 MP (round down) |
 | R16 | Copy + JPEG + Transparent → white corners in PNG | AS-IS (matches the on-screen note and Download) |
 | R17 | Controls live during export | FIX: dim Size, Format, sheet settings, Load edits, Undo, Redo, Add back with the save buttons; tab bar stays live |
-| R18 | Replace logo resets placement | FIX: replacement takes old position, width, opacity |
-| R19 | Two adds <900 ms = one undo; drop needs image/ MIME | FIX both: each add its own undo step; drop accepts by extension like the picker |
+| R18 | Replace logo resets placement | FIX: replacement takes old position, width, opacity. Rich, 2026-11-17: a new logo of another shape keeps the old one's center and width (then clamped inside the crop); a logo dropped or pasted on Overlay while one is placed is a replacement and does the same |
+| R19 | Two adds <900 ms = one undo; drop needs image/ MIME | FIX both: each add its own undo step; drop accepts by extension like the picker. Rich, 2026-11-18: a photo dropped with no file type is also accepted by its name, on any step, as Open photo takes it; it must still decode as an image |
 | R20 | Corner readout always "the card is too small"; buttons live | FIX: real reason; both save buttons dimmed |
 | R21 | Corner shots checks Share once; Share now vs Next card | FIX: corner shots re-checks share availability each sync; Next card stays independent of corner shots (AS-IS) |
 | R22 | Remove leaves photoOverlay in storage | AS-IS (needed for Undo after Resume); test Undo-after-Resume |
@@ -43,14 +43,14 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R35 | Replace logo, Undo, reload, Resume: the logo Undo brought back is no longer stored, and the export fails | FIX: whatever logo Undo can bring back stays stored, so after Resume the photo exports as it looked |
 | R36 | The save made as the page closes isn't guaranteed to land, so an edit made under 0.4 s before closing can be lost | FIX: save sooner after each change (about 0.1 s), with the save on close kept as a backstop |
 | R37 | From a link that switches upscaling on, the Upscale question states the wrong crop size and Yes saves the same file as No | FIX, widened 16 November: the Upscale question is asked only when Yes would save a bigger file than No, wherever it is asked from (a single photo, a pair, corner shots). That covers upscaling already switched on by a link, and a size cap that leaves no room to upscale |
-| R38 | On Levels, a pick tapped in the empty space around the visible picture sets a point from the hidden part of the photo | FIX: a tap outside the visible picture is ignored and the pick stays armed |
+| R38 | On Levels, a pick tapped in the empty space around the visible picture sets a point from the hidden part of the photo | FIX: a tap outside the visible picture is ignored and the pick stays armed. Rich, 2026-11-17: a tap past the photo's own edge still shows "That spot is outside the photo."; only a tap over the hidden part of the photo is silent |
 | R39 | The W and B marks of a pick are white letters, barely visible on a white spot | FIX: a white letter with a dark outline, as the corner outline is drawn |
 | R40 | For about 0.1 s after a step change, the options tab is on top of the controls under it (Rotate's angle; Export's Size and Format) and takes their taps | FIX: the controls under the tab take the tap from the moment they are drawn |
 | R41 | After Tab puts the focus ring on the photo, a mouse click on the photo leaves the ring | AS-IS: the ring means the keyboard is acting on the photo; the code comment that says otherwise is to be corrected |
 | R42 | One damaged value in an edits file resets its whole settings group | AS-IS: a damaged file is untrusted, and the warning names the group |
 | R43 | The checkerboard behind the saved-logo thumbnail is built with a gradient function, against "no gradients" | AS-IS. The brand lines are guidance for new design; a design Rich has agreed stands and is not flagged |
 | R44 | Speed limits for the automated cases | Three times the median measured on 16 November: photo on screen 1.25 s, detection 8.75 s, pair switch 0.5 s, export at 1080 0.5 s, at 2000 0.95 s, at 3000 and Original 1.65 s, upscaled export 4.75 s |
-| R45 | With a pair open, switching sides while the back is still detecting leaves "Detecting…" on the back for good | FIX: switching away never leaves a stale message; the search finishes quietly. Its result moves the corners only if no corner on that side was moved by hand; otherwise the hand-placed corners stay and the result becomes the candidates to cycle through |
+| R45 | With a pair open, switching sides while the back is still detecting leaves "Detecting…" on the back for good | FIX: switching away never leaves a stale message; the search finishes quietly. Its result moves the corners only if no corner on that side was moved by hand; otherwise the hand-placed corners stay and the result becomes the candidates to cycle through. Rich, 2026-11-17: the search cannot finish once the side is left (its photo is closed, one full-size photo in memory at a time), so its result is thrown away and the search runs again when the side is next opened; that run moves the corners only if none on that side was moved by hand |
 | R46 | Two photos land worse in WebKit than their Chrome detection baselines (BUG-240) | Decided after the detection fix (R34): until then the test lists them as known WebKit misses and fails if any other photo slips |
 | R47 | Under a link that lowers the size limit, which number the "Scaled down to fit the N MP limit." note gives | The limit in force (1 MP under `?maxOutputArea=1000000`; 16.7 MP normally) |
 | R48 | Whether R12's approved Load edits lines apply to a load with one problem | They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17) |

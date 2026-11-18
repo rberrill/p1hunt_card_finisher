@@ -242,16 +242,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-05 A second finger turns a drag into a pinch
 
-Putting a second finger down during a one-finger drag ends that drag, keeping what it did, and starts a pinch.
+Putting a second finger down during a one-finger drag ends that drag, keeping what it did, and starts a pinch. A press that aims an armed Levels pick is cancelled instead: no color is taken, and the pick stays armed.
 
 - Risk: medium
 - Check: script, touch
 - Layout: both, by touch
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#view`
 - Source: `js/app/input.js` (`onPointerDown`, `startPinch`, `endGesture`)
-- Ruling: R8. A second finger while a Levels pick is armed cancels that press without picking, and the pick stays armed. The app differs today.
+- Ruling: R8. A second finger while a Levels pick is armed cancels that press without picking, and the pick stays armed. The app does this since 1.10.0.
 - Cases: 2
 
 ### VIEW-05.1 A second finger ends a corner drag, keeping it, and zooms   [auto: phone, webkit]
@@ -274,7 +274,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-05.2 A second finger while a Levels pick is armed cancels the press   [auto: phone]
-Written to ruling R8; it fails until that is built (BUG-101).
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch
@@ -473,16 +472,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-10 Double tap to fit
 
-A double tap or double click on an empty part of the photo fits it again: two quick taps (each under 300 ms) within 320 ms and 24 px of each other. It does nothing on Overlay (where a gesture moves the logo), or while Tap to find card or a Levels pick is armed.
+A double tap or double click on an empty part of the photo fits it again: two quick taps (each under 300 ms) within 320 ms and 24 px of each other. It does nothing on Overlay (where a gesture moves the logo), or while Tap to find card or a Levels pick is armed. On Levels, a press that showed the comparison is not a tap, however short it was.
 
 - Risk: medium
 - Check: script, touch, phone (the [phone] case: on a real iPhone, Safari leaves the double tap to the app)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#view`, `#btnFindCard`
 - Source: `js/app/input.js` (`onPointerUp`, `checkDoubleTap`); `js/app/view.js` (`fitCurrent`)
-- Ruling: R10. On Levels, a press long enough to show the before-and-after compare never counts as a tap. The app differs today.
+- Ruling: R10. On Levels, a press that showed the before-and-after compare is never a tap. The app does this since 1.10.0.
 - Cases: 7
 
 ### VIEW-10.1 A double tap fits the photo again   [auto: phone, webkit]
@@ -563,8 +562,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Script only
 Stand-in: the script presses with a dispatched finger, lifts it the moment the comparison shows (under 0.3 s in all) and taps again at once. No person can time a press between 0.25 and 0.3 s.
 
-Written to ruling R10; it fails until that is built (BUG-103).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
@@ -576,7 +573,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Auto** | A white dot shows on the **Levels** tab in the step tabs (the six tabs Perspective to Export, along the bottom) |
 | 2 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in |
-| 3 | Press the middle of the photo until the comparison shows, and lift at once (under 0.3 seconds in all) | The comparison showed (the **Before levels** badge) |
+| 3 | Press the middle of the photo until the comparison shows, and lift at once (under 0.3 seconds in all) | The comparison started, and the press lasted under 0.3 seconds in all |
 | 4 | Straight away, tap the same place once | The photo stays zoomed in: the press and the tap were not a double tap |
 
 Pass: every row's result is seen.
@@ -715,16 +712,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-14 Photo replaced by a message when the corners are wrong
 
-While the corners cross or fold inward, every step after Perspective (and Perspective's **Preview**) shows "Fix the corners in Perspective first." in the photo area instead of the photo. A pair's joined preview on Export shows "Fix the corners of both sides in Perspective first."
+While the corners cross or fold inward, every step after Perspective shows "Fix the corners in Perspective first." in the photo area instead of the photo, and Perspective's **Preview** shows "Fix the corners first." A pair's joined preview on Export shows "Fix the corners of both sides in Perspective first."
 
 - Risk: medium
 - Check: eye
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Fix the corners in Perspective first.", "Fix the corners of both sides in Perspective first.", `#view`
+- Changed: 1.10.0
+- Anchors: "Fix the corners in Perspective first.", "Fix the corners first.", "Fix the corners of both sides in Perspective first.", `#view`
 - Source: `js/app/view.js` (`draw`, `drawTogether`, `drawMessage`)
-- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app differs today.
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app does this since 1.10.0.
 - Cases: 3
 
 ### VIEW-14.1 With the corners crossed, the later steps show a message, for a person to judge   [eye]
@@ -744,7 +741,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-14.2 Preview with the corners crossed asks to fix them, for a person to judge   [eye]
-Written to ruling R82, in the wording Rich approved; it fails until that is built (BUG-292). The script reads the words drawn; the judge looks at how they look.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch

@@ -55,10 +55,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnUndo`, "Undo (Ctrl/Cmd+Z)", `CONFIG.keys.undo`
-- Source: `js/app/parts/top-bar.js` (`buildTopBar`, `updateTopBar`); `js/app/shell.js` (`bindNavigation`, `syncUI`); `js/app/state.js` (`undo`)
-- Ruling: R17. While an export runs, **Undo** is dimmed with the save buttons. The app differs today.
+- Source: `js/app/parts/top-bar.js` (`buildTopBar`, `updateTopBar`); `js/app/shell.js` (`bindNavigation`, `syncUI`, `syncHistoryButtons`); `js/app/state.js` (`undo`)
+- Ruling: R17. While an export runs, **Undo** is dimmed with the save buttons. The app does this since 1.10.0.
 - Cases: 2
 
 ### TOP-02.1 Undo takes back the last edit and is greyed out when there is none   [auto: phone]
@@ -81,8 +81,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-02.2 Undo is greyed out while an export runs   [auto: phone]
-Written to ruling R17; it fails until that is built (BUG-013).
-
 Before you start:
 - Device and browser: a phone-width window
 - Build: the build under test
@@ -110,10 +108,10 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnRedo`, "Redo (Shift+Ctrl/Cmd+Z)", `CONFIG.keys.redo`
-- Source: `js/app/parts/top-bar.js` (`buildTopBar`, `updateTopBar`); `js/app/shell.js` (`bindNavigation`, `syncUI`); `js/app/state.js` (`redo`)
-- Ruling: R17. While an export runs, **Redo** is dimmed with the save buttons. The app differs today. R66. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z. The app already does this.
+- Source: `js/app/parts/top-bar.js` (`buildTopBar`, `updateTopBar`); `js/app/shell.js` (`bindNavigation`, `syncUI`, `syncHistoryButtons`); `js/app/state.js` (`redo`)
+- Ruling: R17. While an export runs, **Redo** is dimmed with the save buttons. The app does this since 1.10.0. R66. **Redo**'s tooltip names only Shift+Ctrl/Cmd+Z. The app already does this.
 - Cases: 3
 
 ### TOP-03.1 Redo puts back what Undo took back, and is greyed out when there is none   [auto: phone]
@@ -135,8 +133,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-03.2 Redo is greyed out while an export runs   [auto: phone]
-Written to ruling R17; it fails until that is built (BUG-013).
-
 Before you start:
 - Device and browser: a phone-width window
 - Build: the build under test
@@ -617,16 +613,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## TOP-13 What a step change resets
 
-Changing step closes any open options sheet, disarms Levels' picker and compare (when leaving Levels), cancels Tap to find card, hides the nudge magnifier, clears Overlay's file error (when leaving Overlay) and saves the edits shortly after, the step with them.
+Changing step closes any open options sheet, disarms Levels' picker and compare (when leaving Levels), cancels Tap to find card, turns Perspective's **Preview** off (when leaving Perspective), hides the nudge magnifier, clears Overlay's file error (when leaving Overlay) and saves the edits shortly after, the step with them.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `.step-tab`, `#btnFindCard`, `.sheet-layer`
+- Changed: 1.10.0
+- Anchors: `.step-tab`, `#btnFindCard`, `#toolPreview`, `.sheet-layer`
 - Source: `js/app/shell.js` (`setTab`, `closeSheets`)
-- Ruling: R88. A step change turns **Preview** off. The app differs today.
+- Ruling: R88. A step change turns **Preview** off. The app does this since 1.10.0.
 - Cases: 8
 
 ### TOP-13.1 Changing step cancels Tap to find card   [auto: phone]
@@ -687,8 +683,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-13.4 Preview turns off at a step change   [auto: phone]
-Written to ruling R88; it fails until that is built (BUG-294).
-
 Before you start:
 - Device and browser: a phone-width window
 - Build: the build under test
@@ -1586,13 +1580,13 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## TOP-30 Options always open on a wide screen
 
-On a wide screen every step's options are always open, listed in the side panel under the step's controls, with no options tab, dim or close button. The sheet's title shows as a grey heading (none where the options are only tips, as on Overlay).
+On a wide screen every step's options are always open, listed in the side panel under the step's controls, with no options tab, dim or close button. The sheet's title shows as a grey heading (none where the options are only tips, as on Overlay; Levels is TOP-32's).
 
 - Risk: medium
 - Check: script
 - Layout: wide
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `.sheet-layer`, "Perspective options", "Export options", `#panel`
 - Source: `js/app/shell.js` (`placeLayout`); `css/app.css` (the shell's wide block)
 - Cases: 1
@@ -1648,16 +1642,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## TOP-32 Keyboard help
 
-Each step's keyboard help sits in its own block under **Tips and keys** (just **Tips** on a step without keys). Tips that only apply to touch are left out.
+Each step's keyboard help sits in its own block under **Tips and keys** (just **Tips** on a step without keys), after the step's tips. Tips that only apply to touch are left out. On Levels, whose options are only its tips, that heading is the only one.
 
 - Risk: low
 - Check: script
 - Layout: wide. A phone shows no keyboard help.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Tips and keys", `.sheet-keys`, `.is-phone-only`
 - Source: `js/app/parts/sheet.js` (`buildTipsRow`); `js/app/levels.js` (`buildLevelsSheet`); `css/app.css` (the shell's wide block)
-- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app differs today.
+- Ruling: R74. On a wide screen Levels shows one heading, "Tips and keys", holding the tips then the keys. The app does this since 1.10.0.
 - Cases: 2
 
 ### TOP-32.1 Keyboard help under Tips and keys; touch-only tips left out   [auto: desktop]
@@ -1678,8 +1672,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-32.2 Levels shows one tips heading on a wide screen   [auto: desktop]
-Written to ruling R74; it fails until that is built (BUG-287).
-
 Before you start:
 - Device and browser: a wide window, 1280 × 800 px
 - Build: the build under test

@@ -24,7 +24,14 @@ const {
   zoomNow,
   handleName,
 } = require('./support/perspective.js');
-const { startOnLevels, levelsNow, pickButton, armedPick } = require('./support/levels.js');
+const {
+  startOnLevels,
+  levelsNow,
+  pickButton,
+  armedPick,
+  badgeBoxPixels,
+  badgeBoxChange,
+} = require('./support/levels.js');
 const { presetChip, cropHandleOnPage } = require('./support/crop.js');
 const { fixtureLogo, chooseLogo, logoPlacement } = require('./support/overlay.js');
 const {
@@ -56,6 +63,9 @@ const WHEEL_ZOOM_IN_PX = -400;
 const ZOOMED_IN_FACTOR = 1.5;
 // How long a case waits to be sure nothing happened, in ms.
 const NOTHING_HAPPENS_MS = 500;
+// With no Before levels badge drawn, at most this many device pixels of its box differ between
+// two readings (antialiasing); the badge's white text changes far more.
+const BADGE_SAME_MAX = 5;
 // How far the crop box's right edge is dragged on Crop, in CSS px.
 const EDGE_DRAG_PX = 60;
 // How close two crop shapes (width / height) must be.
@@ -104,7 +114,6 @@ test('KEY-01.2 During an export, Ctrl+Z does nothing [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-193');
   const hand = await startOn(page, testInfo);
   await hand.tap(choiceButton(page, 'exportFormat', 'PNG'));
   await check('PNG is selected', async () => {
@@ -152,7 +161,6 @@ test('KEY-02.2 During an export, the redo keys do nothing [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-193');
   const hand = await startOn(page, testInfo);
   await hand.tap(choiceButton(page, 'exportFormat', 'PNG'));
   await check('PNG is selected', async () => {
@@ -377,7 +385,8 @@ test('KEY-06.1 F fits the photo to the screen [desktop]', async ({ page, check }
 
 // A function that tells whether Levels is showing the photo before levels (the comparison, with
 // the Before levels badge), for expect.poll. The badge itself is read from the screen only at
-// phone size (support/levels.js); at desktop size the photo's own whites can fall where it is.
+// phone size (support/levels.js); at desktop size the photo's own whites can fall where it is,
+// so a case that needs the badge's pixels compares two readings of its box.
 const isComparing = page => async () => (await levelsNow(page)).isComparing;
 
 test('KEY-07.1 Holding C on Levels shows the photo before levels [desktop]', async ({
@@ -421,14 +430,16 @@ test('KEY-07.2 With no levels, holding C does nothing [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-102');
   await startOnLevels(page, testInfo);
+  const boxAtRest = await badgeBoxPixels(page);
   await page.keyboard.down('c');
   await page.waitForTimeout(NOTHING_HAPPENS_MS);
   const isComparingWhileHeld = await isComparing(page)();
+  const boxWhileHeld = await badgeBoxPixels(page);
   await page.keyboard.up('c');
   await check('holding C with no levels: no comparison, no Before levels badge', () => {
     expect(isComparingWhileHeld).toBe(false);
+    expect(badgeBoxChange(boxWhileHeld, boxAtRest)).toBeLessThanOrEqual(BADGE_SAME_MAX);
   });
 });
 
@@ -484,25 +495,34 @@ test('KEY-08.2 While Preview is on, Tab doesn\'t step through the handles [deskt
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-062');
   const hand = await startOn(page, testInfo, { step: 'perspective' });
   await hand.tap(page.locator('#toolPreview'));
   await check('Preview reads On: the corrected card shows, with no handles', async () => {
     await expect(page.locator('#toolPreview .tool-state')).toHaveText('On');
+    expect(await page.evaluate(() => window.__straightener.app.previewMode)).toBe(true);
   });
   await clickPhotoEdge(page, hand);
-  await check('a click on the photo: it has the focus; the line reads Corner 1 of 4', async () => {
-    await expect(page.locator('#view')).toBeFocused();
-    await expect(handleName(page)).toHaveText('Corner 1 of 4');
-  });
-  await page.keyboard.press('Tab');
-  const nameAfter = await handleName(page).textContent();
-  const isPhotoFocused = await page.locator('#view').evaluate(el => el === document.activeElement);
-  await check('Tab: the line still reads Corner 1 of 4, and the focus has moved on', () => {
-    expect({ nameAfter, isPhotoFocused }).toEqual({
-      nameAfter: 'Corner 1 of 4',
-      isPhotoFocused: false,
+  await check('a click on the photo: it has the focus, and the first handle is still selected',
+    async () => {
+      await expect(page.locator('#view')).toBeFocused();
+      expect(await selectedHandle(page)).toBe(TOP_LEFT);
     });
+  await page.keyboard.press('Tab');
+  await check('Tab: the focus moves from the photo to Candidate, with a white ring; the first '
+    + 'handle is still selected', async () => {
+    await expect(page.locator('#toolCandidate')).toBeFocused();
+    expect(await focusRingOf(page, '#toolCandidate')).toEqual({
+      width: '2px',
+      style: 'solid',
+      color: RING_WHITE,
+    });
+    expect(await selectedHandle(page)).toBe(TOP_LEFT);
+  });
+  await hand.tap(page.locator('#toolPreview'));
+  await check('Preview reads Off; the line reads Corner 1 of 4', async () => {
+    await expect(page.locator('#toolPreview .tool-state')).toHaveText('Off');
+    await expect(handleName(page)).toBeVisible();
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
   });
 });
 
@@ -625,17 +645,23 @@ test('KEY-10.2 While Preview is on, the arrow keys don\'t move the handle [deskt
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-062');
   const hand = await startOn(page, testInfo, { step: 'perspective' });
   const start = await cornersNow(page);
   await hand.tap(page.locator('#toolPreview'));
   await check('Preview reads On', async () => {
     await expect(page.locator('#toolPreview .tool-state')).toHaveText('On');
+    expect(await page.evaluate(() => window.__straightener.app.previewMode)).toBe(true);
   });
   for (let press = 0; press < 3; press++) await page.keyboard.press('ArrowRight');
-  const corners = await cornersNow(page);
-  await check('→ three times: the corners haven\'t moved', () => {
-    expect(corners).toEqual(start);
+  await check('→ three times: the corrected card doesn\'t change, and Undo is still greyed out',
+    async () => {
+      expect(await cornersNow(page)).toEqual(start);
+      await expect(page.locator('#btnUndo')).toBeDisabled();
+    });
+  await hand.tap(page.locator('#toolPreview'));
+  await check('Preview reads Off; the corners are where they were', async () => {
+    await expect(page.locator('#toolPreview .tool-state')).toHaveText('Off');
+    expect(await cornersNow(page)).toEqual(start);
   });
 });
 

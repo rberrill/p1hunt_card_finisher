@@ -49,6 +49,15 @@
     { value: 'portrait', label: 'Portrait' },
     { value: 'landscape', label: 'Landscape' },
   ];
+  // The engine's corner faults a person can see on the photo and put right by dragging, in the
+  // engine's words (js/engine.js, Quad.validate): the line above the controls shows these two.
+  // Any other fault of the engine's shows as FIX_CORNERS_HERE, the approved wording on
+  // Perspective itself, and its own words go to the console (rulings R81 and R82).
+  const DRAGGABLE_FAULTS = [
+    'Two corners are too close together.',
+    'Corners cross or fold inward — drag them back into a convex shape.',
+  ];
+  const FIX_CORNERS_HERE = 'Fix the corners first.';
 
   // The adjustment showing in the control area: 'nudge' (the resting line) or 'flatten'.
   // Preview, a switch, replaces both while it is on. Only this module reads it.
@@ -56,6 +65,9 @@
   // The mode whose rows are on screen. It trails lineMode for the 60 ms the old line takes to
   // fade after a mode tap (CF.swapLine), while the tapped tool is already lit.
   let shownLineMode = 'nudge';
+  // What the console was last told about the geometry (logGeometryNote), so a fault or a cap
+  // that lasts is written once.
+  let geometryNote = '';
 
   /* ---------- building ---------- */
   // Builds Perspective's control area and options sheet into its section of index.html, around
@@ -208,10 +220,12 @@
     CF.bindSegmented(byId('orientation'), value => CF.commit(state => {
       state.aspect.orientation = value;
     }));
+    // Turning the overlay on only draws: the search it starts, for the edge map and the scored
+    // shapes, leaves the corners where they are (ruling R3).
     byId('debugOverlay').addEventListener('change', event => {
       app.debugOverlay = event.target.checked;
       const hasDebugData = app.detection.last && app.detection.last.debug;
-      if (app.debugOverlay && !hasDebugData) CF.runDetect();
+      if (app.debugOverlay && !hasDebugData) CF.detectForDebugOverlay();
       CF.requestRender();
     });
     // Selecting a handle on the photo (a press, or Tab) doesn't resync the controls, so the
@@ -238,7 +252,10 @@
     byId('toolFlatten').addEventListener('click', () => pickMode('flatten'));
     byId('toolCandidate').addEventListener('click', () => {
       const count = app.detection.candidates.length;
-      if (count) CF.useCandidate((app.detection.index + 1) % count);
+      if (!count) return;
+      // With no number showing (the corners moved by hand), the next is the best pick (R6).
+      const next = app.detection.isOnCandidate ? (app.detection.index + 1) % count : 0;
+      CF.useCandidate(next);
     });
     byId('toolSnap').addEventListener('click', () => {
       app.snap = !app.snap;
@@ -289,9 +306,12 @@
     CF.updateTool(byId('toolSnap'), { isOn: !!app.snap });
     CF.updateTool(byId('toolPreview'), { isOn: isPreview });
     const count = app.detection.candidates.length;
+    // The number shows only while the corners sit on a candidate: moved by hand, they are on
+    // none of them (ruling R6).
+    const hasNumber = count > 1 && app.detection.isOnCandidate;
     CF.updateTool(byId('toolCandidate'), {
       isDisabled: count < 2,
-      valueText: count > 1 ? `${app.detection.index + 1}/${count}` : '',
+      valueText: hasNumber ? `${app.detection.index + 1}/${count}` : '',
     });
     CF.updateSegmented(byId('orientation'), state.aspect.orientation);
     byId('debugOverlay').checked = !!app.debugOverlay;
@@ -318,32 +338,55 @@
     return text.replace(/ — (\S)/, (match, letter) => '. ' + letter.toUpperCase());
   }
 
+  // The words the line shows for an engine fault: the engine's own for the two a person can
+  // see and drag right, and the approved line for any other (rulings R81 and R82).
+  function faultText(reason) {
+    return DRAGGABLE_FAULTS.includes(reason) ? asSentences(reason) : FIX_CORNERS_HERE;
+  }
+
+  // Writes to the console what the screen doesn't say: the engine's own words for a fault shown
+  // as "Fix the corners first." (ruling R81), or that the corrected frame was held to the cap
+  // (ruling R76). Once each time it changes, not at every update of the controls.
+  function logGeometryNote(geometry) {
+    let note = '';
+    if (geometry && !geometry.ok) {
+      if (!DRAGGABLE_FAULTS.includes(geometry.reason)) note = geometry.reason;
+    } else if (geometry && geometry.perspective.isClamped) {
+      note = `Corrected frame clamped to ${CONFIG.maxOutputPx} px on the long side.`;
+    }
+    if (note && note !== geometryNote) console.warn('[card-finisher]', note);
+    geometryNote = note;
+  }
+
   // The message to act on, as { kind, text, actionLabel }, or null for none. Only the armed
-  // Tap to find card carries a button (Cancel).
+  // Tap to find card carries a button (Cancel). candidate: the detected candidate the corners
+  // sit on, or null. Detection's two warnings go once the corners are moved by hand, and stay
+  // away until it runs again (ruling R7). A corrected frame held to the cap is no message: there
+  // is nothing to act on (ruling R76).
   function perspectiveStatus(geometry, candidate) {
     if (app.findMode) {
       return { kind: 'info', text: 'Tap the card in the photo.', actionLabel: 'Cancel' };
     }
-    if (geometry && !geometry.ok) return { kind: 'error', text: asSentences(geometry.reason) };
+    if (geometry && !geometry.ok) return { kind: 'error', text: faultText(geometry.reason) };
     if (app.detection.message) return { kind: 'info', text: app.detection.message };
-    if (candidate && candidate.confidence < CONFIG.detect.minConfidence) {
+    const canWarn = !app.detection.wasMovedByHand;
+    if (canWarn && candidate && candidate.confidence < CONFIG.detect.minConfidence) {
       const percent = Math.round(candidate.confidence * 100);
       return { kind: 'warn', text: `Low confidence (${percent}%). Check the corners.` };
     }
-    if (!app.detection.candidates.length && app.img && app.detection.last) {
+    const hasRun = !!app.img && !!app.detection.last;
+    if (canWarn && hasRun && !app.detection.candidates.length) {
       return { kind: 'warn', text: 'Nothing detected. Drag the corners into place.' };
-    }
-    if (geometry && geometry.perspective.isClamped) {
-      const text = `Corrected frame clamped to ${CONFIG.maxOutputPx}px on the long side.`;
-      return { kind: 'info', text };
     }
     return null;
   }
 
   // The label row (or the status in its place) and the confidence readout at its right.
   function syncPerspectiveReadouts() {
-    const count = app.detection.candidates.length;
-    const candidate = count ? app.detection.candidates[app.detection.index] : null;
+    logGeometryNote(app.geometry);
+    const detection = app.detection;
+    // The candidate the corners sit on: none once they are moved by hand (ruling R6).
+    const candidate = detection.isOnCandidate ? detection.candidates[detection.index] : null;
     const message = perspectiveStatus(app.geometry, candidate);
     const isStatusShown = CF.updateStatus(byId('perspectiveStatus'), message || { text: '' });
     const isPreview = !!app.previewMode;

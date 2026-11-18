@@ -85,8 +85,12 @@
     detection: {
       candidates: [],
       index: 0,
+      isOnCandidate: false,
+      wasMovedByHand: false,
+      cornersAfterRun: '',
       last: null,
       running: 0,
+      pending: null,
       message: '',
       snapPoints: [],
       snapLines: [],

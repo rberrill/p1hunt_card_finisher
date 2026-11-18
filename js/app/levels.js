@@ -102,6 +102,9 @@
     return CardEngine.warp(pixels, app.preview.data, outputToPreview, { fill: [0, 0, 0, 0] });
   }
 
+  // Auto: estimates both points from the framed image into the draft. When it works it says
+  // nothing, as a pick says nothing (ruling R73): the filled swatches and the photo show it.
+  // Only a picture it can't estimate from warns.
   function autoLevelsDraft() {
     const img = renderSmall(CONFIG.levels.autoSamplePx);
     const found = img && CardEngine.autoLevels(img, CONFIG.levels);
@@ -115,9 +118,6 @@
       draft.whiteAt = null;
       draft.blackAt = null;
     });
-    toast(found.black
-      ? 'Auto set white and black points. Check them, then Apply.'
-      : 'Auto set the white point (no clear black). Check it, then Apply.');
   }
 
   // Why a picked color can't be the `which` point, or '' if it can.
@@ -135,9 +135,19 @@
     return '';
   }
 
+  // Whether a point of the rotated frame is inside the crop, the part of the photo the Levels
+  // step shows. crop: { x, y, width, height } in rotated-frame px.
+  function isInCrop(crop, point) {
+    return point[0] >= crop.x
+      && point[0] < crop.x + crop.width
+      && point[1] >= crop.y
+      && point[1] < crop.y + crop.height;
+  }
+
   // The dropper: averages a patch of the full-resolution photo under the pick point. A pick
   // that sets the point disarms the dropper; one that can't work warns and stays armed, so the
-  // next tap can try again (frame L10).
+  // next tap can try again (frame L10). A tap outside the crop, on the photo the step hides, is
+  // ignored and stays armed (ruling R38).
   function pickAt(screenPoint) {
     const which = app.dropper;
     const view = CF.currentView();
@@ -156,9 +166,10 @@
       && point[1] >= 0
       && point[0] < app.img.width
       && point[1] < app.img.height;
-    if (!isOnPhoto) {
+    if (!isOnPhoto || !isInCrop(geometry.crop, world)) {
       app.dropper = which;
-      toast('That spot is outside the photo.', 'warn');
+      // Off the photo there is no color to take, so that warns; a hidden spot says nothing.
+      if (!isOnPhoto) toast('That spot is outside the photo.', 'warn');
       CF.syncUI();
       return;
     }
@@ -195,8 +206,19 @@
   // When the current compare started (performance.now() ms), for the badge's fade.
   let compareStartedAt = 0;
 
-  // Starts or ends a compare: the photo without levels while it is on.
+  // Whether the photo on screen shows levels a compare could take away: a white or a black
+  // point, the draft's while one waits, else the applied ones. After Clear the photo shows
+  // none, even with levels applied. The label row's instruction offers the compare by the same
+  // test (levelsHint).
+  function hasLevelsToCompare() {
+    const shown = draftLevels() || {};
+    return !!shown.white || !!shown.black;
+  }
+
+  // Starts or ends a compare: the photo without levels while it is on. While the photo shows
+  // no levels none starts (ruling R9); app.compare says whether one is on.
   function setCompare(isOn) {
+    if (isOn && !hasLevelsToCompare()) return;
     if (app.compare === isOn) return;
     app.compare = isOn;
     if (isOn) compareStartedAt = performance.now();
@@ -223,7 +245,13 @@
     return canvas;
   }
 
-  // A pick marker: a black and white ring labelled W or B.
+  // The width of the dark line drawn under a pick marker's letter, in CSS px: half of it shows
+  // round the letter as its outline, the rest lies under the white fill.
+  const PICK_LABEL_OUTLINE_PX = 3;
+
+  // A pick marker: a black and white ring labelled W or B. The letter is white over a dark
+  // outline, as the ring is, so it can be read on a white spot as on a dark one (ruling R39).
+  // point: [x, y] in screen px.
   function drawPickMarker(ctx, point, label) {
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#000';
@@ -236,6 +264,15 @@
     ctx.stroke();
     ctx.font = 'bold 12px system-ui, sans-serif';
     ctx.textAlign = 'left';
+    // The outline first, so the white letter lies over it. Round joins: a mitered outline
+    // would spike at the points of the W. Saved and restored, so the join and the width stay
+    // with the letter.
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = PICK_LABEL_OUTLINE_PX;
+    ctx.strokeStyle = '#000';
+    ctx.strokeText(label, point[0] + 11, point[1] - 9);
+    ctx.restore();
     ctx.fillStyle = '#fff';
     ctx.fillText(label, point[0] + 11, point[1] - 9);
   }
@@ -380,9 +417,11 @@
       }));
   }
 
-  // The sheet: the tips as paragraphs, then the keyboard help under "Tips and keys" in its own
-  // block, as every step's tips group is on a wide screen (frame DT5). The block carries the
-  // keys' class, so a phone hides it whole and its sheet is the tips alone.
+  // The sheet: one tips block, the heading "Tips and keys", the tips as paragraphs, then the
+  // keyboard help. The heading and the keys carry the wide screen's classes, so a phone's
+  // sheet is its title and the tips alone. On a wide screen the block is all the options hold,
+  // so css/app.css leaves the sheet's own title out, as on Overlay, and "Tips and keys" is the
+  // one heading (ruling R74).
   function buildLevelsSheet() {
     const heading = CF.buildSheetHeading('Tips and keys');
     heading.classList.add('sheet-tips-heading');
@@ -391,10 +430,11 @@
       hint.classList.add('sheet-keys');
       return hint;
     });
-    const keysGroup = makeEl('div', { class: 'sheet-tips-group sheet-keys' }, heading, ...keys);
-    return CF.buildSheet({ id: 'levelsSheet', title: 'Levels tips' },
+    const tipsGroup = makeEl('div', { class: 'sheet-tips-group levels-tips' },
+      heading,
       ...LEVELS_TIPS.map(tip => CF.buildSheetHint(tip)),
-      keysGroup);
+      ...keys);
+    return CF.buildSheet({ id: 'levelsSheet', title: 'Levels tips' }, tipsGroup);
   }
 
   // Arms the dropper for `which` ('white' or 'black'); a tap on the armed part disarms it.
@@ -429,8 +469,7 @@
   // the photo shows none, so there is nothing to compare.
   function levelsHint() {
     if (app.dropper) return LEVELS_HINTS[app.dropper];
-    const shown = draftLevels() || {};
-    if (shown.white || shown.black) return LEVELS_HINTS.compare;
+    if (hasLevelsToCompare()) return LEVELS_HINTS.compare;
     return LEVELS_HINTS.start;
   }
 

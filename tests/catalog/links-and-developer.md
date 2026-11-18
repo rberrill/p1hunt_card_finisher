@@ -154,8 +154,6 @@ Before you start:
 - Photo: IMG_9136.JPEG from samples/, in a file browser beside the window
 - Starting screen: the start screen
 
-On a phone-width window the tuning panel covers **Open photo** (DEV-06.2), so row 2 drops the photo on the start screen instead.
-
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the screen | The **Detection tuning** panel is open |
@@ -187,16 +185,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## DEV-05 `?selftest` runs the engine self-tests
 
-A link with `?selftest` runs the engine's self-tests on the page and in the background worker, prints both result tables in the console, and shows a message with both counts (**Self-tests: main …, worker …**), red if any failed. The results are also kept on the page for a script to read.
+A link with `?selftest` runs the engine's self-tests on the page and in the background worker, prints both result tables in the console, and shows a message with both counts (**Self-tests: main …, worker …**), red if any failed. The results are also kept on the page for a script to read. A link with `?selftest=0` runs none.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `"Self-tests: main "`, `", worker unavailable"`, `"[card-finisher] self-tests (main thread)"`, `"[card-finisher] self-tests (Web Worker)"`
 - Source: `js/app/main.js` (`runSelfTests`, `init`), `js/engine.js` (`selfTest`)
-- Ruling: R28. `?selftest=0` means off: the self-tests do not run. The app differs today.
+- Ruling: R28. `?selftest=0` means off: the self-tests do not run. The app does this since 1.10.0.
 - Cases: 2
 
 ### DEV-05.1 ?selftest runs the self-tests on the page and in the worker   [auto: phone]
@@ -215,8 +213,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, the message's text, the Console's tables.
 
 ### DEV-05.2 ?selftest=0 runs no self-tests   [auto: phone]
-Written to ruling R28; it fails until that is built (BUG-171).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with the developer tools open on the Console
 - Build: the build under test
@@ -236,12 +232,12 @@ The **Detection tuning** panel has a field for each number and on/off setting of
 
 - Risk: low
 - Check: script
-- Layout: both. Phone: full width, just above the controls under the photo, at most 40% of the screen's height. Wide: at the top right, left of the side panel.
+- Layout: both. Phone: full width, just above the controls under the photo, at most 40% of the screen's height; on the start screen, at the bottom of the screen, at most 25% of its height, with the start screen's words and buttons above it. Wide: at the top right, left of the side panel; on the start screen, over the empty side panel.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#debugPanel`, `"Detection tuning"`, `CONFIG.detect.cannyLow`
-- Source: `js/app/debug-panel.js` (`toggleDebugPanel`, `buildDebugPanel`), `css/app.css` (`#debugPanel`)
-- Ruling: R29. The tuning panel's fields may take values outside the safe ranges a link is held to; it is a tuning tool. The app already does this. R51. On the start screen the tuning panel never covers **Open photo** or the Resume box. The app differs today.
+- Source: `js/app/debug-panel.js` (`toggleDebugPanel`, `buildDebugPanel`), `css/app.css` (`#debugPanel`, and `.start-screen` while the panel shows on a phone)
+- Ruling: R29. The tuning panel's fields may take values outside the safe ranges a link is held to; it is a tuning tool. The app already does this. R51. On the start screen the tuning panel never covers **Open photo** or the Resume box. The app does this since 1.10.0.
 - Cases: 5
 
 ### DEV-06.1 The panel has a field per detection setting, and a change detects again   [auto: phone]
@@ -263,8 +259,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DEV-06.2 Where the panel sits   [auto: both, webkit]
-Written to ruling R51; it fails until that is built (BUG-281). Where the panel sits on the start screen of a wide window is left to the fix, as long as it leaves **Open photo** clear: today it sits as it will once a photo is open, and covers the button's right end.
-
 Before you start:
 - Device and browser: a computer, a phone-width window (390 × 844 px) or a wide one (1280 × 800 px)
 - Build: the build under test, opened with the link index.html?debug=1
@@ -274,7 +268,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the screen | The panel shows and leaves **Open photo** clear: no part of the panel is over the button |
+| 1 | Look at the screen | The panel shows, and no part of it is over **Open photo**. On a phone, it spans the window less 8 px each side, its bottom 8 px above the window's bottom edge, at most 25% of the window's height. On a wide screen, it is 64 px from the top and 8 px from the window's right edge, over the empty side panel |
 | 2 | Drag IMG_9136.JPEG from the file browser onto the start screen, away from the tuning panel, and let go | The photo opens. On a phone, the panel spans the window less 8 px each side, its bottom 8 px above the controls, at most 40% of the window's height. On a wide screen, it is 64 px from the top and 8 px left of the 380 px side panel |
 
 Pass: every row's result is seen.
@@ -318,8 +312,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, the count of detection runs.
 
 ### DEV-06.5 On a phone, the panel leaves the Resume box clear   [auto: phone]
-Written to ruling R51; it fails until that is built (BUG-281).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -330,23 +322,23 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Go to the build's address with `?debug=1` added to it (index.html?debug=1) | The start screen offers "Resume IMG_9136.JPEG?" with **Resume** and **Start fresh**, and the **Detection tuning** panel shows |
-| 2 | Look at the Resume box | No part of the tuning panel is over **Resume** or **Start fresh** |
+| 2 | Look at the Resume box (the box that holds **Resume** and **Start fresh**) and at **Open photo** under it | No part of the tuning panel is over the Resume box or **Open photo** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, the panel's position, a screenshot.
 
 ## DEV-07 The tuning panel's buttons
 
-The panel has a close button (tooltip **Close tuning**), **Copy CONFIG**, which copies all the settings to the clipboard (or prints them in the console if the clipboard is blocked), and **Re-detect**, which runs detection again.
+The panel has a close button (tooltip **Close tuning**), **Copy CONFIG**, which copies all the settings to the clipboard (or prints them in the console if the clipboard is blocked, and says "Clipboard blocked. CONFIG printed to the console."), and **Re-detect**, which runs detection again.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#debugClose`, `#debugCopy`, `#debugRun`, `"Clipboard blocked — CONFIG printed to the console."`
+- Changed: 1.10.0
+- Anchors: `#debugClose`, `#debugCopy`, `#debugRun`, `"Clipboard blocked. CONFIG printed to the console."`
 - Source: `js/app/debug-panel.js` (`buildDebugPanel`)
-- Ruling: R60. The blocked-clipboard message is two sentences, in the same words: "Clipboard blocked. CONFIG printed to the console." The app differs today.
+- Ruling: R60. The blocked-clipboard message is two sentences: "Clipboard blocked. CONFIG printed to the console." The app does this since 1.10.0.
 - Cases: 3
 
 ### DEV-07.1 Re-detect runs detection, and Close tuning closes the panel   [auto: phone]
@@ -383,7 +375,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### DEV-07.3 With the clipboard blocked, CONFIG goes to the console   [auto: phone]
 Script only
-The message is in ruling R60's words. Until R60 is built (BUG-284) the app joins its two parts with a dash, which this case also accepts: its subject is the settings going to the console, and MSG-42.1 holds the words.
 Stand-in: a person can't make the browser refuse the clipboard to the page on purpose, so the script makes every clipboard write fail, as a browser that blocks the page does.
 
 Before you start:
@@ -433,16 +424,16 @@ On a fail, record: the row number, the report's text.
 
 ## DEV-09 Opening the tuning panel turns the debug overlay on
 
-Opening the tuning panel turns the **Debug overlay** on. If it was off and a photo is open, detection runs again so the panel's report fills in.
+Opening the tuning panel turns the **Debug overlay** on. If it was off and a photo is open, detection runs again, so the overlay has its lines to draw and the panel its report, and corners placed by hand stay where they are, with no undo step added.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#debugPanel`, `#debugOverlay`, `CONFIG.keys.debug`
-- Source: `js/app/debug-panel.js` (`toggleDebugPanel`)
-- Ruling: R3. Turning the debug overlay on leaves the corners alone and only draws. The app differs today.
+- Source: `js/app/debug-panel.js` (`toggleDebugPanel`); `js/app/state.js` (`detectForDebugOverlay`)
+- Ruling: R3. Opening the panel, which turns the debug overlay on, leaves corners placed by hand where they are and adds no undo step. The app does this since 1.10.0.
 - Cases: 2
 
 ### DEV-09.1 The backtick key opens the panel, turns Debug overlay on and fills the report   [auto: desktop]
@@ -462,9 +453,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### DEV-09.2 Opening the panel leaves corners placed by hand alone   [auto: desktop]
-Written to ruling R3; it fails until that is built (BUG-211).
-
+### DEV-09.2 Opening the panel leaves corners placed by hand alone and adds no undo step   [auto: desktop]
 Before you start:
 - Device and browser: a desktop browser, 1280 × 800 px, with a keyboard and a mouse
 - Build: the build under test
@@ -474,9 +463,10 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag the top-left corner handle 40 px down and right | The corner moves off the card |
+| 1 | Drag the top-left corner handle 40 px down and right | The corner moves off the card; **Undo** (the arrow curving left, at the top right) is no longer greyed out |
 | 2 | Press the backtick key (`) | The panel opens, and **Debug overlay** turns on |
 | 3 | Look at the top-left corner | It stays where it was dragged |
+| 4 | Click **Undo** | The top-left corner is back on the card's corner, and **Undo** is greyed out: the drag was the only undo step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, where the corner went, a screenshot.

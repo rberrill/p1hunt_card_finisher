@@ -66,6 +66,7 @@ const {
 } = require('./support/levels.js');
 const { exportStep, downloadStep, answerNo } = require('./support/export.js');
 const { fixturePath } = require('./support/edits-files.js');
+const { watchMessages, messagesSoFar } = require('./support/messages.js');
 
 // Another photo, a raw card on white, for the cases that open a second photo.
 const SECOND_PHOTO = '14_front_portrait_raw_white.JPEG';
@@ -105,6 +106,8 @@ const HINTS = {
   black: 'Tap something black',
   compare: 'Hold the photo to compare',
 };
+// How long a case waits for a message that should not come, in ms.
+const NOTHING_WAIT_MS = 3000;
 // The pop-ups and warnings the cases expect, word for word.
 const AUTO_FAILED = 'Couldn’t estimate levels from this image.';
 const OUTSIDE_PHOTO = 'That spot is outside the photo.';
@@ -523,7 +526,6 @@ test('LEV-08.2 A second finger cancels the pick and leaves the picker armed [pho
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-101');
   const hand = await startOnLevels(page, testInfo);
   await hand.tap(pickButton(page, 'white'));
   await check('Pick white is selected; the line between Discard and Apply reads "Tap something '
@@ -533,8 +535,8 @@ test('LEV-08.2 A second finger cancels the pick and leaves the picker armed [pho
   });
   const first = await spotOnPage(page, SPOTS.white);
   const second = offsetBy(first, SECOND_FINGER_GAP_PX, 0);
-  // Plain reads, not retrying expects: today the second finger sets the point at once, so the
-  // known defect fails here without waiting out a timeout.
+  // Plain reads, not retrying expects: a pick fills the patch and disarms within the finger's
+  // own event, so a pick taken by any of these four would show at once.
   await sendTouch(page, '#view', 'pointerdown', first, FIRST_FINGER);
   await check('the color patch is still dashed and empty, with one finger down', async () => {
     expect(await isPatchEmpty(page, 'white')).toBe(true);
@@ -774,7 +776,6 @@ test('LEV-12.4 A black pick no darker than the white point warns and stays armed
 
 test('LEV-12.5 A tap on the empty area below the picture is ignored and the pick stays armed '
   + '[phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-230');
   const hand = await startOnLevels(page, testInfo);
   const bottomLeft = await spotOnPage(page, [0, 1]);
   const topRight = await spotOnPage(page, [1, 0]);
@@ -788,15 +789,18 @@ test('LEV-12.5 A tap on the empty area below the picture is ignored and the pick
     await expect(hintLine(page)).toHaveText(HINTS.white);
   });
   await tapPoint(page, hand, below);
-  // Plain reads, not retrying expects: today the tap sets the point at once, so the known
-  // defect fails here without waiting out a timeout.
-  await check('the color patch at the left of Pick white is still dashed and empty', async () => {
+  // Plain reads, not retrying expects: a pick fills the patch, and a refused one shows its
+  // warning, within the tap's own event, so either would show at once.
+  await check('the color patch at the left of Pick white is still dashed and empty, and no '
+    + 'warning shows', async () => {
     // The point tapped is on the photo, in the part the step hides.
     expect(hidden[0]).toBeGreaterThan(0);
     expect(hidden[0]).toBeLessThan(width);
     expect(hidden[1]).toBeGreaterThan(0);
     expect(hidden[1]).toBeLessThan(height);
     expect(await isPatchEmpty(page, 'white')).toBe(true);
+    expect(await swatchColor(page, 'white')).toBeNull();
+    expect((await toastNow(page)).isShown).toBe(false);
   });
   await check(`Pick white is still selected and the line still reads "${HINTS.white}"`,
     async () => {
@@ -818,8 +822,7 @@ test('LEV-13.1 The pick marks, for a person to judge [phone]', async ({
   await waitForStill(page);
   await check.eye('a small black and white ring labelled W sits on the white background left of '
     + 'the slab, and one labelled B on the card\'s dark background; each letter is white with a '
-    + 'dark outline round it, and the W can be read easily on the white background (ruling R39; '
-    + 'until it is built this fails by eye, BUG-231)');
+    + 'dark outline round it, and the W can be read easily on the white background (ruling R39)');
   const middle = await spotOnPage(page, [0.5, 0.5]);
   await holdPhoto(page, hand, middle);
   await check.eye('the picture shows without levels, the Before levels badge at its top left, '
@@ -836,7 +839,6 @@ test('LEV-13.2 The W on a white spot has a dark outline [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-231');
   const hand = await startOnLevels(page, testInfo);
   await pickSpot(page, hand, 'white', SPOTS.white);
   await check('the color patch of Pick white is filled with the background\'s white (within 3 '
@@ -917,6 +919,48 @@ test('LEV-14.3 Auto on a picture with nothing to go on warns, with no next step 
         await expect(page.locator('#btnApplyLevels')).toBeDisabled();
       });
   });
+
+// The second row of LEV-14.4 and LEV-14.5 (ruling R73): `before` messages had shown when Auto
+// was tapped; three seconds on, none has shown since. A plain reading of the record.
+async function expectNoMessageSince(page, check, before) {
+  await page.waitForTimeout(NOTHING_WAIT_MS);
+  const shown = (await messagesSoFar(page)).slice(before).map(message => message.text);
+  await check('no message has shown over the photo since Auto was tapped', () => {
+    expect(shown).toEqual([]);
+  });
+}
+
+test('LEV-14.4 Auto sets both points, with no message [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  await watchMessages(page);
+  const hand = await startOnLevels(page, testInfo);
+  const before = (await messagesSoFar(page)).length;
+  await hand.tap(page.locator('#toolAutoLevels'));
+  await check('the color patches of Pick white and Pick black are filled: Auto set both points',
+    async () => {
+      await expect.poll(() => patchFill(page, 'black')).not.toBeNull();
+      expect(await patchFill(page, 'white')).not.toBeNull();
+    });
+  await expectNoMessageSince(page, check, before);
+});
+
+test('LEV-14.5 Auto sets the white point only, with no message [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  await watchMessages(page);
+  const hand = await startOnLevels(page, testInfo, { photo: NO_BLACK_PHOTO });
+  const before = (await messagesSoFar(page)).length;
+  await hand.tap(page.locator('#toolAutoLevels'));
+  await check('the color patch of Pick white is filled, and the one of Pick black is still '
+    + 'dashed and empty: Auto set the white point only', async () => {
+    await expect.poll(() => patchFill(page, 'white')).not.toBeNull();
+    expect(await isPatchEmpty(page, 'black')).toBe(true);
+  });
+  await expectNoMessageSince(page, check, before);
+});
 
 test('LEV-15.1 Clear empties both points and disarms the picker [phone]', async ({
   page,
@@ -1035,19 +1079,31 @@ test('LEV-16.2 With no levels, holding the photo does nothing [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-102');
   const hand = await startOnLevels(page, testInfo);
+  const viewBefore = await viewNow(page);
   const middle = await spotOnPage(page, [0.5, 0.5]);
   await holdPhoto(page, hand, middle);
   await afterDraw(page);
-  // Plain reads, not retrying expects, so the known defect fails fast.
+  // Plain reads, not retrying expects, so a failure shows at once.
   await check('there is no comparison: no Before levels badge at the top left of the photo area',
     async () => {
+      expect((await levelsNow(page)).isComparing).toBe(false);
       expect(await badgeShown(page)).toBe(false);
     });
-  await releasePhoto(page, hand, middle);
+  const end = await slideBy(page, hand, middle, SLIDE_PX, 0);
   await afterDraw(page);
-  await check('nothing changes: still no badge', async () => {
+  await check('the photo follows the finger 60 px to the right, as on any press; no badge',
+    async () => {
+      const view = await viewNow(page);
+      expect(Math.abs(view.panX - viewBefore.panX - SLIDE_PX)).toBeLessThan(PAN_TOLERANCE_PX);
+      expect(await badgeShown(page)).toBe(false);
+    });
+  await releasePhoto(page, hand, end);
+  await afterDraw(page);
+  await check('the photo stays 60 px to the right; still no badge', async () => {
+    const view = await viewNow(page);
+    expect(Math.abs(view.panX - viewBefore.panX - SLIDE_PX)).toBeLessThan(PAN_TOLERANCE_PX);
+    expect((await levelsNow(page)).isComparing).toBe(false);
     expect(await badgeShown(page)).toBe(false);
   });
 });
@@ -1056,7 +1112,6 @@ test('LEV-16.3 A press that showed the comparison is not also a tap [phone]', as
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-103');
   const hand = await startOnLevels(page, testInfo);
   await autoChangesPhoto(page, hand, check);
   const box = await page.locator('#view').boundingBox();
@@ -1069,8 +1124,7 @@ test('LEV-16.3 A press that showed the comparison is not also a tap [phone]', as
     await expect(page.locator('#btnFit')).toBeVisible();
   });
   const press = await pressThenTap(page, middle);
-  await check('the comparison showed (the Before levels badge), and the press lasted under 0.3 '
-    + 'seconds', () => {
+  await check('the comparison started, and the press lasted under 0.3 seconds in all', () => {
     expect(press.isCompared).toBe(true);
     expect(press.holdMs).toBeLessThan(TAP_MS);
   });
@@ -1145,6 +1199,56 @@ test('LEV-16.5 Moving the finger during the comparison does not pan [phone]', as
   });
 });
 
+test('LEV-16.7 With levels applied and Clear tapped, holding the photo does nothing [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startOnLevels(page, testInfo);
+    const colors = await autoChangesPhoto(page, hand, check);
+    const apply = page.locator('#btnApplyLevels');
+    await hand.tap(apply);
+    await check('the photo keeps Auto\'s look; Apply is greyed out', async () => {
+      expect(colorDifference(await drawnColor(page), colors.auto)).toBeLessThanOrEqual(
+        SAME_COLOR_TOLERANCE,
+      );
+      await expect(apply).toBeDisabled();
+      expect((await levelsNow(page)).applied).not.toBeNull();
+    });
+    await hand.tap(page.locator('#toolClearLevels'));
+    await check('the photo looks as it did before Auto; Apply is no longer greyed out',
+      async () => {
+        expect(colorDifference(await drawnColor(page), colors.none)).toBeLessThanOrEqual(
+          SAME_COLOR_TOLERANCE,
+        );
+        await expect(apply).toBeEnabled();
+        expect((await levelsNow(page)).applied).not.toBeNull();
+      });
+    const middle = await spotOnPage(page, [0.5, 0.5]);
+    await holdPhoto(page, hand, middle);
+    await afterDraw(page);
+    // Plain reads, not retrying expects, so a failure shows at once.
+    await check('there is no comparison: no Before levels badge at the top left of the photo '
+      + 'area', async () => {
+      expect((await levelsNow(page)).isComparing).toBe(false);
+      expect(await badgeShown(page)).toBe(false);
+    });
+    await releasePhoto(page, hand, middle);
+    await hand.tap(page.locator('#btnDiscardLevels'));
+    await check('the photo has Auto\'s look again', async () => {
+      expect(colorDifference(await drawnColor(page), colors.auto)).toBeLessThanOrEqual(
+        SAME_COLOR_TOLERANCE,
+      );
+    });
+    await holdPhoto(page, hand, middle);
+    await check('the photo looks as it did before Auto, with the Before levels badge at the top '
+      + 'left of the photo area', async () => {
+      expect((await levelsNow(page)).isComparing).toBe(true);
+      expect(colorDifference(await drawnColor(page), colors.none)).toBeLessThanOrEqual(
+        SAME_COLOR_TOLERANCE,
+      );
+      await expect.poll(() => badgeShown(page)).toBe(true);
+    });
+    await releasePhoto(page, hand, middle);
+  });
+
 test('LEV-17.1 The Before levels badge, for a person to judge [phone]', async ({
   page,
   check,
@@ -1189,7 +1293,6 @@ test('LEV-17.2 The badge fades in even when the device asks for less motion [pho
 });
 
 test('LEV-17.3 With no levels there is no badge [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-102');
   const hand = await startOnLevels(page, testInfo);
   const middle = await spotOnPage(page, [0.5, 0.5]);
   await holdPhoto(page, hand, middle);
@@ -1605,10 +1708,14 @@ test('LEV-23.2 On a wide screen the tips are followed by the keyboard help [desk
 }, testInfo) => {
   await startOnLevels(page, testInfo);
   const sheet = page.locator('#levelsSheet');
-  await check('the three tips of LEV-23.1, then "Hold C, or press and hold the photo, to '
-    + 'compare." under the heading TIPS AND KEYS', async () => {
-    await expect(sheet.getByText('Tips and keys')).toBeVisible();
+  await check('the heading TIPS AND KEYS, then the three tips of LEV-23.1, then "Hold C, or '
+    + 'press and hold the photo, to compare."', async () => {
+    const heading = sheet.getByText('Tips and keys');
+    await expect(heading).toBeVisible();
     expect(await shownHints(page)).toEqual([...LEVELS_TIPS, LEVELS_KEY_HELP]);
+    const headingBox = await heading.boundingBox();
+    const firstTipBox = await sheet.locator('.sheet-hint').first().boundingBox();
+    expect(headingBox.y).toBeLessThan(firstTipBox.y);
   });
 });
 

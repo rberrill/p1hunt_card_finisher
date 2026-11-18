@@ -64,19 +64,19 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## PER-03 A newer search wins
+## PER-03 A newer search wins, and a search cut short by a side switch runs again
 
-If a new search for the card starts before an older one finishes, or a front and back pair switches sides meanwhile, the older search's result is thrown away.
+If a new search for the card starts before an older one finishes, or another photo is opened meanwhile, the older search's result is thrown away. A search still running when a front and back pair switches sides is thrown away too, leaving no "Detecting…" behind and showing no message if it fails, and it runs again when that side is next opened. That search puts the corners on the card, with no undo step, unless a corner on that side was moved by hand: then the corners stay, and **Candidate** steps through what it found.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: none
-- Source: `js/app/state.js` (`runDetect`); `js/app/pair.js` (`switchSide`)
-- Ruling: R45. Switching sides never leaves a stale message: the back's line is not left reading "Detecting…". The app differs today.
-- Cases: 2
+- Source: `js/app/state.js` (`runDetect`, `takeDetection`, `clearRunMessage`, `detectReopenedSide`, `detectAgain`, `areCornersHandPlaced`); `js/app/pair.js` (`switchSide`)
+- Ruling: R45. Switching sides never leaves a stale message: the back's line is not left reading "Detecting…". A search still running when its side is left is thrown away and runs again when that side is next opened; that run moves the corners only if none on that side was moved by hand, and otherwise its result becomes the candidates to cycle through. The app does this since 1.10.0.
+- Cases: 5
 
 ### PER-03.1 A second photo opened during the search keeps its own corners   [auto: phone]
 Script only
@@ -99,10 +99,9 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-03.2 A search still running when a pair switches sides is thrown away   [auto: phone]
+### PER-03.2 A find tap cut short by a side switch runs again on return, and a corner placed by hand stays   [auto: phone]
 Script only
-Stand-in: the script holds the back's search open until the switch to the front has finished, then lets it end. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain.
-Written to ruling R45; it fails until that is built (BUG-241).
+Stand-in: the script holds the back's search open until the switch to the front has finished, then lets it end, and reads which point each search was given. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -119,8 +118,80 @@ Before you start:
 | 4 | Tap the middle of the back card once, without moving | The line reads "Detecting…" |
 | 5 | Tap **Front** in the top bar, while the search runs | The front opens on Perspective, its corners on the front card |
 | 6 | Wait two seconds (the script lets the back's search end) | The front's corners have not moved |
-| 7 | Tap **Back** in the top bar | The back opens; its top-left corner is still where you dragged it in row 1: the search's result was thrown away |
-| 8 | Look at the line above the controls | It reads the normal Nudge line, NUDGE and Corner 1 of 4, not "Detecting…" |
+| 7 | Tap **Back** in the top bar | The back opens and the line reads "Detecting…" for a moment: the search runs again |
+| 8 | Wait until the line no longer reads "Detecting…" (the script reads which point that search was given) | The search that ran again was for the point tapped in row 4 |
+| 9 | Look at the back's outline and at the line above the controls | The top-left corner is still where you dragged it in row 1, and the line reads NUDGE and Corner 1 of 4 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-03.3 A side left before its first search ends is searched again on return, and its corners land on the card   [auto: phone]
+Script only
+Stand-in: the script holds the back's first search open until the switch to the front has finished, then lets it end. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Tap **Front** in the top bar, while the line still reads "Detecting…" | The front opens on Perspective, its corners on the front card |
+| 3 | Wait two seconds (the script lets the back's search end) | The front's corners have not moved |
+| 4 | Tap **Back** in the top bar | The back opens and the line reads "Detecting…" for a moment: the search runs again |
+| 5 | Wait until the line no longer reads "Detecting…" | The four corners are on the back card's corners, where they land when this photo is opened on its own, and **Candidate** reads 1/3 |
+| 6 | Look at the line above the controls and at **Undo** (the arrow curving left, at the top right) | The line reads NUDGE and Corner 1 of 4, with Confidence and a percentage at its right; **Undo** is greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-03.4 A corner dragged before the side is left stays through the search on return, and Candidate cycles   [auto: phone]
+Script only
+Stand-in: the script holds the back's first search open until the switch to the front has finished, then lets it end. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides inside it for certain. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Drag the back's top-left corner ring 40 px right and 40 px down, and let go | That corner has moved 40 px right and 40 px down |
+| 3 | Tap **Front** in the top bar, while the line still reads "Detecting…" | The front opens on Perspective, its corners on the front card |
+| 4 | Wait two seconds (the script lets the back's search end) | The front's corners have not moved |
+| 5 | Tap **Back** in the top bar | The back opens and the line reads "Detecting…" for a moment: the search runs again |
+| 6 | Wait until the line no longer reads "Detecting…" | The corners are still as they were after the drag in row 2; **Candidate** shows no number and is not greyed out |
+| 7 | Tap **Candidate** | The four corners go to the back card's corners, where they land when this photo is opened on its own, and **Candidate** reads 1/3 |
+| 8 | Tap **Candidate** again | **Candidate** reads 2/3 and the outline has moved to another candidate |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-03.5 A search that fails after its side is left shows no message, and runs again on return   [auto: phone]
+Script only
+Stand-in: the script holds the back's first search open until the switch to the front has finished, then makes it fail with the words "Stand-in search failure 2291". No photo makes a search fail, and a person can't switch sides inside a search for certain. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Tap **Front** in the top bar, while the line still reads "Detecting…" | The front opens on Perspective, its corners on the front card |
+| 3 | Wait two seconds (the script makes the back's search fail) | The front's corners have not moved |
+| 4 | Look over the photo's bottom edge, and at the browser's console | No red message has shown over the photo; the console holds the failure, "Stand-in search failure 2291" |
+| 5 | Tap **Back** in the top bar | The back opens and the line reads "Detecting…" for a moment: the search runs again |
+| 6 | Wait until the line no longer reads "Detecting…" | The four corners are on the back card's corners, where they land when this photo is opened on its own, and no red message shows |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -628,16 +699,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-13 Confidence
 
-At the right of that line, **Confidence** and a percentage say how sure detection is of the candidate in use. It is empty when nothing was detected, and hidden while a message or Preview's text takes the line.
+At the right of that line, **Confidence** and a percentage say how sure detection is of the candidate the corners are on. It is empty when nothing was detected, and once the corners are moved by hand; **Undo** and **Reset perspective** bring it back with the candidate's corners. It is hidden while a message or Preview's text takes the line.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Confidence", `#perspectiveLine`
-- Source: `js/app/perspective.js` (`syncPerspectiveReadouts`)
-- Ruling: R6. Once the corners are moved by hand the confidence is cleared; Undo and Reset perspective bring back the right one. R7. "Nothing detected" clears after the first corner move, so only then can the empty confidence be seen. The app differs today on both. R85. A message in the line above the controls, and Preview, hide Perspective's confidence figure. The app already does this.
+- Source: `js/app/perspective.js` (`syncPerspectiveReadouts`); `js/app/state.js` (`noteDetectedCorners`)
+- Ruling: R6. Once the corners are moved by hand the confidence is cleared; Undo and Reset perspective bring back the right one. The app does this since 1.10.0. R7. "Nothing detected" clears after the first corner move, so only then can the empty confidence be seen. The app does this since 1.10.0. R85. A message in the line above the controls, and Preview, hide Perspective's confidence figure. The app already does this.
 - Cases: 4
 
 ### PER-13.1 Confidence shows at the right of the line, except in Preview   [auto: phone]
@@ -660,7 +731,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-13.2 Moving a corner by hand clears the confidence, and Undo brings it back   [auto: phone]
-Written to ruling R6; it fails until that is built (BUG-061).
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -679,7 +749,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-13.3 Undo and Reset perspective bring back the confidence of the corners they restore   [auto: phone]
-Written to ruling R6; it fails until that is built (BUG-061).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -700,7 +769,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-13.4 With nothing detected, the line shows no confidence   [auto: phone]
-Written to ruling R7; it fails until that is built (BUG-064). Today "Nothing detected" never leaves the line, so the line's right end can't be seen.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1081,16 +1149,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-21 Candidate
 
-**Candidate** moves the corners to the next detected candidate, wrapping round, as one undo step, and shows which one is in use, such as **1/3**. At most three candidates are kept; with fewer than two the button is off.
+**Candidate** moves the corners to the next detected candidate, wrapping round, as one undo step, and shows which one the corners are on, such as **1/3**. Once the corners are moved by hand it shows its icon and no number, and the next tap goes to the first candidate, the best pick; **Undo** and **Reset perspective** bring back the number of the candidate they restore. At most three candidates are kept; with fewer than two the button is off.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#toolCandidate`, "Try the next detected candidate", `CONFIG.detect.maxCandidates`
-- Source: `js/app/perspective.js` (`bindPerspectiveTools`, `syncPerspective`); `js/app/state.js` (`useCandidate`)
-- Ruling: R6. Once the corners are moved by hand the count is cleared; Undo and Reset perspective bring back the right number. The app differs today.
+- Source: `js/app/perspective.js` (`bindPerspectiveTools`, `syncPerspective`); `js/app/state.js` (`useCandidate`, `noteDetectedCorners`)
+- Ruling: R6. Once the corners are moved by hand the count is cleared; Undo and Reset perspective bring back the right number. With no number showing (corners moved by hand, also after Resume), the next tap on Candidate goes to 1/N, the best pick. The app does this since 1.10.0.
 - Cases: 4
 
 ### PER-21.1 Candidate steps through the three candidates and wraps, one undo step a tap   [auto: phone]
@@ -1127,8 +1195,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-21.3 Moving a corner by hand clears the candidate number, and Undo brings it back   [auto: phone]
-Written to ruling R6; it fails until that is built (BUG-061).
+### PER-21.3 Moving a corner by hand clears the candidate number; Undo brings it back, and Candidate then starts from the first   [auto: phone]
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -1142,12 +1209,14 @@ Before you start:
 | 1 | Look at **Candidate** | It shows 1/3 |
 | 2 | Drag the top-right corner ring 30 px right, and let go | **Candidate** shows no number |
 | 3 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back, and **Candidate** shows 1/3 again |
+| 4 | Tap **Candidate** | It reads 2/3, and the corners move to the second candidate |
+| 5 | Drag the top-right corner ring 30 px right, and let go | **Candidate** shows no number again |
+| 6 | Tap **Candidate** | It reads 1/3, not 3/3: the corners are on the first candidate, the best pick |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-21.4 Undo and Reset perspective bring back the number of the candidate they restore   [auto: phone]
-Written to ruling R6; it fails until that is built (BUG-061).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1269,16 +1338,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-25 Preview
 
-**Preview** shows the corrected card in place of the photo and its handles. The line above the controls reads **Preview** and "The corrected card. Handles are hidden.", and the row under it "Pinch to zoom, drag to pan. Tap Preview again for the corners."
+**Preview** shows the corrected card in place of the photo and its handles. The line above the controls reads **Preview** and "The corrected card. Handles are hidden.", and the row under it "Pinch to zoom, drag to pan. Tap Preview again for the corners." While the corners are invalid there is no corrected card to show, and the photo area reads "Fix the corners first."
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#toolPreview`, "Show the corrected card", "The corrected card. Handles are hidden.", "Pinch to zoom, drag to pan. Tap Preview again for the corners."
+- Changed: 1.10.0
+- Anchors: `#toolPreview`, "Show the corrected card", "The corrected card. Handles are hidden.", "Pinch to zoom, drag to pan. Tap Preview again for the corners.", "Fix the corners first."
 - Source: `js/app/perspective.js` (`buildPerspectiveControls`, `bindPerspectiveTools`, `syncPerspective`, `syncPerspectiveReadouts`); `js/app/view.js` (`draw`)
-- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app differs today.
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app does this since 1.10.0.
 - Cases: 2
 
 ### PER-25.1 Preview shows the corrected card and its two lines   [auto: phone]
@@ -1299,7 +1368,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-25.2 Preview with crossed corners, for a person to judge   [eye]
-Written to ruling R82, in the wording Rich approved: on Perspective itself the words are "Fix the corners first." Until that is built (BUG-292) the photo area reads "Fix the corners in Perspective first.", and row 2 fails. VIEW-14.2's script reads the words.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px (drag with a finger)
@@ -1319,16 +1387,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-26 What Preview locks
 
-While Preview is on, **Nudge** and **Flatten** are off, the arrow buttons and the slider are hidden, the handles can't be grabbed, and dragging or pinching pans and zooms the corrected card.
+While Preview is on, **Nudge** and **Flatten** are off, the arrow buttons and the slider are hidden, the handles can't be grabbed, and dragging or pinching pans and zooms the corrected card. The keyboard's arrow keys move no corner, and Tab selects no handle: it moves the focus on from the photo.
 
 - Risk: medium
 - Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#toolPreview`, `#toolNudge`, `#toolFlatten`, `#perspectivePreviewRow`
-- Source: `js/app/perspective.js` (`syncPerspective`, `bindHandleNudge`); `js/app/input.js` (`stepGesture`, `hitsPhotoControl`)
-- Ruling: R2. The keyboard's arrow keys and Tab do nothing while Preview is on. The app differs today. R87. While Preview is on, **Nudge** and **Flatten** are dimmed. The app already does this.
+- Source: `js/app/perspective.js` (`syncPerspective`, `bindHandleNudge`); `js/app/input.js` (`stepGesture`, `hitsPhotoControl`, `onPhotoKey`)
+- Ruling: R2. While Preview is on, the keyboard's arrow keys and Tab do nothing to the handles. The app does this since 1.10.0. R87. While Preview is on, **Nudge** and **Flatten** are dimmed. The app already does this.
 - Cases: 4
 
 ### PER-26.1 While Preview is on, the modes are off and a drag moves the corrected card   [auto: phone, webkit]
@@ -1368,8 +1436,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-26.3 While Preview is on, the arrow keys and Tab do nothing   [auto: desktop]
-Written to ruling R2; it fails until that is built (BUG-062).
+### PER-26.3 While Preview is on, the arrow keys and Tab leave the handles alone   [auto: desktop]
 
 Before you start:
 - Device and browser: a computer with a keyboard and a mouse; a wide window
@@ -1381,9 +1448,9 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Click **Preview** | The corrected card shows, with no handles |
-| 2 | Click the middle of the corrected card | Nothing changes |
-| 3 | Press the right arrow key (→) three times | Nothing changes, and **Undo** is still greyed out |
-| 4 | Press Tab | Nothing changes |
+| 2 | Click the middle of the corrected card | The card doesn't move; the photo has the focus |
+| 3 | Press the right arrow key (→) three times | The card doesn't change, and **Undo** is still greyed out |
+| 4 | Press Tab | The card doesn't change; the keyboard focus moves from the photo to **Candidate**, which shows a ring |
 | 5 | Click **Preview** again | The corners are where they were, the line reads Corner 1 of 4, and **Undo** is still greyed out |
 
 Pass: every row's result is seen.
@@ -1409,21 +1476,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-27 Preview's levels, and when it turns off
 
-Preview shows the applied levels, not an unapplied Levels draft. It turns off for a new photo, a switch to the other side of a pair and, by ruling R88, a change of step (today it stays on then).
+Preview shows the applied levels, not an unapplied Levels draft. It turns off for a new photo, a switch to the other side of a pair and a change of step.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#toolPreview`
-- Source: `js/app/levels.js` (`levelsShown`, `previewCanvas`); `js/app/state.js` (`resetPhotoState`); `js/app/pair.js` (`applySide`)
-- Ruling: R88. A step change turns **Preview** off. The app differs today.
+- Source: `js/app/levels.js` (`levelsShown`, `previewCanvas`); `js/app/state.js` (`resetPhotoState`); `js/app/pair.js` (`applySide`); `js/app/shell.js` (`setTab`)
+- Ruling: R88. A step change turns **Preview** off. The app does this since 1.10.0.
 - Cases: 5
 
 ### PER-27.1 Preview turns off at a change of step   [auto: phone]
-Written to ruling R88; it fails until that is built (BUG-294).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -1571,16 +1636,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-29 The find tap
 
-While armed, a still tap on the photo, however long it is held, searches for the card at that point, moves the corners as one undo step and disarms. The point is used for that search only. If nothing is found, the corners stay and a pop-up says "No card-shaped edges found. Drag the corners into place, or tap to find card and tap the card again."
+While armed, a still tap on the photo, however long it is held, searches for the card at that point, moves the corners as one undo step and disarms. The point is used for that search only. If nothing is found, the corners stay and the line above the controls reads "Nothing detected. Drag the corners into place."; no pop-up shows.
 
 - Risk: high
 - Check: script, touch, phone (the [phone] cases: on a real iPhone, Safari leaves the touch to the app)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnFindCard`, `CONFIG.detect.seedMissFactor`, "No card-shaped edges found. "
+- Changed: 1.10.0
+- Anchors: `#btnFindCard`, `CONFIG.detect.seedMissFactor`
 - Source: `js/app/input.js` (`stepGesture`, `onPointerUp`); `js/app/state.js` (`findCardAt`, `runDetect`)
-- Ruling: R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today.
+- Ruling: R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app does this since 1.10.0.
 - Cases: 5
 
 ### PER-29.1 A tap on the card finds it, as one undo step, and disarms   [auto: phone, webkit]
@@ -1621,7 +1686,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-29.3 A find tap on a picture with no card leaves the corners   [auto: phone]
-Whether a pop-up shows as well is MSG-10.1's (ruling R77); this case doesn't look at it.
+That no pop-up shows as well is MSG-57.2's to check (ruling R77); this case doesn't look at it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1872,17 +1937,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-34 Debug overlay
 
-Under **Developer** in the options sheet, the **Debug overlay** switch draws the edge map, the detected lines and the scored candidates over the photo.
+Under **Developer** in the options sheet, the **Debug overlay** switch draws the edge map, the detected lines and the scored candidates over the photo. Turning it on leaves corners placed by hand where they are, and does not bring back "Nothing detected. Drag the corners into place." once a move by hand has cleared it. Turned on while the photo's first search for the card still runs, it starts that search again, and the corners still land on the card, with no undo step.
 
 - Risk: low
-- Check: eye
+- Check: eye, script (the cases about the corners and the message)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#debugOverlay`, "Debug overlay", "Developer"
-- Source: `js/app/perspective.js` (`buildPerspectiveSheet`, `bindPerspective`); `js/app/view.js` (`drawDebug`, `edgeMapCanvas`, `drawSnapLines`, `drawDebugQuads`)
-- Ruling: R3. The switch leaves the corners alone and only draws. The app differs today.
-- Cases: 2
+- Source: `js/app/perspective.js` (`buildPerspectiveSheet`, `bindPerspective`); `js/app/state.js` (`detectForDebugOverlay`, `detectAgain`, `runDetect`, `takeDetection`); `js/app/view.js` (`drawDebug`, `edgeMapCanvas`, `drawSnapLines`, `drawDebugQuads`)
+- Ruling: R3. Turning the switch on only draws: corners placed by hand stay where they are, and "Nothing detected" that a move by hand has cleared stays away. The app does this since 1.10.0.
+- Cases: 4
 
 ### PER-34.1 The Debug overlay's drawing, for a person to judge   [eye]
 Before you start:
@@ -1905,8 +1970,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-34.2 The Debug overlay switch leaves corners placed by hand where they are   [auto: phone]
-Written to ruling R3; it fails until that is built (BUG-063).
-
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test
@@ -1920,6 +1983,48 @@ Before you start:
 | 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under DEVELOPER, off |
 | 3 | Tap the **Debug overlay** switch | It is on |
 | 4 | Close the options (on a phone, the **×** at their top right; on a wide screen there is nothing to close), and look at the top-left corner ring | It is still where you dragged it in row 1 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-34.3 The Debug overlay switch, turned on while the first search runs, starts the search again and the corners still land on the card   [auto: phone]
+Script only
+Stand-in: the script holds the photo's first search for the card open, so that the switch can be turned on while it runs, and lets it end only after row 5; it also counts the searches started and reads the point each was handed. A search takes about half a second, and nothing a person can do slows it, so a person can't reach the switch inside it.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the start screen, with no photo open
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Open photo** and choose IMG_9136.JPEG | The photo opens on the Perspective step, its white outline on the rectangle a fifth of the photo's width and height in from each edge; the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo) reads "Detecting…" |
+| 2 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | **Perspective options** rise; under DEVELOPER the **Debug overlay** switch is off |
+| 3 | Tap the **Debug overlay** switch | It is on, and a second search has started, handed no point like the first, while the first is still held open |
+| 4 | Close the options with the **×** at their top right | The options have gone |
+| 5 | Wait until the line above the controls no longer reads "Detecting…" | The second search has put the four corners on the card's corners, and **Undo** (the arrow curving left, at the top right) is greyed out |
+| 6 | Wait two seconds (the script lets the first search end at the start of them) | The first search's result was thrown away: the corners have not moved, the line shows no message, and **Undo** is still greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-34.4 The Debug overlay switch doesn't bring back "Nothing detected" once a move has cleared it   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
+- Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo) | It reads "Nothing detected. Drag the corners into place." |
+| 2 | Tap the right arrow (→) under that line | The message has gone: the line reads NUDGE and Corner 1 of 4 |
+| 3 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | **Perspective options** rise; under DEVELOPER the **Debug overlay** switch is off |
+| 4 | Tap the **Debug overlay** switch | It is on |
+| 5 | Close the options with the **×** at their top right, and look at the line above the controls | The message has not come back: the line still reads NUDGE and Corner 1 of 4 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1972,19 +2077,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-36 Which message shows
 
-The line above the controls shows at most one message, in this order: Tap to find card armed, crossed corners, "Detecting…", low confidence, nothing detected, then the corrected frame clamped to 12000 px.
+The line above the controls shows at most one message, in this order: Tap to find card armed, crossed corners, "Detecting…", low confidence, then nothing detected. A corrected frame clamped to the 12000 px cap shows no message there: the browser's console notes it. Low confidence and nothing detected go once the corners are moved by hand, by a drag or with the arrow buttons, and stay away until detection runs again, even if **Undo** puts the corners back.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#perspectiveStatus`, "Detecting…", "Low confidence (", "Corrected frame clamped to "
-- Source: `js/app/perspective.js` (`perspectiveStatus`, `asSentences`, `syncPerspectiveReadouts`)
-- Ruling: R7. "Low confidence" and "Nothing detected" clear after the first corner move, by drag or with the arrow buttons. The app differs today. R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this. R76. "Corrected frame clamped to 12000px on the long side." goes from the line; the fact goes to the console. The app differs today.
+- Source: `js/app/perspective.js` (`perspectiveStatus`, `faultText`, `asSentences`, `logGeometryNote`, `syncPerspectiveReadouts`); `js/app/state.js` (`noteDetectedCorners`)
+- Ruling: R7. "Low confidence" and "Nothing detected" clear after the first corner move, by drag or with the arrow buttons. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0. R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this. R76. "Corrected frame clamped to 12000px on the long side." goes from the line; the fact goes to the console. The app does this since 1.10.0.
 - Cases: 9
 
-None of the sample photos is found with low confidence, so the cases that need it open the app with a link setting that counts any confidence under 100% as low, and the ones that need a clamped frame with a setting that lowers the largest corrected frame to 1000 px. Low confidence needs a card found and "Nothing detected" needs none, so those two never compete for the line.
+None of the sample photos is found with low confidence, so the cases that need it open the app with a link setting that counts any confidence under 100% as low, and the one that needs a clamped frame with a setting that lowers the largest corrected frame to 1000 px. Low confidence needs a card found and "Nothing detected" needs none, so those two never compete for the line.
 
 ### PER-36.1 Tap to find card's prompt takes the line over the crossed-corners message   [auto: phone]
 Before you start:
@@ -2021,7 +2126,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-36.3 Low confidence clears once a corner is dragged   [auto: phone]
-Written to ruling R7; it fails until that is built (BUG-064).
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -2039,7 +2143,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-36.4 "Nothing detected" clears once a corner is nudged with an arrow   [auto: phone]
-Written to ruling R7; it fails until that is built (BUG-064).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -2057,7 +2160,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-36.5 A clamped corrected frame is not reported in the line   [auto: phone]
-Written to ruling R76; it fails until that is built (BUG-288).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -2068,22 +2170,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It holds no message about the corrected frame: it doesn't read "Corrected frame clamped to 1000px on the long side." |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-### PER-36.6 Low confidence takes the line over a clamped frame   [auto: phone]
-Before you start:
-- Device and browser: any; a phone-width or a wide window
-- Build: the build under test
-- Photo: IMG_9136.JPEG from samples/ (detection is 99% sure of it)
-- Starting screen: the app opened with a link ending `?detect.minConfidence=1&maxOutputPx=1000` (two settings: any confidence under 100% counts as low, and the largest corrected frame is 1000 px on its long side), the photo open on the Perspective step
-- Browser data: none for this site (a private window, or the site's data cleared)
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Low confidence (99%). Check the corners.", not the clamped-frame message |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It holds no message about the corrected frame: it reads NUDGE and Corner 1 of 4 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2124,17 +2211,39 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-36.9 "Nothing detected" takes the line over a clamped frame   [auto: phone]
+### PER-36.10 Once a move has cleared Low confidence, Undo doesn't bring it back; a new search does   [auto: phone]
 Before you start:
-- Device and browser: any; a phone-width or a wide window
+- Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test
-- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it: the centered rectangle the corners fall back to makes a corrected frame longer than 1000 px, so it is clamped)
-- Starting screen: the app opened with a link ending `?maxOutputPx=1000` (a setting that makes the largest corrected frame 1000 px on its long side), the picture open on the Perspective step
+- Photo: IMG_9136.JPEG from samples/ (detection is 99% sure of it)
+- Starting screen: the app opened with a link ending `?detect.minConfidence=1` (a setting that counts any confidence under 100% as low), the photo open on the Perspective step
 - Browser data: none for this site (a private window, or the site's data cleared)
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Nothing detected. Drag the corners into place.", not the clamped-frame message |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Low confidence (99%). Check the corners." |
+| 2 | Drag the top-left corner ring 20 px right, and let go | The message has gone: the line reads NUDGE and Corner 1 of 4, with nothing at its right end (no Confidence) |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back; the message stays away: the line reads NUDGE and Corner 1 of 4, now with Confidence 99% at its right |
+| 4 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 5 | Tap **Tap to find card** | The line reads "Tap the card in the photo." |
+| 6 | Tap the middle of the card once, without moving | Once the search ends, the line reads "Low confidence (99%). Check the corners." again |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-36.11 Once a move has cleared "Nothing detected", Undo doesn't bring it back   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
+- Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Nothing detected. Drag the corners into place." |
+| 2 | Tap the right arrow (→) under that line | The message has gone: the line reads NUDGE and Corner 1 of 4 |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) | The outline is the centered rectangle again and **Undo** is greyed out; the message stays away: the line still reads NUDGE and Corner 1 of 4 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2209,10 +2318,10 @@ Selecting a handle, **Next handle**, changing mode, **Snap**, **Preview**, armin
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnUndo`, `#btnNextHandle`, `#toolSnap`, `#toolPreview`
-- Source: `js/app/perspective.js` (`bindHandleNudge`, `bindPerspectiveTools`, `bindPerspective`); `js/app/state.js` (`runDetect`)
-- Ruling: R3. The Debug overlay switch leaves the corners alone, so it never adds an undo step. The app differs today.
+- Changed: 1.10.0
+- Anchors: `#btnUndo`, `#btnNextHandle`, `#toolSnap`, `#toolPreview`, `#debugOverlay`
+- Source: `js/app/perspective.js` (`bindHandleNudge`, `bindPerspectiveTools`, `bindPerspective`); `js/app/state.js` (`runDetect`, `detectForDebugOverlay`)
+- Ruling: R3. The Debug overlay switch adds no undo step, after a corner placed by hand too. The app does this since 1.10.0.
 - Cases: 2
 
 ### PER-38.1 Selecting, Next handle, Flatten, Snap, Preview and Tap to find card add no undo step   [auto: phone]
@@ -2240,8 +2349,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-38.2 The Debug overlay switch adds no undo step after a hand-placed corner   [auto: phone]
-Written to ruling R3; it fails until that is built (BUG-063).
-
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test

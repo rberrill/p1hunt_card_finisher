@@ -287,7 +287,6 @@ test('TOP-02.2 Undo is greyed out while an export runs [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-013');
   const hand = await startOnExport(page, testInfo, { isWatched: true });
   await hand.tap(choiceButton(page, 'exportSize', '1080'));
   await check('1080 is selected; Undo is no longer greyed out', async () => {
@@ -328,7 +327,6 @@ test('TOP-03.2 Redo is greyed out while an export runs [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-013');
   const hand = await startOnExport(page, testInfo, { isWatched: true });
   await hand.tap(choiceButton(page, 'exportSize', '1080'));
   await check('1080 is selected', async () => {
@@ -923,25 +921,28 @@ test('TOP-13.4 Preview turns off at a step change [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-294');
   const hand = await startOn(page, testInfo);
   const previewState = page.locator('#toolPreview .tool-state');
   const isPreviewDrawn = () => page.evaluate(() => window.__straightener.app.previewMode);
+  // Whether a press at this place on the page would grab a corner ring.
+  const isRingAt = point => page.evaluate(({ x, y }) => window.CF.hitsPhotoControl(x, y), point);
+  const topLeft = await handleOnPage(page, 0);
   await hand.tap(page.locator('#toolPreview'));
   await check('Preview reads On; the corrected card shows with no corner rings', async () => {
     await expect(previewState).toHaveText('On');
     await expect(page.locator('#perspectivePreviewLine')).toBeVisible();
     expect(await isPreviewDrawn()).toBe(true);
+    expect(await isRingAt(topLeft)).toBe(false);
   });
   await tapStep(page, hand, check, 'rotate', 'Rotate');
   await goToStep(page, 'perspective', hand);
-  // A plain reading, so the known defect fails at once.
-  const isDrawn = await isPreviewDrawn();
   await check('back on Perspective, Preview reads Off, and the photo shows with its corner rings',
     async () => {
-      expect(isDrawn).toBe(false);
       await expect(previewState).toHaveText('Off');
+      expect(await isPreviewDrawn()).toBe(false);
       await expect(page.locator('#perspectivePreviewLine')).toBeHidden();
+      await expect(page.locator('#perspectiveLine')).toBeVisible();
+      expect(await isRingAt(await handleOnPage(page, 0))).toBe(true);
     });
 });
 
@@ -1033,7 +1034,7 @@ test('TOP-13.8 The step is kept for Resume as soon as it changes [phone] [webkit
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
   await tapStep(page, hand, check, 'crop', 'Crop');
-  // Two seconds, as the case says; the save itself comes 0.4 s after the step change.
+  // Two seconds, as the case says; the save itself comes 0.1 s after the step change.
   await page.waitForTimeout(RESUME_WAIT_MS);
   await check('two seconds on, nothing has changed: still on Crop', async () => {
     await expect(stepTab(page, 'crop')).toHaveAttribute('aria-selected', 'true');
@@ -1904,21 +1905,49 @@ test('TOP-32.1 Keyboard help under Tips and keys; touch-only tips left out [desk
   });
 });
 
+// Levels' three tips and its keyboard help, word for word (LEVELS_TIPS and LEVELS_KEYS in
+// js/app/levels.js).
+const LEVELS_TIPS = [
+  'White: tap a grading label or the card’s white border; avoid foil and reflections. '
+    + 'Black is optional.',
+  'Auto estimates both from the framed image; colored backdrops can fool it, so check the '
+    + 'result.',
+  'Hold the photo to compare with no levels. Clear, then Apply, removes levels.',
+];
+const LEVELS_KEY_HELP = 'Hold C, or press and hold the photo, to compare.';
+
+// Every heading and paragraph that shows in a step's options, from the top of the screen down:
+// [{ kind: 'heading' | 'paragraph', text }]. A heading is the sheet's title or a heading in it.
+function shownOptionsText(page, step) {
+  return page.evaluate(id => {
+    const sheet = document.getElementById(id);
+    const isShown = el => el.getClientRects().length > 0;
+    return [...sheet.querySelectorAll('.sheet-title, .sheet-heading, .sheet-hint')]
+      .filter(isShown)
+      .map(el => ({
+        kind: el.matches('.sheet-hint') ? 'paragraph' : 'heading',
+        text: el.textContent.trim(),
+        top: el.getBoundingClientRect().top,
+      }))
+      .sort((first, second) => first.top - second.top)
+      .map(({ kind, text }) => ({ kind, text }));
+  }, `${step}Sheet`);
+}
+
 test('TOP-32.2 Levels shows one tips heading on a wide screen [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-287');
   await startOn(page, testInfo, 'levels');
-  // A plain reading of the headings, so the known defect fails at once.
-  const headings = await sheetOf(page, 'levels').locator('.sheet-title:visible, '
-    + '.sheet-heading:visible').allTextContents();
+  // A plain reading of what shows, so a second heading fails at once.
+  const shown = await shownOptionsText(page, 'levels');
   await check('one heading, TIPS AND KEYS, over the tips and then the compare key; no LEVELS '
-    + 'TIPS heading', async () => {
-    expect(headings.map(text => text.trim())).toEqual(['Tips and keys']);
-    await expect(sheetOf(page, 'levels').locator('.sheet-keys .sheet-hint')).toHaveText(
-      'Hold C, or press and hold the photo, to compare.',
-    );
+    + 'TIPS heading', () => {
+    expect(shown).toEqual([
+      { kind: 'heading', text: 'Tips and keys' },
+      ...LEVELS_TIPS.map(text => ({ kind: 'paragraph', text })),
+      { kind: 'paragraph', text: LEVELS_KEY_HELP },
+    ]);
   });
 });
 

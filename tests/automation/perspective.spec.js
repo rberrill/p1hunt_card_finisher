@@ -67,8 +67,11 @@ const {
   PORTRAIT_PAIR,
   makePair,
   addBack,
+  chooseInPicker,
   sideButton,
   switchTo,
+  recordToasts,
+  toastsSoFar,
 } = require('./support/front-and-back.js');
 
 // The plain picture with no card in it (tests/fixtures/plain-grey.png, 1200 × 1600 px) and
@@ -92,6 +95,8 @@ const SCREEN_TOLERANCE_PX = 1;
 const PHOTO_TOLERANCE_PX = 0.01;
 // How long the case waits for a search that it expects to have been thrown away.
 const SEARCH_SETTLE_MS = 2000;
+// The words PER-03.5's held search fails with: nothing the app would say itself.
+const SEARCH_FAILURE = 'Stand-in search failure 2291';
 // A double tap on a handle zooms to this many times the fitted size (CONFIG.handleZoom), and
 // the magnifier is never wider than this share of the photo area (CONFIG.loupeMaxFrac).
 const HANDLE_ZOOM = 6;
@@ -206,12 +211,13 @@ test('PER-03.1 A second photo opened during the search keeps its own corners [ph
   await openPicture(page, blank);
   await check('the grey picture opens, while the first search was still running', async () => {
     expect(await editState(page)).toHaveProperty('source.name', blank.name);
-    expect(await page.evaluate(() => window.testFirstSearch.message)).toBe('Detecting…');
+    // Had the first search ended before the grey picture opened, its result would be on its
+    // record. (Its "Detecting…" is no proof: it is cleared when the search ends, R45.)
+    expect(await page.evaluate(() => window.testFirstSearch.last)).toBeNull();
   });
   await page.waitForTimeout(SEARCH_SETTLE_MS);
   await check('the first search\'s result was thrown away: the outline is the rectangle a fifth '
     + 'in from each edge', async () => {
-    expect(await page.evaluate(() => window.testFirstSearch.last)).toBeNull();
     expectSameCorners(await cornersNow(page), BLANK_INSET_CORNERS);
   });
   await check(`the line reads "${NOTHING_DETECTED}"`, async () => {
@@ -220,7 +226,7 @@ test('PER-03.1 A second photo opened during the search keeps its own corners [ph
 });
 
 // Waits until a pair's `side` is open. Unlike switchTo it doesn't wait for the side's search
-// to finish: in PER-03.2 the side left behind has a search that never reports back.
+// to finish: the PER-03 cases look at a side while its search is held open or runs again.
 function waitForSideOpen(page, side) {
   return page.waitForFunction(wanted => {
     const app = window.__straightener.app;
@@ -228,56 +234,186 @@ function waitForSideOpen(page, side) {
   }, side);
 }
 
-test('PER-03.2 A search still running when a pair switches sides is thrown away [phone]',
-  async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-241');
-    const hand = handFor(page, testInfo);
-    await openApp(page);
-    await openPhoto(page, PORTRAIT_PAIR.front);
-    const frontCorners = await cornersNow(page);
-    await addBack(page, hand, PORTRAIT_PAIR.back);
-    const backMiddle = await cardMiddle(page);
-    const topLeft = await handleOnPage(page, TOP_LEFT);
-    await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
-    await check('that corner is off the back card\'s corner', async () => {
-      expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 40, 40);
-    });
-    const dragged = await cornersNow(page);
-    await openOptions(page, hand, 'perspective');
-    await check('Tap to find card shows', async () => {
-      await expect(page.locator('#btnFindCard')).toBeVisible();
-    });
-    await tapFindCard(page, hand);
-    await check(`the line reads "${FIND_PROMPT}"`, async () => {
-      await expectStatus(page, FIND_PROMPT);
-    });
-    await holdNextSearch(page);
-    await tapAt(page, hand, backMiddle);
-    await check('the line reads "Detecting…"', async () => {
-      await expectStatus(page, 'Detecting…');
-    });
-    await hand.tap(sideButton(page, 'front'));
-    await waitForSideOpen(page, 'front');
-    await check('the front opens on Perspective, its corners on the front card', async () => {
-      await expect(page.locator('#perspectiveArea')).toBeVisible();
-      expectSameCorners(await cornersNow(page), frontCorners);
-    });
-    await releaseSearch(page);
-    await page.waitForTimeout(SEARCH_SETTLE_MS);
-    await check('the front\'s corners have not moved', async () => {
-      expectSameCorners(await cornersNow(page), frontCorners);
-    });
-    await hand.tap(sideButton(page, 'back'));
-    await waitForSideOpen(page, 'back');
-    await check('the back opens; its top-left corner is still where it was dragged in row 1: the '
-      + 'search\'s result was thrown away', async () => {
-      expectSameCorners(await cornersNow(page), dragged);
-    });
-    await check('the line above the controls reads the normal Nudge line, NUDGE and Corner 1 of '
-      + '4, not "Detecting…"', async () => {
-      expect(await isNudgeLineNow(page)).toBe(true);
-    });
+// The rectangle a photo's corners start on, a fifth in from each edge, in photo px.
+async function startingRectangle(page) {
+  const { width, height } = (await editState(page)).source;
+  return [
+    [width * 0.2, height * 0.2],
+    [width * 0.8, height * 0.2],
+    [width * 0.8, height * 0.8],
+    [width * 0.2, height * 0.8],
+  ];
+}
+
+// PER-03.2 to PER-03.5: taps Front while the back's search is still held open, lets the search
+// end (holdNextSearch decides how) and waits two seconds. The front must open with its corners
+// where they were and keep them.
+async function leaveForFront(page, hand, check, frontCorners) {
+  await hand.tap(sideButton(page, 'front'));
+  await waitForSideOpen(page, 'front');
+  await check('the front opens on Perspective, its corners on the front card', async () => {
+    await expect(page.locator('#perspectiveArea')).toBeVisible();
+    expectSameCorners(await cornersNow(page), frontCorners);
   });
+  await releaseSearch(page);
+  await page.waitForTimeout(SEARCH_SETTLE_MS);
+  await check('the front\'s corners have not moved', async () => {
+    expectSameCorners(await cornersNow(page), frontCorners);
+  });
+}
+
+// PER-03.2 to PER-03.5: taps Back and waits until the search that runs again has ended. The
+// line must have read "Detecting…" on the way.
+async function returnToBack(page, hand, check) {
+  await recordStatuses(page);
+  await switchTo(page, hand, 'back');
+  await check('the back opens and the line reads "Detecting…" for a moment: the search runs '
+    + 'again', async () => {
+    expect(await openSideNow(page)).toBe('back');
+    expect(await readStatuses(page)).toContain('Detecting…');
+  });
+}
+
+// The side of the pair that is open: 'front' or 'back'.
+const openSideNow = page => page.evaluate(() => window.__straightener.app.pair.current);
+
+test('PER-03.2 A find tap cut short by a side switch runs again on return, and a corner placed '
+  + 'by hand stays [phone]', async ({ page, check }, testInfo) => {
+  const hand = handFor(page, testInfo);
+  await openApp(page);
+  await openPhoto(page, PORTRAIT_PAIR.front);
+  const frontCorners = await cornersNow(page);
+  await addBack(page, hand, PORTRAIT_PAIR.back);
+  const backMiddle = await cardMiddle(page);
+  const topLeft = await handleOnPage(page, TOP_LEFT);
+  await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
+  await check('that corner is off the back card\'s corner', async () => {
+    expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 40, 40);
+  });
+  const dragged = await cornersNow(page);
+  await openOptions(page, hand, 'perspective');
+  await check('Tap to find card shows', async () => {
+    await expect(page.locator('#btnFindCard')).toBeVisible();
+  });
+  await tapFindCard(page, hand);
+  await check(`the line reads "${FIND_PROMPT}"`, async () => {
+    await expectStatus(page, FIND_PROMPT);
+  });
+  await recordSearchPoints(page);
+  await holdNextSearch(page);
+  await tapAt(page, hand, backMiddle);
+  await check('the line reads "Detecting…"', async () => {
+    await expectStatus(page, 'Detecting…');
+  });
+  await leaveForFront(page, hand, check, frontCorners);
+  await returnToBack(page, hand, check);
+  await check('the search that ran again was for the point tapped in row 4', async () => {
+    const points = await readSearchPoints(page);
+    expect(points).toHaveLength(2);
+    expect(points[0]).not.toBeNull();
+    expect(points[1]).toEqual(points[0]);
+  });
+  await check('the top-left corner is still where it was dragged in row 1, and the line reads '
+    + 'NUDGE and Corner 1 of 4', async () => {
+    expectSameCorners(await cornersNow(page), dragged);
+    expect(await isNudgeLineNow(page)).toBe(true);
+  });
+});
+
+// The start of PER-03.3 to PER-03.5. Opens the pair's back on its own to learn where its
+// search puts the corners, then opens the front and adds the back with the back's first search
+// held open (holdNextSearch; failure: the words that search fails with when let go, or '' for
+// one that works). Returns the hand, the front's corners and the back's corners as found on
+// its own. The back is open on Perspective, still searching.
+async function addBackStillSearching(page, check, testInfo, failure = '') {
+  const hand = handFor(page, testInfo);
+  await openApp(page);
+  await openPhoto(page, PORTRAIT_PAIR.back);
+  const backFound = await cornersNow(page);
+  await openPhoto(page, PORTRAIT_PAIR.front);
+  const frontCorners = await cornersNow(page);
+  await goToStep(page, 'export', hand);
+  await holdNextSearch(page, failure);
+  await chooseInPicker(page, hand, page.locator('#btnAddBack'), PORTRAIT_PAIR.back);
+  await waitForSideOpen(page, 'back');
+  await check('the back opens on Perspective, its outline on the rectangle a fifth in from each '
+    + 'edge, and the line reads "Detecting…"', async () => {
+    await expect(page.locator('#perspectiveArea')).toBeVisible();
+    expectSameCorners(await cornersNow(page), await startingRectangle(page));
+    await expectStatus(page, 'Detecting…');
+  });
+  return { hand, frontCorners, backFound };
+}
+
+test('PER-03.3 A side left before its first search ends is searched again on return, and its '
+  + 'corners land on the card [phone]', async ({ page, check }, testInfo) => {
+  const { hand, frontCorners, backFound } = await addBackStillSearching(page, check, testInfo);
+  await leaveForFront(page, hand, check, frontCorners);
+  await returnToBack(page, hand, check);
+  await check('the four corners are on the back card\'s corners, and Candidate reads 1/3',
+    async () => {
+      expectSameCorners(await cornersNow(page), backFound);
+      await expect(candidateNumber(page)).toHaveText('1/3');
+    });
+  await check('the line reads NUDGE and Corner 1 of 4 with Confidence at its right, and Undo is '
+    + 'greyed out', async () => {
+    expect(await isNudgeLineNow(page)).toBe(true);
+    await expect(page.locator('#perspectiveLine .line-readout')).toHaveText(/^Confidence \d+%$/);
+    await expect(page.locator('#btnUndo')).toBeDisabled();
+  });
+});
+
+test('PER-03.4 A corner dragged before the side is left stays through the search on return, '
+  + 'and Candidate cycles [phone]', async ({ page, check }, testInfo) => {
+  const { hand, frontCorners, backFound } = await addBackStillSearching(page, check, testInfo);
+  const topLeft = await handleOnPage(page, TOP_LEFT);
+  await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
+  await check('that corner has moved 40 px right and 40 px down', async () => {
+    expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 40, 40);
+  });
+  const dragged = await cornersNow(page);
+  await leaveForFront(page, hand, check, frontCorners);
+  await returnToBack(page, hand, check);
+  const candidate = page.locator('#toolCandidate');
+  await check('the corners are still as they were after the drag in row 2; Candidate shows no '
+    + 'number and is not greyed out', async () => {
+    expectSameCorners(await cornersNow(page), dragged);
+    await expect(candidateNumber(page)).toBeHidden();
+    await expect(candidate).toBeEnabled();
+  });
+  await hand.tap(candidate);
+  await check('the four corners go to the back card\'s corners, and Candidate reads 1/3',
+    async () => {
+      expectSameCorners(await cornersNow(page), backFound);
+      await expect(candidateNumber(page)).toHaveText('1/3');
+    });
+  await hand.tap(candidate);
+  await check('Candidate reads 2/3 and the outline has moved to another candidate', async () => {
+    await expect(candidateNumber(page)).toHaveText('2/3');
+    expect(JSON.stringify(await cornersNow(page))).not.toBe(JSON.stringify(backFound));
+  });
+});
+
+test('PER-03.5 A search that fails after its side is left shows no message, and runs again '
+  + 'on return [phone]', async ({ page, check }, testInfo) => {
+  const { hand, frontCorners, backFound } = await addBackStillSearching(page, check, testInfo,
+    SEARCH_FAILURE);
+  await recordToasts(page);
+  await leaveForFront(page, hand, check, frontCorners);
+  await check('the search has failed (the failure is in the console), and no red message has '
+    + 'shown over the photo', async () => {
+    expect(check.consoleErrors().join('\n')).toContain(SEARCH_FAILURE);
+    const shown = await toastsSoFar(page);
+    expect(shown.filter(message => message.kind === 'error')).toEqual([]);
+  });
+  await returnToBack(page, hand, check);
+  await check('the four corners are on the back card\'s corners, and no red message shows',
+    async () => {
+      expectSameCorners(await cornersNow(page), backFound);
+      const shown = await toastsSoFar(page);
+      expect(shown.filter(message => message.kind === 'error')).toEqual([]);
+    });
+});
 
 test('PER-04.1 The corner outline, white or red and dashed, for a person to judge [phone]',
   async ({ page, check }, testInfo) => {
@@ -719,7 +855,6 @@ test('PER-13.1 Confidence shows at the right of the line, except in Preview [pho
 
 test('PER-13.2 Moving a corner by hand clears the confidence, and Undo brings it back [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-061');
     const hand = await startOnPerspective(page, testInfo);
     await check('the line reads Confidence 99%', async () => {
       await expect(confidence(page)).toHaveText('Confidence 99%');
@@ -727,7 +862,9 @@ test('PER-13.2 Moving a corner by hand clears the confidence, and Undo brings it
     const topRight = await handleOnPage(page, TOP_RIGHT);
     await hand.drag(topRight, offsetBy(topRight, 30, 0));
     await check('no confidence shows at the right of the line', async () => {
-      expect(await confidence(page).textContent()).toBe('');
+      expectMovedBy(await handleOnPage(page, TOP_RIGHT), topRight, 30, 0);
+      await expect(page.locator('#perspectiveLine')).toBeVisible();
+      await expect(confidence(page)).toHaveText('');
     });
     await hand.tap(page.locator('#btnUndo'));
     await check('the corner is back, and the line reads Confidence 99% again', async () => {
@@ -738,7 +875,6 @@ test('PER-13.2 Moving a corner by hand clears the confidence, and Undo brings it
 
 test('PER-13.3 Undo and Reset perspective bring back the confidence of the corners they '
   + 'restore [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-061');
   const hand = await startOnPerspective(page, testInfo);
   const candidates = await candidateCorners(page);
   await hand.tap(page.locator('#toolCandidate'));
@@ -750,7 +886,7 @@ test('PER-13.3 Undo and Reset perspective bring back the confidence of the corne
   await check('the corners are back on the first candidate, and the line reads Confidence 99%',
     async () => {
       expectSameCorners(await cornersNow(page), candidates[0]);
-      expect(await confidence(page).textContent()).toBe('Confidence 99%');
+      await expect(confidence(page)).toHaveText('Confidence 99%');
     });
   await hand.tap(page.locator('#toolCandidate'));
   await check('Candidate reads 2/3 again, with Confidence 100%', async () => {
@@ -765,7 +901,7 @@ test('PER-13.3 Undo and Reset perspective bring back the confidence of the corne
   await check('the corners are back on the first candidate, and the line reads Confidence 99%',
     async () => {
       expectSameCorners(await cornersNow(page), candidates[0]);
-      expect(await confidence(page).textContent()).toBe('Confidence 99%');
+      await expect(confidence(page)).toHaveText('Confidence 99%');
     });
 });
 
@@ -773,7 +909,6 @@ test('PER-13.4 With nothing detected, the line shows no confidence [phone]', asy
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-064');
   const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
   await check(`the line reads "${NOTHING_DETECTED}"`, async () => {
     await expectStatus(page, NOTHING_DETECTED);
@@ -781,8 +916,9 @@ test('PER-13.4 With nothing detected, the line shows no confidence [phone]', asy
   await hand.tap(arrowButton(page, 'right'));
   await check('the message has gone: the line reads NUDGE and Corner 1 of 4, with nothing at its '
     + 'right end (no Confidence)', async () => {
-    expect(await isNudgeLineNow(page)).toBe(true);
-    expect(await confidence(page).textContent()).toBe('');
+    await expectNudgeLine(page);
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
+    await expect(confidence(page)).toHaveText('');
   });
 });
 
@@ -1301,28 +1437,46 @@ test('PER-21.2 With fewer than two candidates, Candidate is off [phone]', async 
   });
 });
 
-test('PER-21.3 Moving a corner by hand clears the candidate number, and Undo brings it back '
-  + '[phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-061');
+test('PER-21.3 Moving a corner by hand clears the candidate number; Undo brings it back, and '
+  + 'Candidate then starts from the first [phone]', async ({ page, check }, testInfo) => {
   const hand = await startOnPerspective(page, testInfo);
+  const candidates = await candidateCorners(page);
   await check('Candidate shows 1/3', async () => {
     await expect(candidateNumber(page)).toHaveText('1/3');
   });
   const topRight = await handleOnPage(page, TOP_RIGHT);
   await hand.drag(topRight, offsetBy(topRight, 30, 0));
   await check('Candidate shows no number', async () => {
-    expect(await candidateNumber(page).isVisible()).toBe(false);
+    expectMovedBy(await handleOnPage(page, TOP_RIGHT), topRight, 30, 0);
+    await expect(page.locator('#toolCandidate')).toBeVisible();
+    await expect(candidateNumber(page)).toBeHidden();
   });
   await hand.tap(page.locator('#btnUndo'));
   await check('the corner is back, and Candidate shows 1/3 again', async () => {
     expectMovedBy(await handleOnPage(page, TOP_RIGHT), topRight, 0, 0);
     await expect(candidateNumber(page)).toHaveText('1/3');
   });
+  await hand.tap(page.locator('#toolCandidate'));
+  await check('Candidate reads 2/3, and the corners move to the second candidate', async () => {
+    await expect(candidateNumber(page)).toHaveText('2/3');
+    expectSameCorners(await cornersNow(page), candidates[1]);
+  });
+  const secondTopRight = await handleOnPage(page, TOP_RIGHT);
+  await hand.drag(secondTopRight, offsetBy(secondTopRight, 30, 0));
+  await check('Candidate shows no number again', async () => {
+    expectMovedBy(await handleOnPage(page, TOP_RIGHT), secondTopRight, 30, 0);
+    await expect(candidateNumber(page)).toBeHidden();
+  });
+  await hand.tap(page.locator('#toolCandidate'));
+  await check('Candidate reads 1/3, not 3/3: the corners are on the first candidate, the best '
+    + 'pick', async () => {
+    await expect(candidateNumber(page)).toHaveText('1/3');
+    expectSameCorners(await cornersNow(page), candidates[0]);
+  });
 });
 
 test('PER-21.4 Undo and Reset perspective bring back the number of the candidate they '
   + 'restore [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-061');
   const hand = await startOnPerspective(page, testInfo);
   const candidates = await candidateCorners(page);
   await hand.tap(page.locator('#toolCandidate'));
@@ -1332,7 +1486,7 @@ test('PER-21.4 Undo and Reset perspective bring back the number of the candidate
   await hand.tap(page.locator('#btnUndo'));
   await check('the corners are back on the first candidate, and Candidate reads 1/3', async () => {
     expectSameCorners(await cornersNow(page), candidates[0]);
-    expect(await candidateNumber(page).textContent()).toBe('1/3');
+    await expect(candidateNumber(page)).toHaveText('1/3');
   });
   await hand.tap(page.locator('#toolCandidate'));
   await check('Candidate reads 2/3', async () => {
@@ -1345,7 +1499,7 @@ test('PER-21.4 Undo and Reset perspective bring back the number of the candidate
   await hand.tap(page.locator('#btnResetPerspective'));
   await check('the corners are back on the first candidate, and Candidate reads 1/3', async () => {
     expectSameCorners(await cornersNow(page), candidates[0]);
-    expect(await candidateNumber(page).textContent()).toBe('1/3');
+    await expect(candidateNumber(page)).toHaveText('1/3');
   });
 });
 
@@ -1584,7 +1738,7 @@ test('PER-25.2 Preview with crossed corners, for a person to judge [phone]', asy
   await crossTheCorners(page, hand);
   await check.eye('the outline crosses itself, red and dashed');
   await hand.tap(page.locator('#toolPreview'));
-  // Ruling R82's words; the judge fails this until it is built (BUG-292).
+  // Ruling R82's words: VIEW-14.2's script reads them, the judge looks at them here.
   await check.eye('the photo area is empty except for grey text in its middle: "Fix the corners '
     + 'first."');
   await check(`the line reads "${CROSSED}"`, async () => {
@@ -1645,61 +1799,73 @@ test('PER-26.2 While Preview is on, a pinch zooms the corrected card [phone]', a
   });
 });
 
-test('PER-26.3 While Preview is on, the arrow keys and Tab do nothing [desktop]', async ({
-  page,
-  check,
-}, testInfo) => {
-  test.fail(true, 'BUG-062');
-  const hand = await startOnPerspective(page, testInfo);
-  const corners = await cornersNow(page);
-  await hand.tap(page.locator('#toolPreview'));
-  await check('the corrected card shows, with no handles', async () => {
-    await expect(previewState(page)).toHaveText('On');
-  });
-  const box = await page.locator('#view').boundingBox();
-  await tapAt(page, hand, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
-  await check('a click on the card changes nothing', async () => {
-    expectSameCorners(await cornersNow(page), corners);
-  });
-  for (let press = 0; press < 3; press++) await page.keyboard.press('ArrowRight');
-  await check('three presses of the right arrow key change nothing; Undo is still greyed out',
-    async () => {
-      expectSameCorners(await cornersNow(page), corners);
-      expect(await page.locator('#btnUndo').isDisabled()).toBe(true);
+test('PER-26.3 While Preview is on, the arrow keys and Tab leave the handles alone [desktop]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startOnPerspective(page, testInfo);
+    const corners = await cornersNow(page);
+    const topLeft = await handleOnPage(page, TOP_LEFT);
+    const selectedHandle = () => page.evaluate(() => window.__straightener.app.selected);
+    await hand.tap(page.locator('#toolPreview'));
+    await check('the corrected card shows, with no handles', async () => {
+      await expect(previewState(page)).toHaveText('On');
+      expect(await page.evaluate(() => window.__straightener.app.previewMode)).toBe(true);
+      expect(await isHandleAt(page, topLeft)).toBe(false);
     });
-  await page.keyboard.press('Tab');
-  await check('Tab changes nothing', async () => {
-    expect(await page.evaluate(() => window.__straightener.app.selected)).toBe(TOP_LEFT);
+    const box = await page.locator('#view').boundingBox();
+    const viewBefore = await viewNow(page);
+    await tapAt(page, hand, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    await check('a click on the card: the photo has the focus, and the card doesn\'t move',
+      async () => {
+        await expect(page.locator('#view')).toBeFocused();
+        expect(await viewNow(page)).toEqual(viewBefore);
+        expect(await cornersNow(page)).toEqual(corners);
+        expect(await selectedHandle()).toBe(TOP_LEFT);
+      });
+    for (let press = 0; press < 3; press++) await page.keyboard.press('ArrowRight');
+    await check('three presses of the right arrow key move no corner; Undo is still greyed out',
+      async () => {
+        expect(await cornersNow(page)).toEqual(corners);
+        expect(await page.locator('#btnUndo').isDisabled()).toBe(true);
+      });
+    await page.keyboard.press('Tab');
+    await check('Tab: the focus moves from the photo to Candidate, with a ring; no other handle '
+      + 'is selected', async () => {
+      await expect(page.locator('#toolCandidate')).toBeFocused();
+      await expect(page.locator('#toolCandidate')).toHaveCSS('outline-style', 'solid');
+      expect(await selectedHandle()).toBe(TOP_LEFT);
+      expect(await cornersNow(page)).toEqual(corners);
+    });
+    await hand.tap(page.locator('#toolPreview'));
+    await check('the corners are where they were, Corner 1 of 4, Undo greyed out', async () => {
+      expect(await cornersNow(page)).toEqual(corners);
+      await expect(handleName(page)).toHaveText('Corner 1 of 4');
+      await expect(page.locator('#btnUndo')).toBeDisabled();
+    });
   });
-  await hand.tap(page.locator('#toolPreview'));
-  await check('the corners are where they were, Corner 1 of 4, Undo greyed out', async () => {
-    expectSameCorners(await cornersNow(page), corners);
-    await expect(handleName(page)).toHaveText('Corner 1 of 4');
-    await expect(page.locator('#btnUndo')).toBeDisabled();
-  });
-});
 
 test('PER-27.1 Preview turns off at a change of step [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-294');
   const hand = await startOnPerspective(page, testInfo);
+  const topLeft = await handleOnPage(page, TOP_LEFT);
+  const isPreviewOn = () => page.evaluate(() => window.__straightener.app.previewMode);
   await hand.tap(page.locator('#toolPreview'));
-  await check('Preview reads On', async () => {
+  await check('Preview reads On; the corrected card shows', async () => {
     await expect(previewState(page)).toHaveText('On');
+    expect(await isPreviewOn()).toBe(true);
+    expect(await isHandleAt(page, topLeft)).toBe(false);
   });
   await goToStep(page, 'rotate', hand);
   await check('the Rotate step shows', async () => {
     await expect(page.locator('#rotateArea')).toBeVisible();
   });
   await goToStep(page, 'perspective', hand);
-  // A plain reading, so the known defect fails at once.
-  const isPreviewOn = await page.evaluate(() => window.__straightener.app.previewMode);
   await check('Preview reads Off, the line reads NUDGE, and the photo shows with its outline and '
     + 'handles', async () => {
-    expect(isPreviewOn).toBe(false);
     await expect(previewState(page)).toHaveText('Off');
+    expect(await isPreviewOn()).toBe(false);
+    await expect(page.locator('#perspectiveLine')).toBeVisible();
     await expect(page.locator('#perspectiveLine .line-label')).toHaveText('Nudge');
     expect(await isHandleAt(page, await handleOnPage(page, TOP_LEFT))).toBe(true);
   });
@@ -2324,6 +2490,25 @@ test('PER-33.2 With no candidate, Reset perspective puts the corners on the cent
 // The Debug overlay switch in Perspective's options.
 const debugSwitch = page => page.locator('#debugOverlay');
 
+// Expects the Debug overlay switch to show off, under the heading DEVELOPER in the options:
+// the last heading before the switch is that one (the sheet may still be rising, so the two
+// are not compared by where they are on the page).
+async function expectDebugSwitchOff(page) {
+  const heading = page.locator('#perspectiveSheet .sheet-heading', { hasText: 'Developer' });
+  await expect(heading).toBeVisible();
+  await expect(debugSwitch(page)).toBeVisible();
+  const headingAbove = await page.evaluate(() => {
+    const toggle = document.getElementById('debugOverlay');
+    const headings = Array.from(document.querySelectorAll('#perspectiveSheet .sheet-heading'));
+    const before = headings.filter(
+      el => el.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    return before.length ? before[before.length - 1].textContent : '';
+  });
+  expect(headingAbove).toBe('Developer');
+  await expect(debugSwitch(page)).not.toBeChecked();
+}
+
 test('PER-34.1 The Debug overlay\'s drawing, for a person to judge [phone]', async ({
   page,
   check,
@@ -2360,7 +2545,6 @@ test('PER-34.1 The Debug overlay\'s drawing, for a person to judge [phone]', asy
 
 test('PER-34.2 The Debug overlay switch leaves corners placed by hand where they are [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-063');
     const hand = await startOnPerspective(page, testInfo);
     const topLeft = await handleOnPage(page, TOP_LEFT);
     await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
@@ -2371,19 +2555,95 @@ test('PER-34.2 The Debug overlay switch leaves corners placed by hand where they
     const dragged = await cornersNow(page);
     await openOptions(page, hand, 'perspective');
     await check('Debug overlay shows under DEVELOPER, off', async () => {
-      await expect(debugSwitch(page)).toBeVisible();
-      await expect(debugSwitch(page)).not.toBeChecked();
+      await expectDebugSwitchOff(page);
     });
-    await hand.tap(debugSwitch(page));
+    await tapDebugSwitch(page, hand);
     await check('it is on', async () => {
       await expect(debugSwitch(page)).toBeChecked();
     });
-    await waitForDetection(page);
     await closeOptions(page, hand, 'perspective');
     await check('the top-left corner ring is still where it was dragged in row 1', async () => {
       expectSameCorners(await cornersNow(page), dragged);
     });
   });
+
+test('PER-34.3 The Debug overlay switch, turned on while the first search runs, starts the '
+  + 'search again and the corners still land on the card [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = handFor(page, testInfo);
+  await openApp(page);
+  await recordSearchPoints(page);
+  await holdNextSearch(page);
+  await page.setInputFiles('#fileInput', samplePath(PHOTO));
+  await page.waitForFunction(() => !!window.__straightener.app.geometry);
+  await check('the photo opens on Perspective, its outline on the rectangle a fifth in from each '
+    + 'edge, and the line reads "Detecting…"', async () => {
+    await expect(page.locator('#perspectiveArea')).toBeVisible();
+    expectSameCorners(await cornersNow(page), await startingRectangle(page));
+    await expectStatus(page, 'Detecting…');
+  });
+  await openOptions(page, hand, 'perspective');
+  await check('Perspective options rise; under DEVELOPER the Debug overlay switch is off',
+    async () => {
+      await expectDebugSwitchOff(page);
+    });
+  await hand.tap(debugSwitch(page));
+  await check('it is on, and a second search has started, handed no point like the first, '
+    + 'while the first is still held open', async () => {
+    await expect(debugSwitch(page)).toBeChecked();
+    expect(await readSearchPoints(page)).toEqual([null, null]);
+  });
+  await closeOptions(page, hand, 'perspective');
+  await check('the options have gone', async () => {
+    await expect(page.locator('#perspectiveSheet')).toBeHidden();
+  });
+  // The second search ends by itself; the first is still held open.
+  await waitForDetection(page);
+  await check('the line no longer reads "Detecting…"; the second search has put the four '
+    + 'corners on the card\'s corners, and Undo is greyed out', async () => {
+    await expect(statusLine(page)).toBeHidden();
+    expect(await errorAgainstTruth(page, 'IMG_9136')).toBeLessThan(WITHIN_PCT);
+    expect(await page.locator('#btnUndo').isDisabled()).toBe(true);
+  });
+  const placed = await cornersNow(page);
+  await releaseSearch(page);
+  await page.waitForTimeout(SEARCH_SETTLE_MS);
+  await check('the first search\'s result was thrown away: the corners have not moved, the '
+    + 'line shows no message and Undo is still greyed out', async () => {
+    expectSameCorners(await cornersNow(page), placed);
+    await expect(statusLine(page)).toBeHidden();
+    expect(await page.locator('#btnUndo').isDisabled()).toBe(true);
+  });
+});
+
+test('PER-34.4 The Debug overlay switch doesn\'t bring back "Nothing detected" once a move has '
+  + 'cleared it [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
+  await check(`the line reads "${NOTHING_DETECTED}"`, async () => {
+    await expectStatus(page, NOTHING_DETECTED);
+  });
+  await hand.tap(arrowButton(page, 'right'));
+  await check('the message has gone: the line reads NUDGE and Corner 1 of 4', async () => {
+    await expectNudgeLine(page);
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
+  });
+  await openOptions(page, hand, 'perspective');
+  await check('Perspective options rise; under DEVELOPER the Debug overlay switch is off',
+    async () => {
+      await expectDebugSwitchOff(page);
+    });
+  await tapDebugSwitch(page, hand);
+  await check('it is on', async () => {
+    await expect(debugSwitch(page)).toBeChecked();
+  });
+  await closeOptions(page, hand, 'perspective');
+  await check('the message has not come back: the line still reads NUDGE and Corner 1 of 4',
+    async () => {
+      expect(await isNudgeLineNow(page)).toBe(true);
+    });
+});
 
 // The size of the Result picture and of the space inside its block's margins, in CSS px.
 function resultPictureSize(page) {
@@ -2446,11 +2706,9 @@ test('PER-35.2 A phone shows no Result picture [phone]', async ({ page, check },
 });
 
 const LOW_CONFIDENCE = 'Low confidence (99%). Check the corners.';
-const CLAMPED = 'Corrected frame clamped to 1000px on the long side.';
 // Links that make IMG_9136's 99% confidence count as low, and that clamp its corrected frame.
 const LOW_CONFIDENCE_LINK = 'index.html?detect.minConfidence=1';
 const CLAMPED_LINK = 'index.html?maxOutputPx=1000';
-const LOW_CONFIDENCE_AND_CLAMPED_LINK = 'index.html?detect.minConfidence=1&maxOutputPx=1000';
 
 // True when the line above the controls is back at rest (no message; NUDGE and a handle's
 // name), read once: the known-defect cases compare without waiting.
@@ -2501,7 +2759,6 @@ test('PER-36.3 Low confidence clears once a corner is dragged [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-064');
   const hand = await startOnPerspective(page, testInfo, { address: LOW_CONFIDENCE_LINK });
   await check(`the line reads "${LOW_CONFIDENCE}"`, async () => {
     await expectStatus(page, LOW_CONFIDENCE);
@@ -2511,13 +2768,13 @@ test('PER-36.3 Low confidence clears once a corner is dragged [phone]', async ({
   await check('the corner has moved; the message has gone: the line reads NUDGE and Corner 1 of 4',
     async () => {
       expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 20, 0);
-      expect(await isNudgeLineNow(page)).toBe(true);
+      await expectNudgeLine(page);
+      await expect(handleName(page)).toHaveText('Corner 1 of 4');
     });
 });
 
 test('PER-36.4 "Nothing detected" clears once a corner is nudged with an arrow [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-064');
     const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
     await check(`the line reads "${NOTHING_DETECTED}"`, async () => {
       await expectStatus(page, NOTHING_DETECTED);
@@ -2529,7 +2786,8 @@ test('PER-36.4 "Nothing detected" clears once a corner is nudged with an arrow [
       + 'pixel), and the message has gone: the line reads NUDGE and Corner 1 of 4', async () => {
       expectMove(await topLeftMovedFrom(page, start), stepPx, 0);
       expect(await isNudgeMagnifierUp(page)).toBe(true);
-      expect(await isNudgeLineNow(page)).toBe(true);
+      await expectNudgeLine(page);
+      await expect(handleName(page)).toHaveText('Corner 1 of 4');
     });
   });
 
@@ -2537,25 +2795,15 @@ test('PER-36.5 A clamped corrected frame is not reported in the line [phone]', a
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-288');
   await startOnPerspective(page, testInfo, { address: CLAMPED_LINK });
-  // A plain reading, so the known defect fails at once.
-  const isShown = await statusLine(page).isVisible();
-  const text = await statusLine(page).locator('.status-text').textContent();
-  await check(`it holds no message about the corrected frame: it doesn't read "${CLAMPED}"`,
-    () => {
-      expect(isShown && /Corrected frame/.test(text)).toBe(false);
+  await check('it holds no message about the corrected frame: it reads NUDGE and Corner 1 of 4',
+    async () => {
+      // The frame is clamped, so the line would have something to say if it still said it.
+      expect(await page.evaluate(() => window.__straightener.app.geometry.perspective.isClamped))
+        .toBe(true);
+      await expectNudgeLine(page);
+      await expect(handleName(page)).toHaveText('Corner 1 of 4');
     });
-});
-
-test('PER-36.6 Low confidence takes the line over a clamped frame [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  await startOnPerspective(page, testInfo, { address: LOW_CONFIDENCE_AND_CLAMPED_LINK });
-  await check(`the line reads "${LOW_CONFIDENCE}", not the clamped-frame message`, async () => {
-    await expectStatus(page, LOW_CONFIDENCE);
-  });
 });
 
 // The messages recordStatuses has seen since the find tap: the prompt it starts on left out.
@@ -2620,15 +2868,62 @@ test('PER-36.8 "Detecting…" takes the line over low confidence [phone]', async
   });
 });
 
-test('PER-36.9 "Nothing detected" takes the line over a clamped frame [phone]', async ({
-  page,
-  check,
-}, testInfo) => {
-  await startOnFixture(page, testInfo, BLANK_FIXTURE, CLAMPED_LINK);
-  await check(`the line reads "${NOTHING_DETECTED}", not the clamped-frame message`, async () => {
-    expect(await page.evaluate(() => window.__straightener.app.geometry.perspective.isClamped))
-      .toBe(true);
+test('PER-36.10 Once a move has cleared Low confidence, Undo doesn\'t bring it back; a new '
+  + 'search does [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOnPerspective(page, testInfo, { address: LOW_CONFIDENCE_LINK });
+  await check(`the line reads "${LOW_CONFIDENCE}"`, async () => {
+    await expectStatus(page, LOW_CONFIDENCE);
+  });
+  const topLeft = await handleOnPage(page, TOP_LEFT);
+  await hand.drag(topLeft, offsetBy(topLeft, 20, 0));
+  await check('the message has gone: the line reads NUDGE and Corner 1 of 4, with nothing at its '
+    + 'right end (no Confidence)', async () => {
+    expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 20, 0);
+    await expectNudgeLine(page);
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
+    await expect(confidence(page)).toHaveText('');
+  });
+  await hand.tap(page.locator('#btnUndo'));
+  await check('the corner is back; the message stays away: the line reads NUDGE and Corner 1 of '
+    + '4, now with Confidence 99% at its right', async () => {
+    expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 0, 0);
+    await expect(confidence(page)).toHaveText('Confidence 99%');
+    await expectNudgeLine(page);
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
+  });
+  await openOptions(page, hand, 'perspective');
+  await check('Tap to find card shows', async () => {
+    await expect(page.locator('#btnFindCard')).toBeVisible();
+  });
+  await tapFindCard(page, hand);
+  await check(`the line reads "${FIND_PROMPT}"`, async () => {
+    await expectStatus(page, FIND_PROMPT);
+  });
+  await tapAt(page, hand, await cardMiddle(page));
+  await waitForFind(page);
+  await check(`once the search ends, the line reads "${LOW_CONFIDENCE}" again`, async () => {
+    await expectStatus(page, LOW_CONFIDENCE);
+  });
+});
+
+test('PER-36.11 Once a move has cleared "Nothing detected", Undo doesn\'t bring it back '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
+  await check(`the line reads "${NOTHING_DETECTED}"`, async () => {
     await expectStatus(page, NOTHING_DETECTED);
+  });
+  await hand.tap(arrowButton(page, 'right'));
+  await check('the message has gone: the line reads NUDGE and Corner 1 of 4', async () => {
+    await expectNudgeLine(page);
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
+  });
+  await hand.tap(page.locator('#btnUndo'));
+  await check('the outline is the centered rectangle again and Undo is greyed out; the message '
+    + 'stays away: the line still reads NUDGE and Corner 1 of 4', async () => {
+    expectSameCorners(await cornersNow(page), BLANK_INSET_CORNERS);
+    await expect(page.locator('#btnUndo')).toBeDisabled();
+    await expectNudgeLine(page);
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
   });
 });
 
@@ -2765,7 +3060,6 @@ test('PER-38.1 Selecting, Next handle, Flatten, Snap, Preview and Tap to find ca
 
 test('PER-38.2 The Debug overlay switch adds no undo step after a hand-placed corner [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-063');
     const hand = await startOnPerspective(page, testInfo);
     const candidates = await candidateCorners(page);
     const undo = page.locator('#btnUndo');
@@ -2777,11 +3071,9 @@ test('PER-38.2 The Debug overlay switch adds no undo step after a hand-placed co
     });
     await openOptions(page, hand, 'perspective');
     await check('Debug overlay shows under DEVELOPER, off', async () => {
-      await expect(debugSwitch(page)).toBeVisible();
-      await expect(debugSwitch(page)).not.toBeChecked();
+      await expectDebugSwitchOff(page);
     });
-    await hand.tap(debugSwitch(page));
-    await waitForDetection(page);
+    await tapDebugSwitch(page, hand);
     await check('it is on', async () => {
       await expect(debugSwitch(page)).toBeChecked();
     });
