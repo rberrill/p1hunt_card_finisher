@@ -1226,20 +1226,48 @@ async function tabTo(page, locator) {
   return locator.evaluate(el => el === document.activeElement);
 }
 
+// Counts, in the page, how often `step`'s sheet opens and closes from now on (the Sheet part's
+// own sheetopen and sheetclose events), in window.testSheetCounts.
+function countSheetEvents(page, step) {
+  return page.evaluate(id => {
+    const counts = { opened: 0, closed: 0 };
+    window.testSheetCounts = counts;
+    const layer = document.getElementById(id);
+    layer.addEventListener('sheetopen', () => {
+      counts.opened += 1;
+    });
+    layer.addEventListener('sheetclose', () => {
+      counts.closed += 1;
+    });
+  }, `${step}Sheet`);
+}
+
+// Checks that one key press has opened `step`'s sheet `timesOpened` times in all since
+// countSheetEvents, that nothing has closed it but the `timesClosed` closes the case made, and,
+// once the screen is still, that it is open, titled, and risen above the controls.
+async function expectSheetOpenedByKey(page, step, timesOpened, timesClosed) {
+  await waitForStill(page);
+  expect(await page.evaluate(() => window.testSheetCounts))
+    .toEqual({ opened: timesOpened, closed: timesClosed });
+  expect(await isSheetOpen(page, step)).toBe(true);
+  await expect(sheetOf(page, step).locator('.sheet-title')).toHaveText(SHEET_TITLES[step]);
+  expect(await sheetTopPx(page, step)).toBeLessThan(await areaTopPx(page, step));
+}
+
 test('TOP-18.3 Enter and Space on the options tab open the sheet [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-150');
   const hand = await startOn(page, testInfo, 'rotate');
   const tab = optionsTab(page, 'rotate');
+  await countSheetEvents(page, 'rotate');
   const hasFocus = await tabTo(page, tab);
   await check('Tab brings the focus to the options tab', () => {
     expect(hasFocus).toBe(true);
   });
   await page.keyboard.press('Enter');
-  await check('Enter opens the sheet titled ROTATE OPTIONS', async () => {
-    expect(await isSheetOpen(page, 'rotate')).toBe(true);
+  await check('Enter: the sheet titled ROTATE OPTIONS rises and stays open', async () => {
+    await expectSheetOpenedByKey(page, 'rotate', 1, 0);
   });
   await hand.tap(sheetOf(page, 'rotate').locator('.sheet-close'));
   await waitForSheet(page, 'rotate', false);
@@ -1251,8 +1279,8 @@ test('TOP-18.3 Enter and Space on the options tab open the sheet [phone]', async
     expect(hasFocusAgain).toBe(true);
   });
   await page.keyboard.press(' ');
-  await check('Space opens ROTATE OPTIONS again', async () => {
-    expect(await isSheetOpen(page, 'rotate')).toBe(true);
+  await check('Space: ROTATE OPTIONS rises again and stays open', async () => {
+    await expectSheetOpenedByKey(page, 'rotate', 2, 1);
   });
 });
 
@@ -1420,9 +1448,9 @@ async function pointUnderTab(page, check, step, control) {
 // touch area takes the tap (`isTaken` says how to see it), and a tap on the tab's raised strip,
 // above it, opens the sheet.
 async function checkControlUnderTab(page, check, hand, step, control, isTaken, description) {
-  // Ruling R40: for about 0.1 s after a step change, while the step's controls fade in, the tab
-  // is on top of them and takes their taps (BUG-232, TOP-22.3 and TOP-22.4). These cases wait
-  // for the fade to end, so they test the tab's touch area once the step has settled.
+  // These cases wait for the step's controls to finish fading in, so they test the tab's touch
+  // area once the step has settled; the same tap during the fade is TOP-22.3 and TOP-22.4
+  // (ruling R40).
   const { underTab, strip } = await pointUnderTab(page, check, step, control);
   await page.touchscreen.tap(underTab.x, underTab.y);
   await check(description, async () => {
@@ -1502,11 +1530,10 @@ test('TOP-22.2 Size and Format under the options tab take the tap [phone] [webki
 
 test('TOP-22.3 Straight after a step change to Rotate, the angle under the options tab takes '
   + 'the tap [phone] [webkit]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-232');
   const hand = await startOn(page, testInfo, 'rotate');
   await tapUnderTabAfterStepChange(page, check, hand, 'rotate', page.locator('#rotateAngle'));
-  // Plain reads, not retrying expects: today the sheet opens at once, so the known defect fails
-  // here without waiting out a timeout.
+  // Plain reads once the screen is still, not retrying expects: a sheet the tap opened by
+  // mistake would be open by then, and the case fails without waiting out a timeout.
   await waitForStill(page);
   await check('a text box takes the angle\'s place; no sheet opens', async () => {
     expect(await isSheetOpen(page, 'rotate')).toBe(false);
@@ -1516,7 +1543,6 @@ test('TOP-22.3 Straight after a step change to Rotate, the angle under the optio
 
 test('TOP-22.4 Straight after a step change to Export, Size under the options tab takes the '
   + 'tap [phone] [webkit]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-232');
   const hand = await startOn(page, testInfo, 'export');
   const original = choiceButton(page, 'exportSize', 'Original');
   await tapUnderTabAfterStepChange(page, check, hand, 'export', original);
@@ -1524,6 +1550,83 @@ test('TOP-22.4 Straight after a step change to Export, Size under the options ta
   await check('Original is selected; no sheet opens', async () => {
     expect(await isSheetOpen(page, 'export')).toBe(false);
     expect(await original.getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+// Records, in the page, what Rotate's STRAIGHTEN line was doing at each finger press from now
+// on (its classes, or 'hidden', in window.testLinePresses) and counts the taps the angle takes
+// (window.testAngleTaps).
+function watchStraightenLine(page) {
+  return page.evaluate(() => {
+    window.testLinePresses = [];
+    window.testAngleTaps = 0;
+    const line = document.getElementById('rotateStraightenLine');
+    document.addEventListener('pointerdown', () => {
+      window.testLinePresses.push(line.hidden ? 'hidden' : line.className);
+    }, { capture: true });
+    document.getElementById('rotateAngle').addEventListener('click', () => {
+      window.testAngleTaps += 1;
+    });
+  });
+}
+
+// What the STRAIGHTEN line was doing at the last finger press watchStraightenLine recorded.
+async function lineAtLastPress(page) {
+  const presses = await page.evaluate(() => window.testLinePresses);
+  return presses[presses.length - 1];
+}
+
+test('TOP-22.5 Straight after a mode tap to Straighten, the angle under the options tab takes '
+  + 'the tap [phone] [webkit]', async ({ page, check }, testInfo) => {
+  const hand = await startOn(page, testInfo, 'rotate');
+  const { underTab } = await pointUnderTab(page, check, 'rotate', page.locator('#rotateAngle'));
+  await hand.tap(page.locator('#toolFlip'));
+  await expect(page.locator('#rotateFlipLine')).toBeVisible();
+  await waitForStill(page);
+  await countSheetEvents(page, 'rotate');
+  await watchStraightenLine(page);
+  const straighten = await middleOf(page.locator('#toolStraighten'));
+  await page.touchscreen.tap(straighten.x, straighten.y);
+  // The old line takes 60 ms to go; the tap must land in the 100 ms the new one takes to come.
+  await page.waitForFunction(() => document.getElementById('rotateStraightenLine')
+    .classList.contains('is-entering'));
+  await page.touchscreen.tap(underTab.x, underTab.y);
+  await check('the tap came while the STRAIGHTEN line was still fading in', async () => {
+    expect(await hasWhiteFill(page.locator('#toolStraighten'))).toBe(true);
+    expect(await lineAtLastPress(page)).toContain('is-entering');
+  });
+  await waitForStill(page);
+  await check('a text box takes the angle\'s place; no sheet opens', async () => {
+    expect(await page.evaluate(() => window.testSheetCounts)).toEqual({ opened: 0, closed: 0 });
+    expect(await isSheetOpen(page, 'rotate')).toBe(false);
+    expect(await page.locator('#rotateAngleField').isVisible()).toBe(true);
+  });
+});
+
+test('TOP-22.6 While the Straighten line fades out after a tap on Flip, the angle under the '
+  + 'options tab takes the tap [phone] [webkit]', async ({ page, check }, testInfo) => {
+  await startOn(page, testInfo, 'rotate');
+  const { underTab } = await pointUnderTab(page, check, 'rotate', page.locator('#rotateAngle'));
+  await countSheetEvents(page, 'rotate');
+  await watchStraightenLine(page);
+  const flip = await middleOf(page.locator('#toolFlip'));
+  // Nothing between the two taps: the second must land in the 60 ms the old line takes to go.
+  await page.touchscreen.tap(flip.x, flip.y);
+  await page.touchscreen.tap(underTab.x, underTab.y);
+  await check('the tap came while the STRAIGHTEN line was still fading out', async () => {
+    expect(await hasWhiteFill(page.locator('#toolFlip'))).toBe(true);
+    expect(await lineAtLastPress(page)).toContain('is-leaving');
+  });
+  await page.waitForTimeout(STILL_AFTER_MS);
+  await check('the angle took the tap, and no sheet opened', async () => {
+    expect(await page.evaluate(() => window.testAngleTaps)).toBe(1);
+    expect(await page.evaluate(() => window.testSheetCounts)).toEqual({ opened: 0, closed: 0 });
+    expect(await isSheetOpen(page, 'rotate')).toBe(false);
+  });
+  await check('half a second on, the line reads FLIP and no sheet is open', async () => {
+    await expect(page.locator('#rotateFlipLine')).toBeVisible();
+    await expect(page.locator('#rotateStraightenLine')).toBeHidden();
+    expect(await isSheetOpen(page, 'rotate')).toBe(false);
   });
 });
 

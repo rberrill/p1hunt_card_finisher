@@ -228,11 +228,27 @@
     closeSheet(layer);
   }
 
+  // Lets Enter and Space on `handle`, a button (the control area's grabber), open its sheet
+  // (ruling R33): the browser turns either key into a click that no pointer made, whose detail
+  // is 0. A tap's own click (detail 1 or more) is left alone, since its pointerup has already
+  // acted. An open sheet stays open: Escape closes it. Only for a button: a sheet's own top
+  // edge is not one, and a click with no pointer that reaches it (Enter on the Close button
+  // inside it, bubbling up) must not reopen the sheet that click is closing.
+  function bindHandleKeys(handle, getLayer) {
+    handle.addEventListener('click', event => {
+      if (event.detail !== 0) return;
+      const layer = getLayer();
+      if (layer && !isSheetOpen(layer)) openSheet(layer);
+    });
+  }
+
   // Lets `handle` open or close a sheet. getLayer() names the sheet when the press starts (null
   // for none). A tap toggles it; a drag follows the finger (up opens, down closes) and, when
   // the finger lifts, settles open past a third of the way and closed short of it. While it is
-  // pressed the handle has the class is-pressed (its tab fills, css/app.css).
+  // pressed the handle has the class is-pressed (its tab fills, css/app.css). Where the handle
+  // is a button, Enter and Space open the sheet too (bindHandleKeys).
   function bindSheetHandle(handle, getLayer) {
+    if (handle.tagName === 'BUTTON') bindHandleKeys(handle, getLayer);
     let press = null;
     handle.addEventListener('pointerdown', event => {
       const layer = getLayer();

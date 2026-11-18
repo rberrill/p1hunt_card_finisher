@@ -47,11 +47,33 @@
     return area;
   }
 
-  // Takes a finished (or cancelled) arrival or line-in animation's class off again, so the next
-  // one can start. Both bubble up to the control area from its rows.
+  // Takes an arrival's or a line-in's class off again when its animations have finished (or
+  // been cancelled), so the next one can start. They run on the rows' children (css/app.css
+  // says why not on the rows) and bubble up to the control area: an arrival's class is on the
+  // area, a line-in's on the child's row.
   function endAreaAnimation(event) {
-    if (event.animationName === 'area-in') event.currentTarget.classList.remove('is-arriving');
-    if (event.animationName === 'line-in') event.target.classList.remove('is-entering');
+    const animationName = event.animationName;
+    if (animationName === 'area-in') {
+      endAnimationClass(event.currentTarget, animationName, 'is-arriving');
+    }
+    if (animationName === 'line-in') {
+      endAnimationClass(event.target.closest('.is-entering'), animationName, 'is-entering');
+    }
+  }
+
+  // Takes `className` off `el` unless an animation named `animationName` is still running
+  // inside it: a child hidden part-way through a fade cancels only its own animation, and the
+  // class going then would cut the other children's short. el: null when the class has
+  // already gone. A browser that can't list its animations takes the class off at once.
+  function endAnimationClass(el, animationName, className) {
+    if (!el) return;
+    if (typeof el.getAnimations !== 'function') {
+      el.classList.remove(className);
+      return;
+    }
+    const isStillRunning = el.getAnimations({ subtree: true })
+      .some(animation => animation.animationName === animationName);
+    if (!isStillRunning) el.classList.remove(className);
   }
 
   // The label and control rows on screen in a control area. A status in the label row's place

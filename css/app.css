@@ -383,24 +383,32 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
   white-space: nowrap;
 }
 .tool-row { height: 70px; flex: none; margin-top: 6px; display: flex; gap: 5px; }
-/* M3, a mode tap swaps the line (160 ms): the old rows fade out in 60 ms, then the new ones
-   rise 6 px and fade in over 100 ms, ease-out (CF.swapLine sequences the two). */
-.label-row.is-leaving, .control-row.is-leaving { opacity: 0; transition: opacity 60ms ease-out; }
-.label-row.is-entering, .control-row.is-entering { animation: line-in 100ms ease-out; }
+/* In M3 and M7 below it is each row's children that fade, not the row: while its opacity
+   animates (or is under 1) an element is a stacking context of its own, and a row that was one
+   kept its controls under the grabber for the length of the fade, whatever their z-index, so
+   the grabber took their taps (ruling R40). A row paints nothing itself, and its children move
+   together, so the fades look the same. The class stays on the row (M3) or the area (M7).
+   Reduced motion: all are instant (the global rule drops the animations; JS skips the wait). */
+/* M3, a mode tap swaps the line (160 ms): the old rows fade out in 60 ms and stay out until
+   they are swapped, then the new ones rise 6 px and fade in over 100 ms, ease-out (CF.swapLine
+   sequences the two). */
+.label-row.is-leaving > *, .control-row.is-leaving > * {
+  animation: line-out 60ms ease-out forwards;
+}
+.label-row.is-entering > *, .control-row.is-entering > * { animation: line-in 100ms ease-out; }
+@keyframes line-out {
+  to { opacity: 0; }
+}
 @keyframes line-in {
   from { opacity: 0; transform: translateY(6px); }
 }
 /* M7, a step change: the new step's rows fade in over 120 ms, ease-out. The grabber's tab and
    the progress line stay as they are; on a wide screen the inline options don't fade. */
-.control-area.is-arriving > :not(.grabber):not(.progress-line) {
+.control-area.is-arriving > :not(.grabber):not(.progress-line) > * {
   animation: area-in 120ms ease-out;
 }
 @keyframes area-in {
   from { opacity: 0; }
-}
-/* Reduced motion: both are instant (the global rule drops the animations; JS skips the wait). */
-@media (prefers-reduced-motion: reduce) {
-  .label-row.is-leaving, .control-row.is-leaving { opacity: 1; transition: none; }
 }
 
 /* ---- part: status ---- */

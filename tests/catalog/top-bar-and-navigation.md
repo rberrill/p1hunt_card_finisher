@@ -928,16 +928,16 @@ On a fail, record: the row number, the window's width, what you saw instead, a s
 
 ## TOP-18 Open a step's options
 
-A tab with an up arrow sits on the top edge of the controls, over the bottom of the photo (named **Options** to a screen reader). A tap on it opens the step's options sheet.
+A tab with an up arrow sits on the top edge of the controls, over the bottom of the photo (named **Options** to a screen reader). A tap on it opens the step's options sheet, and so do Enter and Space while it has the keyboard's focus.
 
 - Risk: high
 - Check: script, touch. The tab's exact look (80 px wide, rising 24 px over the photo, in the panel's color, outlined on its top and sides, with a 16 × 8 px up arrow) is measurable by a script, not left to the eye.
 - Layout: phone
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `.grabber`, "Options", `.handle-tab`, `#perspectiveSheet`, `#rotateSheet`, `#cropSheet`
-- Source: `js/app/parts/adjustment-line.js` (`buildControlArea`); `js/app/parts/sheet.js` (`buildHandleTab`, `bindSheetHandle`, `openSheet`); `js/app/shell.js` (`bindNavigation`, `currentSheet`)
-- Ruling: R33. Enter and Space open the sheet from the tab, as on any button. The app differs today.
+- Source: `js/app/parts/adjustment-line.js` (`buildControlArea`); `js/app/parts/sheet.js` (`buildHandleTab`, `bindSheetHandle`, `bindHandleKeys`, `openSheet`); `js/app/shell.js` (`bindNavigation`, `currentSheet`)
+- Ruling: R33. Enter and Space open the sheet. The app does this since 1.10.0.
 - Cases: 3
 
 ### TOP-18.1 Each step's options tab opens that step's sheet   [auto: phone]
@@ -983,8 +983,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-18.3 Enter and Space on the options tab open the sheet   [auto: phone]
-Written to ruling R33; it fails until that is built (BUG-150).
-
 Before you start:
 - Device and browser: a phone-width window with a keyboard (or an iPhone with a keyboard attached)
 - Build: the build under test
@@ -992,15 +990,15 @@ Before you start:
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
-It runs at a phone's width, with a keyboard, because the options tab exists only in the phone layout: on a wide screen the options are always shown. The options tab is the small tab with an up arrow on the top edge of the controls (the block of buttons and sliders under the photo). The focus is the control the keyboard acts on, shown with a ring.
+It runs at a phone's width, with a keyboard, because the options tab exists only in the phone layout: on a wide screen the options are always shown. The options tab is the small tab with an up arrow on the top edge of the controls (the block of buttons and sliders under the photo). The focus is the control the keyboard acts on, shown with a ring. The script also counts how often the sheet opens and closes: each key press opens it once, and nothing but the cross closes it.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Press Tab until the options tab has the focus ring | The options tab has the focus |
-| 2 | Press Enter | The sheet titled ROTATE OPTIONS rises |
+| 2 | Press Enter | The sheet titled ROTATE OPTIONS rises and stays open |
 | 3 | Tap the cross at the sheet's top right (named **Close**) | The sheet closes |
 | 4 | Press Tab until the options tab has the focus ring again | The options tab has the focus |
-| 5 | Press Space | The sheet titled ROTATE OPTIONS rises again |
+| 5 | Press Space | The sheet titled ROTATE OPTIONS rises again and stays open |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -1158,17 +1156,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## TOP-22 Controls under the options tab take the tap
 
-Where a control in a step's top line (a button, a slider, **Size** and **Format** on Export, Rotate's angle) lies under the options tab's 88 × 44 px touch area, the control takes the tap, and the tab's touch area reaches further over the photo instead.
+Where a control in a step's top line (a button, a slider, **Size** and **Format** on Export, Rotate's angle) lies under the options tab's 88 × 44 px touch area, the control takes the tap, and the tab's touch area reaches further over the photo instead. The control takes the tap from the moment it is drawn: also while its step's controls fade in after a step change, and while one line fades out and the next fades in after a tap on a mode (**Straighten** and **Flip**).
 
 - Risk: medium
 - Check: script, touch
 - Layout: phone
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `.grabber`, `#exportChoices`, `#rotateAngle`, `.label-row`, `.is-arriving`
-- Source: `css/app.css` (the adjustment line, Export's phone block, the shell's phone block, the `area-in` fade); `js/app/parts/adjustment-line.js` (`fadeInControlArea`)
-- Ruling: R40. The controls under the tab take the tap from the moment they are drawn, including the 0.1 s after a step change while they fade in. The app differs today: during the fade the tab is on top of them and takes their taps.
-- Cases: 4
+- Changed: 1.10.0
+- Anchors: `.grabber`, `#exportChoices`, `#rotateAngle`, `.label-row`, `.is-arriving`, `.is-entering`, `.is-leaving`
+- Source: `css/app.css` (the adjustment line, with the `area-in`, `line-out` and `line-in` fades; Export's phone block; the shell's phone block); `js/app/parts/adjustment-line.js` (`fadeInControlArea`, `swapLine`, `endAreaAnimation`)
+- Ruling: R40. The controls under the tab take the tap from the moment they are drawn. Rich, 2026-11-18: the same holds after a mode tap (Flip and Straighten, Nudge and Flatten): while the new line fades in, the options tab takes no tap from the control under it. The app does this since 1.10.0.
+- Cases: 6
 
 ### TOP-22.1 Rotate's angle under the options tab takes the tap   [auto: phone, webkit]
 Before you start:
@@ -1178,7 +1176,7 @@ Before you start:
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step
 
-The controls are the block of buttons and sliders under the photo; the options tab is the small tab with an up arrow on their top edge. The options tab's touch area is 88 px wide and 44 px tall, centered on the tab, so its foot reaches into the line under it, where the right end of the angle (**0.0°**) lies. Wait a moment after opening the step, until its controls have faded in: for about 0.1 s after a step change the tab is on top of them and takes their taps, a defect of its own (ruling R40, TOP-22.3), so this case tests the tab's touch area once the step has settled.
+The controls are the block of buttons and sliders under the photo; the options tab is the small tab with an up arrow on their top edge. The options tab's touch area is 88 px wide and 44 px tall, centered on the tab, so its foot reaches into the line under it, where the right end of the angle (**0.0°**) lies. Wait a moment after opening the step, until its controls have faded in, so this case tests the tab's touch area once the step has settled; the same tap during the fade is TOP-22.3.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -1197,7 +1195,7 @@ Before you start:
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Export step, **2000** selected
 
-The controls are the block of buttons and sliders under the photo; the options tab is the small tab with an up arrow on their top edge, and its touch area is 88 px wide and 44 px tall, centered on the tab. Wait a moment after opening the step, until its controls have faded in: for about 0.1 s after a step change the tab is on top of them and takes their taps, a defect of its own (ruling R40, TOP-22.4), so this case tests the tab's touch area once the step has settled.
+The controls are the block of buttons and sliders under the photo; the options tab is the small tab with an up arrow on their top edge, and its touch area is 88 px wide and 44 px tall, centered on the tab. Wait a moment after opening the step, until its controls have faded in, so this case tests the tab's touch area once the step has settled; the same tap during the fade is TOP-22.4.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -1208,7 +1206,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### TOP-22.3 Straight after a step change to Rotate, the angle under the options tab takes the tap   [auto: phone, webkit]
-Written to ruling R40; it fails until that is built (BUG-232).
 Script only
 Stand-in: nothing is replaced. The second tap must come within 0.1 s of the first, while the step's controls fade in; a person can't be sure of tapping that quickly, so the script makes both taps and checks that the second came during the fade. Once the fade has ended, TOP-22.1 is the same tap.
 
@@ -1230,7 +1227,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead (the sheet titled ROTATE OPTIONS rising is the defect), a screenshot.
 
 ### TOP-22.4 Straight after a step change to Export, Size under the options tab takes the tap   [auto: phone, webkit]
-Written to ruling R40; it fails until that is built (BUG-232).
 Script only
 Stand-in: nothing is replaced. The second tap must come within 0.1 s of the first, while the step's controls fade in; a person can't be sure of tapping that quickly, so the script makes both taps and checks that the second came during the fade. Once the fade has ended, TOP-22.2 is the same tap.
 
@@ -1250,6 +1246,49 @@ The top of **Original**, under Size, lies under the foot of the options tab's to
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead (the sheet titled EXPORT OPTIONS rising is the defect), a screenshot.
+
+### TOP-22.5 Straight after a mode tap to Straighten, the angle under the options tab takes the tap   [auto: phone, webkit]
+Script only
+Stand-in: nothing is replaced. The second tap must come while the new line fades in, between 0.06 s and 0.16 s after the first; a person can't be sure of tapping then, so the script makes both taps and checks that the second came during the fade. Once the fade has ended, TOP-22.1 is the same tap.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, with **Flip** tapped (the line above the controls reads FLIP)
+
+**Straighten** and **Flip** are the first two of the five tools along the bottom of the controls (the block of buttons and sliders under the photo). A tap on one swaps the line above for its own: the old line fades out over 0.06 s, then the new one fades in over 0.1 s. The right end of the angle (**0.0°**) in the STRAIGHTEN line lies under the foot of the options tab's touch area, as in TOP-22.1; the script makes the tap of row 2 while that line fades in.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Straighten** | **Straighten** fills white, and the STRAIGHTEN line starts to fade in |
+| 2 | At once, before the line has finished fading in, tap the right end of the angle where it lies under the options tab's touch area | A text box takes the angle's place; no sheet opens |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead (the sheet titled ROTATE OPTIONS rising is the defect), a screenshot.
+
+### TOP-22.6 While the Straighten line fades out after a tap on Flip, the angle under the options tab takes the tap   [auto: phone, webkit]
+Script only
+Stand-in: nothing is replaced. The second tap must come within 0.06 s of the first, while the old line fades out; a person can't be sure of tapping that quickly, so the script makes both taps and checks that the second came during the fade.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, **Straighten** selected (as the step opens)
+
+**Straighten** and **Flip** are the first two of the five tools along the bottom of the controls (the block of buttons and sliders under the photo). A tap on one swaps the line above for its own: the old line fades out over 0.06 s, then the new one fades in over 0.1 s. The right end of the angle (**0.0°**) in the STRAIGHTEN line lies under the foot of the options tab's touch area, as in TOP-22.1; the script makes the tap of row 2 while that line fades out. The angle taking the tap can't be seen for long, since its text box closes again when the line swaps, so the script counts the taps the angle receives.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Flip** | **Flip** fills white, and the STRAIGHTEN line starts to fade out |
+| 2 | At once, before the line has gone (within 0.06 s), tap the right end of the angle where it lies under the options tab's touch area | The angle takes the tap; no sheet opens |
+| 3 | Wait half a second | The line above the controls reads FLIP; no sheet is open |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead (the sheet titled ROTATE OPTIONS rising is the defect), a screenshot.
 
 ## TOP-23 The open sheet covers part of the photo
 
