@@ -1463,13 +1463,12 @@ test('MSG-42.1 Copy CONFIG with the clipboard blocked [desktop]', async ({
 });
 
 test('MSG-43.1 A logo the browser won\'t keep [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-283');
   // Stand-in: the device refuses to store the logo, as a full disk would.
   await refuseStorage(page, ['overlay']);
   await watchMessages(page);
   const hand = await startOnOverlay(page, testInfo, { photo: PHOTO });
   await addLogo(page, hand, page.locator('#btnOverlayAdd'), 'icon.svg');
-  // Ruling R59: messages say "logo". Awaited in either form, compared plainly.
+  // Ruling R59: messages say "logo".
   const text = 'This logo works on this photo, but it can’t be saved in this browser.';
   const message = await waitForMessage(page, /works on this photo, but it can’t be saved/);
   await check(`The logo goes on the middle of the photo; an amber warning reads "${text}"`,
@@ -1913,12 +1912,10 @@ test('MSG-60.1 A logo file over the size limit [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-283');
   await watchMessages(page);
   const hand = await startOnOverlay(page, testInfo, { photo: PHOTO });
   await chooseLogoFile(page, hand, oversizedPng());
-  // Ruling R59: messages say "logo". The line is awaited in either form and its words compared
-  // plainly, so the known defect fails at once.
+  // Ruling R59: messages say "logo".
   const text = 'That file is 6.0 MB. The logo limit is 5 MB.';
   await page.waitForFunction(id => {
     return /limit is/.test(document.querySelector(`#${id} .status-text`).textContent);

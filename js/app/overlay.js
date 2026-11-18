@@ -4,7 +4,8 @@
    logo's thumbnail with Use saved overlay and Add logo in the control row, and Delete saved in
    the tool row; with a logo placed, Opacity in the label row, the move and size pads in the
    control row, and the tool row (Replace logo, Reset, Remove, Delete saved). A file error takes
-   the label row as a status. Its options sheet holds the Tips.
+   the label row as a status, and so does the line for invalid corners. Its options sheet holds
+   the Tips.
    Shell modules share one namespace, CF (created in core.js). Names from core are
    destructured below; anything from another module is called as CF.name.
    tests/selftest.js checks these boundaries.
@@ -50,7 +51,18 @@
     nosize: 'That SVG has no width, height or viewBox, so it can’t be sized. '
       + 'Re-export it with a size.',
   };
+  const BYTES_PER_KB = 1024;
   const BYTES_PER_MB = 1048576;
+
+  // The logo size limit in force (CONFIG.overlay.maxBytes, which a link can lower), as the hint
+  // and the refusal of a file over it both give it (ruling R83): under 1 MB in whole KB
+  // ("64 KB"), from 1 MB in MB with at most one decimal ("5 MB", "1.5 MB").
+  function logoLimitText() {
+    const maxBytes = CONFIG.overlay.maxBytes;
+    if (maxBytes < BYTES_PER_MB) return `${Math.round(maxBytes / BYTES_PER_KB)} KB`;
+    // Read back as a number, so a whole number of MB prints with no decimal.
+    return `${Number((maxBytes / BYTES_PER_MB).toFixed(1))} MB`;
+  }
 
   // The file's image type, from its MIME type or else its extension; null if unsupported.
   function imageTypeOf(file) {
@@ -283,10 +295,9 @@
       setMessage(MESSAGES.type);
       return;
     }
-    const maxBytes = CONFIG.overlay.maxBytes;
-    if (file.size > maxBytes) {
+    if (file.size > CONFIG.overlay.maxBytes) {
       const sizeMb = (file.size / BYTES_PER_MB).toFixed(1);
-      setMessage(`That file is ${sizeMb} MB. The overlay limit is ${maxBytes / BYTES_PER_MB} MB.`);
+      setMessage(`That file is ${sizeMb} MB. The logo limit is ${logoLimitText()}.`);
       return;
     }
     let image;
@@ -315,7 +326,7 @@
       await CF.Session.put('overlay', record);
       setSaved(record);
     } catch (error) {
-      const message = 'This overlay works on this photo, but it can’t be saved in this browser.';
+      const message = 'This logo works on this photo, but it can’t be saved in this browser.';
       toast(message, 'warn', 5000);
     }
   }
@@ -995,7 +1006,17 @@
   const OVERLAY_KEYS = [
     'Arrows move the logo (Shift for bigger steps); + and − resize it; the wheel resizes too.',
   ];
-  const OVERLAY_HINT = 'Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.';
+  // The line above the controls while the corners are invalid: no logo can be added until they
+  // are fixed (ruling R11). The photo area shows the same words then, written out in
+  // js/app/view.js (draw): a rewording changes both.
+  const FIX_CORNERS_FIRST = 'Fix the corners in Perspective first.';
+
+  // The hint shown with no logo placed. It gives the size limit in force, which a link can
+  // lower (ruling R83), in the words the refusal of a file over it uses.
+  function overlayHint() {
+    return `Add a logo or watermark: PNG, WebP, JPG or SVG, up to ${logoLimitText()}.`;
+  }
+
   // The move pad's keys, left to right, with the direction each moves the logo, and the size
   // pad's. A key's value is what nudge() takes.
   const MOVE_KEYS = [
@@ -1014,7 +1035,7 @@
   function buildOverlayControls() {
     const section = document.querySelector('section[data-panel="overlay"]');
     const area = CF.buildControlArea('overlayArea',
-      CF.buildLabelRow('overlayHintLine', makeEl('span', { class: 'overlay-hint' }, OVERLAY_HINT)),
+      CF.buildLabelRow('overlayHintLine', makeEl('span', { class: 'overlay-hint' }, overlayHint())),
       buildOpacityLine(),
       CF.buildStatus('overlayStatus'),
       buildAddRow(),
@@ -1133,13 +1154,18 @@
   // Writes the state into the controls. Three states: no logo and none saved (the hint and
   // Add logo), a saved logo offered (its thumbnail, Use saved overlay and the Delete saved
   // tool as well), and a logo placed (Opacity, the pads and all four tools). A message takes
-  // the label row in any of them.
+  // the label row in any of them. While the corners are invalid no logo can be added: the
+  // message is the line that says to fix them, and Add logo, Use saved overlay and Replace
+  // logo are dimmed (ruling R11).
   function syncOverlay() {
     const overlay = app.state && app.state.overlay;
     const hasPhoto = !!app.img;
+    const hasBadCorners = hasPhoto && !!app.geometry && !app.geometry.ok;
+    const canAdd = hasPhoto && !hasBadCorners;
     const isPlaced = !!overlay;
     const hasSaved = !!saved;
-    const message = { kind: 'error', text: app.overlayMessage || '' };
+    const text = hasBadCorners ? FIX_CORNERS_FIRST : app.overlayMessage || '';
+    const message = { kind: 'error', text };
     const isStatusShown = CF.updateStatus(byId('overlayStatus'), message);
     byId('overlayHintLine').hidden = isPlaced || isStatusShown;
     byId('overlayOpacityLine').hidden = !isPlaced || isStatusShown;
@@ -1148,8 +1174,8 @@
     const thumb = byId('overlayThumb');
     thumb.hidden = !hasSaved;
     if (hasSaved && thumb.getAttribute('src') !== saved.url) thumb.src = saved.url;
-    CF.updateActionButton(byId('btnUseSaved'), { isHidden: !hasSaved, isDisabled: !hasPhoto });
-    CF.updateActionButton(byId('btnOverlayAdd'), { isDisabled: !hasPhoto });
+    CF.updateActionButton(byId('btnUseSaved'), { isHidden: !hasSaved, isDisabled: !canAdd });
+    CF.updateActionButton(byId('btnOverlayAdd'), { isDisabled: !canAdd });
     CF.updateNudgePad(byId('overlayMovePad'), { isDisabled: !isPlaced });
     CF.updateNudgePad(byId('overlaySizePad'), { isDisabled: !isPlaced });
     const percent = isPlaced ? Math.round(overlay.opacity * 100) : 100;
@@ -1158,17 +1184,18 @@
       isDisabled: !isPlaced,
     });
     byId('overlayOpacityValue').textContent = `${percent}%`;
-    syncOverlayTools(isPlaced, hasSaved, hasPhoto);
+    syncOverlayTools(isPlaced, hasSaved, canAdd);
   }
 
   // The tool row: all four tools with a logo placed; Delete saved alone while a saved logo is
-  // only offered; no row with neither. Delete saved is dimmed while nothing is saved.
-  function syncOverlayTools(isPlaced, hasSaved, hasPhoto) {
+  // only offered; no row with neither. Delete saved is dimmed while nothing is saved, and
+  // Replace logo while no logo can be added (canAdd: a photo is open and its corners are valid).
+  function syncOverlayTools(isPlaced, hasSaved, canAdd) {
     byId('overlayTools').hidden = !isPlaced && !hasSaved;
     for (const id of ['toolOverlayReplace', 'toolOverlayReset', 'toolOverlayRemove']) {
       byId(id).hidden = !isPlaced;
     }
-    CF.updateTool(byId('toolOverlayReplace'), { isDisabled: !isPlaced || !hasPhoto });
+    CF.updateTool(byId('toolOverlayReplace'), { isDisabled: !isPlaced || !canAdd });
     CF.updateTool(byId('toolOverlayReset'), { isDisabled: !isPlaced });
     CF.updateTool(byId('toolOverlayRemove'), { isDisabled: !isPlaced });
     CF.updateTool(byId('toolOverlayDeleteSaved'), { isDisabled: !hasSaved });

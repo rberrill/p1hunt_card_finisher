@@ -1496,20 +1496,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-43 A logo that can't be kept in the browser
 
-A warning, for 5 seconds, when a logo is added but the browser won't store it for the next photo: "This overlay works on this photo, but it can’t be saved in this browser."
+A warning, for 5 seconds, when a logo is added but the browser won't store it for the next photo: "This logo works on this photo, but it can’t be saved in this browser."
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "This overlay works on this photo, but it can’t be saved in this browser."
+- Changed: 1.10.0
+- Anchors: "This logo works on this photo, but it can’t be saved in this browser."
 - Source: `js/app/overlay.js` (`saveToBrowser`)
-- Ruling: R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today. R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
+- Ruling: R59. Messages say "logo" where they said "overlay"; button names are not touched. The app does this since 1.10.0. R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
 - Cases: 1
 
 ### MSG-43.1 A logo the browser won't keep   [auto: phone]
-Written to ruling R59; it fails until that is built (BUG-283).
 Script only
 Stand-in: a person can't make the browser refuse to store one thing on purpose, so the script makes the device refuse to store the logo, as a full disk would.
 
@@ -2090,21 +2089,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-60 A logo file over the size limit
 
-On Overlay, when the logo file is larger than the limit, the row above the controls reads "That file is {size} MB. The overlay limit is 5 MB." with a red error icon. The limit shown follows the setting, so a link that lowers it shows the lower figure.
+On Overlay, when the logo file is larger than the limit, the row above the controls reads "That file is {size} MB. The logo limit is 5 MB." with a red error icon. The limit shown follows the setting, so a link that lowers it shows the lower figure, in KB when it is under 1 MB (OVL-01.4, SEC-10.3).
 
 - Risk: medium
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: " MB. The overlay limit is ", `#overlayStatus`, `CONFIG.overlay.maxBytes`
-- Source: `js/app/overlay.js` (`addOverlayFile`, `setMessage`, `syncOverlay`)
-- Ruling: R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today.
+- Changed: 1.10.0
+- Anchors: " MB. The logo limit is ", `#overlayStatus`, `CONFIG.overlay.maxBytes`
+- Source: `js/app/overlay.js` (`addOverlayFile`, `logoLimitText`, `setMessage`, `syncOverlay`)
+- Ruling: R59. Messages say "logo" where they said "overlay"; button names are not touched. The app does this since 1.10.0. R83. Rich, 2026-11-18: a limit under 1 MB reads in KB ("up to 64 KB."), and one of 1 MB or more in MB with at most one decimal ("5 MB", "1.5 MB"), in the hint and in the too-big refusal alike. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-60.1 A logo file over the size limit   [auto: phone]
-Written to ruling R59; it fails until that is built (BUG-283).
-
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -2374,16 +2371,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-70 Overlay's hint with no logo placed
 
-On Overlay with no logo placed and no file error, the row above the controls reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB."
+On Overlay with no logo placed and no file error, the row above the controls reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." The size is the logo limit in force, so a link that lowers the limit shows the lower figure, in KB when it is under 1 MB (OVL-01.2, OVL-01.4, SEC-10.3). While the corners are invalid the row reads "Fix the corners in Perspective first." in its place (OVL-31).
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.", `#overlayHintLine`, `CONFIG.overlay.maxBytes`
-- Source: `js/app/overlay.js` (`buildOverlayControls`, `syncOverlay`)
-- Ruling: R11. With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are dimmed and this row reads "Fix the corners in Perspective first." The app differs today. R83. The hint gives the logo size limit in force, which a link can lower. The app differs today.
+- Changed: 1.10.0
+- Anchors: "Add a logo or watermark: PNG, WebP, JPG or SVG, up to ", `#overlayHintLine`, `CONFIG.overlay.maxBytes`
+- Source: `js/app/overlay.js` (`overlayHint`, `logoLimitText`, `buildOverlayControls`, `syncOverlay`)
+- Ruling: R11. With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are dimmed and this row reads "Fix the corners in Perspective first." The app does this since 1.10.0. R83. The hint gives the logo size limit in force, which a link can lower. Rich, 2026-11-18: a limit under 1 MB reads in KB ("up to 64 KB."), and one of 1 MB or more in MB with at most one decimal ("5 MB", "1.5 MB"), in the hint and in the too-big refusal alike. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-70.1 Overlay's hint with no logo placed   [auto: phone]

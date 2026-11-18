@@ -88,7 +88,7 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R80 | "The card is too small for corner shots." stays 5 s where other errors stay 6 | RETIRED by R20 (Rich, 2026-11-17): once both save buttons are dimmed nothing can show the message, so the R20 fix removes it and its entry moves to retired.md |
 | R81 | Four engine faults reach the screen in raw words ("Corners are missing or invalid." and three more) | FIX: the screen shows "Fix the corners in Perspective first."; the raw words go to the console |
 | R82 | "Fix the corners in Perspective first." shows on Perspective itself | FIX: on Perspective it reads "Fix the corners first." |
-| R83 | Overlay's hint always says "up to 5 MB", though a link can lower the limit | FIX: the hint gives the limit in force |
+| R83 | Overlay's hint always says "up to 5 MB", though a link can lower the limit | FIX: the hint gives the limit in force. Rich, 2026-11-18: a limit under 1 MB reads in KB ("up to 64 KB."), and one of 1 MB or more in MB with at most one decimal ("5 MB", "1.5 MB"), in the hint and in the too-big refusal alike |
 | R84 | On Overlay with no logo placed, every touch and the wheel do nothing | AS-IS: the photo is locked on that step |
 | R85 | A message in the row above the controls, and Preview, hide Perspective's confidence figure | AS-IS |
 | R86 | Flatten never shows its icon, only its percentage | AS-IS |

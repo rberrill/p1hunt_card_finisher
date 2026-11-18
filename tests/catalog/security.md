@@ -385,10 +385,10 @@ A logo file must be a PNG, WebP, JPEG or SVG of at most 5 MB, and an SVG must st
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `"That file type isn’t supported. Use PNG, WebP, JPG or SVG."`, `"That SVG has no width, height or viewBox, so it can’t be sized. "`, `" MB. The overlay limit is "`, `CONFIG.overlay.maxBytes`
-- Source: `js/app/overlay.js` (`imageTypeOf`, `addOverlayFile`, `decodeSvg`, `svgSize`, `register`)
-- Ruling: R83. The hint gives the logo size limit in force, which a link can lower. The app differs today.
+- Changed: 1.10.0
+- Anchors: `"That file type isn’t supported. Use PNG, WebP, JPG or SVG."`, `"That SVG has no width, height or viewBox, so it can’t be sized. "`, `" MB. The logo limit is "`, `CONFIG.overlay.maxBytes`
+- Source: `js/app/overlay.js` (`imageTypeOf`, `addOverlayFile`, `overlayHint`, `logoLimitText`, `decodeSvg`, `svgSize`, `register`)
+- Ruling: R83. The hint gives the logo size limit in force, which a link can lower. Rich, 2026-11-18: a limit under 1 MB reads in KB ("up to 64 KB."), and one of 1 MB or more in MB with at most one decimal ("5 MB", "1.5 MB"), in the hint and in the too-big refusal alike. The app does this since 1.10.0. R59. Messages say "logo" where they said "overlay"; button names are not touched. The app does this since 1.10.0.
 - Cases: 3
 
 ### SEC-10.1 An SVG with no size is refused   [auto: phone]
@@ -426,8 +426,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what the Console printed, a screenshot.
 
 ### SEC-10.3 With a lower limit from a link, the hint and the refusal name it   [auto: phone]
-Written to rulings R83 and R59; it fails until both are built (BUG-293, BUG-283).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test, opened with the link index.html?overlay.maxBytes=65536 (a 64 KB logo limit)
@@ -438,8 +436,8 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Read the line above the controls (the one line of text at the top of the block of buttons under the photo) | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to" and then the limit the link set, 0.0625 MB (64 KB), not 5 MB |
-| 2 | Tap **Add logo** and choose noisy-logo.png | The line reads "That file is 0.1 MB. The logo limit is 0.0625 MB." in red |
+| 1 | Read the line above the controls (the one line of text at the top of the block of buttons under the photo) | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 64 KB.": the limit the link set, not 5 MB |
+| 2 | Tap **Add logo** and choose noisy-logo.png | The line reads "That file is 0.1 MB. The logo limit is 64 KB." in red |
 | 3 | Look at the photo | No logo is on it |
 
 Pass: every row's result is seen.

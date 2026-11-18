@@ -82,12 +82,11 @@ const LOADING = 'Loading…';
 const NO_SIZE = 'That SVG has no width, height or viewBox, so it can’t be sized. '
   + 'Re-export it with a size.';
 const CANT_READ = 'Couldn’t read that image. Try another PNG, WebP, JPG or SVG file.';
-// Ruling R83: the hint gives the limit in force. The words before it, and the limit a link of
-// 65536 bytes sets, in the units the refusal uses or in KB.
-const LOGO_HINT_START = 'Add a logo or watermark: PNG, WebP, JPG or SVG, up to ';
-const LOWERED_LIMIT_IN_HINT = /^(0\.0625 MB|64 KB)\.$/;
+// Ruling R83: the hint gives the limit in force, and a limit under 1 MB reads in KB, in the
+// hint and in the refusal alike. A link of 65536 bytes sets 64 KB.
+const LOWERED_LIMIT_HINT = 'Add a logo or watermark: PNG, WebP, JPG or SVG, up to 64 KB.';
 // Ruling R59: messages say "logo".
-const LOWERED_LIMIT_MESSAGE = 'That file is 0.1 MB. The logo limit is 0.0625 MB.';
+const LOWERED_LIMIT_MESSAGE = 'That file is 0.1 MB. The logo limit is 64 KB.';
 // The files in tests/fixtures/ the cases name (each described in its case).
 const TURNED = 'IMG_9136-turned-edits.json';
 const LEVELS_AS_WORDS = 'IMG_9136-levels-as-words-edits.json';
@@ -581,14 +580,12 @@ test('SEC-10.3 With a lower limit from a link, the hint and the refusal name it 
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-293, BUG-283');
   const hand = await startWith(page, testInfo, { address: 'index.html?overlay.maxBytes=65536' });
   await goToStep(page, 'overlay', hand);
-  await check(`the line above the controls reads "${LOGO_HINT_START.trim()}" and then the limit `
-    + 'the link set, 0.0625 MB (64 KB), not 5 MB', async () => {
-    const hint = await page.locator('#overlayHintLine').textContent();
-    expect(hint.startsWith(LOGO_HINT_START)).toBe(true);
-    expect(hint.slice(LOGO_HINT_START.length)).toMatch(LOWERED_LIMIT_IN_HINT);
+  await check(`the line above the controls reads "${LOWERED_LIMIT_HINT}": the limit the link `
+    + 'set (64 KB), not 5 MB', async () => {
+    await expect(page.locator('#overlayHintLine')).toBeVisible();
+    expect(await page.locator('#overlayHintLine').textContent()).toBe(LOWERED_LIMIT_HINT);
   });
   await chooseBadLogo(page, hand, page.locator('#btnOverlayAdd'), fixtureLogo(NOISY_LOGO));
   await check(`the line reads "${LOWERED_LIMIT_MESSAGE}" in red`, async () => {

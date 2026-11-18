@@ -81,6 +81,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - On Levels, the **W** and **B** beside a pick's ring are now white letters with a black outline, so the W can be read on the white spot it marks. They were plain white.
 - On Levels, **Auto** no longer shows a message when it works ("Auto set white and black points. Check them, then Apply." or "Auto set the white point (no clear black). Check it, then Apply."), as a pick shows none: the color patches and the photo show what it set. It still warns when it can't estimate ("Couldn’t estimate levels from this image.").
 - On a wide screen, Levels' tips and its keyboard help sit under one heading, **Tips and keys**. They used to sit under two, **Levels tips** and **Tips and keys**.
+- On the Overlay step, while the corners can't be used (they cross or fold inward), **Add logo**, **Use saved overlay** and **Replace logo** are greyed out and the line above the controls reads "Fix the corners in Perspective first." They used to stay live: a chosen file did nothing and said nothing, and **Use saved overlay** added a logo that wasn't drawn.
+- Two messages about a logo now say "logo", as the Overlay step's buttons do: "That file is 6.0 MB. The logo limit is 5 MB." and "This logo works on this photo, but it can’t be saved in this browser." They said "overlay".
+- Opened from a link that lowers the logo size limit, the Overlay step's hint gives that limit, in KB when it is under 1 MB (such as "up to 1.5 MB." or "up to 64 KB."). It used to say "up to 5 MB." whatever the limit was. The message for a file over the limit gives it the same way ("The logo limit is 64 KB."); it used to read "0.0625 MB".
 
 ## [1.9.0] - 2026-11-10
 

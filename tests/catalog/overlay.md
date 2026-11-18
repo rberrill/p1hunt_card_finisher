@@ -6,17 +6,17 @@ The logos the cases use are in `tests/fixtures/`: blue-disc.png (400 × 400 px, 
 
 ## OVL-01 Add a logo
 
-Tap **Add logo** (red) to pick a PNG, WebP, JPEG or SVG file to place on the photo as a logo.
+Tap **Add logo** (red) to pick a PNG, WebP, JPEG or SVG file to place on the photo as a logo. The line above it names the file types and the size limit in force: 5 MB, or the lower limit a link sets, in KB when it is under 1 MB.
 
 - Risk: high
 - Check: script; phone (the iPhone's own file menu)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnOverlayAdd`, `#overlayInput`, "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB."
-- Source: `js/app/overlay.js` (`buildAddRow`, `bindOverlayControls`, `addOverlayFile`); `index.html` (the logo's file input)
-- Ruling: R83. The hint gives the logo size limit in force, which a link can lower. The app differs today.
-- Cases: 3
+- Changed: 1.10.0
+- Anchors: `#btnOverlayAdd`, `#overlayInput`, "Add a logo or watermark: PNG, WebP, JPG or SVG, up to "
+- Source: `js/app/overlay.js` (`buildAddRow`, `overlayHint`, `logoLimitText`, `bindOverlayControls`, `addOverlayFile`); `index.html` (the logo's file input)
+- Ruling: R83. The hint gives the logo size limit in force, which a link can lower. Rich, 2026-11-18: a limit under 1 MB reads in KB ("up to 64 KB."), and one of 1 MB or more in MB with at most one decimal ("5 MB", "1.5 MB"), in the hint and in the too-big refusal alike. The app does this since 1.10.0.
+- Cases: 4
 
 ### OVL-01.1 Add logo picks a file and places it   [auto: phone, webkit]
 Before you start:
@@ -37,8 +37,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-01.2 The hint gives the lower limit a link sets   [auto: phone]
-Written to rulings R83 and R59; it fails until both are built (BUG-293, BUG-283).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test, opened from a link that ends `index.html?overlay.maxBytes=1048576` (a logo limit of 1 MB)
@@ -76,6 +74,30 @@ Before you start:
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screen recording.
+
+### OVL-01.4 The limit reads in KB under 1 MB, and in MB to one decimal from 1 MB   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test, opened from a link that ends `index.html?overlay.maxBytes=100000` (a logo limit of 100,000 bytes, which is 97.66 KB)
+- Photo: IMG_9136.JPEG from samples/
+- Logo: big-logo.png, a file of exactly 2 MB (2,097,152 bytes) whose name ends .png: make one by renaming any file of that size (it is too big to keep in tests/fixtures/; the script makes its own)
+- Starting screen: the photo open, on the Overlay step, no logo placed
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+"The line above the controls" is the one line of text at the top of the block of buttons under the photo. "Add F": tap **Add logo** (the red button under the photo), then choose the file F in the file picker.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the line above the controls | It reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 98 KB." |
+| 2 | Add big-logo.png | A red message takes the line's place: "That file is 2.0 MB. The logo limit is 98 KB."; no logo is on the photo |
+| 3 | A second or more later, go to the build's address with `?overlay.maxBytes=1572864` added to it (a logo limit of 1.5 MB) | The start screen asks "Resume IMG_9136.JPEG?", with **Resume** and **Start fresh** |
+| 4 | Tap **Start fresh** | The question goes; **Open photo** shows |
+| 5 | Tap **Open photo** and choose IMG_9136.JPEG | IMG_9136.JPEG opens on the Perspective step |
+| 6 | Tap **Overlay** in the step tabs (the six tabs Perspective to Export, along the bottom) | The line above the controls reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 1.5 MB." |
+| 7 | Add big-logo.png | A red message takes the line's place: "That file is 2.0 MB. The logo limit is 1.5 MB."; no logo is on the photo |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-02 Which files can be a logo
 
@@ -754,9 +776,10 @@ A file that can't be used puts a red message in place of the hint or **Opacity**
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#overlayStatus`, "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file.", " MB. The overlay limit is "
+- Changed: 1.10.0
+- Anchors: `#overlayStatus`, "Couldn’t read that image. Try another PNG, WebP, JPG or SVG file.", " MB. The logo limit is "
 - Source: `js/app/overlay.js` (`setMessage`, `addOverlayFile`, `overlayStateChanged`, `syncOverlay`); `js/app/shell.js` (`setTab`); `js/app/pair.js` (`applySide`)
+- Ruling: R59. Messages say "logo" where they said "overlay"; button names are not touched. The app does this since 1.10.0.
 - Cases: 4
 
 ### OVL-14.1 A file that isn't a picture gets a red message in place of the hint   [auto: phone]
@@ -779,7 +802,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-14.2 A file over 5 MB is refused and the logo stays   [auto: phone]
-The message is in ruling R59's words. Until R59 is built (BUG-283) the app writes "overlay" where they say "logo", which this case also accepts: its subject is the refusal, and MSG-60.1 holds the words.
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -1524,9 +1546,9 @@ Adding a logo by the button, a drop or a paste makes it the saved logo. While th
 - Layout: both
 - Added: 1.10 baseline
 - Changed: 1.10.0
-- Anchors: `CONFIG.session.saveDelayMs`, "This overlay works on this photo, but it can’t be saved in this browser."
+- Anchors: `CONFIG.session.saveDelayMs`, "This logo works on this photo, but it can’t be saved in this browser."
 - Source: `js/app/overlay.js` (`addOverlayFile`, `saveToBrowser`, `overlayStateChanged`)
-- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today. R36. Changes are saved sooner (about 0.1 s after each); the saved logo's position, size and opacity share that wait. The app does this since 1.10.0.
+- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R59. Messages say "logo" where they said "overlay"; button names are not touched. The app does this since 1.10.0. R36. Changes are saved sooner (about 0.1 s after each); the saved logo's position, size and opacity share that wait. The app does this since 1.10.0.
 - Cases: 4
 
 ### OVL-28.1 A change to the saved logo's place is kept in the browser   [auto: phone, webkit]
@@ -1556,7 +1578,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-28.2 A logo the browser won't keep still goes on the photo   [auto: phone]
-The message is in ruling R59's words. Until R59 is built (BUG-283) the app writes "overlay" where they say "logo", which this case also accepts: its subject is the logo staying on the photo, and MSG-43.1 holds the words.
 Script only
 Stand-in: the script makes the browser refuse to store the saved logo, as a full storage would; a person can't make a browser's storage refuse on demand.
 
@@ -1775,21 +1796,19 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-31 With invalid corners
 
-With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are greyed out, and the line above the controls reads "Fix the corners in Perspective first."
+With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are greyed out, and the line above the controls reads "Fix the corners in Perspective first." Once the corners are valid again the three buttons work and the line goes.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnOverlayAdd`, `#btnUseSaved`, `#toolOverlayReplace`
-- Source: `js/app/overlay.js` (`addOverlayFile`, `useSaved`, `place`, `setPlacement`, `syncOverlay`)
-- Ruling: R11. With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are dimmed and the line above the controls reads "Fix the corners in Perspective first." The app differs today: the three buttons stay live, a file picked with **Add logo** or **Replace logo** does nothing and says nothing, and **Use saved overlay** places the saved logo in the edits, as one undo step, though nothing is drawn.
+- Changed: 1.10.0
+- Anchors: `#btnOverlayAdd`, `#btnUseSaved`, `#toolOverlayReplace`, "Fix the corners in Perspective first."
+- Source: `js/app/overlay.js` (`syncOverlay`, `syncOverlayTools`)
+- Ruling: R11. With invalid corners, **Add logo**, **Use saved overlay** and **Replace logo** are dimmed and the line above the controls reads "Fix the corners in Perspective first." The app does this since 1.10.0.
 - Cases: 2
 
 ### OVL-31.1 With crossed corners Add logo and Use saved overlay are greyed out   [auto: phone]
-Written to ruling R11; it fails until that is built (BUG-082).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -1803,13 +1822,14 @@ Before you start:
 | 1 | Tap **Perspective** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Perspective step shows the card's outline, with a ring on each corner |
 | 2 | Drag the top-left corner ring past the bottom-right one | The outline crosses itself and turns red |
 | 3 | Tap **Overlay** in the step tabs | **Add logo** and **Use saved overlay** are greyed out; the line above the controls (the one line of text at the top of the block of buttons under the photo) reads "Fix the corners in Perspective first." |
+| 4 | Tap **Perspective** in the step tabs | The Perspective step shows, the outline still crossed and red |
+| 5 | Tap **Undo** in the top bar | The outline is back around the card, no longer crossed or red |
+| 6 | Tap **Overlay** in the step tabs | **Add logo** and **Use saved overlay** are live again (not greyed out); the line above the controls reads "Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### OVL-31.2 With crossed corners Replace logo is greyed out   [auto: phone]
-Written to ruling R11; it fails until that is built (BUG-082).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -1823,6 +1843,9 @@ Before you start:
 | 1 | Tap **Perspective** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Perspective step shows the card's outline, with a ring on each corner |
 | 2 | Drag the top-left corner ring past the bottom-right one | The outline crosses itself and turns red |
 | 3 | Tap **Overlay** in the step tabs | **Replace logo** is greyed out; the line above the controls (the one line of text at the top of the block of buttons under the photo) reads "Fix the corners in Perspective first." |
+| 4 | Tap **Perspective** in the step tabs | The Perspective step shows, the outline still crossed and red |
+| 5 | Tap **Undo** in the top bar | The outline is back around the card, no longer crossed or red |
+| 6 | Tap **Overlay** in the step tabs | **Replace logo** is live again (not greyed out); the line above the controls reads OPACITY with its slider and 100%; the disc is on the photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

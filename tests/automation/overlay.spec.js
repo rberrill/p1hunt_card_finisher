@@ -7,11 +7,12 @@
 // only a file over the size limit, too big to keep there, is made in the test.
 'use strict';
 const { test, expect } = require('./support/case.js');
-const { goToStep, openOptions, stepNow, offsetBy } = require('./support/app.js');
+const { openApp, goToStep, openOptions, stepNow, offsetBy } = require('./support/app.js');
 const {
   pickWith,
   waitForPhoto,
   waitForSaved,
+  waitForStart,
   reloadToStart,
   watchStorageAndDownloads,
   storageWritesSince,
@@ -82,11 +83,10 @@ const GIF_LOGO = 'logo.gif';
 const HINT = 'Add a logo or watermark: PNG, WebP, JPG or SVG, up to 5 MB.';
 const NOT_SUPPORTED = 'That file type isn’t supported. Use PNG, WebP, JPG or SVG.';
 const CANT_READ = 'Couldn’t read that image. Try another PNG, WebP, JPG or SVG file.';
-// The warning for a logo the browser won't keep, in ruling R59's words ("logo"), and the
-// pattern a case that isn't about the words reads it with: R59's words or today's.
+// The warning for a logo the browser won't keep, and the refusal of a 6 MB file (ruling R59:
+// both say "logo").
 const CANT_SAVE = 'This logo works on this photo, but it can’t be saved in this browser.';
-const CANT_SAVE_EITHER = new RegExp('This (logo|overlay) works on this photo, but it can’t be '
-  + 'saved in this browser\\.');
+const TOO_BIG = 'That file is 6.0 MB. The logo limit is 5 MB.';
 const FIX_CORNERS = 'Fix the corners in Perspective first.';
 // A new logo's width as a fraction of the crop's width (CardEngine.OVERLAY_DEFAULTS.width).
 const START_WIDTH = 0.25;
@@ -277,11 +277,9 @@ test('OVL-01.2 The hint gives the lower limit a link sets [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-293, BUG-283');
   const address = `index.html?overlay.maxBytes=${MEGABYTE}`;
   const hand = await startOnOverlay(page, testInfo, { address });
-  // Ruling R83: the hint gives the limit in force. A plain reading, so the known defect fails
-  // at once.
+  // Ruling R83: the hint gives the limit in force.
   const hintWithLimit = HINT.replace('up to 5 MB.', 'up to 1 MB.');
   await check(`the line above the controls reads "${hintWithLimit}": the limit the link set`,
     async () => {
@@ -302,6 +300,37 @@ test('OVL-01.2 The hint gives the lower limit a link sets [phone]', async ({
     expect(await logoId(page)).toBeNull();
   });
 });
+
+// Two rows OVL-01.4 makes for each limit, on the Overlay step with no logo placed: the hint
+// ends "up to `limit`.", and big-logo.png (2 MB) is refused in red with the same limit.
+async function checkLimitWords(page, hand, check, limit) {
+  const hint = HINT.replace('up to 5 MB.', `up to ${limit}.`);
+  await check(`the line above the controls reads "${hint}"`, async () => {
+    await expect(page.locator('#overlayHintLine')).toBeVisible();
+    expect(await page.locator('#overlayHintLine').textContent()).toBe(hint);
+  });
+  await chooseBadLogo(page, hand, page.locator('#btnOverlayAdd'), oversizedPng(2 * MEGABYTE));
+  const refusal = `That file is 2.0 MB. The logo limit is ${limit}.`;
+  await check(`a red message takes the line's place: "${refusal}"; no logo is on the photo`,
+    async () => {
+      await expect(page.locator('#overlayStatus')).toHaveText(refusal);
+      await expect(page.locator('#overlayStatus')).toHaveClass(/is-error/);
+      await expect(page.locator('#overlayHintLine')).toBeHidden();
+      expect(await logoId(page)).toBeNull();
+    });
+}
+
+test('OVL-01.4 The limit reads in KB under 1 MB, and in MB to one decimal from 1 MB [phone]',
+  async ({ page, check }, testInfo) => {
+    // Ruling R83 (Rich, 2026-11-18). 100,000 bytes is 97.66 KB, which reads as 98 KB; 1,572,864
+    // bytes is 1.5 MB.
+    const oddLimit = 'index.html?overlay.maxBytes=100000';
+    const hand = await startOnOverlay(page, testInfo, { address: oddLimit });
+    await checkLimitWords(page, hand, check, '98 KB');
+    await reloadStartFreshAndOpen(page, hand, check, PHOTO, 'index.html?overlay.maxBytes=1572864');
+    await goToStep(page, 'overlay', hand);
+    await checkLimitWords(page, hand, check, '1.5 MB');
+  });
 
 // Expects the logo on the page to be `ratio` times as wide as it is high (within 2%).
 async function expectLogoShape(page, ratio) {
@@ -1092,10 +1121,16 @@ test('OVL-11.1 Remove takes the logo off this photo and keeps the saved one [pho
 // Three rows several cases share: reload the page (the start screen asks to resume
 // IMG_9136.JPEG), tap Start fresh (Open photo shows), then open `name` with Open photo (it opens
 // on the Perspective step). Each row's result is checked. The open photo's edits are saved
-// first, as they are a moment after any change.
-async function reloadStartFreshAndOpen(page, hand, check, name) {
+// first, as they are a moment after any change. With `address`, the first row goes to the
+// build at that address (a link with settings) in place of the reload.
+async function reloadStartFreshAndOpen(page, hand, check, name, address = null) {
   await waitForSaved(page, { name: PHOTO });
-  await reloadToStart(page);
+  if (address) {
+    await openApp(page, address);
+    await waitForStart(page);
+  } else {
+    await reloadToStart(page);
+  }
   await check('the start screen asks "Resume IMG_9136.JPEG?", with Resume and Start fresh',
     async () => {
       await expect(page.locator('#resume .resume-name')).toHaveText(`Resume ${PHOTO}?`);
@@ -1224,15 +1259,14 @@ test('OVL-14.2 A file over 5 MB is refused and the logo stays [phone]', async ({
   const logo = await addDisc(page, hand);
   const before = await logoPlacement(page);
   await chooseBadLogo(page, hand, page.locator('#toolOverlayReplace'), oversizedPng());
-  // Ruling R59's words, or today's ("overlay limit"): MSG-60.1 holds the words.
-  await check('a red message takes OPACITY\'s place: "That file is 6.0 MB. The logo limit is '
-    + '5 MB."; the disc stays as it was', async () => {
-    await expect(page.locator('#overlayStatus')).toHaveText(
-      /^That file is 6\.0 MB\. The (logo|overlay) limit is 5 MB\.$/);
-    await expect(page.locator('#overlayOpacityLine')).toBeHidden();
-    expect(await logoId(page)).toBe(logo);
-    expect(await logoPlacement(page)).toEqual(before);
-  });
+  await check(`a red message takes OPACITY's place: "${TOO_BIG}"; the disc stays as it was`,
+    async () => {
+      await expect(page.locator('#overlayStatus')).toHaveText(TOO_BIG);
+      await expect(page.locator('#overlayStatus')).toHaveClass(/is-error/);
+      await expect(page.locator('#overlayOpacityLine')).toBeHidden();
+      expect(await logoId(page)).toBe(logo);
+      expect(await logoPlacement(page)).toEqual(before);
+    });
   await hand.tap(moveKey(page, 'right'));
   await check('the disc moves; the message has gone and OPACITY shows again', async () => {
     expect((await logoPlacement(page)).cx).toBeGreaterThan(before.cx);
@@ -2057,7 +2091,7 @@ test('OVL-28.2 A logo the browser won\'t keep still goes on the photo [phone]', 
   await check('the disc shows on the photo; an amber warning reads "' + CANT_SAVE + '"',
     async () => {
       expectBlue(await colorOnPage(page, inDisc(await logoOnPage(page))));
-      await expect(page.locator('#toast')).toContainText(CANT_SAVE_EITHER);
+      await expect(page.locator('#toast')).toContainText(CANT_SAVE);
       expect((await toastNow(page)).kind).toBe('warn');
     });
   await hand.tap(page.locator('#toolOverlayRemove'));
@@ -2417,16 +2451,31 @@ test('OVL-30.2 Each side of a pair keeps its own logo place [phone]', async ({
   });
 });
 
-// True when a control is greyed out. Read at once, with no waiting: a known-defect check.
+// True when a control is greyed out.
 const isGreyedOut = locator => locator.evaluate(el => el.disabled);
 // The text of the line above Overlay's controls, as shown.
 const overlayLabelText = page => page.locator('#overlayArea').evaluate(area => [
   ...area.querySelectorAll('.label-row, .status-line'),
 ].filter(row => row.getClientRects().length).map(row => row.innerText).join(' '));
 
+// Two rows OVL-31's cases share, the way back from crossed corners: tap Perspective (the
+// outline is still crossed), then Undo (the corners are back around the card). Each row's
+// result is checked.
+async function undoTheCrossing(page, hand, check) {
+  const cornersOk = () => page.evaluate(() => window.__straightener.app.geometry.ok);
+  await goToStep(page, 'perspective', hand);
+  await check('the Perspective step shows, the outline still crossed and red', async () => {
+    expect(await stepNow(page)).toBe('perspective');
+    expect(await cornersOk()).toBe(false);
+  });
+  await hand.tap(page.locator('#btnUndo'));
+  await check('the outline is back around the card, no longer crossed or red', async () => {
+    expect(await cornersOk()).toBe(true);
+  });
+}
+
 test('OVL-31.1 With crossed corners Add logo and Use saved overlay are greyed out [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-082');
     const hand = await startOnOverlay(page, testInfo);
     await addDisc(page, hand);
     await hand.tap(page.locator('#toolOverlayRemove'));
@@ -2448,7 +2497,16 @@ test('OVL-31.1 With crossed corners Add logo and Use saved overlay are greyed ou
       + 'reads "' + FIX_CORNERS + '"', () => {
       expect(addOff).toBe(true);
       expect(savedOff).toBe(true);
-      expect(line).toContain(FIX_CORNERS);
+      expect(line.trim()).toBe(FIX_CORNERS);
+    });
+    await undoTheCrossing(page, hand, check);
+    await goToStep(page, 'overlay', hand);
+    await check('Add logo and Use saved overlay are live again; the line above the controls '
+      + 'reads "' + HINT + '"', async () => {
+      expect(await isGreyedOut(page.locator('#btnOverlayAdd'))).toBe(false);
+      expect(await isGreyedOut(page.locator('#btnUseSaved'))).toBe(false);
+      await expect(page.locator('#btnUseSaved')).toBeVisible();
+      expect((await overlayLabelText(page)).trim()).toBe(HINT);
     });
   });
 
@@ -2456,9 +2514,8 @@ test('OVL-31.2 With crossed corners Replace logo is greyed out [phone]', async (
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-082');
   const hand = await startOnOverlay(page, testInfo);
-  await addDisc(page, hand);
+  const logo = await addDisc(page, hand);
   await goToStep(page, 'perspective', hand);
   await check('the Perspective step shows the card\'s outline, with a ring on each corner',
     async () => {
@@ -2475,7 +2532,19 @@ test('OVL-31.2 With crossed corners Replace logo is greyed out [phone]', async (
   await check('Replace logo is greyed out; the line above the controls reads "' + FIX_CORNERS
     + '"', () => {
     expect(replaceOff).toBe(true);
-    expect(line).toContain(FIX_CORNERS);
+    expect(line.trim()).toBe(FIX_CORNERS);
+  });
+  await undoTheCrossing(page, hand, check);
+  await goToStep(page, 'overlay', hand);
+  await check('Replace logo is live again; the line above the controls reads OPACITY with its '
+    + 'slider and 100%; the disc is on the photo', async () => {
+    expect(await isGreyedOut(page.locator('#toolOverlayReplace'))).toBe(false);
+    await expect(page.locator('#overlayStatus')).toBeHidden();
+    await expect(page.locator('#overlayOpacityLine')).toBeVisible();
+    await expect(page.locator('#overlayOpacity')).toBeVisible();
+    await expect(page.locator('#overlayOpacityValue')).toHaveText('100%');
+    expect(await logoId(page)).toBe(logo);
+    expectBlue(await colorOnPage(page, inDisc(await logoOnPage(page))));
   });
 });
 

@@ -215,7 +215,9 @@
     }
     if (!view) {
       // Perspective's Preview is on the step that fixes the corners, so its words don't name
-      // the step (ruling R82).
+      // the step (ruling R82). The other steps' words are also the line above Overlay's
+      // controls, written out in js/app/overlay.js (FIX_CORNERS_FIRST): a rewording changes
+      // both.
       const isOnPerspective = app.tab === 'perspective';
       drawMessage(ctx, isOnPerspective
         ? 'Fix the corners first.'

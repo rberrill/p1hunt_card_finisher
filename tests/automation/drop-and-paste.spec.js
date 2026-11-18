@@ -63,10 +63,9 @@ const WAIT_FOR_SIDE = 'Wait for the other side to open, then open the photo.';
 const NO_HEIC = 'This browser can’t open HEIC. Save the photo as JPEG first (Safari opens HEIC '
   + 'directly).';
 // The Overlay step's messages for a logo file that isn't a picture and for one over the 5 MB
-// limit (6 MB here), word for word. The second is read in ruling R59's words ("logo") or
-// today's ("overlay"): MSG-60.1 holds the words.
+// limit (6 MB here), word for word (ruling R59: the second says "logo").
 const CANT_READ_LOGO = 'Couldn’t read that image. Try another PNG, WebP, JPG or SVG file.';
-const LOGO_TOO_BIG = /^That file is 6\.0 MB\. The (logo|overlay) limit is 5 MB\.$/;
+const LOGO_TOO_BIG = 'That file is 6.0 MB. The logo limit is 5 MB.';
 // The message a file that can't be read as a photo gets, word for word.
 const NOT_A_PICTURE = 'Couldn’t read that file as an image.';
 // The type some systems give a dragged file they know nothing about: a plain file of bytes.
