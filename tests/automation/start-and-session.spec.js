@@ -756,7 +756,8 @@ test('STA-09.1 Resume keeps corners placed by hand [phone] [webkit]', async ({
   check,
 }, testInfo) => {
   const hand = await startWithPhoto(page, testInfo);
-  const detected = (await editState(page)).corners[0];
+  const detectedCorners = (await editState(page)).corners;
+  const detected = detectedCorners[0];
   const start = await cornerOnPage(page, 0);
   await hand.drag(start, { x: start.x + CORNER_DRAG_PX, y: start.y + CORNER_DRAG_PX });
   const placed = (await editState(page)).corners;
@@ -773,9 +774,57 @@ test('STA-09.1 Resume keeps corners placed by hand [phone] [webkit]', async ({
   await check('the top-left handle is where it was left', async () => {
     expect((await editState(page)).corners).toEqual(placed);
   });
-  await check('Candidate reads 1/3 once settled, and the handles have not moved', async () => {
-    await expect(page.locator('#toolCandidate')).toContainText('1/3');
+  const candidate = page.locator('#toolCandidate');
+  await check('once settled Candidate can be tapped; it shows its icon and no number, and the '
+    + 'handles have not moved', async () => {
+    await expect(candidate).toBeEnabled();
+    await expect(candidate.locator('.tool-glyph')).toBeVisible();
+    await expect(candidate.locator('.tool-value')).toBeHidden();
     expect((await editState(page)).corners).toEqual(placed);
+  });
+  await hand.tap(candidate);
+  await check('Candidate reads 1/3, and the handles are on the card\'s four corners: the best '
+    + 'outline found', async () => {
+    await expect(candidate.locator('.tool-value')).toHaveText('1/3');
+    expect((await editState(page)).corners).toEqual(detectedCorners);
+  });
+});
+
+// Candidate's number and the confidence at the right of Perspective's line, as shown.
+function candidateAndConfidence(page) {
+  return page.evaluate(() => {
+    const number = document.querySelector('#toolCandidate .tool-value');
+    const line = document.querySelector('#perspectiveLine');
+    return {
+      candidate: number.hidden ? '' : number.textContent,
+      confidence: line.hidden ? '' : line.querySelector('.line-readout').textContent,
+    };
+  });
+}
+
+test('STA-09.2 Resume with corners nobody moved keeps Candidate\'s number and the confidence '
+  + '[phone] [webkit]', async ({ page, check }, testInfo) => {
+  const hand = await startWithPhoto(page, testInfo);
+  const detectedCorners = (await editState(page)).corners;
+  const before = await candidateAndConfidence(page);
+  await check('Candidate reads 1/3, and the line reads Confidence and a percentage', async () => {
+    expect(before.candidate).toBe('1/3');
+    expect(before.confidence).toMatch(/^Confidence \d+%$/);
+  });
+  await waitForSaved(page, { corners: detectedCorners });
+  await reloadToStart(page);
+  await check('the card offers "Resume IMG_9136.JPEG?"', async () => {
+    await expect(page.locator('#resumeName')).toHaveText(PHOTO);
+  });
+  await resumeAs(page, hand, PHOTO);
+  await check('the photo opens with its handles on the card, where they were', async () => {
+    expect((await editState(page)).corners).toEqual(detectedCorners);
+  });
+  await check('once settled Candidate reads 1/3, and the line reads the same confidence as in '
+    + 'row 1', async () => {
+    await expect(page.locator('#toolCandidate')).toBeEnabled();
+    expect(await candidateAndConfidence(page)).toEqual(before);
+    expect((await editState(page)).corners).toEqual(detectedCorners);
   });
 });
 

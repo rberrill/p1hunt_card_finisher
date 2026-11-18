@@ -490,16 +490,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## STA-09 Resume keeps the saved corners
 
-After a resume, card detection still runs, but only to fill the **Candidate** choices and the snap targets; it never moves the resumed corners.
+After a resume, card detection still runs, but only to fill the **Candidate** choices and the snap targets; it never moves the resumed corners. **Candidate** shows a number, and the line its confidence, only when the resumed corners sit on one of the outlines found; with no number showing, the next tap goes to the first outline, the best pick.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnResume`, `#toolCandidate`
-- Source: `js/app/state.js` (`openFile`, `runDetect`)
-- Cases: 1
+- Source: `js/app/state.js` (`openFile`, `runDetect`, `noteDetectedCorners`)
+- Ruling: R6. Clear the number and the confidence when the corners are moved by hand. With no number showing (corners moved by hand, also after Resume), the next tap on Candidate goes to 1/N, the best pick. The app does this since 1.10.0.
+- Cases: 2
 
 ### STA-09.1 Resume keeps corners placed by hand   [auto: phone, webkit]
 Before you start:
@@ -514,7 +515,26 @@ Before you start:
 | 1 | Drag the top-left corner handle 40 px right and 40 px down, and let go | The handle sits inside the card, off its corner |
 | 2 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
 | 3 | Tap **Resume** | The photo opens with the top-left handle where you left it, inside the card |
-| 4 | Look at **Candidate** in the row of tools, once the photo has settled | It reads 1/3: the card's outlines were found again; the handles have not moved |
+| 4 | Look at **Candidate** in the row of tools, once the photo has settled | **Candidate** can be tapped (it was greyed out while the photo opened); it shows its icon and no number, since the corners are where you placed them; the handles have not moved |
+| 5 | Tap **Candidate** | It reads 1/3, and the handles are on the card's four corners: the best outline found |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### STA-09.2 Resume with corners nobody moved keeps Candidate's number and the confidence   [auto: phone, webkit]
+Before you start:
+- Device and browser: any; a phone-width or a wide window, in a private window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step, its four corner handles on the card, nothing changed yet
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at **Candidate** in the row of tools, and at the right end of the line above the controls | **Candidate** reads 1/3, and the line reads Confidence and a percentage (99% in Chrome) |
+| 2 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
+| 3 | Tap **Resume** | The photo opens with its handles on the card, where they were |
+| 4 | Look at **Candidate** and the line again, once the photo has settled | **Candidate** reads 1/3, and the line reads the same confidence as in row 1 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

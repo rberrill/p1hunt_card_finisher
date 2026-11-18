@@ -219,6 +219,7 @@
   // applied first, so neither undo nor a loaded edits file can break them.
   function stateChanged() {
     if (app.state) CF.applyPairRules(app.state);
+    if (app.state) noteDetectedCorners();
     app.geometry = app.state ? CardEngine.computeGeometry(app.state, geometryConfig()) : null;
     if (app.state && alignCrop(app.state, app.geometry)) {
       app.geometry = CardEngine.computeGeometry(app.state, geometryConfig());
@@ -267,11 +268,15 @@
     return { preview, thumb, work };
   }
 
-  // A photo's detection results before the first run.
+  // A photo's detection results before the first run. index, isOnCandidate, wasMovedByHand and
+  // cornersAfterRun say where the corners stand against the last run: see noteDetectedCorners.
   function emptyDetection() {
     return {
       candidates: [],
       index: 0,
+      isOnCandidate: false,
+      wasMovedByHand: false,
+      cornersAfterRun: '',
       last: null,
       running: 0,
       message: '',
@@ -423,6 +428,10 @@
           state.corners = bestCorners();
         });
       }
+      app.detection.cornersAfterRun = JSON.stringify(app.state.corners);
+      noteDetectedCorners();
+      // A new run's warnings show until the corners are next moved by hand (ruling R7).
+      app.detection.wasMovedByHand = false;
       app.detection.message = '';
       if (CONFIG.debug) console.info('[card-finisher] detect', last && last.timing, candidates);
     } catch (error) {
@@ -433,6 +442,27 @@
     CF.syncUI();
     CF.requestRender();
     CF.updateDebugPanel();
+  }
+
+  // Notes where the corners (source px) stand against the last detection, after any change to
+  // the state and at the end of a run.
+  //   isOnCandidate    they sit on one of its candidates, which becomes detection.index. Moved
+  //                    by hand they are on none, which clears Candidate's number and the
+  //                    confidence; Undo, Redo and Reset perspective bring a candidate's corners
+  //                    back, and with them the right number and confidence (ruling R6).
+  //   wasMovedByHand   they have left both the candidates and the place the run left them
+  //                    (cornersAfterRun, as JSON) at some time since that run. It stays true
+  //                    when Undo puts them back, so detection's warnings, once cleared by a
+  //                    move, stay away until the next run (ruling R7).
+  // A candidate's corners are copied into the state unchanged, so the match is exact.
+  function noteDetectedCorners() {
+    const detection = app.detection;
+    const corners = JSON.stringify(app.state.corners);
+    const isSame = candidate => JSON.stringify(candidate.corners) === corners;
+    const index = detection.candidates.findIndex(isSame);
+    if (index >= 0) detection.index = index;
+    detection.isOnCandidate = index >= 0;
+    if (index < 0 && corners !== detection.cornersAfterRun) detection.wasMovedByHand = true;
   }
 
   // Find card: disarms it, then finds the card containing `point` (source px, where the photo

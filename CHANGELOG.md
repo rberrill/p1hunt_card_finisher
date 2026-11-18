@@ -57,6 +57,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Replace logo** puts the new logo where the old one was, at its width and opacity, and so does a logo dropped or pasted on the Overlay step while one is placed. It used to go back to the middle of the photo, a quarter of its width, at 100%.
 - When **Resume** can't use the saved edits because they were saved for a photo of another size, it now says so: "Full edit history could not be restored, your photo has been opened fresh." The photo used to open without its edits and without a word.
 - An edit made a moment before the tab was closed could be missing after **Resume**, because edits were saved 0.4 s after each change. They are now saved 0.1 s after it.
+- On Perspective, **Candidate**'s number (such as 1/3) and the confidence now belong to the corners on screen. Move a corner by hand and both clear, since the corners are no longer on a detected candidate; **Undo** or **Reset perspective** brings back the number and confidence of the candidate the corners return to. They used to keep the last candidate's, so after **Candidate** and **Undo** the tool read 2/3 over the first candidate's corners. After **Resume**, corners you placed by hand show no number either. While no number shows, the next tap on **Candidate** goes to the first candidate, the best pick.
+- "Low confidence (…%). Check the corners." and "Nothing detected. Drag the corners into place." now go from the line above Perspective's controls once you move a corner, by dragging or with the arrows, and stay away until the card is searched for again, even if **Undo** puts the corner back. They used to stay until another detection ran.
 
 ## [1.9.0] - 2026-11-10
 

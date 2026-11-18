@@ -628,16 +628,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-13 Confidence
 
-At the right of that line, **Confidence** and a percentage say how sure detection is of the candidate in use. It is empty when nothing was detected, and hidden while a message or Preview's text takes the line.
+At the right of that line, **Confidence** and a percentage say how sure detection is of the candidate the corners are on. It is empty when nothing was detected, and once the corners are moved by hand; **Undo** and **Reset perspective** bring it back with the candidate's corners. It is hidden while a message or Preview's text takes the line.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Confidence", `#perspectiveLine`
-- Source: `js/app/perspective.js` (`syncPerspectiveReadouts`)
-- Ruling: R6. Once the corners are moved by hand the confidence is cleared; Undo and Reset perspective bring back the right one. R7. "Nothing detected" clears after the first corner move, so only then can the empty confidence be seen. The app differs today on both. R85. A message in the line above the controls, and Preview, hide Perspective's confidence figure. The app already does this.
+- Source: `js/app/perspective.js` (`syncPerspectiveReadouts`); `js/app/state.js` (`noteDetectedCorners`)
+- Ruling: R6. Once the corners are moved by hand the confidence is cleared; Undo and Reset perspective bring back the right one. The app does this since 1.10.0. R7. "Nothing detected" clears after the first corner move, so only then can the empty confidence be seen. The app does this since 1.10.0. R85. A message in the line above the controls, and Preview, hide Perspective's confidence figure. The app already does this.
 - Cases: 4
 
 ### PER-13.1 Confidence shows at the right of the line, except in Preview   [auto: phone]
@@ -660,7 +660,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-13.2 Moving a corner by hand clears the confidence, and Undo brings it back   [auto: phone]
-Written to ruling R6; it fails until that is built (BUG-061).
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -679,7 +678,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-13.3 Undo and Reset perspective bring back the confidence of the corners they restore   [auto: phone]
-Written to ruling R6; it fails until that is built (BUG-061).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -700,7 +698,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-13.4 With nothing detected, the line shows no confidence   [auto: phone]
-Written to ruling R7; it fails until that is built (BUG-064). Today "Nothing detected" never leaves the line, so the line's right end can't be seen.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1081,16 +1078,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-21 Candidate
 
-**Candidate** moves the corners to the next detected candidate, wrapping round, as one undo step, and shows which one is in use, such as **1/3**. At most three candidates are kept; with fewer than two the button is off.
+**Candidate** moves the corners to the next detected candidate, wrapping round, as one undo step, and shows which one the corners are on, such as **1/3**. Once the corners are moved by hand it shows its icon and no number, and the next tap goes to the first candidate, the best pick; **Undo** and **Reset perspective** bring back the number of the candidate they restore. At most three candidates are kept; with fewer than two the button is off.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#toolCandidate`, "Try the next detected candidate", `CONFIG.detect.maxCandidates`
-- Source: `js/app/perspective.js` (`bindPerspectiveTools`, `syncPerspective`); `js/app/state.js` (`useCandidate`)
-- Ruling: R6. Once the corners are moved by hand the count is cleared; Undo and Reset perspective bring back the right number. The app differs today.
+- Source: `js/app/perspective.js` (`bindPerspectiveTools`, `syncPerspective`); `js/app/state.js` (`useCandidate`, `noteDetectedCorners`)
+- Ruling: R6. Once the corners are moved by hand the count is cleared; Undo and Reset perspective bring back the right number. With no number showing (corners moved by hand, also after Resume), the next tap on Candidate goes to 1/N, the best pick. The app does this since 1.10.0.
 - Cases: 4
 
 ### PER-21.1 Candidate steps through the three candidates and wraps, one undo step a tap   [auto: phone]
@@ -1127,8 +1124,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-21.3 Moving a corner by hand clears the candidate number, and Undo brings it back   [auto: phone]
-Written to ruling R6; it fails until that is built (BUG-061).
+### PER-21.3 Moving a corner by hand clears the candidate number; Undo brings it back, and Candidate then starts from the first   [auto: phone]
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -1142,12 +1138,14 @@ Before you start:
 | 1 | Look at **Candidate** | It shows 1/3 |
 | 2 | Drag the top-right corner ring 30 px right, and let go | **Candidate** shows no number |
 | 3 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back, and **Candidate** shows 1/3 again |
+| 4 | Tap **Candidate** | It reads 2/3, and the corners move to the second candidate |
+| 5 | Drag the top-right corner ring 30 px right, and let go | **Candidate** shows no number again |
+| 6 | Tap **Candidate** | It reads 1/3, not 3/3: the corners are on the first candidate, the best pick |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-21.4 Undo and Reset perspective bring back the number of the candidate they restore   [auto: phone]
-Written to ruling R6; it fails until that is built (BUG-061).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1972,17 +1970,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-36 Which message shows
 
-The line above the controls shows at most one message, in this order: Tap to find card armed, crossed corners, "Detecting…", low confidence, nothing detected, then the corrected frame clamped to 12000 px.
+The line above the controls shows at most one message, in this order: Tap to find card armed, crossed corners, "Detecting…", low confidence, nothing detected, then the corrected frame clamped to 12000 px. Low confidence and nothing detected go once the corners are moved by hand, by a drag or with the arrow buttons, and stay away until detection runs again, even if **Undo** puts the corners back.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#perspectiveStatus`, "Detecting…", "Low confidence (", "Corrected frame clamped to "
-- Source: `js/app/perspective.js` (`perspectiveStatus`, `asSentences`, `syncPerspectiveReadouts`)
-- Ruling: R7. "Low confidence" and "Nothing detected" clear after the first corner move, by drag or with the arrow buttons. The app differs today. R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this. R76. "Corrected frame clamped to 12000px on the long side." goes from the line; the fact goes to the console. The app differs today.
-- Cases: 9
+- Source: `js/app/perspective.js` (`perspectiveStatus`, `asSentences`, `syncPerspectiveReadouts`); `js/app/state.js` (`noteDetectedCorners`)
+- Ruling: R7. "Low confidence" and "Nothing detected" clear after the first corner move, by drag or with the arrow buttons. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0. R75. A busy line is allowed while the app works, and all three wordings stay ("Loading…", "Opening the front…", "Detecting…"). The app already does this. R76. "Corrected frame clamped to 12000px on the long side." goes from the line; the fact goes to the console. The app differs today.
+- Cases: 11
 
 None of the sample photos is found with low confidence, so the cases that need it open the app with a link setting that counts any confidence under 100% as low, and the ones that need a clamped frame with a setting that lowers the largest corrected frame to 1000 px. Low confidence needs a card found and "Nothing detected" needs none, so those two never compete for the line.
 
@@ -2021,7 +2019,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-36.3 Low confidence clears once a corner is dragged   [auto: phone]
-Written to ruling R7; it fails until that is built (BUG-064).
 
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
@@ -2039,7 +2036,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-36.4 "Nothing detected" clears once a corner is nudged with an arrow   [auto: phone]
-Written to ruling R7; it fails until that is built (BUG-064).
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -2135,6 +2131,43 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Nothing detected. Drag the corners into place.", not the clamped-frame message |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-36.10 Once a move has cleared Low confidence, Undo doesn't bring it back; a new search does   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/ (detection is 99% sure of it)
+- Starting screen: the app opened with a link ending `?detect.minConfidence=1` (a setting that counts any confidence under 100% as low), the photo open on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Low confidence (99%). Check the corners." |
+| 2 | Drag the top-left corner ring 20 px right, and let go | The message has gone: the line reads NUDGE and Corner 1 of 4, with nothing at its right end (no Confidence) |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) | The corner is back; the message stays away: the line reads NUDGE and Corner 1 of 4, now with Confidence 99% at its right |
+| 4 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Tap to find card** shows |
+| 5 | Tap **Tap to find card** | The line reads "Tap the card in the photo." |
+| 6 | Tap the middle of the card once, without moving | Once the search ends, the line reads "Low confidence (99%). Check the corners." again |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-36.11 Once a move has cleared "Nothing detected", Undo doesn't bring it back   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
+- Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) | It reads "Nothing detected. Drag the corners into place." |
+| 2 | Tap the right arrow (→) under that line | The message has gone: the line reads NUDGE and Corner 1 of 4 |
+| 3 | Tap **Undo** (the arrow curving left, at the top right) | The outline is the centered rectangle again and **Undo** is greyed out; the message stays away: the line still reads NUDGE and Corner 1 of 4 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

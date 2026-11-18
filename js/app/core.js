@@ -85,6 +85,9 @@
     detection: {
       candidates: [],
       index: 0,
+      isOnCandidate: false,
+      wasMovedByHand: false,
+      cornersAfterRun: '',
       last: null,
       running: 0,
       message: '',

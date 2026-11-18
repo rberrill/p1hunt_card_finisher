@@ -2056,16 +2056,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-56 "Low confidence (…%). Check the corners."
 
-When the detected card in use scores under 50% confidence, the row above Perspective's controls reads "Low confidence ({percent}%). Check the corners." with an amber warning icon. Today it stays until another detection runs.
+When the detected card in use scores under 50% confidence, the row above Perspective's controls reads "Low confidence ({percent}%). Check the corners." with an amber warning icon. It goes once the corners are moved by hand, by a drag or with the arrow buttons, and stays away until detection runs again, even if **Undo** puts the corners back.
 
 - Risk: medium
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Low confidence (", "%). Check the corners.", `CONFIG.detect.minConfidence`
-- Source: `js/app/perspective.js` (`perspectiveStatus`, `syncPerspectiveReadouts`)
-- Ruling: R7. The warning clears after the first corner move, by drag or nudge. The app differs today.
+- Source: `js/app/perspective.js` (`perspectiveStatus`, `syncPerspectiveReadouts`); `js/app/state.js` (`noteDetectedCorners`)
+- Ruling: R7. The warning clears after the first corner move, by drag or nudge. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-56.1 Low confidence   [auto: phone]
@@ -2085,16 +2085,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-57 "Nothing detected. Drag the corners into place."
 
-After a detection run finds no card, the row above Perspective's controls reads "Nothing detected. Drag the corners into place." with an amber warning icon. Today it stays until another detection runs.
+After a detection run finds no card, the row above Perspective's controls reads "Nothing detected. Drag the corners into place." with an amber warning icon. It goes once the corners are moved by hand, by a drag or with the arrow buttons, and stays away until detection runs again, even if **Undo** puts the corners back.
 
 - Risk: medium
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Nothing detected. Drag the corners into place.", `#perspectiveStatus`
-- Source: `js/app/perspective.js` (`perspectiveStatus`)
-- Ruling: R7. The warning clears after the first corner move, by drag or nudge. The app differs today. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today.
+- Source: `js/app/perspective.js` (`perspectiveStatus`); `js/app/state.js` (`noteDetectedCorners`)
+- Ruling: R7. The warning clears after the first corner move, by drag or nudge. Once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back. The app does this since 1.10.0. R77. When a search the user started finds no card, only the line above the controls says so ("Nothing detected. Drag the corners into place."); the pop-up goes. The app differs today.
 - Cases: 1
 
 ### MSG-57.1 Nothing detected   [auto: phone]
