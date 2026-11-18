@@ -1031,7 +1031,7 @@ test('TOP-13.8 The step is kept for Resume as soon as it changes [phone] [webkit
 }, testInfo) => {
   const hand = await startOn(page, testInfo);
   await tapStep(page, hand, check, 'crop', 'Crop');
-  // Two seconds, as the case says; the save itself comes 0.4 s after the step change.
+  // Two seconds, as the case says; the save itself comes 0.1 s after the step change.
   await page.waitForTimeout(RESUME_WAIT_MS);
   await check('two seconds on, nothing has changed: still on Crop', async () => {
     await expect(stepTab(page, 'crop')).toHaveAttribute('aria-selected', 'true');

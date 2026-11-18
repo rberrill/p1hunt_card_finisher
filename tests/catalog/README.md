@@ -114,7 +114,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 ```
 
-**Script only.** Some cases can't be run by a person: they need a set-up nobody can create by hand (a share sheet that refuses once, storage that fails) or a result nobody can measure by eye (a save 0.4 s after a tap). Such a case says `Script only` under its title, then a `Stand-in:` line saying in plain words what the script puts in place and why a person can't. It is still written for a stranger: what is set up, what is done, what must be seen or measured. A case a person can run is never marked this way (Rich, 2026-11-16).
+**Script only.** Some cases can't be run by a person: they need a set-up nobody can create by hand (a share sheet that refuses once, storage that fails) or a result nobody can measure by eye (a save 0.1 s after a tap). Such a case says `Script only` under its title, then a `Stand-in:` line saying in plain words what the script puts in place and why a person can't. It is still written for a stranger: what is set up, what is done, what must be seen or measured. A case a person can run is never marked this way (Rich, 2026-11-16).
 
 **A phone procedure is a phone case.** A case whose steps need a real iPhone (Control Center, the home screen, Photos, the keyboard) is marked `[phone]`. Where a script proves the same logic with a stand-in, that is a second, automated case.
 

@@ -76,7 +76,7 @@ const PHOTO_WIDTH = 1498;
 const PHOTO_HEIGHT = 2098;
 // The app's wait before saving a change, in ms (CONFIG.session.saveDelayMs), and the longer one
 // a link sets in STA-14.2.
-const SAVE_DELAY_MS = 400;
+const SAVE_DELAY_MS = 100;
 const LONG_SAVE_DELAY_MS = 1500;
 // How much earlier than its delay a timer may seem to fire, in ms (the clock's rounding), and
 // how much later a save may land after it (the timer, then opening the database).
@@ -86,9 +86,14 @@ const SAVE_LATE_MS = 150;
 // after opening a photo or a step (no save waiting), in ms.
 const SETTLE_AFTER_SAVE_MS = 700;
 const QUIET_MS = 700;
-// The longest gap between two quick taps, in ms: well inside the save delay, so the first
-// tap's save is still waiting when the second comes.
-const QUICK_TAP_GAP_MS = 300;
+// Two quick clicks: the shortest and longest gap between them, in ms. Inside the save delay,
+// so the first click's save is still waiting when the second comes, and long enough to tell a
+// save 0.1 s after the second click from one 0.1 s after the first. QUICK_CLICK_HOLD_MS is how
+// long the button is held down, and the pause between the two clicks; with the browser's own
+// time the gap measures about 30 ms in Chromium and 45 ms in WebKit.
+const QUICK_TAP_GAP_MIN_MS = 20;
+const QUICK_TAP_GAP_MS = 90;
+const QUICK_CLICK_HOLD_MS = 10;
 // A save made at once lands within this many ms.
 const QUICK_SAVE_MS = 100;
 // The longest a change may wait before it is saved, in ms (ruling R36: about 0.1 s, so a
@@ -1328,9 +1333,8 @@ async function expectOneSaveAfter(page, tapMs, delayMs) {
   return writes[0];
 }
 
-// Written to today's 0.4 s wait before a save; the catalog's note under the case says what
-// changes when ruling R36 is built.
-test('STA-14.1 A change is saved 0.4 s after the last one [desktop] [webkit]', async ({
+// Ruling R36 made the wait before a save 0.1 s.
+test('STA-14.1 A change is saved 0.1 s after the last one [desktop] [webkit]', async ({
   page,
   check,
 }, testInfo) => {
@@ -1338,7 +1342,7 @@ test('STA-14.1 A change is saved 0.4 s after the last one [desktop] [webkit]', a
   const turn = page.locator('#toolRotateRight');
   const firstTapMs = await tapAndTime(page, hand, turn);
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS);
-  await check('the photo lies on its side; the edits are saved once, 0.40 to 0.55 s after the '
+  await check('the photo lies on its side; the edits are saved once, 0.10 to 0.25 s after the '
     + 'tap', async () => {
     expect((await editState(page)).rotation.quarter).toBe(1);
     const write = await expectOneSaveAfter(page, firstTapMs, SAVE_DELAY_MS);
@@ -1354,11 +1358,13 @@ test('STA-14.1 A change is saved 0.4 s after the last one [desktop] [webkit]', a
     expect(record.exported).toBe(false);
     expect(Math.abs(Date.now() - record.savedAt)).toBeLessThan(SAVED_AT_TOLERANCE_MS);
   });
-  // Straight after each other, as a person taps twice quickly.
-  const secondTapMs = await tapAndTime(page, hand, turn);
-  const thirdTapMs = await tapAndTime(page, hand, turn);
+  // Two clicks about 40 ms apart, made in one action (this case runs with a mouse only), so
+  // that a busy machine can't stretch the gap past the save delay.
+  await turn.dblclick({ delay: QUICK_CLICK_HOLD_MS });
+  const [secondTapMs, thirdTapMs] = await page.evaluate(() => window.clicksAtMs.slice(-2));
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS);
-  await check('two quick taps are saved once, 0.40 to 0.55 s after the second', async () => {
+  await check('two quick taps are saved once, 0.10 to 0.25 s after the second', async () => {
+    expect(thirdTapMs - secondTapMs).toBeGreaterThanOrEqual(QUICK_TAP_GAP_MIN_MS);
     expect(thirdTapMs - secondTapMs).toBeLessThan(QUICK_TAP_GAP_MS);
     const early = (await editsWritesAfter(page, secondTapMs))
       .filter(write => write.atMs < thirdTapMs + SAVE_DELAY_MS - TIMER_EARLY_MS);
@@ -1369,7 +1375,7 @@ test('STA-14.1 A change is saved 0.4 s after the last one [desktop] [webkit]', a
   await goToStep(page, 'crop', hand);
   const stepTapMs = await lastClickMs(page);
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS);
-  await check('a step change is saved once, 0.40 to 0.55 s after the tap, with the step crop',
+  await check('a step change is saved once, 0.10 to 0.25 s after the tap, with the step crop',
     async () => {
       const write = await expectOneSaveAfter(page, stepTapMs, SAVE_DELAY_MS);
       expect(write.tab).toBe('crop');
@@ -1396,39 +1402,12 @@ test('STA-14.2 A link can lengthen the wait before a save [phone]', async ({
   });
 });
 
-// Written to today's 0.4 s wait before a save; the catalog's note under the case says what
-// changes when ruling R36 is built.
-test('STA-15.1 Hiding the page saves at once [desktop] [webkit]', async ({
-  page,
-  check,
-}, testInfo) => {
-  const hand = await startWatched(page, testInfo, 'rotate');
-  await hand.tap(page.locator('#toolRotateRight'));
-  await check('the photo lies on its side', async () => {
-    expect((await editState(page)).rotation.quarter).toBe(1);
-  });
-  // A stand-in for switching to another tab or app: the page is told it is hidden.
-  const hiddenAtMs = await page.evaluate(() => {
-    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
-    document.dispatchEvent(new Event('visibilitychange'));
-    return performance.now();
-  });
-  await page.waitForTimeout(QUICK_SAVE_MS);
-  await check('the edits, with the turn, are saved within 0.1 s of hiding', async () => {
-    const writes = await editsWritesAfter(page, hiddenAtMs);
-    expect(writes.length).toBeGreaterThan(0);
-    expect(writes[0].delayMs).toBeLessThan(QUICK_SAVE_MS);
-    expect(writes[0].quarter).toBe(1);
-  });
-});
-
 // Ruling R36: a save started as a tab closes sometimes doesn't land (in Chromium, about one run
 // in twelve under load), so each change is saved soon after it is made. The tab is not left or
 // hidden here, so only the save after the change can be seen. The time is the moment the app
 // hands the edits to the device's storage.
 test('STA-15.3 A change is saved within 0.2 s, before the tab can be closed [phone] [webkit]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-141');
     const hand = await startWatched(page, testInfo, 'rotate');
     const tapMs = await tapAndTime(page, hand, page.locator('#toolRotateRight'));
     await page.waitForTimeout(SETTLE_AFTER_SAVE_MS);
@@ -1515,7 +1494,7 @@ test('STA-15.6 Hiding or leaving the page starts a save at once [phone] [webkit]
 
 // Expects the edits to have been saved as the last download started, in the same turn of the
 // page's work, before the page could do anything else; a save in any later turn (the usual one,
-// 0.4 s after a change) doesn't count. Returns those saves.
+// 0.1 s after a change) doesn't count. Returns those saves.
 async function expectSaveWithDownload(page) {
   const writes = await writesWithLastDownload(page, 'edits');
   expect(writes.length).toBeGreaterThan(0);
@@ -1587,7 +1566,7 @@ test('STA-15.5 A pair\'s download saves the edits first [phone] [webkit]', async
   await tapAndSeeQuestion(page, hand, check, page.locator('#btnDownload'),
     'a question box asks "Upscale to 2000 px?"');
   await answerAndSave(page, hand);
-  await check('the pair\'s file is saved; the edits were saved as its download started, not 0.4 s '
+  await check('the pair\'s file is saved; the edits were saved as its download started, not 0.1 s '
     + 'later', async () => {
     await expectSaveWithDownload(page);
   });
@@ -2305,7 +2284,7 @@ test('STA-22.3 After a failed open, the open photo\'s edits are still kept for R
   await check('the photo lies on its side', async () => {
     expect((await editState(page)).rotation.quarter).toBe(1);
   });
-  // A person waits two seconds; the save, if it comes, lands 0.4 s after the tap.
+  // A person waits two seconds; the save, if it comes, lands 0.1 s after the tap.
   await page.waitForTimeout(SETTLE_AFTER_SAVE_MS + SAVE_DELAY_MS);
   await reloadToStart(page);
   await check('the card offers "Resume IMG_9136.JPEG?"', async () => {

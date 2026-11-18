@@ -275,7 +275,9 @@ const CONFIG = {
 
   // Session restore: the last photo and its edits are kept on this device (IndexedDB) so a
   // reload, a navigation or iOS closing the tab can be resumed. Nothing leaves the device.
-  session: { enabled: true, dbName: 'p1hunt-finisher', saveDelayMs: 400 },
+  // A change is saved saveDelayMs after it is made: short, because the save made as the page
+  // closes isn't sure to land, so a change must be stored before a person can close the tab.
+  session: { enabled: true, dbName: 'p1hunt-finisher', saveDelayMs: 100 },
 
   // The Overlay step (a logo). Placement defaults live in CardEngine.OVERLAY_DEFAULTS.
   overlay: {

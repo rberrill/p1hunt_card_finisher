@@ -1519,16 +1519,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## OVL-28 The saved logo is kept up to date
 
-Adding a logo by the button, a drop or a paste makes it the saved logo. While the placed logo is the saved one, its position, size and opacity are saved again 400 ms after each change.
+Adding a logo by the button, a drop or a paste makes it the saved logo. While the placed logo is the saved one, its position, size and opacity are saved again 100 ms after each change.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.session.saveDelayMs`, "This overlay works on this photo, but it can’t be saved in this browser."
 - Source: `js/app/overlay.js` (`addOverlayFile`, `saveToBrowser`, `overlayStateChanged`)
-- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today.
+- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R59. Messages say "logo" where they said "overlay"; button names are not touched. The app differs today. R36. Changes are saved sooner (about 0.1 s after each); the saved logo's position, size and opacity share that wait. The app does this since 1.10.0.
 - Cases: 4
 
 ### OVL-28.1 A change to the saved logo's place is kept in the browser   [auto: phone, webkit]
@@ -1606,7 +1606,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### OVL-28.4 A change to the saved logo's place is stored 0.4 s later, once   [auto: phone, webkit]
+### OVL-28.4 A change to the saved logo's place is stored 0.1 s later, once   [auto: phone, webkit]
 Script only
 Stand-in: the script records each time the app stores the saved logo in the browser, and when; a person can't see a save, or time one to a tenth of a second. What the save brings back after a reload is OVL-28.1.
 
@@ -1623,7 +1623,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Add blue-disc.png | The logo is stored in the browser as the saved logo, in the middle |
-| 2 | A second or more later, tap **Move right** (the right arrow in the left-hand pad) | The new place is stored as the saved logo's once, 0.4 s after the tap and not before |
+| 2 | A second or more later, tap **Move right** (the right arrow in the left-hand pad) | The new place is stored as the saved logo's once, 0.1 s after the tap and not before |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

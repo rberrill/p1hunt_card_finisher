@@ -56,6 +56,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Reset crop** keeps the preset you last chose. It used to go back to **1:1** and make 1:1 the preset the next photo opened with.
 - **Replace logo** puts the new logo where the old one was, at its width and opacity, and so does a logo dropped or pasted on the Overlay step while one is placed. It used to go back to the middle of the photo, a quarter of its width, at 100%.
 - When **Resume** can't use the saved edits because they were saved for a photo of another size, it now says so: "Full edit history could not be restored, your photo has been opened fresh." The photo used to open without its edits and without a word.
+- An edit made a moment before the tab was closed could be missing after **Resume**, because edits were saved 0.4 s after each change. They are now saved 0.1 s after it.
 
 ## [1.9.0] - 2026-11-10
 

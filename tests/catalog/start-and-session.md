@@ -793,18 +793,18 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## STA-14 Edits are saved as you go
 
-The edits (the photo's name and size, the edits, any unapplied Levels change, the open step, whether it was exported, and the time) are saved on the device 400 ms after the last change or step change.
+The edits (the photo's name and size, the edits, any unapplied Levels change, the open step, whether it was exported, and the time) are saved on the device 100 ms after the last change or step change.
 
 - Risk: high
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.session.saveDelayMs`, `CONFIG.session.enabled`
 - Source: `js/app/adapters.js` (`Session.snapshot`, `Session.saveSoon`, `Session.flush`); `js/app/state.js` (`stateChanged`); `js/app/shell.js` (`setTab`)
 - Cases: 2
 
-### STA-14.1 A change is saved 0.4 s after the last one   [auto: desktop, webkit]
+### STA-14.1 A change is saved 0.1 s after the last one   [auto: desktop, webkit]
 Script only
 Stand-in: nothing is replaced, but no person can time a save to a hundredth of a second, nor see the edits the app keeps in the browser's storage without developer tools; the script notes the moment of each click and of each save of the edits, and reads what was saved.
 Before you start:
@@ -816,15 +816,13 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **90° right** in the row of tools | The photo lies on its side; the edits are saved once, 0.40 to 0.55 s after the click, not sooner |
+| 1 | Click **90° right** in the row of tools | The photo lies on its side; the edits are saved once, 0.10 to 0.25 s after the click, not sooner |
 | 2 | The script reads the saved edits | They hold the photo's name and size (IMG_9136.JPEG, 1498 × 2098), the quarter turn to the right, the open step (Rotate), the mark that says the photo has not been exported, and the time of the save, within 5 s of the clock |
-| 3 | Click **90° right** twice, quickly (the second click within 0.3 s of the first) | The edits are saved once, 0.40 to 0.55 s after the second click: nothing was saved after the first |
-| 4 | Click **Crop** in the step tabs (the six tabs Perspective to Export, in the top bar on a wide screen) | The edits are saved once, 0.40 to 0.55 s after the click, with Crop as the open step |
+| 3 | Click **90° right** twice, the second click about 0.04 s after the first (the script makes the two clicks 0.02 to 0.09 s apart, inside the 0.1 s wait) | The edits are saved once, 0.10 to 0.25 s after the second click: nothing was saved after the first |
+| 4 | Click **Crop** in the step tabs (the six tabs Perspective to Export, in the top bar on a wide screen) | The edits are saved once, 0.10 to 0.25 s after the click, with Crop as the open step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
-
-When ruling R36 is built: the wait before a save becomes about 0.1 s. Rows 1 and 4 then expect the save about 0.1 s after the click (0.10 to 0.25 s) instead of 0.40 to 0.55 s; in row 3 two clicks 0.3 s apart are saved twice, so the second click must come within 0.1 s of the first (the script's clicks do) for a single save. Row 2 is unchanged. It passes today, written to the 0.4 s delay.
 
 ### STA-14.2 A link can lengthen the wait before a save   [auto: phone]
 Script only
@@ -843,8 +841,6 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-When ruling R36 is built: unchanged. A link still sets the wait, so 1.5 s still gives a save 1.50 to 1.65 s after the tap. It passes today.
-
 ## STA-15 Edits are saved at once when leaving
 
 The edits are saved straight away when the page is hidden or left (switching apps, closing the tab), and as any download starts, before the page does anything else (the export, corner shots, a pair, **Save edits**).
@@ -853,31 +849,11 @@ The edits are saved straight away when the page is hidden or left (switching app
 - Check: script; phone (switching apps on an iPhone)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnDownload`, `#btnCornerDownload`, `#btnSaveEdits`, `CONFIG.session.enabled`
 - Source: `js/app/main.js` (`bindWindowEvents`); `js/app/export.js` (`deliverExport`, `saveEdits`); `js/app/corner-shots.js` (`deliverCornerShots`); `js/app/pair.js` (`deliverPair`)
-- Ruling: R36. Edits are saved sooner after each change (about 0.1 s), with the save on close kept as a backstop. The app differs today.
-- Cases: 6
-
-### STA-15.1 Hiding the page saves at once   [auto: desktop, webkit]
-Script only
-Stand-in: the script tells the page it is hidden, as switching to another tab or app does, a few hundredths of a second after the click, and notes the moment of each save; no person can switch that quickly, nor time a save to a hundredth of a second. STA-15.2 is the same on a real iPhone.
-Before you start:
-- Device and browser: a computer; a wide window
-- Build: the build under test
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: IMG_9136.JPEG from samples/
-- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Rotate step, a second after it opened
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Click **90° right** in the row of tools | The photo lies on its side |
-| 2 | At once (within 0.1 s), the script tells the page it is hidden | The edits, with the turn, are saved within 0.1 s of it, well before the usual 0.4 s |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screenshot.
-
-When ruling R36 is built: the usual save also comes within about 0.1 s of the click, so this case no longer tells the save on hiding from the usual one; STA-15.6 proves the save on hiding with a long wait set by a link. Row 2's "well before the usual 0.4 s" becomes "well before the usual wait". It passes today, written to the 0.4 s delay.
+- Ruling: R36. Edits are saved sooner after each change (about 0.1 s), with the save on close kept as a backstop. The app does this since 1.10.0.
+- Cases: 5
 
 ### STA-15.2 A change survives switching apps on an iPhone   [phone]
 Before you start:
@@ -906,8 +882,6 @@ On a fail, record: the row number, what you saw instead, a screenshot (press the
 Script only
 Stand-in: nothing is replaced, but no person can time a save to a tenth of a second; the script notes the moment of the tap and the moment the app hands the edits to the browser's storage.
 
-Written to ruling R36; it fails until R36 is built (BUG-141).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -926,7 +900,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-15.4 Every download saves the edits first   [auto: phone, webkit]
 Script only
-Stand-in: nothing is replaced, but the save and the download are a few thousandths of a second apart, so no person can see which came first; the script notes the moment each download starts and each save of the edits, and checks the save was made as the download started, before the page did anything else. A save that comes any later (the usual one, 0.4 s after a change, say) fails the case.
+Stand-in: nothing is replaced, but the save and the download are a few thousandths of a second apart, so no person can see which came first; the script notes the moment each download starts and each save of the edits, and checks the save was made as the download started, before the page did anything else. A save that comes any later (the usual one, 0.1 s after a change, say) fails the case.
 Before you start:
 - Device and browser: any; a phone-width or a wide window, with downloads saved to a folder
 - Build: the build under test
@@ -967,7 +941,7 @@ With these two photos the pair's joined picture is under 2000 px on its long sid
 | --- | --- | --- |
 | 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Together** and **Separately** |
 | 2 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 3 | Tap **No** | The pair's file is saved; the edits were saved as its download started, not 0.4 s later |
+| 3 | Tap **No** | The pair's file is saved; the edits were saved as its download started, not 0.1 s later |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

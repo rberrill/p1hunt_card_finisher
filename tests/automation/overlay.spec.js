@@ -132,7 +132,7 @@ const GROW_TO_FULL_MS = 2500;
 // The wait before a change to the saved logo's place is saved, in ms
 // (CONFIG.session.saveDelayMs); how much earlier a timer may seem to fire (the clock's
 // rounding), and how much later the save may land (the timer, then the database).
-const SAVE_DELAY_MS = 400;
+const SAVE_DELAY_MS = 100;
 const TIMER_EARLY_MS = 2;
 const SAVE_LATE_MS = 150;
 // How far a measured ratio of two sizes may be from the expected one, as a fraction.
@@ -1127,7 +1127,7 @@ test('OVL-12.1 Delete saved forgets the saved logo and leaves the one on the pho
     await expect(page.locator('#overlayThumb')).toBeHidden();
     await expect(page.locator('#btnUseSaved')).toBeHidden();
   });
-  // A person reloads a moment later; the edits are saved 0.4 s after the change.
+  // A person reloads a moment later; the edits are saved 0.1 s after the change.
   await waitForSaved(page, { name: PHOTO, overlayId: null });
   await reloadStartFreshAndOpen(page, hand, check, SECOND_PHOTO);
   await goToStep(page, 'overlay', hand);
@@ -2091,7 +2091,7 @@ test('OVL-28.3 After Delete saved, moving the logo saves nothing [phone]', async
   });
 });
 
-test('OVL-28.4 A change to the saved logo\'s place is stored 0.4 s later, once [phone] [webkit]',
+test('OVL-28.4 A change to the saved logo\'s place is stored 0.1 s later, once [phone] [webkit]',
   async ({ page, check }, testInfo) => {
     await watchStorageAndDownloads(page);
     const hand = await startOnOverlay(page, testInfo);
@@ -2110,7 +2110,7 @@ test('OVL-28.4 A change to the saved logo\'s place is stored 0.4 s later, once [
     // Long enough for a second, unwanted save to land too.
     await page.waitForTimeout(PAUSE_MS);
     const writes = await storageWritesSince(page, 'overlay', beforeTapMs);
-    await check('the new place is stored as the saved logo\'s once, 0.4 s after the tap and not '
+    await check('the new place is stored as the saved logo\'s once, 0.1 s after the tap and not '
       + 'before', () => {
       expect(writes.length).toBe(1);
       expect(writes[0].atMs - beforeTapMs).toBeGreaterThanOrEqual(SAVE_DELAY_MS - TIMER_EARLY_MS);
