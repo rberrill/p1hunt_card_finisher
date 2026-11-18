@@ -472,16 +472,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-10 Double tap to fit
 
-A double tap or double click on an empty part of the photo fits it again: two quick taps (each under 300 ms) within 320 ms and 24 px of each other. It does nothing on Overlay (where a gesture moves the logo), or while Tap to find card or a Levels pick is armed.
+A double tap or double click on an empty part of the photo fits it again: two quick taps (each under 300 ms) within 320 ms and 24 px of each other. It does nothing on Overlay (where a gesture moves the logo), or while Tap to find card or a Levels pick is armed. On Levels, a press that showed the comparison is not a tap, however short it was.
 
 - Risk: medium
 - Check: script, touch, phone (the [phone] case: on a real iPhone, Safari leaves the double tap to the app)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#view`, `#btnFindCard`
 - Source: `js/app/input.js` (`onPointerUp`, `checkDoubleTap`); `js/app/view.js` (`fitCurrent`)
-- Ruling: R10. On Levels, a press long enough to show the before-and-after compare never counts as a tap. The app differs today.
+- Ruling: R10. On Levels, a press that showed the before-and-after compare is never a tap. The app does this since 1.10.0.
 - Cases: 7
 
 ### VIEW-10.1 A double tap fits the photo again   [auto: phone, webkit]
@@ -562,8 +562,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 Script only
 Stand-in: the script presses with a dispatched finger, lifts it the moment the comparison shows (under 0.3 s in all) and taps again at once. No person can time a press between 0.25 and 0.3 s.
 
-Written to ruling R10; it fails until that is built (BUG-103).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with touch
 - Build: the build under test
@@ -575,7 +573,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Auto** | A white dot shows on the **Levels** tab in the step tabs (the six tabs Perspective to Export, along the bottom) |
 | 2 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in |
-| 3 | Press the middle of the photo until the comparison shows, and lift at once (under 0.3 seconds in all) | The comparison showed (the **Before levels** badge) |
+| 3 | Press the middle of the photo until the comparison shows, and lift at once (under 0.3 seconds in all) | The comparison started, and the press lasted under 0.3 seconds in all |
 | 4 | Straight away, tap the same place once | The photo stays zoomed in: the press and the tap were not a double tap |
 
 Pass: every row's result is seen.

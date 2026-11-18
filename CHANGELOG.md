@@ -70,6 +70,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Before a photo is open, the detection tuning panel (the backtick key) no longer covers **Open photo** or the **Resume** card. On a wide screen it sits over the empty panel on the right; in a phone-width window it sits along the bottom of the screen, with the start screen's buttons above it.
 - On Levels, while **Pick white** or **Pick black** waits for your tap, putting a second finger on the photo no longer takes the color under the first finger. The press is cancelled and the pick keeps waiting.
 - On Levels, a pick tapped on the dark area around the picture no longer takes a color from the part of the photo hidden there. The tap is ignored and the pick keeps waiting.
+- On Levels, while the photo shows no levels (none set, or **Clear** tapped and not yet applied), holding the photo or the C key no longer shows the **Before levels** badge over a photo that doesn’t change. There is nothing to compare, so the hold does nothing, and sliding the finger after it moves the photo as usual.
+- On Levels, a short press that showed the comparison is no longer also counted as a tap. A tap straight after it used to be taken as a double tap, which fitted a zoomed-in photo back to the screen.
 
 ## [1.9.0] - 2026-11-10
 

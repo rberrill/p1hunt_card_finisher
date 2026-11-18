@@ -310,16 +310,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## KEY-07 Hold C to compare on Levels
 
-On the Levels step, holding C shows the photo without levels, with the **Before levels** badge; letting go, or the window losing focus, ends the comparison.
+On the Levels step, holding C shows the photo without levels, with the **Before levels** badge; letting go, or the window losing focus, ends the comparison. While the photo on screen shows no levels, holding C starts no comparison.
 
 - Risk: low
 - Check: script
 - Layout: both. Needs a keyboard.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `key:C`, `CONFIG.keys.compare`, `"Before levels"`
-- Source: `js/app/input.js` (`onPhotoKey`), `js/app/main.js` (`bindWindowEvents`), `js/app/levels.js` (`setCompare`)
-- Ruling: R9. Holding C does nothing when the photo has no levels, applied or unapplied. The app differs today.
+- Source: `js/app/input.js` (`onPhotoKey`), `js/app/main.js` (`bindWindowEvents`), `js/app/levels.js` (`setCompare`, `hasLevelsToCompare`)
+- Ruling: R9. C compares only while the photo on screen shows levels: with no draft and no applied levels, or with levels applied and **Clear** tapped but not applied, it does nothing. The app does this since 1.10.0.
 - Cases: 2
 
 ### KEY-07.1 Holding C on Levels shows the photo before levels   [auto: desktop]
@@ -343,8 +343,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### KEY-07.2 With no levels, holding C does nothing   [auto: desktop]
-Written to ruling R9; it fails until that is built (BUG-102).
-
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window
 - Build: the build under test

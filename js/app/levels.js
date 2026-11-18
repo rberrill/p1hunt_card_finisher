@@ -206,8 +206,19 @@
   // When the current compare started (performance.now() ms), for the badge's fade.
   let compareStartedAt = 0;
 
-  // Starts or ends a compare: the photo without levels while it is on.
+  // Whether the photo on screen shows levels a compare could take away: a white or a black
+  // point, the draft's while one waits, else the applied ones. After Clear the photo shows
+  // none, even with levels applied. The label row's instruction offers the compare by the same
+  // test (levelsHint).
+  function hasLevelsToCompare() {
+    const shown = draftLevels() || {};
+    return !!shown.white || !!shown.black;
+  }
+
+  // Starts or ends a compare: the photo without levels while it is on. While the photo shows
+  // no levels none starts (ruling R9); app.compare says whether one is on.
   function setCompare(isOn) {
+    if (isOn && !hasLevelsToCompare()) return;
     if (app.compare === isOn) return;
     app.compare = isOn;
     if (isOn) compareStartedAt = performance.now();
@@ -440,8 +451,7 @@
   // the photo shows none, so there is nothing to compare.
   function levelsHint() {
     if (app.dropper) return LEVELS_HINTS[app.dropper];
-    const shown = draftLevels() || {};
-    if (shown.white || shown.black) return LEVELS_HINTS.compare;
+    if (hasLevelsToCompare()) return LEVELS_HINTS.compare;
     return LEVELS_HINTS.start;
   }
 

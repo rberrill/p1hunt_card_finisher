@@ -730,17 +730,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## LEV-16 Hold to compare
 
-With no pick armed, press and hold the photo for 250 ms without moving to see it with no levels; letting go ends it. The view doesn't pan meanwhile.
+With no pick armed, press and hold the photo for 250 ms without moving to see it with no levels; letting go ends it. The view doesn't pan meanwhile, and the press is not a tap, so it never counts toward a double tap. While the photo on screen shows no levels (none set and none applied, or levels applied and **Clear** tapped but not applied), holding starts no comparison: the press stays an ordinary one, and sliding the finger pans the photo.
 
 - Risk: medium
 - Check: script, touch; phone (Safari's own long-press menu and magnifier)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `CONFIG.levels.compareHoldMs`, "Hold the photo to compare"
-- Source: `js/app/input.js` (`panGesture`, `onPointerMove`, `endGesture`); `js/app/levels.js` (`setCompare`)
-- Ruling: R9. Holding does nothing when there is no draft and no applied levels. R10. A press that showed the comparison never also counts as a tap. The app differs today.
-- Cases: 6
+- Source: `js/app/input.js` (`panGesture`, `onPointerMove`, `onPointerUp`, `endGesture`); `js/app/levels.js` (`setCompare`, `hasLevelsToCompare`)
+- Ruling: R9. The hold compares only while the photo on screen shows levels: with no draft and no applied levels, or with levels applied and **Clear** tapped but not applied, it does nothing. The app does this since 1.10.0. R10. A press that showed the comparison is never a tap. The app does this since 1.10.0.
+- Cases: 7
 
 ### LEV-16.1 Holding the photo shows it with no levels until it is let go   [auto: phone, webkit]
 Before you start:
@@ -760,8 +760,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-16.2 With no levels, holding the photo does nothing   [auto: phone]
-Written to ruling R9; it fails until that is built (BUG-102).
-
 Before you start:
 - Device and browser: a phone, in its own browser
 - Build: the build under test
@@ -772,7 +770,8 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Press and hold the middle of the photo, still, for half a second | There is no comparison: no **Before levels** badge at the top left of the photo area |
-| 2 | Let go | Nothing changes: still no badge |
+| 2 | Without lifting, slide the finger 60 px to the right | The photo follows the finger 60 px to the right, as on any press; no badge |
+| 3 | Lift the finger | The photo stays 60 px to the right; still no badge |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -780,8 +779,6 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 ### LEV-16.3 A press that showed the comparison is not also a tap   [auto: phone]
 Script only
 Stand-in: the script presses with a dispatched finger, lifts it the moment the comparison shows (under 0.3 s in all) and taps again at once. No person can time a press between 0.25 and 0.3 s.
-
-Written to ruling R10; it fails until that is built (BUG-103).
 
 Before you start:
 - Device and browser: a phone-width window with touch, 390 × 844 px
@@ -796,7 +793,7 @@ A double tap on the photo fits it to the screen; a single tap does nothing.
 | --- | --- | --- |
 | 1 | Tap **Auto**, at the bottom of the controls (the block of buttons under the photo) | The photo changes |
 | 2 | Put two fingers on the middle of the photo, 100 px apart, and spread them to 200 px | The photo zooms in; **Fit** shows in the top bar |
-| 3 | Press the middle of the photo until the comparison shows, and lift at once (under 0.3 seconds in all) | The comparison showed (the **Before levels** badge) |
+| 3 | Press the middle of the photo until the comparison shows, and lift at once (under 0.3 seconds in all) | The comparison started, and the press lasted under 0.3 seconds in all |
 | 4 | Straight away, tap the same place once | The photo stays zoomed in: the press and the tap were not a double tap |
 
 Pass: every row's result is seen.
@@ -859,18 +856,40 @@ Safari's own long press brings up a menu (Copy, Share, Save to Photos), a text m
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
+### LEV-16.7 With levels applied and Clear tapped, holding the photo does nothing   [auto: phone]
+Before you start:
+- Device and browser: a phone, in its own browser
+- Build: the build under test
+- Photo: IMG_9075.JPEG from samples/
+- Starting screen: the photo open, on the Levels step, no levels set and none applied; note how the photo looks
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+**Auto** and **Clear** are at the bottom of the controls (the block of buttons under the photo); **Discard** and **Apply** are at the two ends of the line above them.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Auto** | The photo changes |
+| 2 | Tap **Apply** | The photo keeps Auto's look; **Apply** is greyed out (shown dim and not answering a tap) |
+| 3 | Tap **Clear** | The photo looks as it did before Auto; **Apply** is no longer greyed out |
+| 4 | Press and hold the middle of the photo, still, for half a second | There is no comparison: no **Before levels** badge at the top left of the photo area |
+| 5 | Lift the finger and tap **Discard** | The photo has Auto's look again |
+| 6 | Press and hold the middle of the photo, still, for half a second | The photo looks as it did before Auto, with the **Before levels** badge at the top left of the photo area |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
 ## LEV-17 The Before levels badge
 
-While comparing, a badge reading **Before levels** shows at the top left of the photo.
+While comparing, a badge reading **Before levels** shows at the top left of the photo. While the photo on screen shows no levels (none set and none applied, or levels applied and **Clear** tapped but not applied) there is no comparison, so no badge.
 
 - Risk: low
 - Check: eye
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "Before levels"
-- Source: `js/app/levels.js` (`drawCompareBadge`, `drawLevelsOverlay`, `setCompare`)
-- Ruling: R9. With no draft and no applied levels there is no comparison, so no badge. The app differs today. R71. Under reduced motion the **Before levels** badge still fades, the snap rings don't, and one fade is 60 ms. The app already does this.
+- Source: `js/app/levels.js` (`drawCompareBadge`, `drawLevelsOverlay`, `setCompare`, `hasLevelsToCompare`)
+- Ruling: R9. While the photo on screen shows no levels (no draft and no applied levels, or levels applied and **Clear** tapped but not applied) there is no comparison, so no badge. The app does this since 1.10.0. R71. Under reduced motion the **Before levels** badge still fades, the snap rings don't, and one fade is 60 ms. The app already does this.
 - Cases: 3
 
 ### LEV-17.1 The Before levels badge, for a person to judge   [eye]
@@ -912,8 +931,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### LEV-17.3 With no levels there is no badge   [auto: phone]
-Written to ruling R9; it fails until that is built (BUG-102).
-
 Before you start:
 - Device and browser: a phone, in its own browser
 - Build: the build under test

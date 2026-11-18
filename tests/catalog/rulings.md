@@ -14,7 +14,7 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R6 | Candidate n/3 + confidence stale after Undo/Reset/drag | FIX: clear number+confidence when hand-moved; Undo/Reset restore the right number. Rich, 2026-11-17: with no number showing (corners moved by hand, also after Resume), the next tap on Candidate goes to 1/N, the best pick |
 | R7 | Low confidence / Nothing detected never clears | FIX: clears after first corner move (drag or nudge). Rich, 2026-11-17: once a move has cleared the message it stays away until detection runs again, even if Undo puts the corners back |
 | R8 | Cancelled pointer commits drag; 2nd finger during pick sets point | FIX: cancelled drag reverts with no undo step; 2nd finger cancels the pick, stays armed |
-| R9 | Compare badge with no levels | FIX: hold/C does nothing when no draft and no applied levels |
+| R9 | Compare badge with no levels | FIX: hold/C does nothing when no draft and no applied levels. Rich, 2026-11-17: the hold compares only while the photo on screen shows levels; with levels applied and Clear tapped but not applied, it does nothing |
 | R10 | 250–300 ms press is both compare and a tap | FIX: a press that showed compare is never a tap |
 | R11 | Overlay buttons live but no-op with invalid corners | FIX: dim the three buttons; label row reads "Fix the corners in Perspective first." |
 | R12 | Load edits: up to 3 toasts overwrite each other | FIX: one combined warning, up to three short lines (WORDING) |

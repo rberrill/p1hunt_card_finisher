@@ -1036,19 +1036,31 @@ test('LEV-16.2 With no levels, holding the photo does nothing [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-102');
   const hand = await startOnLevels(page, testInfo);
+  const viewBefore = await viewNow(page);
   const middle = await spotOnPage(page, [0.5, 0.5]);
   await holdPhoto(page, hand, middle);
   await afterDraw(page);
-  // Plain reads, not retrying expects, so the known defect fails fast.
+  // Plain reads, not retrying expects, so a failure shows at once.
   await check('there is no comparison: no Before levels badge at the top left of the photo area',
     async () => {
+      expect((await levelsNow(page)).isComparing).toBe(false);
       expect(await badgeShown(page)).toBe(false);
     });
-  await releasePhoto(page, hand, middle);
+  const end = await slideBy(page, hand, middle, SLIDE_PX, 0);
   await afterDraw(page);
-  await check('nothing changes: still no badge', async () => {
+  await check('the photo follows the finger 60 px to the right, as on any press; no badge',
+    async () => {
+      const view = await viewNow(page);
+      expect(Math.abs(view.panX - viewBefore.panX - SLIDE_PX)).toBeLessThan(PAN_TOLERANCE_PX);
+      expect(await badgeShown(page)).toBe(false);
+    });
+  await releasePhoto(page, hand, end);
+  await afterDraw(page);
+  await check('the photo stays 60 px to the right; still no badge', async () => {
+    const view = await viewNow(page);
+    expect(Math.abs(view.panX - viewBefore.panX - SLIDE_PX)).toBeLessThan(PAN_TOLERANCE_PX);
+    expect((await levelsNow(page)).isComparing).toBe(false);
     expect(await badgeShown(page)).toBe(false);
   });
 });
@@ -1057,7 +1069,6 @@ test('LEV-16.3 A press that showed the comparison is not also a tap [phone]', as
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-103');
   const hand = await startOnLevels(page, testInfo);
   await autoChangesPhoto(page, hand, check);
   const box = await page.locator('#view').boundingBox();
@@ -1070,8 +1081,7 @@ test('LEV-16.3 A press that showed the comparison is not also a tap [phone]', as
     await expect(page.locator('#btnFit')).toBeVisible();
   });
   const press = await pressThenTap(page, middle);
-  await check('the comparison showed (the Before levels badge), and the press lasted under 0.3 '
-    + 'seconds', () => {
+  await check('the comparison started, and the press lasted under 0.3 seconds in all', () => {
     expect(press.isCompared).toBe(true);
     expect(press.holdMs).toBeLessThan(TAP_MS);
   });
@@ -1146,6 +1156,56 @@ test('LEV-16.5 Moving the finger during the comparison does not pan [phone]', as
   });
 });
 
+test('LEV-16.7 With levels applied and Clear tapped, holding the photo does nothing [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startOnLevels(page, testInfo);
+    const colors = await autoChangesPhoto(page, hand, check);
+    const apply = page.locator('#btnApplyLevels');
+    await hand.tap(apply);
+    await check('the photo keeps Auto\'s look; Apply is greyed out', async () => {
+      expect(colorDifference(await drawnColor(page), colors.auto)).toBeLessThanOrEqual(
+        SAME_COLOR_TOLERANCE,
+      );
+      await expect(apply).toBeDisabled();
+      expect((await levelsNow(page)).applied).not.toBeNull();
+    });
+    await hand.tap(page.locator('#toolClearLevels'));
+    await check('the photo looks as it did before Auto; Apply is no longer greyed out',
+      async () => {
+        expect(colorDifference(await drawnColor(page), colors.none)).toBeLessThanOrEqual(
+          SAME_COLOR_TOLERANCE,
+        );
+        await expect(apply).toBeEnabled();
+        expect((await levelsNow(page)).applied).not.toBeNull();
+      });
+    const middle = await spotOnPage(page, [0.5, 0.5]);
+    await holdPhoto(page, hand, middle);
+    await afterDraw(page);
+    // Plain reads, not retrying expects, so a failure shows at once.
+    await check('there is no comparison: no Before levels badge at the top left of the photo '
+      + 'area', async () => {
+      expect((await levelsNow(page)).isComparing).toBe(false);
+      expect(await badgeShown(page)).toBe(false);
+    });
+    await releasePhoto(page, hand, middle);
+    await hand.tap(page.locator('#btnDiscardLevels'));
+    await check('the photo has Auto\'s look again', async () => {
+      expect(colorDifference(await drawnColor(page), colors.auto)).toBeLessThanOrEqual(
+        SAME_COLOR_TOLERANCE,
+      );
+    });
+    await holdPhoto(page, hand, middle);
+    await check('the photo looks as it did before Auto, with the Before levels badge at the top '
+      + 'left of the photo area', async () => {
+      expect((await levelsNow(page)).isComparing).toBe(true);
+      expect(colorDifference(await drawnColor(page), colors.none)).toBeLessThanOrEqual(
+        SAME_COLOR_TOLERANCE,
+      );
+      await expect.poll(() => badgeShown(page)).toBe(true);
+    });
+    await releasePhoto(page, hand, middle);
+  });
+
 test('LEV-17.1 The Before levels badge, for a person to judge [phone]', async ({
   page,
   check,
@@ -1190,7 +1250,6 @@ test('LEV-17.2 The badge fades in even when the device asks for less motion [pho
 });
 
 test('LEV-17.3 With no levels there is no badge [phone]', async ({ page, check }, testInfo) => {
-  test.fail(true, 'BUG-102');
   const hand = await startOnLevels(page, testInfo);
   const middle = await spotOnPage(page, [0.5, 0.5]);
   await holdPhoto(page, hand, middle);

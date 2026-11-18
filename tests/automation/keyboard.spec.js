@@ -24,7 +24,14 @@ const {
   zoomNow,
   handleName,
 } = require('./support/perspective.js');
-const { startOnLevels, levelsNow, pickButton, armedPick } = require('./support/levels.js');
+const {
+  startOnLevels,
+  levelsNow,
+  pickButton,
+  armedPick,
+  badgeBoxPixels,
+  badgeBoxChange,
+} = require('./support/levels.js');
 const { presetChip, cropHandleOnPage } = require('./support/crop.js');
 const { fixtureLogo, chooseLogo, logoPlacement } = require('./support/overlay.js');
 const {
@@ -56,6 +63,9 @@ const WHEEL_ZOOM_IN_PX = -400;
 const ZOOMED_IN_FACTOR = 1.5;
 // How long a case waits to be sure nothing happened, in ms.
 const NOTHING_HAPPENS_MS = 500;
+// With no Before levels badge drawn, at most this many device pixels of its box differ between
+// two readings (antialiasing); the badge's white text changes far more.
+const BADGE_SAME_MAX = 5;
 // How far the crop box's right edge is dragged on Crop, in CSS px.
 const EDGE_DRAG_PX = 60;
 // How close two crop shapes (width / height) must be.
@@ -377,7 +387,8 @@ test('KEY-06.1 F fits the photo to the screen [desktop]', async ({ page, check }
 
 // A function that tells whether Levels is showing the photo before levels (the comparison, with
 // the Before levels badge), for expect.poll. The badge itself is read from the screen only at
-// phone size (support/levels.js); at desktop size the photo's own whites can fall where it is.
+// phone size (support/levels.js); at desktop size the photo's own whites can fall where it is,
+// so a case that needs the badge's pixels compares two readings of its box.
 const isComparing = page => async () => (await levelsNow(page)).isComparing;
 
 test('KEY-07.1 Holding C on Levels shows the photo before levels [desktop]', async ({
@@ -421,14 +432,16 @@ test('KEY-07.2 With no levels, holding C does nothing [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-102');
   await startOnLevels(page, testInfo);
+  const boxAtRest = await badgeBoxPixels(page);
   await page.keyboard.down('c');
   await page.waitForTimeout(NOTHING_HAPPENS_MS);
   const isComparingWhileHeld = await isComparing(page)();
+  const boxWhileHeld = await badgeBoxPixels(page);
   await page.keyboard.up('c');
   await check('holding C with no levels: no comparison, no Before levels badge', () => {
     expect(isComparingWhileHeld).toBe(false);
+    expect(badgeBoxChange(boxWhileHeld, boxAtRest)).toBeLessThanOrEqual(BADGE_SAME_MAX);
   });
 });
 

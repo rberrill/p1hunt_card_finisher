@@ -232,7 +232,8 @@
   }
 
   // A pan, built on `base`. On Levels, pressing and holding the photo without moving compares
-  // it with no levels (the timer checks the gesture is still the live one).
+  // it with no levels (the timer checks the gesture is still the live one). With no levels to
+  // compare, setCompare starts nothing and the press stays an ordinary pan (ruling R9).
   function panGesture(view, base) {
     const gesture = Object.assign(base, {
       type: 'pan',
@@ -241,8 +242,8 @@
     if (app.tab === 'levels' && hasGeometry()) {
       gesture.holdTimer = setTimeout(() => {
         if (app.gesture !== gesture || gesture.moved) return;
-        gesture.comparing = true;
         CF.setCompare(true);
+        gesture.comparing = app.compare;
       }, CONFIG.levels.compareHoldMs);
     }
     return gesture;
@@ -374,7 +375,11 @@
       if (view) CF.findCardAt(CF.toWorld(view, gesture.start));
       return;
     }
-    const isTap = gesture && !gesture.moved && performance.now() - gesture.startTime < TAP_MS;
+    // A press that showed Levels' comparison is never a tap, however short it was (ruling R10).
+    const isTap = gesture
+      && !gesture.moved
+      && !gesture.comparing
+      && performance.now() - gesture.startTime < TAP_MS;
     if (isTap && gesture.type === 'pan') checkDoubleTap(gesture);
     if (isTap && gesture.type === 'handle') checkHandleDoubleTap(gesture);
     endGesture();

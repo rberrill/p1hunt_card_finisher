@@ -777,7 +777,6 @@ test('VIEW-10.4 A double tap does nothing while Tap to find card is armed [phone
 
 test('VIEW-10.5 A press that showed Levels\' compare doesn\'t count toward a double tap [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-103');
     const hand = await startOnLevels(page, testInfo);
     await hand.tap(page.locator('#toolAutoLevels'));
     await check('a white dot shows on the Levels tab in the step tabs', async () => {
@@ -790,7 +789,7 @@ test('VIEW-10.5 A press that showed Levels\' compare doesn\'t count toward a dou
       expect(zoomed.isFitted).toBe(false);
     });
     const press = await pressThenTap(page, middle);
-    await check('the comparison showed (the Before levels badge), in under 0.3 seconds', () => {
+    await check('the comparison started, and the press lasted under 0.3 seconds in all', () => {
       expect(press.isCompared).toBe(true);
       expect(press.holdMs).toBeLessThan(TAP_MS);
     });
