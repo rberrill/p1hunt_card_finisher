@@ -220,10 +220,12 @@
     CF.bindSegmented(byId('orientation'), value => CF.commit(state => {
       state.aspect.orientation = value;
     }));
+    // Turning the overlay on only draws: the search it starts, for the edge map and the scored
+    // shapes, leaves the corners where they are (ruling R3).
     byId('debugOverlay').addEventListener('change', event => {
       app.debugOverlay = event.target.checked;
       const hasDebugData = app.detection.last && app.detection.last.debug;
-      if (app.debugOverlay && !hasDebugData) CF.runDetect();
+      if (app.debugOverlay && !hasDebugData) CF.detectForDebugOverlay();
       CF.requestRender();
     });
     // Selecting a handle on the photo (a press, or Tab) doesn't resync the controls, so the

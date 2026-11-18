@@ -12,7 +12,8 @@
   const REDETECT_DELAY_MS = 350;
 
   // Shows or hides the panel (force: true or false, or left out to flip it). Showing it builds
-  // it afresh and turns the debug overlay on, re-running detection so its scores fill in.
+  // it afresh and turns the debug overlay on. That only draws: the search it starts, for what
+  // the overlay shows, leaves the corners where they are (ruling R3).
   function toggleDebugPanel(force) {
     const panel = elements.debugPanel;
     const show = force !== undefined ? force : panel.hidden;
@@ -22,7 +23,7 @@
     if (!app.debugOverlay) {
       app.debugOverlay = true;
       CF.syncUI();
-      if (app.img) CF.runDetect();
+      if (app.img) CF.detectForDebugOverlay();
     }
   }
 

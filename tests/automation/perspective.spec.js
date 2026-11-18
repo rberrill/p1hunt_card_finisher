@@ -2490,6 +2490,25 @@ test('PER-33.2 With no candidate, Reset perspective puts the corners on the cent
 // The Debug overlay switch in Perspective's options.
 const debugSwitch = page => page.locator('#debugOverlay');
 
+// Expects the Debug overlay switch to show off, under the heading DEVELOPER in the options:
+// the last heading before the switch is that one (the sheet may still be rising, so the two
+// are not compared by where they are on the page).
+async function expectDebugSwitchOff(page) {
+  const heading = page.locator('#perspectiveSheet .sheet-heading', { hasText: 'Developer' });
+  await expect(heading).toBeVisible();
+  await expect(debugSwitch(page)).toBeVisible();
+  const headingAbove = await page.evaluate(() => {
+    const toggle = document.getElementById('debugOverlay');
+    const headings = Array.from(document.querySelectorAll('#perspectiveSheet .sheet-heading'));
+    const before = headings.filter(
+      el => el.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    return before.length ? before[before.length - 1].textContent : '';
+  });
+  expect(headingAbove).toBe('Developer');
+  await expect(debugSwitch(page)).not.toBeChecked();
+}
+
 test('PER-34.1 The Debug overlay\'s drawing, for a person to judge [phone]', async ({
   page,
   check,
@@ -2526,7 +2545,6 @@ test('PER-34.1 The Debug overlay\'s drawing, for a person to judge [phone]', asy
 
 test('PER-34.2 The Debug overlay switch leaves corners placed by hand where they are [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-063');
     const hand = await startOnPerspective(page, testInfo);
     const topLeft = await handleOnPage(page, TOP_LEFT);
     await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
@@ -2537,19 +2555,95 @@ test('PER-34.2 The Debug overlay switch leaves corners placed by hand where they
     const dragged = await cornersNow(page);
     await openOptions(page, hand, 'perspective');
     await check('Debug overlay shows under DEVELOPER, off', async () => {
-      await expect(debugSwitch(page)).toBeVisible();
-      await expect(debugSwitch(page)).not.toBeChecked();
+      await expectDebugSwitchOff(page);
     });
-    await hand.tap(debugSwitch(page));
+    await tapDebugSwitch(page, hand);
     await check('it is on', async () => {
       await expect(debugSwitch(page)).toBeChecked();
     });
-    await waitForDetection(page);
     await closeOptions(page, hand, 'perspective');
     await check('the top-left corner ring is still where it was dragged in row 1', async () => {
       expectSameCorners(await cornersNow(page), dragged);
     });
   });
+
+test('PER-34.3 The Debug overlay switch, turned on while the first search runs, starts the '
+  + 'search again and the corners still land on the card [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = handFor(page, testInfo);
+  await openApp(page);
+  await recordSearchPoints(page);
+  await holdNextSearch(page);
+  await page.setInputFiles('#fileInput', samplePath(PHOTO));
+  await page.waitForFunction(() => !!window.__straightener.app.geometry);
+  await check('the photo opens on Perspective, its outline on the rectangle a fifth in from each '
+    + 'edge, and the line reads "Detecting…"', async () => {
+    await expect(page.locator('#perspectiveArea')).toBeVisible();
+    expectSameCorners(await cornersNow(page), await startingRectangle(page));
+    await expectStatus(page, 'Detecting…');
+  });
+  await openOptions(page, hand, 'perspective');
+  await check('Perspective options rise; under DEVELOPER the Debug overlay switch is off',
+    async () => {
+      await expectDebugSwitchOff(page);
+    });
+  await hand.tap(debugSwitch(page));
+  await check('it is on, and a second search has started, handed no point like the first, '
+    + 'while the first is still held open', async () => {
+    await expect(debugSwitch(page)).toBeChecked();
+    expect(await readSearchPoints(page)).toEqual([null, null]);
+  });
+  await closeOptions(page, hand, 'perspective');
+  await check('the options have gone', async () => {
+    await expect(page.locator('#perspectiveSheet')).toBeHidden();
+  });
+  // The second search ends by itself; the first is still held open.
+  await waitForDetection(page);
+  await check('the line no longer reads "Detecting…"; the second search has put the four '
+    + 'corners on the card\'s corners, and Undo is greyed out', async () => {
+    await expect(statusLine(page)).toBeHidden();
+    expect(await errorAgainstTruth(page, 'IMG_9136')).toBeLessThan(WITHIN_PCT);
+    expect(await page.locator('#btnUndo').isDisabled()).toBe(true);
+  });
+  const placed = await cornersNow(page);
+  await releaseSearch(page);
+  await page.waitForTimeout(SEARCH_SETTLE_MS);
+  await check('the first search\'s result was thrown away: the corners have not moved, the '
+    + 'line shows no message and Undo is still greyed out', async () => {
+    expectSameCorners(await cornersNow(page), placed);
+    await expect(statusLine(page)).toBeHidden();
+    expect(await page.locator('#btnUndo').isDisabled()).toBe(true);
+  });
+});
+
+test('PER-34.4 The Debug overlay switch doesn\'t bring back "Nothing detected" once a move has '
+  + 'cleared it [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOnFixture(page, testInfo, BLANK_FIXTURE);
+  await check(`the line reads "${NOTHING_DETECTED}"`, async () => {
+    await expectStatus(page, NOTHING_DETECTED);
+  });
+  await hand.tap(arrowButton(page, 'right'));
+  await check('the message has gone: the line reads NUDGE and Corner 1 of 4', async () => {
+    await expectNudgeLine(page);
+    await expect(handleName(page)).toHaveText('Corner 1 of 4');
+  });
+  await openOptions(page, hand, 'perspective');
+  await check('Perspective options rise; under DEVELOPER the Debug overlay switch is off',
+    async () => {
+      await expectDebugSwitchOff(page);
+    });
+  await tapDebugSwitch(page, hand);
+  await check('it is on', async () => {
+    await expect(debugSwitch(page)).toBeChecked();
+  });
+  await closeOptions(page, hand, 'perspective');
+  await check('the message has not come back: the line still reads NUDGE and Corner 1 of 4',
+    async () => {
+      expect(await isNudgeLineNow(page)).toBe(true);
+    });
+});
 
 // The size of the Result picture and of the space inside its block's margins, in CSS px.
 function resultPictureSize(page) {
@@ -2966,7 +3060,6 @@ test('PER-38.1 Selecting, Next handle, Flatten, Snap, Preview and Tap to find ca
 
 test('PER-38.2 The Debug overlay switch adds no undo step after a hand-placed corner [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-063');
     const hand = await startOnPerspective(page, testInfo);
     const candidates = await candidateCorners(page);
     const undo = page.locator('#btnUndo');
@@ -2978,11 +3071,9 @@ test('PER-38.2 The Debug overlay switch adds no undo step after a hand-placed co
     });
     await openOptions(page, hand, 'perspective');
     await check('Debug overlay shows under DEVELOPER, off', async () => {
-      await expect(debugSwitch(page)).toBeVisible();
-      await expect(debugSwitch(page)).not.toBeChecked();
+      await expectDebugSwitchOff(page);
     });
-    await hand.tap(debugSwitch(page));
-    await waitForDetection(page);
+    await tapDebugSwitch(page, hand);
     await check('it is on', async () => {
       await expect(debugSwitch(page)).toBeChecked();
     });

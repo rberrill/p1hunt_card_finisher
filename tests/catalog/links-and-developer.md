@@ -433,16 +433,16 @@ On a fail, record: the row number, the report's text.
 
 ## DEV-09 Opening the tuning panel turns the debug overlay on
 
-Opening the tuning panel turns the **Debug overlay** on. If it was off and a photo is open, detection runs again so the panel's report fills in.
+Opening the tuning panel turns the **Debug overlay** on. If it was off and a photo is open, detection runs again, so the overlay has its lines to draw and the panel its report, and corners placed by hand stay where they are, with no undo step added.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#debugPanel`, `#debugOverlay`, `CONFIG.keys.debug`
-- Source: `js/app/debug-panel.js` (`toggleDebugPanel`)
-- Ruling: R3. Turning the debug overlay on leaves the corners alone and only draws. The app differs today.
+- Source: `js/app/debug-panel.js` (`toggleDebugPanel`); `js/app/state.js` (`detectForDebugOverlay`)
+- Ruling: R3. Opening the panel, which turns the debug overlay on, leaves corners placed by hand where they are and adds no undo step. The app does this since 1.10.0.
 - Cases: 2
 
 ### DEV-09.1 The backtick key opens the panel, turns Debug overlay on and fills the report   [auto: desktop]
@@ -462,9 +462,7 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### DEV-09.2 Opening the panel leaves corners placed by hand alone   [auto: desktop]
-Written to ruling R3; it fails until that is built (BUG-211).
-
+### DEV-09.2 Opening the panel leaves corners placed by hand alone and adds no undo step   [auto: desktop]
 Before you start:
 - Device and browser: a desktop browser, 1280 × 800 px, with a keyboard and a mouse
 - Build: the build under test
@@ -474,9 +472,10 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Drag the top-left corner handle 40 px down and right | The corner moves off the card |
+| 1 | Drag the top-left corner handle 40 px down and right | The corner moves off the card; **Undo** (the arrow curving left, at the top right) is no longer greyed out |
 | 2 | Press the backtick key (`) | The panel opens, and **Debug overlay** turns on |
 | 3 | Look at the top-left corner | It stays where it was dragged |
+| 4 | Click **Undo** | The top-left corner is back on the card's corner, and **Undo** is greyed out: the drag was the only undo step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, where the corner went, a screenshot.

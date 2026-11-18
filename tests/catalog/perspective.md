@@ -74,7 +74,7 @@ If a new search for the card starts before an older one finishes, or another pho
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: none
-- Source: `js/app/state.js` (`runDetect`, `takeDetection`, `clearRunMessage`, `detectReopenedSide`, `areCornersHandPlaced`); `js/app/pair.js` (`switchSide`)
+- Source: `js/app/state.js` (`runDetect`, `takeDetection`, `clearRunMessage`, `detectReopenedSide`, `detectAgain`, `areCornersHandPlaced`); `js/app/pair.js` (`switchSide`)
 - Ruling: R45. Switching sides never leaves a stale message: the back's line is not left reading "Detecting…". A search still running when its side is left is thrown away and runs again when that side is next opened; that run moves the corners only if none on that side was moved by hand, and otherwise its result becomes the candidates to cycle through. The app does this since 1.10.0.
 - Cases: 5
 
@@ -1937,17 +1937,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-34 Debug overlay
 
-Under **Developer** in the options sheet, the **Debug overlay** switch draws the edge map, the detected lines and the scored candidates over the photo.
+Under **Developer** in the options sheet, the **Debug overlay** switch draws the edge map, the detected lines and the scored candidates over the photo. Turning it on leaves corners placed by hand where they are, and does not bring back "Nothing detected. Drag the corners into place." once a move by hand has cleared it. Turned on while the photo's first search for the card still runs, it starts that search again, and the corners still land on the card, with no undo step.
 
 - Risk: low
-- Check: eye
+- Check: eye, script (the cases about the corners and the message)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#debugOverlay`, "Debug overlay", "Developer"
-- Source: `js/app/perspective.js` (`buildPerspectiveSheet`, `bindPerspective`); `js/app/view.js` (`drawDebug`, `edgeMapCanvas`, `drawSnapLines`, `drawDebugQuads`)
-- Ruling: R3. The switch leaves the corners alone and only draws. The app differs today.
-- Cases: 2
+- Source: `js/app/perspective.js` (`buildPerspectiveSheet`, `bindPerspective`); `js/app/state.js` (`detectForDebugOverlay`, `detectAgain`, `runDetect`, `takeDetection`); `js/app/view.js` (`drawDebug`, `edgeMapCanvas`, `drawSnapLines`, `drawDebugQuads`)
+- Ruling: R3. Turning the switch on only draws: corners placed by hand stay where they are, and "Nothing detected" that a move by hand has cleared stays away. The app does this since 1.10.0.
+- Cases: 4
 
 ### PER-34.1 The Debug overlay's drawing, for a person to judge   [eye]
 Before you start:
@@ -1970,8 +1970,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-34.2 The Debug overlay switch leaves corners placed by hand where they are   [auto: phone]
-Written to ruling R3; it fails until that is built (BUG-063).
-
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test
@@ -1985,6 +1983,48 @@ Before you start:
 | 2 | Open **Perspective options**: on a phone, tap the options tab (the small tab with an up arrow on the top edge of the controls); on a wide screen they are always shown under the controls | **Debug overlay** shows under DEVELOPER, off |
 | 3 | Tap the **Debug overlay** switch | It is on |
 | 4 | Close the options (on a phone, the **×** at their top right; on a wide screen there is nothing to close), and look at the top-left corner ring | It is still where you dragged it in row 1 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-34.3 The Debug overlay switch, turned on while the first search runs, starts the search again and the corners still land on the card   [auto: phone]
+Script only
+Stand-in: the script holds the photo's first search for the card open, so that the switch can be turned on while it runs, and lets it end only after row 5; it also counts the searches started and reads the point each was handed. A search takes about half a second, and nothing a person can do slows it, so a person can't reach the switch inside it.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the start screen, with no photo open
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Open photo** and choose IMG_9136.JPEG | The photo opens on the Perspective step, its white outline on the rectangle a fifth of the photo's width and height in from each edge; the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo) reads "Detecting…" |
+| 2 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | **Perspective options** rise; under DEVELOPER the **Debug overlay** switch is off |
+| 3 | Tap the **Debug overlay** switch | It is on, and a second search has started, handed no point like the first, while the first is still held open |
+| 4 | Close the options with the **×** at their top right | The options have gone |
+| 5 | Wait until the line above the controls no longer reads "Detecting…" | The second search has put the four corners on the card's corners, and **Undo** (the arrow curving left, at the top right) is greyed out |
+| 6 | Wait two seconds (the script lets the first search end at the start of them) | The first search's result was thrown away: the corners have not moved, the line shows no message, and **Undo** is still greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-34.4 The Debug overlay switch doesn't bring back "Nothing detected" once a move has cleared it   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px
+- Build: the build under test
+- Photo: plain-grey.png from tests/fixtures/ (a plain mid-grey picture 1200 × 1600 px with no card in it)
+- Starting screen: the picture open, on the Perspective step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo) | It reads "Nothing detected. Drag the corners into place." |
+| 2 | Tap the right arrow (→) under that line | The message has gone: the line reads NUDGE and Corner 1 of 4 |
+| 3 | Tap the options tab (the small tab with an up arrow on the top edge of the controls) | **Perspective options** rise; under DEVELOPER the **Debug overlay** switch is off |
+| 4 | Tap the **Debug overlay** switch | It is on |
+| 5 | Close the options with the **×** at their top right, and look at the line above the controls | The message has not come back: the line still reads NUDGE and Corner 1 of 4 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2278,10 +2318,10 @@ Selecting a handle, **Next handle**, changing mode, **Snap**, **Preview**, armin
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnUndo`, `#btnNextHandle`, `#toolSnap`, `#toolPreview`
-- Source: `js/app/perspective.js` (`bindHandleNudge`, `bindPerspectiveTools`, `bindPerspective`); `js/app/state.js` (`runDetect`)
-- Ruling: R3. The Debug overlay switch leaves the corners alone, so it never adds an undo step. The app differs today.
+- Changed: 1.10.0
+- Anchors: `#btnUndo`, `#btnNextHandle`, `#toolSnap`, `#toolPreview`, `#debugOverlay`
+- Source: `js/app/perspective.js` (`bindHandleNudge`, `bindPerspectiveTools`, `bindPerspective`); `js/app/state.js` (`runDetect`, `detectForDebugOverlay`)
+- Ruling: R3. The Debug overlay switch adds no undo step, after a corner placed by hand too. The app does this since 1.10.0.
 - Cases: 2
 
 ### PER-38.1 Selecting, Next handle, Flatten, Snap, Preview and Tap to find card add no undo step   [auto: phone]
@@ -2309,8 +2349,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### PER-38.2 The Debug overlay switch adds no undo step after a hand-placed corner   [auto: phone]
-Written to ruling R3; it fails until that is built (BUG-063).
-
 Before you start:
 - Device and browser: any; a phone-width window (drag with a finger) or a wide window (drag with the mouse)
 - Build: the build under test

@@ -92,6 +92,16 @@ async function waitForNextDetection(page, runsBefore) {
   await waitForDetection(page);
 }
 
+// True when the lines detection found are drawn: the Debug overlay is on, and the last search
+// left it lines and the data for the rest of its drawing.
+function areDetectedLinesDrawn(page) {
+  return page.evaluate(() => {
+    const app = window.__straightener.app;
+    const hasDebug = !!app.detection.last && !!app.detection.last.debug;
+    return app.debugOverlay && hasDebug && app.detection.snapLines.length > 0;
+  });
+}
+
 // The tuning panel's field for a detection setting.
 const panelField = (page, key) => page.locator(`#debugPanel input[data-key="${key}"]`);
 
@@ -594,12 +604,13 @@ test('DEV-09.1 The backtick key opens the panel, turns Debug overlay on and fill
     await expect(page.locator('#debugPanel')).toBeVisible();
     await expect(page.locator('#debugPanel')).toContainText('Detection tuning');
   });
+  await waitForNextDetection(page, runsBefore);
   await check('Debug overlay in Perspective\'s options is on, and detection\'s lines are drawn',
     async () => {
       await expect(page.locator('#perspectiveSheet label:has(#debugOverlay)')).toBeVisible();
       await expect(page.locator('#debugOverlay')).toBeChecked();
+      expect(await areDetectedLinesDrawn(page)).toBe(true);
     });
-  await waitForNextDetection(page, runsBefore);
   await check('the panel\'s report starts "round trip ": detection ran again and filled it in',
     async () => {
       await expect(page.locator('#debugInfo')).toHaveText(/^round trip /);
@@ -607,23 +618,23 @@ test('DEV-09.1 The backtick key opens the panel, turns Debug overlay on and fill
     });
 });
 
-test('DEV-09.2 Opening the panel leaves corners placed by hand alone [desktop]', async ({
-  page,
-  check,
-}, testInfo) => {
-  test.fail(true, 'BUG-211');
+test('DEV-09.2 Opening the panel leaves corners placed by hand alone and adds no undo step '
+  + '[desktop]', async ({ page, check }, testInfo) => {
   const hand = await startWith(page, testInfo);
   await waitForDetection(page);
+  const undo = page.locator('#btnUndo');
   const found = (await editState(page)).corners[0];
   const start = await cornerOnPage(page, 0);
   await hand.drag(start, { x: start.x + DRAG_PX, y: start.y + DRAG_PX });
   const dragged = (await editState(page)).corners[0];
-  await check('the top-left corner moves off the card', async () => {
+  await check('the top-left corner moves off the card; Undo is no longer greyed out', async () => {
     expect(Math.hypot(dragged[0] - found[0], dragged[1] - found[1]))
       .toBeGreaterThan(MOVED_MIN_PX);
+    await expect(undo).toBeEnabled();
   });
+  const runsBefore = await detectionRuns(page);
   await page.keyboard.press('`');
-  await waitForDetection(page);
+  await waitForNextDetection(page, runsBefore);
   await check('the panel opens, and Debug overlay turns on', async () => {
     await expect(page.locator('#debugPanel')).toBeVisible();
     await expect(page.locator('#debugOverlay')).toBeChecked();
@@ -632,6 +643,14 @@ test('DEV-09.2 Opening the panel leaves corners placed by hand alone [desktop]',
   await check('the top-left corner stays where it was dragged', async () => {
     expect(Math.abs(after[0] - dragged[0])).toBeLessThan(SAME_CORNER_PX);
     expect(Math.abs(after[1] - dragged[1])).toBeLessThan(SAME_CORNER_PX);
+  });
+  await hand.tap(undo);
+  const undone = (await editState(page)).corners[0];
+  await check('the top-left corner is back on the card\'s corner, and Undo is greyed out: the '
+    + 'drag was the only undo step', async () => {
+    expect(Math.abs(undone[0] - found[0])).toBeLessThan(SAME_CORNER_PX);
+    expect(Math.abs(undone[1] - found[1])).toBeLessThan(SAME_CORNER_PX);
+    expect(await undo.isDisabled()).toBe(true);
   });
 });
 
