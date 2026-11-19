@@ -321,8 +321,10 @@
   }
 
   // Opens a photo. restore: a saved session record ({ state, draft, tab, exported, width,
-  // height }) to reapply instead of starting fresh; it's used only if the photo's size matches,
-  // and a warning says so when it doesn't (ruling R23).
+  // height }) to reapply instead of starting fresh; only Resume passes one, an empty one when
+  // nothing was saved. It's used only if it holds edits and the photo's size matches, and a
+  // warning says so when it isn't (ruling R23). app.hasResumedEdits says whether it was used,
+  // for Resume's notice of a dropped pair (finishResume in pair.js, ruling R100).
   // Resolves true once the photo is open, false if it couldn't be read or another photo was
   // opened meanwhile (the open photo is then unchanged).
   async function openFile(file, name, restore) {
@@ -356,6 +358,7 @@
     const resumed = hasSavedEdits
       && restore.width === img.width
       && restore.height === img.height;
+    app.hasResumedEdits = resumed;
     if (resumed) {
       app.state = cleanState(restore.state, img).state;
       app.state.source.name = img.name;
@@ -380,8 +383,9 @@
     if (resumed) {
       toast('Resumed where you left off.');
       CF.ensureOverlayImage();
-    } else if (hasSavedEdits) {
-      // The edits were saved for a photo of another size, so none of them were used (R23).
+    } else if (restore) {
+      // A Resume that used no saved edits: they were saved for a photo of another size, or
+      // there were none (R23).
       toast('Full edit history could not be restored, your photo has been opened fresh.', 'warn');
     }
     // Resumed corners are kept, except ones still on the rectangle every photo starts on: no

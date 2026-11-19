@@ -1978,16 +1978,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PAIR-42 A damaged stored pair
 
-A stored pair that is damaged or doesn't match its photo is dropped, and the open side resumes alone with a warning.
+A stored pair that is damaged or doesn't match its photo is dropped, and the open side opens alone. The warning "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." shows only when that photo came back with its edits; otherwise the message for what happened to the photo stands alone: the opened-fresh warning (its saved size doesn't match, or it has no saved edits), the read error, or none when another photo was opened first. When only the open side's saved size doesn't match, the pair is kept: that side opens with fresh edits and the opened-fresh warning, and the waiting side keeps its edits.
 
 - Risk: low
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: "The saved pair wasn’t valid, so it was reset. ", "This photo resumed on its own."
-- Source: `js/app/pair.js` (`restorePair`, `isPairRecord`, `restoredSide`, `finishResume`)
-- Cases: 2
+- Changed: 1.10.0
+- Anchors: "The saved pair wasn’t valid, so it was reset. ", "This photo resumed on its own.", "Full edit history could not be restored, your photo has been opened fresh.", "Couldn’t read that file as an image."
+- Source: `js/app/pair.js` (`restorePair`, `isPairRecord`, `restoredSide`, `finishResume`), `js/app/state.js` (`openFile`), `js/app/start-screen.js` (`resumeSession`), `js/app/adapters.js` (`ImageSource.load`)
+- Ruling: R100. Resuming a pair whose two sides both have a saved size that no longer matches: only "Full edit history could not be restored, your photo has been opened fresh." shows. One rule covers every case: the pair-reset message shows only when the open photo came back with its edits; otherwise the message for what happened to the photo stands alone (the opened-fresh warning, or the read error). When only the open side opens fresh and the other side is fine, the pair is kept (AS-IS). The app does this since 1.10.0. R23. A size mismatch shows the amber message "Full edit history could not be restored, your photo has been opened fresh." Rich, 2026-11-19: the same message shows when Resume finds no usable saved edits at all for the photo (the record is missing or holds none), for a single photo or the open side of a pair, so a Resume that opens fresh always says so. The app does this since 1.10.0.
+- Cases: 9
 
 ### PAIR-42.1 A damaged stored pair is dropped, and the open side resumes alone   [auto: phone, webkit]
 Script only
@@ -2026,6 +2027,148 @@ Before you start:
 | 1 | Reload the page | The start screen offers **Resume** |
 | 2 | Tap **Resume** | The back (14_back_portrait_raw_white.JPEG) opens on its own; a warning reads "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." |
 | 3 | Tap **Export** in the step tabs | **Add back** is in the bottom row: the back is a single photo |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-42.3 Both sides' saved sizes don't match: only the opened-fresh warning shows   [auto: phone]
+Script only
+Stand-in: no control changes the photo size saved with a side's edits, and no sample photo decodes at a size other than its own, so the script adds one pixel to the saved width of both sides, as photos that no longer decode at the size they were saved with would be.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back; tap **Rotate** in the step tabs, tap **90° right**, tap **Front** in the top bar, tap **90° right**, tap **Back**. Each side is turned a quarter right, and the back is open on the Rotate step. Two seconds later the page is reloaded: the start screen offers **Resume**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script adds one pixel to the width saved with each side's edits | Each side's saved width is one pixel more than its photo's |
+| 2 | Tap **Resume** | The back opens on its own, upright, on the Perspective step: the saved turn was not applied, and there is no **Front** / **Back** in the top bar |
+| 3 | Look at the messages over the photo since the tap | One amber warning was shown, "Full edit history could not be restored, your photo has been opened fresh."; "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." was not shown |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-42.4 A waiting side whose saved size doesn't match: the pair is dropped, and the open side keeps its edits   [auto: phone]
+Script only
+Stand-in: no control changes the photo size saved with a side's edits, and no sample photo decodes at a size other than its own, so the script adds one pixel to the saved width of the waiting side (the front), as a photo that no longer decodes at the size it was saved with would be.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back; tap **Rotate** in the step tabs, tap **90° right**, tap **Front** in the top bar, tap **90° right**, tap **Back**. Each side is turned a quarter right, and the back is open on the Rotate step. Two seconds later the page is reloaded: the start screen offers **Resume**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script adds one pixel to the width saved with the front's edits | The front's saved width is one pixel more than its photo's; the back's is its photo's |
+| 2 | Tap **Resume** | The back opens on its own on the Rotate step, still turned a quarter right: its edits resumed, and there is no **Front** / **Back** in the top bar |
+| 3 | Look at the messages over the photo since the tap | One amber warning was shown, "The saved pair wasn’t valid, so it was reset. This photo resumed on its own."; "Full edit history could not be restored, your photo has been opened fresh." was not shown |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-42.5 An open side whose saved size doesn't match opens fresh, and the pair is kept   [auto: phone]
+Script only
+Stand-in: no control changes the photo size saved with a side's edits, and no sample photo decodes at a size other than its own, so the script adds one pixel to the saved width of the open side (the back), as a photo that no longer decodes at the size it was saved with would be.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back; tap **Rotate** in the step tabs, tap **90° right**, tap **Front** in the top bar, tap **90° right**, tap **Back**. Each side is turned a quarter right, and the back is open on the Rotate step. Two seconds later the page is reloaded: the start screen offers **Resume**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script adds one pixel to the width saved with the back's edits | The back's saved width is one pixel more than its photo's; the front's is its photo's |
+| 2 | Tap **Resume** | The back opens upright on the Perspective step: the saved turn was not applied. **Front** and **Back** show in the top bar, **Back** selected |
+| 3 | Look at the messages over the photo since the tap | One amber warning was shown, "Full edit history could not be restored, your photo has been opened fresh."; "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." was not shown |
+| 4 | Tap **Front** in the top bar | The front shows, still turned a quarter right: its edits were kept |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-42.6 A damaged stored pair and an open side whose saved size doesn't match: only the opened-fresh warning shows   [auto: phone]
+Script only
+Stand-in: no control can change what the browser stores, so the script replaces the waiting side's (the front's) stored edits with a word, as a damaged record would hold, and adds one pixel to the width saved with the open side's (the back's) edits, as a photo that no longer decodes at the size it was saved with would be.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back; tap **Rotate** in the step tabs, tap **90° right**, tap **Front** in the top bar, tap **90° right**, tap **Back**. Each side is turned a quarter right, and the back is open on the Rotate step. Two seconds later the page is reloaded: the start screen offers **Resume**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script damages the front's stored edits and adds one pixel to the width saved with the back's edits | The front's stored edits are the word "damaged"; the back's saved width is one pixel more than its photo's |
+| 2 | Tap **Resume** | The back opens on its own, upright, on the Perspective step: the saved turn was not applied, and there is no **Front** / **Back** in the top bar |
+| 3 | Look at the messages over the photo since the tap | One amber warning was shown, "Full edit history could not be restored, your photo has been opened fresh."; "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." was not shown |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-42.7 A dropped pair whose open photo can't be read: only the read error shows   [auto: phone]
+Script only
+Stand-in: no control can change what the browser stores, so the script replaces the waiting side's (the front's) stored edits with a word, as a damaged record would hold, and replaces the open side's (the back's) stored photo with a line of text, which no browser can read as a picture.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back; tap **Rotate** in the step tabs, tap **90° right**, tap **Front** in the top bar, tap **90° right**, tap **Back**. Each side is turned a quarter right, and the back is open on the Rotate step. Two seconds later the page is reloaded: the start screen offers **Resume**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script damages the front's stored edits and replaces the back's stored photo with 26 bytes of text | The front's stored edits are the word "damaged"; the back's stored photo is 26 bytes long |
+| 2 | Tap **Resume** | No photo opens: the start screen stays, with **Open photo** and without the **Resume** card |
+| 3 | Look at the messages on the screen since the tap | One red message was shown, "Couldn’t read that file as an image."; no amber warning was shown: "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." was not shown |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-42.8 A dropped pair whose open photo is overtaken by another photo: no warning shows   [auto: phone]
+Script only
+Stand-in: no control can change what the browser stores, so the script replaces the waiting side's (the front's) stored edits with a word, as a damaged record would hold, and holds the read of the stored photo until another photo is open. A read takes a few tens of milliseconds, and nothing a person can do slows it, so a person can't open another photo inside it.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG, and IMG_9136.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back; tap **Rotate** in the step tabs, tap **90° right**, tap **Front** in the top bar, tap **90° right**, tap **Back**. Each side is turned a quarter right, and the back is open on the Rotate step. Two seconds later the page is reloaded: the start screen offers **Resume**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script damages the front's stored edits | The front's stored edits are the word "damaged" |
+| 2 | Tap **Resume** (the script holds the read of the stored photo) | The **Resume** card goes; no photo is open, and **Open photo** is still on the start screen |
+| 3 | Tap **Open photo** and choose IMG_9136.JPEG | IMG_9136.JPEG opens on the Perspective step |
+| 4 | The script lets the held read go, and waits until that read has ended | IMG_9136.JPEG is still the open photo; no amber or red message was shown since the tap on **Resume**: "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." was not shown |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-42.9 A dropped pair whose open side has no saved edits: only the opened-fresh warning shows   [auto: phone]
+Script only
+Stand-in: no control can change what the browser stores, so the script replaces the waiting side's (the front's) stored edits with a word, as a damaged record would hold, and removes the edits from the open side's (the back's) stored record, leaving its name and size.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: a pair: open the front, tap **Export**, tap **Add back** and choose the back; tap **Rotate** in the step tabs, tap **90° right**, tap **Front** in the top bar, tap **90° right**, tap **Back**. Each side is turned a quarter right, and the back is open on the Rotate step. Two seconds later the page is reloaded: the start screen offers **Resume**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script damages the front's stored edits and removes the back's stored edits | The front's stored edits are the word "damaged"; the back's stored record holds no edits |
+| 2 | Tap **Resume** | The back opens on its own, upright, on the Perspective step: there is no **Front** / **Back** in the top bar |
+| 3 | Look at the messages over the photo since the tap | The messages shown were "Loading…", while the photo was read, then one amber warning, "Full edit history could not be restored, your photo has been opened fresh."; "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." was not shown |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

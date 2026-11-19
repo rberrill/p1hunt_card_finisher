@@ -144,20 +144,34 @@ function waitingPhotoName(page) {
 // Holds the next photo the app reads (a side switch, the back after Add back) until
 // releaseOpening is called, so a case can look at the screen while a side is opening. A real
 // read takes a few tens of milliseconds, too short to look at, and no control can slow it, so
-// this one change is made in the page's code.
+// this one change is made in the page's code. It also notes, in window.testHeldOpeningEnded,
+// when the read it held has ended after its release (see waitForHeldOpeningEnd).
 function holdNextOpening(page) {
   return page.evaluate(() => {
     const source = window.CF.ImageSource;
     const load = source.load;
+    window.testHeldOpeningEnded = false;
     window.testOpeningHeld = new Promise(resolve => {
       window.testReleaseOpening = resolve;
     });
     source.load = async function loadOnceReleased(...args) {
       source.load = load;
       await window.testOpeningHeld;
-      return load.apply(source, args);
+      try {
+        return await load.apply(source, args);
+      } finally {
+        window.testHeldOpeningEnded = true;
+      }
     };
   });
+}
+
+// Waits until the read that holdNextOpening held has ended (the photo read, or the read
+// failed) after releaseOpening, then lets the page finish what it does with it: the app acts
+// on the read in the same turn of its work, and one more frame is drawn before this returns.
+async function waitForHeldOpeningEnd(page) {
+  await page.waitForFunction(() => window.testHeldOpeningEnded === true);
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
 }
 
 // Lets the read that holdNextOpening held go on.
@@ -586,6 +600,51 @@ function changeStoredPair(page, change, photoName = '') {
   }, { kind: change, address: `samples/${photoName}` });
 }
 
+// Adds one pixel to the photo width saved with the edits of the stored pair's sides named in
+// `sides`: 'open' (the side that was open: the 'edits' record) and 'waiting' (the other side,
+// whose edits are in the 'pair' record). It stands in for a photo that no longer decodes at
+// the size it was saved with; no control can do this, and Resume then reads it. Returns the
+// widths saved now, in px: { open, waiting }.
+function widenStoredSides(page, sides) {
+  return page.evaluate(async names => {
+    const session = window.CF.Session;
+    const edits = await session.get('edits');
+    const pair = await session.get('pair');
+    if (names.includes('open')) {
+      edits.width += 1;
+      await session.put('edits', edits);
+    }
+    if (names.includes('waiting')) {
+      pair.other.edits.width += 1;
+      await session.put('pair', pair);
+    }
+    const [editsNow, pairNow] = await Promise.all([session.get('edits'), session.get('pair')]);
+    return { open: editsNow.width, waiting: pairNow.other.edits.width };
+  }, sides);
+}
+
+// Changes what is stored for the side that was open (the 'photo' and 'edits' records).
+// change: 'unreadable photo' (its stored photo becomes a line of text, which no browser can
+// read as a picture) or 'no edits' (its stored record loses its edits and keeps its name and
+// size). No control can do this; Resume then reads it. Returns what is stored now:
+// { photoBytes, hasEdits }.
+function changeStoredOpenSide(page, change) {
+  return page.evaluate(async kind => {
+    const session = window.CF.Session;
+    if (kind === 'unreadable photo') {
+      const photo = await session.get('photo');
+      photo.buf = new TextEncoder().encode('This is text, not a photo.').buffer;
+      await session.put('photo', photo);
+    } else {
+      const edits = await session.get('edits');
+      delete edits.state;
+      await session.put('edits', edits);
+    }
+    const [photoNow, editsNow] = await Promise.all([session.get('photo'), session.get('edits')]);
+    return { photoBytes: photoNow.buf.byteLength, hasEdits: 'state' in editsNow };
+  }, change);
+}
+
 module.exports = {
   zoomIn,
   viewNow,
@@ -596,6 +655,9 @@ module.exports = {
   recordToasts,
   toastsSoFar,
   changeStoredPair,
+  widenStoredSides,
+  changeStoredOpenSide,
+  waitForHeldOpeningEnd,
   noteDownloadStarts,
   downloadStarts,
   slowStorageWrites,

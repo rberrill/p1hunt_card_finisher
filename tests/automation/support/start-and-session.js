@@ -306,6 +306,12 @@ function changeSavedEdits(page, field, value) {
   }, { name: field, newValue: value });
 }
 
+// Deletes the saved edits on the device and leaves the saved photo. There is no way to do this
+// from the app's screen; it stands in for a browser that cleared part of the site's data.
+function deleteSavedEdits(page) {
+  return page.evaluate(() => window.__straightener.Session.del('edits'));
+}
+
 // Where the orientation value is in a JPEG's EXIF block: { valueAt, isLittleEndian }, with
 // valueAt the byte offset, or -1 when the photo records none.
 function findOrientation(bytes) {
@@ -477,6 +483,7 @@ module.exports = {
   lastDownloadMs,
   pageNowMs,
   changeSavedEdits,
+  deleteSavedEdits,
   sampleWithOrientation,
   enlargedSample,
 };

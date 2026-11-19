@@ -127,6 +127,8 @@
     exportedState: null,
     // The open photo's original file (a pair decodes a side again from it).
     file: null,
+    // True when openFile brought the photo back with its saved edits (Resume reads it at once).
+    hasResumedEdits: false,
     // A front + back pair (pair.js): { current, orient, other, exportedKey }, or null.
     pair: null,
     // The pair's output ('together' or 'separately', a preference).

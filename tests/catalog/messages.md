@@ -331,7 +331,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-09 "Resumed where you left off."
 
-An information message, "Resumed where you left off.", after **Resume**, when the stored photo is the same size as the saved edits. When the sizes differ, the photo opens with fresh edits and an amber warning: "Full edit history could not be restored, your photo has been opened fresh."
+An information message, "Resumed where you left off.", after **Resume**, when the stored photo is the same size as the saved edits. When the sizes differ, or no edits are saved for the photo, it opens with fresh edits and an amber warning: "Full edit history could not be restored, your photo has been opened fresh." The cases with no saved edits are STA-08.3 and STA-08.4.
 
 - Risk: low
 - Check: script
@@ -340,7 +340,7 @@ An information message, "Resumed where you left off.", after **Resume**, when th
 - Changed: 1.10.0
 - Anchors: "Resumed where you left off.", "Full edit history could not be restored, your photo has been opened fresh.", `#btnResume`
 - Source: `js/app/state.js` (`openFile`); `js/app/start-screen.js` (`resumeSession`)
-- Ruling: R23. When the saved edits don't fit the stored photo, an amber warning reads "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
+- Ruling: R23. When the saved edits don't fit the stored photo, an amber warning reads "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, tests/catalog/wording.md). Rich, 2026-11-19: the same message shows when Resume finds no usable saved edits at all for the photo (the record is missing or holds none), for a single photo or the open side of a pair, so a Resume that opens fresh always says so. The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-09.1 Resume says it resumed   [auto: phone]
@@ -1645,15 +1645,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-48 "The saved pair wasn’t valid, so it was reset."
 
-A warning, for 6 seconds, after **Resume** when the stored pair or its other photo couldn't be rebuilt; the open side resumes on its own: "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." It replaces "Resumed where you left off." at once.
+A warning, for 6 seconds, after **Resume** when the stored pair or its other photo couldn't be rebuilt and the open side came back on its own with its edits: "The saved pair wasn’t valid, so it was reset. This photo resumed on its own." It replaces "Resumed where you left off." at once. When the open photo didn't come back with its edits (it opened fresh, couldn't be read, or another photo was opened first), it is not shown, and the message for what happened to the photo stands alone (PAIR-42.3 and PAIR-42.6 to PAIR-42.9).
 
 - Risk: low
 - Check: script
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: "The saved pair wasn’t valid, so it was reset. ", "This photo resumed on its own."
-- Source: `js/app/pair.js` (`restorePair`, `finishResume`)
+- Source: `js/app/pair.js` (`restorePair`, `finishResume`), `js/app/state.js` (`openFile`), `js/app/start-screen.js` (`resumeSession`)
+- Ruling: R100. Resuming a pair whose two sides both have a saved size that no longer matches: only "Full edit history could not be restored, your photo has been opened fresh." shows. One rule covers every case: the pair-reset message shows only when the open photo came back with its edits; otherwise the message for what happened to the photo stands alone (the opened-fresh warning, or the read error). When only the open side opens fresh and the other side is fine, the pair is kept (AS-IS). Its cases are PAIR-42.3 to PAIR-42.9. The app does this since 1.10.0.
 - Cases: 1
 
 ### MSG-48.1 A saved pair that couldn't be rebuilt   [auto: phone]

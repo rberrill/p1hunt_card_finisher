@@ -34,6 +34,7 @@ const {
   toastNow,
   storedRecord,
   changeSavedEdits,
+  deleteSavedEdits,
   watchStorageAndDownloads,
   writesWithLastDownload,
   storageWritesSince,
@@ -750,6 +751,51 @@ test('STA-08.2 After a size mismatch the fresh edits replace the saved ones [pho
     expect((await editState(page)).rotation.quarter).toBe(0);
     expect((await toastNow(page)).text).toBe('Resumed where you left off.');
   });
+});
+
+// The last two rows of STA-08.3 and STA-08.4: Resume opens the photo upright on Perspective,
+// with the amber opened-fresh message.
+async function checkResumeOpensFresh(page, check, hand) {
+  await resumeAs(page, hand, PHOTO);
+  await check('the photo opens upright on Perspective', async () => {
+    expect((await editState(page)).rotation.quarter).toBe(0);
+    expect(await stepNow(page)).toBe('perspective');
+  });
+  // A plain reading, not a retrying one: the message comes with the photo or not at all.
+  const toast = await toastNow(page);
+  await check(`an amber message reads "${SIZE_MISMATCH_MESSAGE}"`, async () => {
+    expect(toast.isShown).toBe(true);
+    expect(toast.kind).toBe('warn');
+    expect(toast.text).toBe(SIZE_MISMATCH_MESSAGE);
+  });
+}
+
+test('STA-08.3 A saved record that holds no edits says the photo was opened fresh [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await startWithSavedTurn(page, testInfo);
+    // Script only: no control changes a saved record (whether the developer tools can is Q-07).
+    await changeSavedEdits(page, 'state', null);
+    await check('the saved record holds no edits, and still holds the width 1498', async () => {
+      const record = await storedRecord(page, 'edits');
+      expect(record.state).toBeNull();
+      expect(record.width).toBe(PHOTO_WIDTH);
+    });
+    await checkResumeOpensFresh(page, check, hand);
+  });
+
+test('STA-08.4 A saved record that has gone says the photo was opened fresh [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startWithSavedTurn(page, testInfo);
+  // Script only: no control deletes the saved edits and keeps the photo.
+  await deleteSavedEdits(page);
+  await check('no edits are saved; the card still offers "Resume IMG_9136.JPEG?"', async () => {
+    expect(await storedRecord(page, 'edits')).toBeNull();
+    await expect(page.locator('#btnResume')).toBeVisible();
+    await expect(page.locator('#resumeName')).toHaveText(PHOTO);
+  });
+  await checkResumeOpensFresh(page, check, hand);
 });
 
 test('STA-09.1 Resume keeps corners placed by hand [phone] [webkit]', async ({

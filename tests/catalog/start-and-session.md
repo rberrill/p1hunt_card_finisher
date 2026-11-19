@@ -433,7 +433,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## STA-08 Resume when the saved size doesn't match
 
-Resume applies the saved edits only if the saved width and height match the photo as decoded. Otherwise the photo opens with fresh edits and an amber message, "Full edit history could not be restored, your photo has been opened fresh.", and the fresh edits replace the saved ones.
+Resume applies the saved edits only if there are any and their saved width and height match the photo as decoded. Otherwise (the sizes differ, the saved record holds no edits, or it has gone) the photo opens with fresh edits and an amber message, "Full edit history could not be restored, your photo has been opened fresh." After a size mismatch the fresh edits replace the saved ones.
 
 - Risk: low
 - Check: script
@@ -441,9 +441,9 @@ Resume applies the saved edits only if the saved width and height match the phot
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: `#btnResume`, "Resumed where you left off.", "Full edit history could not be restored, your photo has been opened fresh."
-- Source: `js/app/state.js` (`openFile`)
-- Ruling: R23. A size mismatch shows the amber message "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, 16 November 2026). The app does this since 1.10.0.
-- Cases: 2
+- Source: `js/app/state.js` (`openFile`), `js/app/start-screen.js` (`resumeSession`)
+- Ruling: R23. A size mismatch shows the amber message "Full edit history could not be restored, your photo has been opened fresh." (wording approved by Rich, 16 November 2026). Rich, 2026-11-19: the same message shows when Resume finds no usable saved edits at all for the photo (the record is missing or holds none), for a single photo or the open side of a pair, so a Resume that opens fresh always says so. The app does this since 1.10.0.
+- Cases: 4
 
 ### STA-08.1 A size mismatch says the photo was opened fresh   [auto: phone]
 Script only
@@ -482,6 +482,46 @@ Before you start:
 | 2 | Tap **Resume** | The photo opens upright on the Perspective step, **Undo** greyed out |
 | 3 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" again |
 | 4 | Tap **Resume** | The photo opens upright, with "Resumed where you left off.": the fresh edits replaced the saved turn |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### STA-08.3 A saved record that holds no edits says the photo was opened fresh   [auto: phone]
+Script only
+Stand-in: no control removes the edits from the record the app saves, so the script removes them and leaves the photo's name and size, as a record that was written wrong would be. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/ (1498 × 2098 px)
+- Starting screen: as in STA-08.1: the start screen offering to resume IMG_9136.JPEG, turned with **90° right**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script removes the edits from the saved record | The saved record holds no edits, and still holds the width 1498 |
+| 2 | Tap **Resume** | The photo opens upright, on the Perspective step |
+| 3 | Look at the message over the photo | An amber message reads "Full edit history could not be restored, your photo has been opened fresh." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### STA-08.4 A saved record that has gone says the photo was opened fresh   [auto: phone]
+Script only
+Stand-in: the script deletes the saved edits record after the start screen has offered **Resume**, as the browser clearing part of the site's data in between would. No control deletes it and keeps the photo.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/ (1498 × 2098 px)
+- Starting screen: as in STA-08.1: the start screen offering to resume IMG_9136.JPEG, turned with **90° right**
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | The script deletes the saved edits record | No edits are saved; the card still offers "Resume IMG_9136.JPEG?" |
+| 2 | Tap **Resume** | The photo opens upright, on the Perspective step |
+| 3 | Look at the message over the photo | An amber message reads "Full edit history could not be restored, your photo has been opened fresh." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

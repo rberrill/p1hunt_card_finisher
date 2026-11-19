@@ -65,6 +65,9 @@ const {
   recordToasts,
   toastsSoFar,
   changeStoredPair,
+  widenStoredSides,
+  changeStoredOpenSide,
+  waitForHeldOpeningEnd,
   noteDownloadStarts,
   downloadStarts,
   slowStorageWrites,
@@ -81,6 +84,12 @@ const { levelsDot } = require('./support/levels.js');
 const { selectedPreset } = require('./support/crop.js');
 const { fixturePath } = require('./support/edits-files.js');
 const { holdNextSearch, releaseSearch } = require('./support/perspective.js');
+const {
+  watchMessages,
+  messagesSoFar,
+  waitForMessage,
+  expectKind,
+} = require('./support/messages.js');
 
 const FRONT = PORTRAIT_PAIR.front;
 const BACK = PORTRAIT_PAIR.back;
@@ -159,6 +168,9 @@ const PHOTO_RELEASED_MESSAGE = 'The photo isn’t loaded after the last export. 
 // The warning when a stored pair can't be brought back.
 const PAIR_RESET_MESSAGE = 'The saved pair wasn’t valid, so it was reset. '
   + 'This photo resumed on its own.';
+// Ruling R23's approved words for a Resume whose saved size doesn't match the photo.
+const OPENED_FRESH_MESSAGE = 'Full edit history could not be restored, your photo has been '
+  + 'opened fresh.';
 // Perspective's message while the corners cross.
 const CROSSED_MESSAGE = 'Corners cross or fold inward. Drag them back into a convex shape.';
 // How long PAIR-12.2 holds each write to storage, in ms: longer than a reload takes to start.
@@ -2810,6 +2822,260 @@ test('PAIR-42.2 A stored pair whose photo doesn\'t match its edits is dropped [p
       await expect(page.locator('#sideSwitch')).toBeHidden();
     });
   });
+
+// How many quarter turns to the right the open photo has.
+const quarterTurns = async page => (await editState(page)).rotation.quarter;
+
+// Taps 90° right on the Rotate step and waits until the open photo is turned a quarter.
+async function turnQuarterRight(page, hand) {
+  await hand.tap(page.locator('#toolRotateRight'));
+  await page.waitForFunction(() => window.__straightener.app.state.rotation.quarter === 1);
+}
+
+// PAIR-42.3 to PAIR-42.5 start here: a pair with each side turned a quarter right on Rotate, the
+// back open, stored, and the page reloaded to the start screen's Resume. The messages are
+// recorded from before the app loads. Returns { hand, widths }: the hand, and each photo's
+// width in px as { open, waiting } (the back is the open side, the front the waiting one).
+async function startWithTurnedPair(page, testInfo) {
+  await watchMessages(page);
+  const hand = await makePair(page, testInfo);
+  await goToStep(page, 'rotate', hand);
+  await turnQuarterRight(page, hand);
+  await switchTo(page, hand, 'front');
+  await turnQuarterRight(page, hand);
+  await switchTo(page, hand, 'back');
+  await waitUntilPairStored(page);
+  const widths = await page.evaluate(() => {
+    const app = window.__straightener.app;
+    return { open: app.img.width, waiting: app.pair.other.width };
+  });
+  await reloadToResume(page);
+  return { hand, widths };
+}
+
+// Checks the amber warnings shown since the page loaded: exactly `shown`, once, with a
+// warning's look, and `notShown` never. Read once the open side's search has ended, so every
+// message Resume shows has been shown.
+async function checkOneWarning(page, check, shown, notShown) {
+  const messages = await messagesSoFar(page);
+  const warnings = messages.filter(message => message.kind === 'warn');
+  await check(`one amber warning was shown, "${shown}"; "${notShown}" was not shown`, () => {
+    expect(warnings.map(message => message.text)).toEqual([shown]);
+    expectKind(warnings[0], 'warn');
+    expect(messages.map(message => message.text)).not.toContain(notShown);
+  });
+}
+
+test('PAIR-42.3 Both sides\' saved sizes don\'t match: only the opened-fresh warning shows '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  const { hand, widths } = await startWithTurnedPair(page, testInfo);
+  // Script only: no control changes a saved record.
+  const saved = await widenStoredSides(page, ['open', 'waiting']);
+  await check('each side\'s saved width is one pixel more than its photo\'s', () => {
+    expect(saved).toEqual({ open: widths.open + 1, waiting: widths.waiting + 1 });
+  });
+  await resume(page, hand, BACK, null);
+  await check('the back opens on its own, upright, on Perspective: the saved turn was not '
+    + 'applied, and there is no Front / Back', async () => {
+    expect((await editState(page)).source.name).toBe(BACK);
+    expect(await quarterTurns(page)).toBe(0);
+    expect(await stepNow(page)).toBe('perspective');
+    await expect(page.locator('#sideSwitch')).toBeHidden();
+  });
+  await checkOneWarning(page, check, OPENED_FRESH_MESSAGE, PAIR_RESET_MESSAGE);
+});
+
+test('PAIR-42.4 A waiting side whose saved size doesn\'t match: the pair is dropped, and the '
+  + 'open side keeps its edits [phone]', async ({ page, check }, testInfo) => {
+  const { hand, widths } = await startWithTurnedPair(page, testInfo);
+  // Script only: no control changes a saved record.
+  const saved = await widenStoredSides(page, ['waiting']);
+  await check('the front\'s saved width is one pixel more than its photo\'s; the back\'s is its '
+    + 'photo\'s', () => {
+    expect(saved).toEqual({ open: widths.open, waiting: widths.waiting + 1 });
+  });
+  await resume(page, hand, BACK, null);
+  await check('the back opens on its own on Rotate, still turned a quarter right: its edits '
+    + 'resumed, and there is no Front / Back', async () => {
+    expect((await editState(page)).source.name).toBe(BACK);
+    expect(await quarterTurns(page)).toBe(1);
+    expect(await stepNow(page)).toBe('rotate');
+    await expect(page.locator('#sideSwitch')).toBeHidden();
+  });
+  await checkOneWarning(page, check, PAIR_RESET_MESSAGE, OPENED_FRESH_MESSAGE);
+});
+
+test('PAIR-42.5 An open side whose saved size doesn\'t match opens fresh, and the pair is kept '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  const { hand, widths } = await startWithTurnedPair(page, testInfo);
+  // Script only: no control changes a saved record.
+  const saved = await widenStoredSides(page, ['open']);
+  await check('the back\'s saved width is one pixel more than its photo\'s; the front\'s is its '
+    + 'photo\'s', () => {
+    expect(saved).toEqual({ open: widths.open + 1, waiting: widths.waiting });
+  });
+  await resume(page, hand, BACK, 'back');
+  await check('the back opens upright on Perspective: the saved turn was not applied. Front '
+    + 'and Back show in the top bar, Back selected', async () => {
+    expect((await editState(page)).source.name).toBe(BACK);
+    expect(await quarterTurns(page)).toBe(0);
+    expect(await stepNow(page)).toBe('perspective');
+    await expect(sideButton(page, 'front')).toBeVisible();
+    await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
+  });
+  await checkOneWarning(page, check, OPENED_FRESH_MESSAGE, PAIR_RESET_MESSAGE);
+  await switchTo(page, hand, 'front');
+  await check('the front shows, still turned a quarter right: its edits were kept', async () => {
+    expect((await editState(page)).source.name).toBe(FRONT);
+    expect(await quarterTurns(page)).toBe(1);
+  });
+});
+
+// The message while a photo is read.
+const LOADING_MESSAGE = 'Loading…';
+
+// PAIR-42.6 to PAIR-42.9: damages the waiting side's (the front's) stored edits, so Resume
+// drops the pair. Script only: no control changes a saved record. Returns what the front's
+// stored edits are now.
+async function damageStoredFront(page) {
+  await changeStoredPair(page, 'damage');
+  return (await storedRecord(page, 'pair')).other.edits.state;
+}
+
+// The amber and red messages shown since the page loaded, as [{ text, kind }] in order, each
+// checked to have the look of its kind; and the words of every message shown, as `texts`.
+async function alertsSoFar(page) {
+  const messages = await messagesSoFar(page);
+  const shown = messages.filter(message => message.kind !== 'info');
+  for (const message of shown) expectKind(message, message.kind);
+  return {
+    alerts: shown.map(({ text, kind }) => ({ text, kind })),
+    texts: messages.map(message => message.text),
+  };
+}
+
+// Whether the start screen is up with no photo open: { hasPhoto, isResumeOffered,
+// isOpenPhotoShown }.
+async function startScreenNow(page) {
+  return {
+    hasPhoto: await page.evaluate(() => !!window.__straightener.app.img),
+    isResumeOffered: await page.locator('#resume').isVisible(),
+    isOpenPhotoShown: await page.locator('#btnOpenEmpty').isVisible(),
+  };
+}
+
+test('PAIR-42.6 A damaged stored pair and an open side whose saved size doesn\'t match: only '
+  + 'the opened-fresh warning shows [phone]', async ({ page, check }, testInfo) => {
+  const { hand, widths } = await startWithTurnedPair(page, testInfo);
+  const frontEdits = await damageStoredFront(page);
+  const saved = await widenStoredSides(page, ['open']);
+  await check('the front\'s stored edits are the word "damaged"; the back\'s saved width is one '
+    + 'pixel more than its photo\'s', () => {
+    expect(frontEdits).toBe('damaged');
+    expect(saved.open).toBe(widths.open + 1);
+  });
+  await resume(page, hand, BACK, null);
+  await check('the back opens on its own, upright, on Perspective: the saved turn was not '
+    + 'applied, and there is no Front / Back', async () => {
+    expect((await editState(page)).source.name).toBe(BACK);
+    expect(await quarterTurns(page)).toBe(0);
+    expect(await stepNow(page)).toBe('perspective');
+    await expect(page.locator('#sideSwitch')).toBeHidden();
+  });
+  await checkOneWarning(page, check, OPENED_FRESH_MESSAGE, PAIR_RESET_MESSAGE);
+});
+
+test('PAIR-42.7 A dropped pair whose open photo can\'t be read: only the read error shows '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  const { hand } = await startWithTurnedPair(page, testInfo);
+  const frontEdits = await damageStoredFront(page);
+  const stored = await changeStoredOpenSide(page, 'unreadable photo');
+  await check('the front\'s stored edits are the word "damaged"; the back\'s stored photo is '
+    + '26 bytes long', () => {
+    expect(frontEdits).toBe('damaged');
+    expect(stored.photoBytes).toBe(26);
+  });
+  await hand.tap(page.locator('#btnResume'));
+  await waitForMessage(page, UNREADABLE_MESSAGE);
+  await check('no photo opens: the start screen stays, with Open photo and without the Resume '
+    + 'card', async () => {
+    expect(await startScreenNow(page)).toEqual({
+      hasPhoto: false,
+      isResumeOffered: false,
+      isOpenPhotoShown: true,
+    });
+  });
+  const { alerts, texts } = await alertsSoFar(page);
+  await check(`one red message was shown, "${UNREADABLE_MESSAGE}"; no amber warning was shown: `
+    + `"${PAIR_RESET_MESSAGE}" was not shown`, () => {
+    expect(alerts).toEqual([{ text: UNREADABLE_MESSAGE, kind: 'error' }]);
+    expect(texts).not.toContain(PAIR_RESET_MESSAGE);
+  });
+});
+
+test('PAIR-42.8 A dropped pair whose open photo is overtaken by another photo: no warning '
+  + 'shows [phone]', async ({ page, check }, testInfo) => {
+  const { hand } = await startWithTurnedPair(page, testInfo);
+  const frontEdits = await damageStoredFront(page);
+  await check('the front\'s stored edits are the word "damaged"', () => {
+    expect(frontEdits).toBe('damaged');
+  });
+  // Script only: no control slows a read. The pair's record is damaged, so the first photo
+  // Resume reads is the open side's, and that read is the one held.
+  await holdNextOpening(page);
+  await hand.tap(page.locator('#btnResume'));
+  await waitForMessage(page, LOADING_MESSAGE);
+  await check('the Resume card goes; no photo is open, and Open photo is still on the start '
+    + 'screen', async () => {
+    expect(await startScreenNow(page)).toEqual({
+      hasPhoto: false,
+      isResumeOffered: false,
+      isOpenPhotoShown: true,
+    });
+  });
+  await chooseInPicker(page, hand, page.locator('#btnOpenEmpty'), OTHER_PHOTO);
+  await waitForPhoto(page, OTHER_PHOTO);
+  await check(`${OTHER_PHOTO} opens on Perspective`, async () => {
+    expect((await editState(page)).source.name).toBe(OTHER_PHOTO);
+    expect(await stepNow(page)).toBe('perspective');
+  });
+  await releaseOpening(page);
+  // The held read ends, and Resume has then said all it will say about it.
+  await waitForHeldOpeningEnd(page);
+  const { alerts, texts } = await alertsSoFar(page);
+  await check(`${OTHER_PHOTO} is still the open photo; no amber or red message was shown since `
+    + `the tap on Resume: "${PAIR_RESET_MESSAGE}" was not shown`, async () => {
+    expect((await editState(page)).source.name).toBe(OTHER_PHOTO);
+    expect(alerts).toEqual([]);
+    expect(texts).not.toContain(PAIR_RESET_MESSAGE);
+  });
+});
+
+test('PAIR-42.9 A dropped pair whose open side has no saved edits: only the opened-fresh '
+  + 'warning shows [phone]', async ({ page, check }, testInfo) => {
+  const { hand } = await startWithTurnedPair(page, testInfo);
+  const frontEdits = await damageStoredFront(page);
+  const stored = await changeStoredOpenSide(page, 'no edits');
+  await check('the front\'s stored edits are the word "damaged"; the back\'s stored record '
+    + 'holds no edits', () => {
+    expect(frontEdits).toBe('damaged');
+    expect(stored.hasEdits).toBe(false);
+  });
+  await resume(page, hand, BACK, null);
+  await check('the back opens on its own, upright, on Perspective: there is no Front / Back',
+    async () => {
+      expect((await editState(page)).source.name).toBe(BACK);
+      expect(await quarterTurns(page)).toBe(0);
+      expect(await stepNow(page)).toBe('perspective');
+      await expect(page.locator('#sideSwitch')).toBeHidden();
+    });
+  const { alerts, texts } = await alertsSoFar(page);
+  await check(`the messages shown were "${LOADING_MESSAGE}", while the photo was read, then one `
+    + `amber warning, "${OPENED_FRESH_MESSAGE}"; "${PAIR_RESET_MESSAGE}" was not shown`, () => {
+    expect(texts).toEqual([LOADING_MESSAGE, OPENED_FRESH_MESSAGE]);
+    expect(alerts).toEqual([{ text: OPENED_FRESH_MESSAGE, kind: 'warn' }]);
+  });
+});
 
 test('PAIR-43.1 The first switch to a resumed side finds its card but leaves its corners alone '
   + '[phone]', async ({ page, check }, testInfo) => {

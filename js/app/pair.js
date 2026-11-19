@@ -938,8 +938,8 @@
 
   // Resume, before the open side opens: rebuilds the waiting side from storage (photo, edits,
   // logo), making its preview copies with its full-resolution photo, which is closed before the
-  // open side is decoded. Returns true if the pair is back; a malformed record drops it, with
-  // the usual "reset" notice, and the open side resumes on its own.
+  // open side is decoded. Returns true if the pair is back; a malformed record drops it and
+  // returns false: the open side then opens on its own, and finishResume says so.
   async function restorePair(record) {
     try {
       const photo = await CF.Session.get('pairPhoto');
@@ -962,8 +962,6 @@
     } catch (error) {
       console.warn('[card-finisher] pair not restored:', error);
       clearPairSession();
-      // Said once the open side is up, so the opening toasts don't hide it.
-      app.wasPairReset = true;
       return false;
     }
   }
@@ -1001,11 +999,13 @@
     }
   }
 
-  // Resume, after the open side opened: Next card shows again if the pair's export was saved,
-  // and a pair that couldn't be restored says so.
-  function finishResume() {
-    if (app.wasPairReset) {
-      app.wasPairReset = false;
+  // Resume, after the open side opened: Next card shows again if the pair's export was saved.
+  // wasPairDropped: the stored pair couldn't be restored, and the open side opened on its own.
+  // That is said once the side is up, so the opening toasts don't hide it, and only when the
+  // photo came back with its edits, since the line says it resumed. Otherwise the message for
+  // what happened to the photo stands alone (ruling R100).
+  function finishResume(wasPairDropped) {
+    if (wasPairDropped && app.hasResumedEdits) {
       const message = 'The saved pair wasn’t valid, so it was reset. '
         + 'This photo resumed on its own.';
       toast(message, 'warn', 6000);
