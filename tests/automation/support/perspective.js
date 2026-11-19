@@ -281,7 +281,26 @@ function holdNextSearch(page, failure = '') {
   }, failure);
 }
 
-// Lets the search holdNextSearch held hand back its result.
+// Holds the next search for the card before it starts: none of it runs until releaseSearch is
+// called, so a case can choose the moment the whole search runs in. (holdNextSearch runs the
+// search at once and holds back only its result.) Like it, this one change is made in the
+// page's code, since no control can delay a search.
+function holdNextSearchStart(page) {
+  return page.evaluate(() => {
+    const detector = window.CF.Detector;
+    const detect = detector.detect;
+    window.testSearchHeld = new Promise(resolve => {
+      window.testReleaseSearch = resolve;
+    });
+    detector.detect = async function detectOnceReleased(imageData, options) {
+      detector.detect = detect;
+      await window.testSearchHeld;
+      return detect.call(detector, imageData, options);
+    };
+  });
+}
+
+// Lets the search holdNextSearch or holdNextSearchStart held go on.
 function releaseSearch(page) {
   return page.evaluate(() => window.testReleaseSearch());
 }
@@ -388,6 +407,7 @@ module.exports = {
   recordStatuses,
   readStatuses,
   holdNextSearch,
+  holdNextSearchStart,
   releaseSearch,
   recordSearchPoints,
   readSearchPoints,

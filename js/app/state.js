@@ -401,6 +401,9 @@
   // no longer the open one. One dropped because a pair's side was left stays in
   // detection.pending, and detectReopenedSide runs it again (ruling R45); one a pair's export
   // would drop, by decoding the open photo again, is run again by detectReloadedPhoto.
+  // So is one that ends while that export has the photo released (img.el is null): it could
+  // not read the full-resolution regions its refinement needs (CF.readRegion), so its corners
+  // would be less exact than a whole search's.
   async function runDetect(options = {}) {
     const { auto = false, keepCorners = false, seed = null, isForOverlay = false } = options;
     if (!app.img) return;
@@ -413,7 +416,10 @@
     detection.isSearching = true;
     detection.message = 'Detecting…';
     CF.syncUI();
-    const isDropped = () => run !== detection.running || app.img !== img;
+    // A photo put away while the search ran (a pair's save does that) leaves it unfinished; a
+    // search started with the photo already away ends as it always did.
+    const hadPhoto = !!img.el;
+    const isDropped = () => run !== detection.running || app.img !== img || (hadPhoto && !img.el);
     try {
       const candidates = await CF.Detector.detect(app.work.data, {
         ratio: CONFIG.card.w / CONFIG.card.h,

@@ -417,9 +417,9 @@
   }
 
   // Identifies what a pair export saved: both sides' edits and the output choice. Next card shows
-  // while it matches.
-  function pairKey() {
-    const sides = sideStates();
+  // while it matches. sides: the edits to identify, in sideStates' shape; left out, the live
+  // ones. An export passes the copies it renders, so it is marked with what it saved.
+  function pairKey(sides = sideStates()) {
     return JSON.stringify([sides.front.state, sides.back.state, app.pairOutput]);
   }
 
@@ -692,7 +692,9 @@
   // shows a short fixed line, and its own words go to the console (ruling R24); one whose fix
   // the app knows shows its advice instead (CF.failureText).
   async function runPairExport(kind, sides, isUpscaled) {
-    const key = pairKey();
+    // The copies' key, not the live edits': a search may have moved the corners since the tap,
+    // while the upscale question was up, and the file holds the corners as they were.
+    const key = pairKey(sides);
     const type = kind === 'copy' ? 'image/png' : CF.MIME_TYPES[app.state.export.format];
     const startTime = performance.now();
     try {

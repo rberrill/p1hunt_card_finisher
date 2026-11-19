@@ -66,7 +66,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PER-03 A newer search wins, and a search cut short by a pair runs again
 
-If a new search for the card starts before an older one finishes, or another photo is opened meanwhile, the older search's result is thrown away. A search still running when a front and back pair switches sides is thrown away too, leaving no "Detecting…" behind and showing no message if it fails, and it runs again when that side is next opened; one still running on the open side when the pair is saved (**Download**, **Share** or **Copy**) runs again without the side being left, and the file saved is the size the size line gave at the tap; when that search moves the corners, **Next card** does not show. A search that runs again puts the corners on the card, with no undo step, unless a corner on that side was moved by hand: then the corners stay, and **Candidate** steps through what it found.
+If a new search for the card starts before an older one finishes, or another photo is opened meanwhile, the older search's result is thrown away. A search still running when a front and back pair switches sides is thrown away too, leaving no "Detecting…" behind and showing no message if it fails, and it runs again when that side is next opened; one still running on the open side when the pair is saved (**Download**, **Share** or **Copy**) runs again without the side being left, and the file saved is the size the size line gave at the tap; when that search moves the corners, **Next card** does not show. A search that ends while the save has the open photo put away is thrown away as well and runs again once the photo is back, so its corners are as exact as a whole search's. A search that runs again puts the corners on the card, with no undo step, unless a corner on that side was moved by hand: then the corners stay, and **Candidate** steps through what it found.
 
 - Risk: low
 - Check: script
@@ -76,7 +76,7 @@ If a new search for the card starts before an older one finishes, or another pho
 - Anchors: none
 - Source: `js/app/state.js` (`runDetect`, `takeDetection`, `clearRunMessage`, `detectReopenedSide`, `detectReloadedPhoto`, `detectAgain`, `areCornersHandPlaced`); `js/app/pair.js` (`switchSide`, `reloadOpenPhoto`)
 - Ruling: R45. Switching away never leaves a stale message; the search finishes quietly. Its result moves the corners only if no corner on that side was moved by hand; otherwise the hand-placed corners stay and the result becomes the candidates to cycle through. Rich, 2026-11-17: the search cannot finish once the side is left (its photo is closed, one full-size photo in memory at a time), so its result is thrown away and the search runs again when the side is next opened; that run moves the corners only if none on that side was moved by hand. The app does this since 1.10.0.
-- Cases: 7
+- Cases: 8
 
 ### PER-03.1 A second photo opened during the search keeps its own corners   [auto: phone]
 Script only
@@ -239,6 +239,28 @@ Before you start:
 | 5 | Wait two seconds (the script lets the held search end; its result is thrown away, and the search that ran again has left the corners alone) | The size line still gives the size it gave in row 3, and **Next card** shows in the bottom row |
 | 6 | Tap **Perspective** in the step tabs | The corners are still as they were after the drag in row 2; **Candidate** shows no number and is not greyed out |
 | 7 | Tap **Candidate** | The four corners go to the back card's corners, where they land when this photo is opened on its own, and **Candidate** reads 1/3 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PER-03.8 A search that ends while a pair's download has the open photo put away runs again, and the corners land where a whole search puts them   [auto: phone]
+Script only
+Stand-in: while a pair is saved the app puts the open side's photo away for a moment, to read the other side's, and a search that ends in that moment cannot make its last pass over the full-size photo. The script holds the back's first search before it starts, stops the save at the moment the back's photo is put away, lets the whole search run and end there, then lets the save go on. Nobody can time a search to that moment by hand. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window, with downloads saved to a folder
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows, with **Together** in white beside the size line (the line that gives the saved picture's size in px and its format), which gives a size 2000 px or more on its long side |
+| 3 | Tap **Download** (the script stops the save with the back's photo put away, lets the search run and end, then lets the save go on) | One file is saved, 14_front_portrait_raw_white-pair.jpg, at the size the size line gave in row 2 |
+| 4 | Once the save has ended, tap **Perspective** in the step tabs | The back's four corners are on the back card's corners, within a hundredth of a photo pixel of where they land when this photo is opened on its own, and **Candidate** reads 1/3 (the script also reads from the app that the search which placed them made its pass over the full-size photo) |
+| 5 | Look at **Undo** (the arrow curving left, at the top right) | **Undo** is greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

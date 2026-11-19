@@ -1543,16 +1543,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PAIR-34 When a pair counts as exported
 
-A pair counts as exported for both sides' edits together with the Together / Separately choice; changing either side, or the choice, hides **Next card**.
+A pair counts as exported for both sides' edits together with the Together / Separately choice; changing either side, or the choice, hides **Next card**. The edits that count are the ones the file was made from: when a card search moves a side's corners after the tap on **Download**, while the Upscale question is up, the file has the corners as they were at the tap and **Next card** does not show.
 
 - Risk: medium
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnNextCard`, `#pairOutput`
-- Source: `js/app/pair.js` (`pairKey`, `isPairExported`, `markPairExported`), `js/app/export-controls.js` (`syncNextCard`)
-- Cases: 1
+- Source: `js/app/pair.js` (`pairKey`, `isPairExported`, `markPairExported`, `runPairExport`), `js/app/export-controls.js` (`syncNextCard`)
+- Cases: 2
 
 ### PAIR-34.1 Next card shows while both sides and the output choice are as exported   [auto: phone]
 Before you start:
@@ -1574,6 +1574,30 @@ Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap
 | 6 | Tap **Rotate** in the step tabs | The front's Rotate step; the angle reads 0.0° |
 | 7 | Type the angle 2 | The angle reads 2.0° |
 | 8 | Tap **Export** in the step tabs | No **Next card**: the front has changed since the export |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-34.2 A search that moves the corners while the Upscale question is up leaves the pair not exported   [auto: phone]
+Script only
+Stand-in: the script holds the back's first search open until the Upscale question is up, then lets it end. A search takes about half a second, and nothing a person can do slows it, so a person can't reach Export, choose a Size and tap **Download** inside it for certain. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window, with downloads saved to a folder
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export step shows, with **Together** in white beside the size line (the line that gives the saved picture's size in px and its format) |
+| 3 | Tap **3000** beside Size | **3000** is in white, and the size line gives a size under 3000 px on its long side |
+| 4 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 3000 px?" |
+| 5 | Wait two seconds (the script lets the held search end: it puts the back's corners on the back card, where they land when this photo is opened on its own) | The question box is still up |
+| 6 | Tap **No** | One file is saved, 14_front_portrait_raw_white-pair.jpg, at the size the size line gave in row 3 |
+| 7 | Look at the size line and at the bottom row | The size line gives another size than in row 3, and **Next card** does not show |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

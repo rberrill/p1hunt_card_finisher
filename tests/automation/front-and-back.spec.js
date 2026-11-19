@@ -80,7 +80,7 @@ const { typeAngle, angleText } = require('./support/rotate.js');
 const { levelsDot } = require('./support/levels.js');
 const { selectedPreset } = require('./support/crop.js');
 const { fixturePath } = require('./support/edits-files.js');
-const { holdNextSearch } = require('./support/perspective.js');
+const { holdNextSearch, releaseSearch } = require('./support/perspective.js');
 
 const FRONT = PORTRAIT_PAIR.front;
 const BACK = PORTRAIT_PAIR.back;
@@ -2949,5 +2949,54 @@ test('PAIR-43.3 Resume puts the open side\'s corners on the card when they are s
     expect(await stepNow(page)).toBe('perspective');
     expect((await editState(page)).corners).toEqual(frontCorners);
     await expect(candidateNumber(page)).toHaveText('1/3');
+  });
+});
+
+test('PAIR-34.2 A search that moves the corners while the Upscale question is up leaves the '
+  + 'pair not exported [phone]', async ({ page, check }, testInfo) => {
+  // Script only: the back's first search is held open until the question is up.
+  const { hand, backFound } = await addBackNeverSearched(page, check, testInfo);
+  const nextCard = page.locator('#btnNextCard');
+  await goToStep(page, 'export', hand);
+  await check('the Export step shows, with Together in white beside the size line', async () => {
+    expect(await stepNow(page)).toBe('export');
+    await expect(segment(page, 'pairOutput', 'together')).toHaveAttribute('aria-pressed', 'true');
+  });
+  await chooseSize(page, hand, '3000');
+  const [sizeAtTap] = await readoutSizes(page);
+  await check('3000 is in white, and the size line gives a size under 3000 px on its long side',
+    async () => {
+      await expectExportSettings(page, { size: '3000' });
+      expect(Math.max(...sizeAtTap)).toBeLessThan(3000);
+    });
+  const downloading = page.waitForEvent('download');
+  await hand.tap(page.locator('#btnDownload'));
+  await check('a question box asks "Upscale to 3000 px?"', async () => {
+    await expect(questionCard(page)).toBeVisible();
+    await expect(questionCard(page)).toContainText('Upscale to 3000 px?');
+  });
+  await releaseSearch(page);
+  await page.waitForFunction(() => {
+    const detection = window.__straightener.app.detection;
+    return !!detection.last && detection.message === '';
+  });
+  await check('the question box is still up (behind it, the search has put the back\'s corners '
+    + 'on the back card)', async () => {
+    await expect(questionCard(page)).toBeVisible();
+    expectSameCorners((await editState(page)).corners, backFound);
+  });
+  await hand.tap(questionCard(page).getByRole('button', { name: 'No', exact: true }));
+  const download = await downloading;
+  await check('one file is saved, the joined picture at the size the size line gave before the '
+    + 'tap on Download', async () => {
+    expect(download.suggestedFilename()).toBe('14_front_portrait_raw_white-pair.jpg');
+    const saved = await readSavedImage(page, await download.path());
+    expect([saved.width, saved.height]).toEqual(sizeAtTap);
+  });
+  await page.waitForFunction(() => !window.__straightener.app.exporting);
+  await check('the size line gives another size, and Next card does not show', async () => {
+    const [sizeNow] = await readoutSizes(page);
+    expect(sizeNow).not.toEqual(sizeAtTap);
+    await expect(nextCard).toBeHidden();
   });
 });

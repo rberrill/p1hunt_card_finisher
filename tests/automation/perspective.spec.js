@@ -45,6 +45,7 @@ const {
   recordStatuses,
   readStatuses,
   holdNextSearch,
+  holdNextSearchStart,
   releaseSearch,
   recordSearchPoints,
   readSearchPoints,
@@ -76,6 +77,8 @@ const {
   toastsSoFar,
   downloadAll,
   readoutSizes,
+  holdNextOpening,
+  releaseOpening,
 } = require('./support/front-and-back.js');
 
 // The plain picture with no card in it (tests/fixtures/plain-grey.png, 1200 × 1600 px) and
@@ -327,9 +330,10 @@ test('PER-03.2 A find tap cut short by a side switch runs again on return, and a
 // The start of PER-03.3 to PER-03.5. Opens the pair's back on its own to learn where its
 // search puts the corners, then opens the front and adds the back with the back's first search
 // held open (holdNextSearch; failure: the words that search fails with when let go, or '' for
-// one that works). Returns the hand, the front's corners and the back's corners as found on
-// its own. The back is open on Perspective, still searching.
-async function addBackStillSearching(page, check, testInfo, failure = '') {
+// one that works; hold: holdNextSearchStart, to hold the search before it starts instead).
+// Returns the hand, the front's corners and the back's corners as found on its own. The back
+// is open on Perspective, still searching.
+async function addBackStillSearching(page, check, testInfo, failure = '', hold = holdNextSearch) {
   const hand = handFor(page, testInfo);
   await openApp(page);
   await openPhoto(page, PORTRAIT_PAIR.back);
@@ -337,7 +341,7 @@ async function addBackStillSearching(page, check, testInfo, failure = '') {
   await openPhoto(page, PORTRAIT_PAIR.front);
   const frontCorners = await cornersNow(page);
   await goToStep(page, 'export', hand);
-  await holdNextSearch(page, failure);
+  await hold(page, failure);
   await chooseInPicker(page, hand, page.locator('#btnAddBack'), PORTRAIT_PAIR.back);
   await waitForSideOpen(page, 'back');
   await check('the back opens on Perspective, its outline on the rectangle a fifth in from each '
@@ -510,6 +514,60 @@ test('PER-03.7 A corner dragged before a pair is downloaded stays through the se
       expectSameCorners(await cornersNow(page), backFound);
       await expect(candidateNumber(page)).toHaveText('1/3');
     });
+});
+
+test('PER-03.8 A search that ends while a pair\'s download has the open photo put away runs '
+  + 'again, and the corners land where a whole search puts them [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const { hand, backFound } = await addBackStillSearching(page, check, testInfo, '',
+    holdNextSearchStart);
+  await goToStep(page, 'export', hand);
+  const [sizeBefore] = await readoutSizes(page);
+  await check('the Export step shows, with Together in white beside the size line, which gives '
+    + 'a size 2000 px or more on its long side', async () => {
+    expect(await stepNow(page)).toBe('export');
+    const together = page.locator('#pairOutput .segment[data-value="together"]');
+    await expect(together).toHaveAttribute('aria-pressed', 'true');
+    expect(Math.max(...sizeBefore)).toBeGreaterThanOrEqual(EXPORT_SIZE_PX);
+  });
+  // Script only: the save is stopped where it has put the back's photo away and is about to
+  // read the front's; the whole search then runs and ends there, and the save goes on.
+  await holdNextOpening(page);
+  const downloading = page.waitForEvent('download');
+  await hand.tap(page.locator('#btnDownload'));
+  await page.waitForFunction(() => window.__straightener.app.img.el === null);
+  await releaseSearch(page);
+  await page.waitForFunction(() => !window.__straightener.app.detection.isSearching);
+  const whenSearchEnded = await page.evaluate(() => {
+    const app = window.__straightener.app;
+    return { isPhotoAway: app.img.el === null, isSaving: !!app.exporting };
+  });
+  await releaseOpening(page);
+  const download = await downloading;
+  await check('one file is saved, the joined picture at the size the size line gave (the '
+    + 'search ran and ended while the save had the back\'s photo put away)', async () => {
+    expect(whenSearchEnded).toEqual({ isPhotoAway: true, isSaving: true });
+    expect(download.suggestedFilename()).toBe(PAIR_FILE_NAME);
+    expect(await savedSize(page, await download.path())).toEqual(sizeBefore);
+  });
+  await page.waitForFunction(() => !window.__straightener.app.exporting);
+  await waitForDetection(page);
+  await goToStep(page, 'perspective', hand);
+  // A search that could not read the full-size photo leaves `refined` empty on what it found.
+  const madeFullSizePass = await page.evaluate(() => (
+    window.__straightener.app.detection.candidates.map(found => Array.isArray(found.refined))));
+  await check('the four corners are on the back card\'s corners, within a hundredth of a photo '
+    + 'pixel of where they land when this photo is opened on its own, and Candidate reads 1/3 '
+    + '(the search that placed them made its pass over the full-size photo)', async () => {
+    expect(madeFullSizePass).toEqual([true, true, true]);
+    expectSameCorners(await cornersNow(page), backFound);
+    await expect(candidateNumber(page)).toHaveText('1/3');
+  });
+  await check('Undo is greyed out', async () => {
+    await expect(page.locator('#btnUndo')).toBeDisabled();
+  });
 });
 
 test('PER-04.1 The corner outline, white or red and dashed, for a person to judge [phone]',
