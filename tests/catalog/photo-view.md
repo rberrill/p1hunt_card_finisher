@@ -214,7 +214,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-04 Pinch to zoom
 
-Two fingers on the photo zoom and pan it together, held at the point between the fingers.
+Two fingers on the photo zoom and pan it together, held at the point between the fingers. A two-finger tap in which a finger shifts by a pixel is not a pinch: it leaves the photo exactly as it was, still fitted if it was fitted (BUG-306: today it counts as a pinch).
 
 - Risk: high
 - Check: script, touch
@@ -224,7 +224,7 @@ Two fingers on the photo zoom and pan it together, held at the point between the
 - Anchors: `#view`
 - Source: `js/app/input.js` (`onPointerDown`, `startPinch`, `pinchView`, `onPointerMove`)
 - Ruling: R84. On Overlay the photo is locked: with no logo placed, every touch and the wheel do nothing. The app already does this.
-- Cases: 2
+- Cases: 3
 
 ### VIEW-04.1 Two fingers zoom the photo about the point between them   [auto: phone, webkit]
 Before you start:
@@ -253,6 +253,29 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo does not zoom or move |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### VIEW-04.3 A two-finger tap in which a finger shifts by 1 px moves nothing   [auto: phone]
+Script only
+Stand-in: the script puts two dispatched fingers down and moves one of them exactly 1 px. No person can hold a finger's shift to 1 px.
+It fails until BUG-306 is fixed: today the shift counts as a pinch.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px, with touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo just opened, on the Perspective step
+
+The photo area is the space between the top bar and the controls (the block of buttons and sliders under the photo). The crop box is the outlined square on the photo on the Crop step, with a handle on each corner and the middle of each side.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom) | The photo is 36 px from the photo area's edges on its tighter side; **Fit to screen** (four corner brackets) is not in the top bar |
+| 2 | Put two fingers on the photo area, 60 px down from its top (above the crop box), one 40 px and one 140 px in from its left edge; slide the right-hand one 1 px right and lift both | The photo has not moved or changed size; **Fit to screen** is still not in the top bar |
+| 3 | Tap **Rotate** in the step tabs | The straightened photo is 24 px from the edges on its tighter side, and centered on the other |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -444,7 +467,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-09 Drag to pan
 
-Dragging an empty part of the photo moves it. A press that moves 4 px or less is not a drag: it leaves the photo exactly as it was, still fitted if it was fitted. Past 4 px the photo follows the finger from where it was pressed. The cases prove a 60 px drag, a tap that wobbles by 2 px and a drag that starts with a 2 px move.
+Dragging an empty part of the photo moves it. A press that moves 4 px or less is not a drag: it leaves the photo exactly as it was, still fitted if it was fitted. Past 4 px the photo follows the finger from where it was pressed. On a computer, a zoom made with the wheel while the mouse button is held is kept when the drag starts (BUG-308: today the photo jumps back to the place it had when it was pressed). The cases prove a 60 px drag, a tap that wobbles by 2 px, a drag that starts with a 2 px move, and a wheel zoom made before a mouse drag.
 
 - Risk: high
 - Check: script, touch
@@ -452,9 +475,9 @@ Dragging an empty part of the photo moves it. A press that moves 4 px or less is
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: `#view`
-- Source: `js/app/input.js` (`panGesture`, `onPointerMove`, `DRAG_THRESHOLD_PX`)
+- Source: `js/app/input.js` (`panGesture`, `onPointerMove`, `DRAG_THRESHOLD_PX`, `onWheel`)
 - Ruling: R84. On Overlay the photo is locked: with no logo placed, every touch and the wheel do nothing. The app already does this.
-- Cases: 3
+- Cases: 4
 
 ### VIEW-09.1 Dragging an empty part of the photo moves it   [auto: phone, webkit]
 Before you start:
@@ -508,6 +531,25 @@ The photo area is the space between the top bar and the controls (the block of b
 | 4 | Tap **Crop** in the step tabs | The photo is 36 px from the edges on its tighter side, and centered on the other |
 | 5 | Put one finger on the same place, slide it 2 px right and keep it down | The photo has not moved or changed size; **Fit to screen** is still not in the top bar |
 | 6 | Slide the finger on, to 30 px right and 20 px down of where it went down, and lift it | The photo has moved 30 px right and 20 px down, at the same size; **Fit to screen** shows in the top bar |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### VIEW-09.4 A wheel zoom made while the mouse button is held is kept when the drag starts   [auto: desktop]
+It fails until BUG-308 is fixed: today the photo jumps back to the place it had when it was pressed.
+
+Before you start:
+- Device and browser: a wide window, 1280 × 800 px, with a mouse and a mouse wheel
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo just opened, on the Perspective step
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Put the pointer on the middle of the photo (on the card, away from its corners), press the left mouse button and keep it held | The photo has not moved or changed size |
+| 2 | Still holding the button, roll the wheel one notch away from you | The photo grows about 16%; the part of the photo under the pointer is still under it |
+| 3 | Still holding the button, move the pointer 60 px right and 40 px down, and let go | The photo is still the size the wheel made it, and has moved 60 px right and 40 px down from where row 2 left it: the part of the photo that was under the pointer is still under it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

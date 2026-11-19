@@ -98,6 +98,8 @@ const EMPTY_SPOT = { dx: 40, dy: 60 };
 const WOBBLE_PX = 2;
 const SHORT_PAN_DX_PX = 30;
 const SHORT_PAN_DY_PX = 20;
+// VIEW-04.3: how far one finger of a two-finger tap shifts, in CSS px.
+const TWO_FINGER_SHIFT_PX = 1;
 // How far a corner is dragged before the second finger, and the second finger's start, in CSS px.
 const CORNER_DRAG_PX = 30;
 const SECOND_FINGER_GAP_PX = 100;
@@ -458,6 +460,44 @@ test('VIEW-04.2 On Overlay with no logo, two fingers do nothing [phone]', async 
   });
 });
 
+test('VIEW-04.3 A two-finger tap in which a finger shifts by 1 px moves nothing [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  // Today any movement of a pinch's fingers zooms and pans, and marks the view as moved.
+  test.fail(true, 'BUG-306');
+  const hand = await startOn(page, testInfo);
+  const fitButton = page.locator('#btnFit');
+  await goToStep(page, 'crop', hand);
+  await check('on Crop the photo is 36 px from the edges on its tighter side; Fit to screen is '
+    + 'not in the top bar', async () => {
+    await expectFitted(page, CROP_GAP_PX);
+    await expect(fitButton).toBeHidden();
+  });
+  const fitted = await viewNow(page);
+  // As in VIEW-09.3, the first finger lands above the crop box, away from its handles, so it
+  // starts a pan, which the second finger turns into a pinch.
+  const first = await pointInPhoto(page, EMPTY_SPOT.dx, EMPTY_SPOT.dy);
+  const second = { x: first.x + PINCH_START_PX, y: first.y };
+  const shifted = { x: second.x + TWO_FINGER_SHIFT_PX, y: second.y };
+  await fingerDown(page, FIRST_FINGER, first);
+  await fingerDown(page, SECOND_FINGER, second);
+  await sendTouch(page, '#view', 'pointermove', shifted, SECOND_FINGER);
+  await fingerUp(page, SECOND_FINGER, shifted);
+  await fingerUp(page, FIRST_FINGER, first);
+  // Fit to screen is shown or hidden when the photo is next drawn.
+  await nextFrames(page);
+  await check('the photo has not moved or changed size; Fit to screen is still not in the top '
+    + 'bar', async () => {
+    // A plain comparison first, so the known defect fails at once.
+    expect(await viewNow(page)).toEqual(fitted);
+    await expect(fitButton).toBeHidden();
+  });
+  await goToStep(page, 'rotate', hand);
+  await check('on Rotate the straightened photo is 24 px from the edges on its tighter side, '
+    + 'and centered on the other', () => expectFitted(page, FIT_GAP_PX));
+});
+
 test('VIEW-05.1 A second finger ends a corner drag, keeping it, and zooms [phone] [webkit]',
   async ({ page, check }, testInfo) => {
     const hand = await startOn(page, testInfo);
@@ -745,6 +785,48 @@ test('VIEW-09.3 A tap that wobbles by 2 px moves nothing; a drag that goes on pa
     expect(after.zoom).toBe(fitted.zoom);
     expect(after.isFitted).toBe(false);
     await expect(fitButton).toBeVisible();
+  });
+});
+
+test('VIEW-09.4 A wheel zoom made while the mouse button is held is kept when the drag starts '
+  + '[desktop]', async ({ page, check }, testInfo) => {
+  // Today the drag rebuilds the pan from the view at the press: the wheel's size is kept, but
+  // the photo jumps to the place it had when pressed, plus the drag.
+  test.fail(true, 'BUG-308');
+  await startOn(page, testInfo);
+  // The middle of the photo is on the card, far from its corner handles, so a press there pans.
+  const middle = await photoMiddle(page);
+  const end = { x: middle.x + PAN_DX_PX, y: middle.y + PAN_DY_PX };
+  const before = await viewNow(page);
+  const underBefore = await worldUnder(page, middle);
+  await page.mouse.move(middle.x, middle.y);
+  await page.mouse.down();
+  await nextFrames(page);
+  await check('the photo has not moved or changed size', async () => {
+    expect(await viewNow(page)).toEqual(before);
+  });
+  await wheelAt(page, middle, -NOTCH_PX);
+  const zoomed = await viewNow(page);
+  await check('the photo grows about 16%; the part of the photo under the pointer is still '
+    + 'under it', async () => {
+    expect(zoomed.zoom / before.zoom).toBeCloseTo(NOTCH_FACTOR, 5);
+    const underAfter = await worldUnder(page, middle);
+    expect(Math.abs(underAfter[0] - underBefore[0])).toBeLessThan(WORLD_TOLERANCE_PX);
+    expect(Math.abs(underAfter[1] - underBefore[1])).toBeLessThan(WORLD_TOLERANCE_PX);
+  });
+  await page.mouse.move(end.x, end.y, { steps: 8 });
+  await page.mouse.up();
+  await nextFrames(page);
+  await check('the photo is still the size the wheel made it, and has moved 60 px right and '
+    + '40 px down from where the wheel left it: the part of the photo that was under the '
+    + 'pointer is still under it', async () => {
+    const after = await viewNow(page);
+    expect(after.zoom).toBe(zoomed.zoom);
+    expect(after.panX - zoomed.panX).toBeCloseTo(PAN_DX_PX, 3);
+    expect(after.panY - zoomed.panY).toBeCloseTo(PAN_DY_PX, 3);
+    const underEnd = await worldUnder(page, end);
+    expect(Math.abs(underEnd[0] - underBefore[0])).toBeLessThan(WORLD_TOLERANCE_PX);
+    expect(Math.abs(underEnd[1] - underBefore[1])).toBeLessThan(WORLD_TOLERANCE_PX);
   });
 });
 
