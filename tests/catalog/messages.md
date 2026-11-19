@@ -2361,17 +2361,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-72 Export's canvas-limit note
 
-Under Export's size line, with an amber warning mark, when the output (or a pair's Together image) is scaled down to fit the size limit: "Scaled down to fit the 16.7 MP limit." The figure is the limit in force in millions of pixels, rounded down to a tenth, so a link that lowers the limit to 1,000,000 pixels shows "1 MP". For a pair saved **Separately** the note covers both files: it names the side when the one scaled down is not on screen ("The front is scaled down to fit the 16.7 MP limit.", or "The back…"), and reads "Both sides are scaled down to fit the 16.7 MP limit." when both are.
+Under Export's size line, with an amber warning mark, when the output (or a pair's Together image) is scaled down to fit a size limit: "Scaled down to fit the 16.7 MP limit." The note names the limit that set the size. For the area limit the figure is the limit in force in millions of pixels, rounded down to a tenth, so a link that lowers the limit to 1,000,000 pixels shows "1 MP". For the long-side limit it is the limit in force in px, so a link that lowers that limit to 1000 px shows "Scaled down to fit the 1000 px limit." A long-side limit that is not a whole number of px reads rounded down ("1000 px" for 1000.5). An output over both limits names the one that set its size. For a pair saved **Separately** the note covers both files: it names the side when the one scaled down is not on screen ("The front is scaled down to fit the 16.7 MP limit.", or "The back…"; "The back is scaled down to fit the 1000 px limit." for the long side), and reads "Both sides are scaled down to fit the 16.7 MP limit." (or "…the 1000 px limit.") when both are. When the two sides were scaled down by different limits it reads "Both sides are scaled down to fit the size limits."
 
 - Risk: low
 - Check: script
 - Layout: both. A phone shows one note at a time, in the order unapplied levels, canvas limit, JPEG; a wide screen lists them all. None shows while the corners are invalid.
 - Added: 1.10 baseline
 - Changed: 1.10.0
-- Anchors: "Scaled down to fit the ", " is scaled down to fit the ", "Both sides are scaled down to fit the ", " MP limit.", `#exportMessage`, `CONFIG.maxOutputArea`
-- Source: `js/app/export-controls.js` (`exportNotes`, `clampNote`, `limitMegapixels`, `syncExportReadouts`); `js/app/pair.js` (`pairReadout`, `togetherLayout`)
-- Ruling: R14 and R15. The note reads "Scaled down to fit the 16.7 MP limit." (16.7 MP, rounded down). For a pair saved Separately it shows when either side is scaled down, and names the side when it is not the one on screen: "The front is scaled down to fit the 16.7 MP limit." (or "The back…"), or "Both sides are scaled down to fit the 16.7 MP limit." (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0. R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app does this since 1.10.0.
-- Cases: 3
+- Anchors: "Scaled down to fit the ", " is scaled down to fit the ", "Both sides are scaled down to fit the ", "Both sides are scaled down to fit the size limits.", " MP limit.", " px limit.", `#exportMessage`, `CONFIG.maxOutputArea`, `CONFIG.maxOutputPx`
+- Source: `js/app/export-controls.js` (`exportNotes`, `clampNote`, `limitWords`, `limitMegapixels`, `syncExportReadouts`); `js/app/pair.js` (`pairReadout`, `togetherLayout`); `js/engine.js` (`outputSize`, `pairLayout`, `tighterClamp`)
+- Ruling: R14 and R15. The note reads "Scaled down to fit the 16.7 MP limit." (16.7 MP, rounded down). For a pair saved Separately it shows when either side is scaled down, and names the side when it is not the one on screen: "The front is scaled down to fit the 16.7 MP limit." (or "The back…"), or "Both sides are scaled down to fit the 16.7 MP limit." (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0. R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R47. The note gives the limit in force: 1 MP under `?maxOutputArea=1000000`, 16.7 MP normally. The app does this since 1.10.0. R102. The note names the limit that applied, "Scaled down to fit the 12000 px limit." with the long-side limit in force; the pair forms follow. For a pair saved Separately whose two sides were scaled down by different limits, the note reads "Both sides are scaled down to fit the size limits." Where the two limits tie exactly, the area limit is named (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
+- Cases: 10
 
 ### MSG-72.1 The canvas-limit note says 16.7 MP   [auto: phone]
 Before you start:
@@ -2419,6 +2419,141 @@ Before you start:
 | 1 | Tap **Original** | **Original** is selected (a white fill) |
 | 2 | Tap **Separately** | **Separately** is selected (a white fill) |
 | 3 | Read the note beside the **Together** and **Separately** control (with a pair open on a phone the note takes the size line's place) | One note, led by the amber warning mark, reads "Both sides are scaled down to fit the 1 MP limit." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-72.4 The note names the long-side limit when that is what scaled the output   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open from a link ending ?maxOutputPx=1000&export.allowUpscale=1, on the Export step, with Size **2000** selected
+
+The link lowers the long-side limit to 1000 px, the lowest a link may set, and switches upscaling on, so at **2000** the output would be 2000 × 2000 px: over the long-side limit, and inside the area limit of 16.7 MP.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the size line, under the **Size** and **Format** choices | The size line reads "Output 1000 × 1000 px · JPEG" |
+| 2 | Read the note under the size line | Under the size line, led by the amber warning mark: "Scaled down to fit the 1000 px limit." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-72.5 With Separately, the long-side note names the side not on screen   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG (front) and 14_back_portrait_raw_white.JPEG (back) from samples/
+- Starting screen: the app opened from a link ending ?maxOutputPx=1000 (a 1000 px long-side limit, the lowest a link may set); the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
+
+Under this link the straightened picture a card is cropped from is itself at most 1000 px on its long side, so a crop is longer than the limit only where the picture has been turned and the crop box takes in its whole height. Rows 1 to 5 do that to the back; the front's crop stays under the limit. Type the angle 20: tap the angle beside **Straighten**, type 20, tap **Done**. A crop box's corner handle is the white square on that corner of the box. With a pair open on a phone, a note takes the size line's place beside the **Together** and **Separately** control.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Rotate** in the step tabs (the six tabs along the bottom) | The Rotate controls show, with the angle at 0.0° |
+| 2 | Type the angle 20 | The angle reads 20.0°, and the back's picture is turned |
+| 3 | Tap **Crop** in the step tabs | The Crop controls show; the size in the line above them is under 1000 px tall |
+| 4 | Drag the crop box's bottom-right corner handle down and to the right until the box stops growing, and let go | The box grows down and to the right, until its bottom edge is on the picture's bottom edge |
+| 5 | Drag the crop box's top-left corner handle up and to the left until the box stops growing, and let go | The box grows up and to the left, until its top edge is on the picture's top edge; the size in the line above the controls is more than 1000 px tall |
+| 6 | Tap **Export** in the step tabs | The Export step, with **Together** selected (a white fill) |
+| 7 | Tap **Separately** | **Separately** is selected, and with the back on screen the one note, led by the amber warning mark, reads "Scaled down to fit the 1000 px limit.": the back is the side scaled down, so the note names no side |
+| 8 | Tap **Front** in the top bar | The front opens, and the one note reads "The back is scaled down to fit the 1000 px limit." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-72.6 With Separately, the long-side note says so when both sides are scaled down   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG (front) and 14_back_portrait_raw_white.JPEG (back) from samples/
+- Starting screen: the app opened from a link ending ?maxOutputPx=1000&export.allowUpscale=1; the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
+
+The link lowers the long-side limit to 1000 px and switches upscaling on, so at Size **2000** each side would be 2000 px tall: both are over the limit. With a pair open on a phone, a note takes the size line's place beside the **Together** and **Separately** control.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Export** in the step tabs (the six tabs along the bottom) | The Export step, with **2000** and **Together** selected (a white fill each) |
+| 2 | Tap **Separately** | **Separately** is selected, and the one note, led by the amber warning mark, reads "Both sides are scaled down to fit the 1000 px limit." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-72.7 Over both limits, the note names the long side when it set the size   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open from a link ending ?maxOutputPx=1000&maxOutputArea=1500000&export.allowUpscale=1, on the Export step, with Size **2000** selected
+
+The link lowers the long-side limit to 1000 px and the area limit to 1.5 MP, and switches upscaling on, so at **2000** the output would be 2000 × 2000 px (4 MP): over both. The long-side limit asks for the smaller picture, 1000 × 1000 px, which is inside 1.5 MP, so it is the limit that sets the size.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the size line, under the **Size** and **Format** choices | The size line reads "Output 1000 × 1000 px · JPEG" |
+| 2 | Read the note under the size line | Under the size line, led by the amber warning mark: "Scaled down to fit the 1000 px limit." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-72.8 Over both limits, the note names the area when it set the size   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open from a link ending ?maxOutputPx=1500&maxOutputArea=1000000&export.allowUpscale=1, on the Export step, with Size **2000** selected
+
+The link lowers the long-side limit to 1500 px and the area limit to 1 MP, and switches upscaling on, so at **2000** the output would be 2000 × 2000 px (4 MP): over both. The area limit asks for the smaller picture, 1000 × 1000 px, which is inside 1500 px a side, so it is the limit that sets the size.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the size line, under the **Size** and **Format** choices | The size line reads "Output 1000 × 1000 px · JPEG" |
+| 2 | Read the note under the size line | Under the size line, led by the amber warning mark: "Scaled down to fit the 1 MP limit." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-72.9 With Separately, two sides scaled down by different limits share one note   [auto: phone]
+Script only
+Stand-in: both sides of a pair have the same 5:7 shape, so the same limit sets both sizes unless whole-pixel rounding falls differently for the two, which nobody can arrange by hand. The script makes the app's size calculation report that the front was scaled down by the area limit; the back is scaled down by the long-side limit, as both sides really are under this case's link.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG (front) and 14_back_portrait_raw_white.JPEG (back) from samples/
+- Starting screen: the app opened from a link ending ?maxOutputPx=1000&export.allowUpscale=1; the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the stand-in put in place
+
+The link lowers the long-side limit to 1000 px and switches upscaling on, so at Size **2000** each side would be 2000 px tall: both are over the limit. With a pair open on a phone, a note takes the size line's place beside the **Together** and **Separately** control.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Export** in the step tabs (the six tabs along the bottom) | The Export step, with **2000** and **Together** selected (a white fill each) |
+| 2 | Tap **Separately** | **Separately** is selected, and the one note, led by the amber warning mark, reads "Both sides are scaled down to fit the size limits." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-72.10 A long-side limit with a fraction reads rounded down   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open from a link ending ?maxOutputPx=1000.5&export.allowUpscale=1, on the Export step, with Size **2000** selected
+
+The link sets the long-side limit to 1000.5 px, which is not a whole number of px, and switches upscaling on, so at **2000** the output would be 2000 × 2000 px: over the limit.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Look at the size line, under the **Size** and **Format** choices | The size line reads "Output 1000 × 1000 px · JPEG" |
+| 2 | Read the note under the size line | Under the size line, led by the amber warning mark: "Scaled down to fit the 1000 px limit." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
@@ -2701,7 +2836,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-81 "Fix the corners in Perspective first." on the photo
 
-When the corners are invalid, "Fix the corners in Perspective first." is drawn in grey at the center of the photo area in place of the picture, on every step after Perspective. Perspective's corner view keeps the photo; what its **Preview** reads is VIEW-14's.
+When the corners are invalid, "Fix the corners in Perspective first." is drawn in grey at the center of the photo area in place of the picture, on every step after Perspective (with a pair open, Export names the side to fix instead: MSG-82). Perspective's corner view keeps the photo; what its **Preview** reads is VIEW-14's.
 
 - Risk: medium
 - Check: eye
@@ -2709,7 +2844,7 @@ When the corners are invalid, "Fix the corners in Perspective first." is drawn i
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: "Fix the corners in Perspective first.", "Fix the corners first."
-- Source: `js/app/view.js` (`draw`, `drawMessage`)
+- Source: `js/app/view.js` (`draw`, `fixCornersWords`, `drawMessage`)
 - Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app does this since 1.10.0.
 - Cases: 1
 
@@ -2730,21 +2865,21 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: what differs from the description, the screenshot.
 
-## MSG-82 "Fix the corners of both sides in Perspective first." on the photo
+## MSG-82 The words that name the side of a pair to fix
 
-On Export for a pair with **Together** chosen, when either side's corners are invalid, "Fix the corners of both sides in Perspective first." is drawn in grey in place of the joined image.
+On Export for a pair, when a side's corners are invalid, the size line under the photo names the side to fix, "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…"), whichever side is open and whether **Together** or **Separately** is chosen, and reads "Fix the corners of both sides in Perspective first." only when both sides' corners are invalid; nothing can be saved until they are fixed. The photo area reads the same words, drawn in grey: in place of the joined image with **Together**, and in place of the open side's picture with **Separately** when the open side's corners are invalid. While the back is still opening after **Add back**, a front with invalid corners is the one side the line names.
 
 - Risk: low
-- Check: eye
+- Check: script, eye (a person judges how the words look)
 - Layout: both.
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: "Fix the corners of both sides in Perspective first.", "’s corners in Perspective first."
-- Source: `js/app/view.js` (`drawTogether`, `drawMessage`); `js/app/export-controls.js` (`syncExportReadouts`); `js/app/pair.js` (`waitingSideToFix`)
-- Ruling: R26. With the waiting side's corners invalid, Export's size line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…") and **Share**, **Download** and **Copy** are dimmed (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
-- Cases: 2
+- Source: `js/app/pair.js` (`pairFixWords`); `js/app/view.js` (`drawTogether`, `fixCornersWords`, `drawMessage`); `js/app/export-controls.js` (`syncExportReadouts`, `syncSaveButtons`)
+- Ruling: R26. With the waiting side's corners invalid, Export's size line reads "Fix the back’s corners in Perspective first." (or "Fix the front’s corners…") and **Share**, **Download** and **Copy** are dimmed (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0. R98. The photo area names the side too, "Fix the back’s corners in Perspective first." (or the front’s); "Fix the corners of both sides in Perspective first." only when both sides' corners are invalid. With a pair open on Export, the line under the photo names the side to fix in the same words whichever side is open ("Fix the back’s corners in Perspective first.", the front’s, or "Fix the corners of both sides in Perspective first."), so the photo area and the line always say the same (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
+- Cases: 5
 
-### MSG-82.1 "Fix the corners of both sides in Perspective first." on the joined image, for a person to judge   [eye]
+### MSG-82.1 The words in place of the joined image, for a person to judge   [eye]
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
 - Build: the build under test
@@ -2755,7 +2890,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the back's top-left corner handle past its bottom-right one | The corner lines cross |
-| 2 | Tap **Export** in the step tabs (the six tabs along the bottom) | With **Together** selected, grey text centered in the photo area reads "Fix the corners of both sides in Perspective first."; no joined image is drawn |
+| 2 | Tap **Export** in the step tabs (the six tabs along the bottom) | With **Together** selected, grey text centered in the photo area reads "Fix the back’s corners in Perspective first."; no joined image is drawn |
 
 Pass: every row's result is seen.
 On a fail, record: what differs from the description, the screenshot.
@@ -2776,6 +2911,75 @@ Before you start:
 | 1 | Drag the back's top-left corner handle past its bottom-right one | The corner lines cross |
 | 2 | Tap **Front** in the top bar | The front opens on the Perspective step |
 | 3 | Tap **Export** in the step tabs (the six tabs along the bottom) | The size line reads "Fix the back’s corners in Perspective first."; **Share**, **Download** and **Copy** are greyed out (shown dim and not answering a tap) |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-82.3 The photo area and the size line name the back when only its corners are crossed   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective
+
+With a pair open on a phone, the size line is beside the **Together** and **Separately** control, under the photo.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the back's top-left corner handle past its bottom-right one | The corner lines cross |
+| 2 | Tap **Export** in the step tabs (the six tabs along the bottom) | With **Together** selected, the photo area holds no joined image, only the words "Fix the back’s corners in Perspective first."; the size line under it reads the same words, and **Download** is greyed out |
+| 3 | Tap **Front** in the top bar | The front opens, still on Export; the photo area still holds only the words "Fix the back’s corners in Perspective first.", and the size line under it reads the same words |
+| 4 | Tap **Back** in the top bar | The back opens, still on Export; the photo area still holds only the words "Fix the back’s corners in Perspective first.", and the size line under it reads the same words |
+| 5 | Tap **Separately** | **Separately** is selected (a white fill); the photo area still holds only the words "Fix the back’s corners in Perspective first.", the size line still reads the same words, and **Download** is still greyed out |
+| 6 | Tap **Front** in the top bar | The front opens, and the photo area shows its picture; the size line still reads "Fix the back’s corners in Perspective first.", and **Download** is still greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-82.4 They name the front, and say both sides only when both are crossed   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; then **Front** tapped in the top bar: the front open on Perspective
+
+With a pair open on a phone, the size line is beside the **Together** and **Separately** control, under the photo.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the front's top-left corner handle past its bottom-right one | The corner lines cross |
+| 2 | Tap **Export** in the step tabs (the six tabs along the bottom) | With **Together** selected, the photo area holds no joined image, only the words "Fix the front’s corners in Perspective first."; the size line under it reads the same words, and **Download** is greyed out |
+| 3 | Tap **Back** in the top bar | The back opens, still on Export; the photo area still holds only the words "Fix the front’s corners in Perspective first.", and the size line under it reads the same words |
+| 4 | Tap **Perspective** in the step tabs | The Perspective step, with the back's photo and its outline, which does not cross itself |
+| 5 | Drag the back's top-left corner handle past its bottom-right one | The corner lines cross |
+| 6 | Tap **Export** in the step tabs | The photo area holds no joined image, only the words "Fix the corners of both sides in Perspective first."; the size line under it reads the same words, and **Download** is greyed out |
+| 7 | Tap **Separately** | **Separately** is selected (a white fill); the photo area still holds only the words "Fix the corners of both sides in Perspective first.", the size line still reads the same words, and **Download** is still greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-82.5 While the back opens after Add back, a crossed front is the one side named   [auto: phone]
+Script only
+Stand-in: a photo opens in a few hundredths of a second, too short to read the screen in, so the script holds the back's opening until the size line has been read, then lets it go on.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: 14_front_portrait_raw_white.JPEG open on its own, on the Perspective step
+
+The size line is under the photo, under the **Size** and **Format** choices.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the top-left corner handle past the bottom-right one | The corner lines cross |
+| 2 | Tap **Export** in the step tabs (the six tabs along the bottom) | The photo area holds no picture, only the words "Fix the corners in Perspective first."; the size line is empty, and **Download** is greyed out |
+| 3 | Tap **Add back** (in the bottom row of buttons) | The file picker opens |
+| 4 | Choose 14_back_portrait_raw_white.JPEG | While the back opens, the size line reads "Fix the front’s corners in Perspective first.", and **Download** is greyed out |
+| 5 | Wait for the back to open | The back opens on the Perspective step, with **Back** selected in the top bar |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

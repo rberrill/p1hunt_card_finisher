@@ -447,21 +447,36 @@
     });
   }
 
-  // The waiting side ('front' or 'back') when its corners are invalid, so it has no export size
-  // and the pair can't be saved until it is fixed; else null. Null too with no pair. (The open
-  // side's own corners are app.geometry's.)
-  function waitingSideToFix() {
+  // The words that name the side of the pair whose corners must be fixed before it can be
+  // saved: the back or the front, whichever side is open, or both sides when both sides'
+  // corners are invalid (rulings R26 and R98; the approved words, tests/catalog/wording.md).
+  // A side with invalid corners has no export size. '' with no pair, and when neither side
+  // needs fixing. Export's size line shows them, and so does the photo area in place of the
+  // Together image, or of the open side's picture with Separately.
+  function pairFixWords() {
     const pair = app.pair;
-    if (!pair) return null;
-    const geometry = CardEngine.computeGeometry(pair.other.state, geometryConfig());
-    return geometry.ok ? null : otherSide(pair.current);
+    if (!pair) return '';
+    // Each side's own edits are asked, not app.geometry: in the middle of a side switch that
+    // is still the geometry of the side being left.
+    const isValid = state => CardEngine.computeGeometry(state, geometryConfig()).ok;
+    const isWaitingSideValid = isValid(pair.other.state);
+    // While Add back's photo is still opening, the edits on screen are the waiting side's own
+    // (the front's): one side, judged once, so it is never taken for both.
+    const isOpenSideValid = pair.other.state === app.state || isValid(app.state);
+    if (!isOpenSideValid && !isWaitingSideValid) {
+      return 'Fix the corners of both sides in Perspective first.';
+    }
+    if (isOpenSideValid && isWaitingSideValid) return '';
+    const side = isOpenSideValid ? otherSide(pair.current) : pair.current;
+    return `Fix the ${side}’s corners in Perspective first.`;
   }
 
   // The export's readout for a pair: the choice and its size, e.g. "2881 × 2000 px".
   // Together gives its layout. Separately gives layout: null and scaledDownSides, the sides
   // ('front', 'back') whose own file is scaled down to fit the size limit: Export's note covers
-  // both files, not only the side on screen (ruling R14).
-  // Only for a pair whose sides both have valid corners (waitingSideToFix says when not).
+  // both files, not only the side on screen (ruling R14). clampedBy gives, by side, the limit
+  // that scaled it down, in the engine's words ('longSide' or 'area'; ruling R102).
+  // Only for a pair whose sides both have valid corners (pairFixWords says when not).
   function pairReadout() {
     const sides = sideStates();
     if (isTogether()) {
@@ -478,6 +493,7 @@
       size: `${sizeOf('front')} + ${sizeOf('back')}`,
       layout: null,
       scaledDownSides: SIDES.filter(side => outputs[side].isClamped),
+      clampedBy: { front: outputs.front.clampedBy, back: outputs.back.clampedBy },
     };
   }
 
@@ -1043,7 +1059,7 @@
     showPrompt,
     hidePrompt,
     isPairExported,
-    waitingSideToFix,
+    pairFixWords,
     pairReadout,
     exportPair,
     togetherPreview,

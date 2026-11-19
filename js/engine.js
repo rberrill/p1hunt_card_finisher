@@ -1874,8 +1874,18 @@ function CardEngineModule(globalScope) {
     return { x: (frameWidth - width) / 2, y: (frameHeight - height) / 2, width, height };
   }
 
+  // Names the canvas clamp that scales an image down the most, and so sets its final size, from
+  // the factor each would scale it by (under 1 when that clamp applies): 'longSide' (maxOutputPx)
+  // or 'area' (maxOutputArea), or '' when neither applies. Two equal factors read 'area': both
+  // are then true, and the area is the one every clamp was named for before (ruling R102).
+  function tighterClamp(longSideCap, areaCap) {
+    if (!(Math.min(longSideCap, areaCap) < 1)) return '';
+    return longSideCap < areaCap ? 'longSide' : 'area';
+  }
+
   // The export size: the optional long-edge resize, then hard clamps against huge canvases
-  // (maxOutputPx on the long side, maxOutputArea in total).
+  // (maxOutputPx on the long side, maxOutputArea in total). clampedBy names the clamp that set
+  // the size of a clamped output (see tighterClamp), and is '' when isClamped is false.
   function outputSize(crop, exportState, config) {
     const longSide = Math.max(crop.width, crop.height);
     let scale = 1;
@@ -1886,17 +1896,16 @@ function CardEngineModule(globalScope) {
     let width = Math.max(1, Math.round(crop.width * scale));
     let height = Math.max(1, Math.round(crop.height * scale));
     let isClamped = false;
-    const cap = Math.min(
-      1,
-      config.maxOutputPx / Math.max(width, height),
-      Math.sqrt(config.maxOutputArea / (width * height)),
-    );
+    const longSideCap = config.maxOutputPx / Math.max(width, height);
+    const areaCap = Math.sqrt(config.maxOutputArea / (width * height));
+    const cap = Math.min(1, longSideCap, areaCap);
+    const clampedBy = tighterClamp(longSideCap, areaCap);
     if (cap < 1) {
       width = Math.max(1, Math.floor(width * cap));
       height = Math.max(1, Math.floor(height * cap));
       isClamped = true;
     }
-    return { width, height, scale, isClamped };
+    return { width, height, scale, isClamped, clampedBy };
   }
 
   // The rotated frame (rotatedFrame) and the outlines mapped into it, all in rotated px: the
@@ -2297,13 +2306,15 @@ function CardEngineModule(globalScope) {
   };
 
   /**
-   * pairLayout(frontSize, backSize, orient, config) → { width, height, gutterPx, scale, front,
-   * back }: the Together image for two exports of { width, height } px. orient: 'portrait'
-   * (side by side) or 'landscape' (stacked). config: PAIR_DEFAULTS plus maxOutputPx and
-   * maxOutputArea (the canvas caps), and longEdgePx: 0, or the long edge the image is fitted
-   * to exactly (the upscale question's Yes), ignored when that would pass a cap. scale is the
-   * factor both sides are rendered at: ≤ 1 for the caps, > 1 for a fit that enlarges. front
-   * and back are { x, y, width, height } in the Together image's px.
+   * pairLayout(frontSize, backSize, orient, config) → { width, height, gutterPx, scale,
+   * clampedBy, front, back }: the Together image for two exports of { width, height } px.
+   * orient: 'portrait' (side by side) or 'landscape' (stacked). config: PAIR_DEFAULTS plus
+   * maxOutputPx and maxOutputArea (the canvas caps), and longEdgePx: 0, or the long edge the
+   * image is fitted to exactly (the upscale question's Yes), ignored when that would pass a
+   * cap. scale is the factor both sides are rendered at: ≤ 1 for the caps, > 1 for a fit that
+   * enlarges. clampedBy names the cap that set a scaled-down image's size: 'longSide' or
+   * 'area' (see tighterClamp), or '' when no cap did. front and back are { x, y, width,
+   * height } in the Together image's px.
    */
   function pairLayout(frontSize, backSize, orient, configIn) {
     const config = Object.assign({}, PAIR_DEFAULTS, configIn || {});
@@ -2344,6 +2355,8 @@ function CardEngineModule(globalScope) {
       height,
       gutterPx,
       scale,
+      // A fitted image is inside both caps, so only the caps' own factor has a cap to name.
+      clampedBy: fitScale ? '' : pairClampedBy(extent, config),
       front: placeIn(front, 0, 0),
       back: placeIn(back, backCellX, backCellY),
     };
@@ -2376,6 +2389,19 @@ function CardEngineModule(globalScope) {
       scale = Math.min(scale, Math.sqrt(config.maxOutputArea / (width * height)));
     }
     return scale < 1 ? scale * PAIR_SCALE_SLACK : 1;
+  }
+
+  // Which cap pairScale's factor comes from, in tighterClamp's words: 'longSide', 'area', or ''
+  // when a joined image of `extent` is inside both. A cap the config leaves out never applies.
+  function pairClampedBy(extent, config) {
+    const { width, height } = extent;
+    const longSideCap = config.maxOutputPx
+      ? config.maxOutputPx / Math.max(width, height)
+      : 1;
+    const areaCap = config.maxOutputArea
+      ? Math.sqrt(config.maxOutputArea / (width * height))
+      : 1;
+    return tighterClamp(longSideCap, areaCap);
   }
 
   // The factor that puts a joined image of `extent` at config.longEdgePx on its long side, or
@@ -2798,7 +2824,9 @@ function CardEngineModule(globalScope) {
   // it was before the pipeline was split into stages (1.9). Numbers are rounded to
   // 1 / GOLDEN_PRECISION px first, far above the last-digit differences between JavaScript
   // engines. A deliberate change to the geometry updates the hash from the test's detail.
-  const GEOMETRY_GOLDEN = 'ee55be98';
+  // Updated once since, for a key added to the results (output.clampedBy, ruling R102): with
+  // that key left out, the hash was still the one recorded before, ee55be98.
+  const GEOMETRY_GOLDEN = '52a72fac';
   const GOLDEN_PRECISION = 1000;
 
   // 6b. Geometry golden: the pipeline gives exactly the recorded results on 50 mixed states, so
@@ -2813,6 +2841,39 @@ function CardEngineModule(globalScope) {
     record('Geometry golden: 50 mixed states give the recorded results',
       hash === GEOMETRY_GOLDEN,
       `hash ${hash}, expected ${GEOMETRY_GOLDEN}; ${okCount}/${results.length} states ok`);
+  }
+
+  // 6c. The export size's two clamps: a clamped output names the one that set its size, the
+  // long side or the area, also when it is over both, and the area on a tie (ruling R102).
+  function testOutputClamp(record) {
+    const caps = { maxOutputPx: 12000, maxOutputArea: 16777216, allowUpscale: false };
+    const sizeOf = (width, height) => outputSize({ width, height }, { longEdge: 0 }, caps);
+    const inside = sizeOf(1400, 1400);
+    const overArea = sizeOf(6000, 6000);
+    const overLongSide = sizeOf(15000, 1000);
+    // Over both: 15000 × 1500 is held to 12000 px, then inside the area; 15000 × 3000 is held
+    // to the area, then inside 12000 px.
+    const longSideWins = sizeOf(15000, 1500);
+    const areaWins = sizeOf(15000, 3000);
+    // A tie: 1000 px a side and 1,000,000 px in all both halve a 2000 px square. It reads area.
+    const tied = outputSize(
+      { width: 2000, height: 2000 },
+      { longEdge: 0 },
+      { maxOutputPx: 1000, maxOutputArea: 1000000, allowUpscale: false },
+    );
+    const names = [inside, overArea, overLongSide, longSideWins, areaWins, tied]
+      .map(output => output.clampedBy || 'none');
+    record('Export size: a clamped output names the clamp that set its size',
+      names.join() === 'none,area,longSide,longSide,area,area'
+        && tied.width === 1000
+        && !inside.isClamped
+        && overLongSide.width === 12000
+        && longSideWins.width === 12000
+        && longSideWins.width * longSideWins.height < caps.maxOutputArea
+        && areaWins.width < 12000
+        && areaWins.width * areaWins.height <= caps.maxOutputArea,
+      `${names.join(', ')}; over both ${longSideWins.width} × ${longSideWins.height} and `
+        + `${areaWins.width} × ${areaWins.height}`);
   }
 
   // A synthetic photo: a warm card on a dark background, 4×4 supersampled for anti-aliased
@@ -3137,6 +3198,19 @@ function CardEngineModule(globalScope) {
     record('Pair: a stacked fit is exact too; a fit over a cap is ignored and the caps decide',
       stacked.height === 2000 && overCap.width <= 1500 && overCap.scale <= 1,
       `stacked ${stacked.width} × ${stacked.height}, over the cap ${overCap.width} wide`);
+    // Two 714 × 1000 cards side by side are 1439 px wide: over a 1000 px long side, inside the
+    // area (ruling R102).
+    const overLongSide = pairLayout(
+      { width: 714, height: 1000 },
+      { width: 714, height: 1000 },
+      'portrait',
+      { gutterPct: 0.8, maxOutputPx: 1000, maxOutputArea: 16777216 },
+    );
+    const names = [portrait, fitted, capped, overCap, overLongSide]
+      .map(layout => layout.clampedBy || 'none');
+    record('Pair: a scaled-down image names the cap that set its size',
+      names.join() === 'none,none,area,longSide,longSide' && overLongSide.width <= 1000,
+      `${names.join(', ')}; over the long side ${overLongSide.width} × ${overLongSide.height}`);
   }
 
   function testOverlaySnap(record) {
@@ -3291,6 +3365,7 @@ function CardEngineModule(globalScope) {
     testDegenerateQuads(record);
     testPipeline(record, quads[0]);
     testGeometryGolden(record, quads);
+    testOutputClamp(record);
     testCornerShots(record, quads[0]);
     testUnsharpMask(record);
     testPairLayout(record);

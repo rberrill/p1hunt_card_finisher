@@ -225,25 +225,33 @@
       return;
     }
     if (!view) {
-      // Perspective's Preview is on the step that fixes the corners, so its words don't name
-      // the step (ruling R82). The other steps' words are also the line above Overlay's
-      // controls, written out in js/app/overlay.js (FIX_CORNERS_FIRST): a rewording changes
-      // both.
-      const isOnPerspective = app.tab === 'perspective';
-      drawMessage(ctx, isOnPerspective
-        ? 'Fix the corners first.'
-        : 'Fix the corners in Perspective first.');
+      drawMessage(ctx, fixCornersWords());
       return;
     }
     drawResult(ctx, view);
   }
 
+  // The words drawn in place of the open photo while its corners are invalid.
+  // Perspective's Preview is on the step that fixes the corners, so its words don't name the
+  // step (ruling R82). On Export with a pair open they name the side to fix, as the size line
+  // under the photo does (ruling R98; CF.pairFixWords is '' with no pair). The other words
+  // are also the line above Overlay's controls, written out in js/app/overlay.js
+  // (FIX_CORNERS_FIRST): a rewording changes both.
+  function fixCornersWords() {
+    if (app.tab === 'perspective') return 'Fix the corners first.';
+    const pairWords = app.tab === 'export' ? CF.pairFixWords() : '';
+    return pairWords || 'Fix the corners in Perspective first.';
+  }
+
   // Export of a pair with Together chosen: the joined image as it will be saved, over the
-  // checkerboard where the fill is transparent.
+  // checkerboard where the fill is transparent. While a side's corners are invalid it can't be
+  // drawn, and the words that name the side to fix take its place: the size line's own words
+  // (CF.pairFixWords), so the two always say the same (ruling R98). With Separately chosen,
+  // fixCornersWords draws them in place of the open side.
   function drawTogether(ctx) {
     const view = togetherView();
     if (!view) {
-      drawMessage(ctx, 'Fix the corners of both sides in Perspective first.');
+      drawMessage(ctx, CF.pairFixWords());
       return;
     }
     const canvas = CF.togetherPreview();

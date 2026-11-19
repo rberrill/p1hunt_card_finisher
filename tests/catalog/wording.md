@@ -20,3 +20,4 @@ On-screen text that Rich has approved for rulings that change or add a message (
 | R97 | Load edits, a file with no photo name | "Saved for “another photo”; sizes match." |
 | R98 | The photo area on Export for a pair set to Together with a side to fix | "Fix the back’s corners in Perspective first." / "Fix the front’s corners in Perspective first."; both invalid: "Fix the corners of both sides in Perspective first." |
 | R102 | The size-limit note when the long-side limit scaled the output | "Scaled down to fit the 12000 px limit." / "The front is scaled down to fit the 12000 px limit." (or "The back…") / "Both sides are scaled down to fit the 12000 px limit.", with the limit in force |
+| R102 | The size-limit note for a pair saved Separately whose sides were scaled down by different limits (Rich, 2026-11-18) | "Both sides are scaled down to fit the size limits." |

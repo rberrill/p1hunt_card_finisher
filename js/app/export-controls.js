@@ -397,28 +397,45 @@
     CF.updateSegmented(byId('pairOutput'), app.pairOutput);
   }
 
-  // The size limit in force (CONFIG.maxOutputArea, which a link can lower; ruling R47) in
+  // The area limit in force (CONFIG.maxOutputArea, which a link can lower; ruling R47) in
   // millions of pixels, rounded down to a tenth (ruling R15): 16.7 for 16,777,216 pixels, 1 for
   // 1,000,000.
   function limitMegapixels() {
     return Math.floor(CONFIG.maxOutputArea / PIXELS_PER_TENTH_MP) / TENTHS_PER_MP;
   }
 
-  // The note for an output scaled down to fit the size limit, or '' when nothing is (rulings
-  // R14 and R15; the words are the approved ones, tests/catalog/wording.md). geometry: the open
-  // side's. pair: CF.pairReadout()'s result while a pair is open, else null. A pair saved
-  // Together is one image, with its own cap. Saved Separately it is two files: the note names
-  // the side when the one scaled down is not on screen, and says so when both are.
+  // The limit that scaled an output down, as the note's last words: the long-side limit in px
+  // or the area limit in MP, each the one in force, since a link can lower either (rulings R47
+  // and R102). Both are rounded down: a link can give a long side that is not a whole number
+  // of px. clampedBy: the engine's name for the limit, 'longSide' or 'area'.
+  function limitWords(clampedBy) {
+    if (clampedBy === 'longSide') return `${Math.floor(CONFIG.maxOutputPx)} px limit.`;
+    return `${limitMegapixels()} MP limit.`;
+  }
+
+  // The note for an output scaled down to fit a size limit, or '' when nothing is (rulings
+  // R14, R15 and R102; the words are the approved ones, tests/catalog/wording.md). It names the
+  // limit that set the size. geometry: the open side's. pair: CF.pairReadout()'s result while
+  // a pair is open, else null. A pair saved Together is one image, with its own cap. Saved
+  // Separately it is two files: the note names the side when the one scaled down is not on
+  // screen, and says so when both are; two sides scaled down by different limits share one
+  // sentence that names neither limit.
   function clampNote(geometry, pair) {
-    const limit = `${limitMegapixels()} MP limit.`;
-    const plainNote = `Scaled down to fit the ${limit}`;
-    if (!pair) return geometry.output.isClamped ? plainNote : '';
-    if (pair.layout) return pair.layout.scale < 1 ? plainNote : '';
+    const plainNote = clampedBy => `Scaled down to fit the ${limitWords(clampedBy)}`;
+    if (!pair) return geometry.output.isClamped ? plainNote(geometry.output.clampedBy) : '';
+    if (pair.layout) return pair.layout.scale < 1 ? plainNote(pair.layout.clampedBy) : '';
     const sides = pair.scaledDownSides;
     if (!sides.length) return '';
-    if (sides.length > 1) return `Both sides are scaled down to fit the ${limit}`;
-    if (sides[0] === app.pair.current) return plainNote;
-    return `The ${sides[0]} is scaled down to fit the ${limit}`;
+    const sideLimits = pair.clampedBy;
+    if (sides.length > 1) {
+      if (sideLimits.front !== sideLimits.back) {
+        return 'Both sides are scaled down to fit the size limits.';
+      }
+      return `Both sides are scaled down to fit the ${limitWords(sideLimits.front)}`;
+    }
+    const side = sides[0];
+    if (side === app.pair.current) return plainNote(sideLimits[side]);
+    return `The ${side} is scaled down to fit the ${limitWords(sideLimits[side])}`;
   }
 
   // The export notes: why the output isn't what you might expect, one string each. The phone
@@ -512,22 +529,21 @@
   // the readout row's second line, and stays beside Next card after an export. (On the phone,
   // css/app.css shows one note at a time, and beside a pair's Together | Separately gives the
   // note the readout's place until it is dealt with.)
-  // A pair whose waiting side has invalid corners can't be saved either: the readout names the
-  // side to fix, in place of a size it doesn't have, and the save row is off (ruling R26).
+  // A pair with a side whose corners are invalid can't be saved: the readout names the side to
+  // fix, whichever side is open, in place of a size it doesn't have, and the save row is off
+  // (rulings R26 and R98). A single photo with invalid corners keeps an empty readout.
   function syncExportReadouts() {
     const state = app.state;
     const geometry = app.geometry;
     const isOpenValid = !!geometry && geometry.ok;
-    const sideToFix = isOpenValid ? CF.waitingSideToFix() : null;
-    const isValid = isOpenValid && !sideToFix;
+    const fixWords = CF.pairFixWords();
+    const isValid = isOpenValid && !fixWords;
     syncSaveButtons(isValid);
     syncExportLock();
     byId('btnAddBack').hidden = !!app.pair;
     const noteList = byId('exportMessage');
     if (!isValid) {
-      byId('exportReadout').textContent = sideToFix
-        ? `Fix the ${sideToFix}’s corners in Perspective first.`
-        : '';
+      byId('exportReadout').textContent = fixWords;
       noteList.replaceChildren();
       noteList.hidden = true;
       return;

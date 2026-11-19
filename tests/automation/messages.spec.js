@@ -22,6 +22,8 @@ const {
   waitForStill,
   stepNow,
   copiedMessage,
+  nextFrames,
+  samplePath,
 } = require('./support/app.js');
 const {
   pickWith,
@@ -73,6 +75,8 @@ const {
   changeStoredPair,
   crossCorners,
   zoomIn,
+  openSide,
+  readoutSizes,
   PORTRAIT_PAIR,
 } = require('./support/front-and-back.js');
 const {
@@ -121,6 +125,14 @@ const {
   visibleTips,
 } = require('./support/messages.js');
 const { toastShownLines } = require('./support/edits-files.js');
+const { typeAngle, angleText } = require('./support/rotate.js');
+const {
+  cropHandleOnPage,
+  sizeLine,
+  cropRect,
+  frameSize,
+} = require('./support/crop.js');
+const { recordDrawnText, drawnTextsSoFar, stageShare } = require('./support/photo-view.js');
 
 // The photo most cases use: a raw chrome card flat on a black mat. It is found the same in
 // Chromium and WebKit.
@@ -164,6 +176,9 @@ const EDITS_LOADED = 'Edits loaded.';
 const RESET_CROP = 'Reset, not valid: crop.';
 const LOGO_LEFT_OUT = 'Logo left out; it couldn’t be read.';
 const FIX_BACK = 'Fix the back’s corners in Perspective first.';
+// Ruling R98's approved words for the photo area: the front named, and both sides.
+const FIX_FRONT = 'Fix the front’s corners in Perspective first.';
+const FIX_BOTH = 'Fix the corners of both sides in Perspective first.';
 const NOT_JSON = 'That file isn’t valid JSON.';
 // A stand-in failure's own words, which ruling R24 keeps out of the message.
 const STAND_IN_ERROR = 'Stand-in failure 4417';
@@ -348,6 +363,16 @@ const SCALED_DOWN = 'Scaled down to fit the 16.7 MP limit.';
 const SCALED_DOWN_1MP = 'Scaled down to fit the 1 MP limit.';
 const FRONT_SCALED_DOWN = 'The front is scaled down to fit the 1 MP limit.';
 const BOTH_SCALED_DOWN = 'Both sides are scaled down to fit the 1 MP limit.';
+// Ruling R102's approved words: the note names the long-side limit when that is the limit that
+// set the size. MSG-72.4 to MSG-72.7's links lower it to 1000 px, and the note gives the limit
+// in force.
+const LONG_SIDE_PX = 1000;
+const SCALED_DOWN_1000PX = 'Scaled down to fit the 1000 px limit.';
+const BACK_SCALED_DOWN_1000PX = 'The back is scaled down to fit the 1000 px limit.';
+const BOTH_SCALED_DOWN_1000PX = 'Both sides are scaled down to fit the 1000 px limit.';
+// Ruling R102's approved words for a pair saved Separately whose two sides were scaled down by
+// different limits.
+const BOTH_BY_DIFFERENT_LIMITS = 'Both sides are scaled down to fit the size limits.';
 // MSG-51.1's drag of the top-left corner, and how close its end must be, in CSS px.
 const MOVE_PX = 40;
 const MOVE_TOLERANCE_PX = 2;
@@ -2150,6 +2175,204 @@ test('MSG-72.3 With Separately, the note says so when both sides are scaled down
   });
 });
 
+// Links that lower the long-side limit to 1000 px (the lowest a link may set). The second also
+// switches upscaling on, so at Size 2000 the output would be 2000 px on its long side, over the
+// limit: without it the picture the crop is cut from is itself held to 1000 px, and no output
+// is longer.
+const LONG_SIDE_LINK = 'index.html?maxOutputPx=1000';
+const LONG_SIDE_UPSCALE_LINK = 'index.html?maxOutputPx=1000&export.allowUpscale=1';
+// Both limits lowered, with upscaling on, so the 2000 × 2000 px output is over both. In the
+// first the long side asks for the smaller picture (1000 × 1000 px, under its 1.5 MP); in the
+// second the area does (1 MP, 1000 × 1000 px, under its 1500 px).
+const LONG_SIDE_DECIDES_LINK = 'index.html?maxOutputPx=1000&maxOutputArea=1500000'
+  + '&export.allowUpscale=1';
+const AREA_DECIDES_LINK = 'index.html?maxOutputPx=1500&maxOutputArea=1000000'
+  + '&export.allowUpscale=1';
+// A long-side limit that is not a whole number of px, with upscaling on (MSG-72.10).
+const FRACTION_LINK = 'index.html?maxOutputPx=1000.5&export.allowUpscale=1';
+// How far MSG-72.5 drags two of the crop box's corner handles outward, in CSS px: past the
+// picture's own corners, so the box stops at the picture's edges.
+const CROP_GROW_PX = { across: 200, down: 280 };
+// How close a crop box's edge must be to the picture's edge to count as on it, in the
+// picture's px.
+const EDGE_PX = 1;
+
+// The body of MSG-72.4, MSG-72.7, MSG-72.8 and MSG-72.10: IMG_9136.JPEG open on Export from `link`, whose
+// output is scaled down to 1000 × 1000 px. Checks the two rows: the size line, and the one
+// note, which must read `note`.
+async function checkLimitNamed(page, check, testInfo, link, note) {
+  await start(page, testInfo, { photo: SLAB_PHOTO, address: link });
+  const sizeText = 'Output 1000 × 1000 px · JPEG';
+  await check(`The size line reads "${sizeText}"`, async () => {
+    await expect(page.locator('#exportReadout')).toBeVisible();
+    await expect(page.locator('#exportReadout')).toHaveText(sizeText);
+  });
+  await check(`Under the size line, led by the amber warning mark: "${note}"`, async () => {
+    await expectExportNote(page, note);
+  });
+}
+
+test('MSG-72.4 The note names the long-side limit when that is what scaled the output [phone]',
+  async ({ page, check }, testInfo) => {
+    await checkLimitNamed(page, check, testInfo, LONG_SIDE_UPSCALE_LINK, SCALED_DOWN_1000PX);
+  });
+
+// Drags one of the crop box's corner handles (part: 'se' or 'nw') outward by CROP_GROW_PX.
+async function growCropBox(page, hand, part) {
+  const start = await cropHandleOnPage(page, part);
+  const direction = part === 'se' ? 1 : -1;
+  await hand.drag(start, {
+    x: start.x + direction * CROP_GROW_PX.across,
+    y: start.y + direction * CROP_GROW_PX.down,
+  });
+}
+
+// The crop's height as Crop's line above the controls gives it, in px.
+async function cropHeightShown(page) {
+  const { size } = await sizeLine(page);
+  return Number(size.split(' × ')[1]);
+}
+
+test('MSG-72.5 With Separately, the long-side note names the side not on screen [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await makePair(page, testInfo, PORTRAIT_PAIR, LONG_SIDE_LINK);
+  await goToStep(page, 'rotate', hand);
+  await check('The Rotate controls show, with the angle at 0.0°', async () => {
+    await expect(angleText(page)).toHaveText('0.0°');
+  });
+  await typeAngle(page, hand, '20');
+  await check('The angle reads 20.0°, and the back’s picture is turned', async () => {
+    await expect(angleText(page)).toHaveText('20.0°');
+    expect((await editState(page)).rotation.fine).toBe(20);
+  });
+  await goToStep(page, 'crop', hand);
+  const boxAtFirst = await cropRect(page);
+  await check('The Crop controls show; the size in the line above them is under 1000 px tall',
+    async () => {
+      expect(await stepNow(page)).toBe('crop');
+      await expect(page.locator('#cropSize')).toBeVisible();
+      expect(await cropHeightShown(page)).toBeLessThan(LONG_SIDE_PX);
+    });
+  const picture = await frameSize(page);
+  await growCropBox(page, hand, 'se');
+  const boxGrown = await cropRect(page);
+  await check('The box grows down and to the right, until its bottom edge is on the picture’s '
+    + 'bottom edge', async () => {
+    expect(boxGrown.width).toBeGreaterThan(boxAtFirst.width);
+    expect(boxGrown.height).toBeGreaterThan(boxAtFirst.height);
+    expect(Math.abs(boxGrown.y + boxGrown.height - picture.height)).toBeLessThan(EDGE_PX);
+  });
+  await growCropBox(page, hand, 'nw');
+  const boxFull = await cropRect(page);
+  await check('The box grows up and to the left, until its top edge is on the picture’s top '
+    + 'edge; the size in the line above the controls is more than 1000 px tall', async () => {
+    expect(boxFull.x).toBeLessThan(boxGrown.x);
+    expect(Math.abs(boxFull.y)).toBeLessThan(EDGE_PX);
+    expect(await cropHeightShown(page)).toBeGreaterThan(LONG_SIDE_PX);
+  });
+  await goToStep(page, 'export', hand);
+  await check('The Export step, with Together selected (a white fill)', async () => {
+    expect(await selectedChoices(page, 'pairOutput')).toEqual(['Together']);
+  });
+  await chooseOutput(page, hand, 'separately');
+  // The sizes are still in the page while the note takes their place on a phone: the front as
+  // it is, the back held to the limit on its long side.
+  const [frontSize, backSize] = await readoutSizes(page);
+  await check('Separately is selected, and with the back on screen the one note, led by the '
+    + `amber warning mark, reads "${SCALED_DOWN_1000PX}": the back is the side scaled down, so `
+    + 'the note names no side', async () => {
+    expect(await selectedChoices(page, 'pairOutput')).toEqual(['Separately']);
+    expect(await openSide(page)).toBe('back');
+    expect(Math.max(...frontSize), 'the front is under the limit').toBeLessThan(LONG_SIDE_PX);
+    expect(Math.max(...backSize), 'the back is held to the limit').toBe(LONG_SIDE_PX);
+    await expectExportNote(page, SCALED_DOWN_1000PX);
+  });
+  await switchTo(page, hand, 'front');
+  await check(`The front opens, and the one note reads "${BACK_SCALED_DOWN_1000PX}"`, async () => {
+    expect(await openSide(page)).toBe('front');
+    await expectExportNote(page, BACK_SCALED_DOWN_1000PX);
+  });
+});
+
+test('MSG-72.6 With Separately, the long-side note says so when both sides are scaled down '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  const hand = await makePair(page, testInfo, PORTRAIT_PAIR, LONG_SIDE_UPSCALE_LINK);
+  await goToStep(page, 'export', hand);
+  await check('The Export step, with 2000 and Together selected (a white fill each)', async () => {
+    expect(await selectedChoices(page, 'exportSize')).toEqual(['2000']);
+    expect(await selectedChoices(page, 'pairOutput')).toEqual(['Together']);
+  });
+  await chooseOutput(page, hand, 'separately');
+  const sizes = await readoutSizes(page);
+  await check('Separately is selected, and the one note, led by the amber warning mark, reads '
+    + `"${BOTH_SCALED_DOWN_1000PX}"`, async () => {
+    expect(await selectedChoices(page, 'pairOutput')).toEqual(['Separately']);
+    expect(sizes.map(size => Math.max(...size)), 'each side is held to the limit')
+      .toEqual([LONG_SIDE_PX, LONG_SIDE_PX]);
+    await expectExportNote(page, BOTH_SCALED_DOWN_1000PX);
+  });
+});
+
+test('MSG-72.7 Over both limits, the note names the long side when it set the size [phone]',
+  async ({ page, check }, testInfo) => {
+    await checkLimitNamed(page, check, testInfo, LONG_SIDE_DECIDES_LINK, SCALED_DOWN_1000PX);
+  });
+
+test('MSG-72.8 Over both limits, the note names the area when it set the size [phone]',
+  async ({ page, check }, testInfo) => {
+    await checkLimitNamed(page, check, testInfo, AREA_DECIDES_LINK, SCALED_DOWN_1MP);
+  });
+
+// MSG-72.9's stand-in: from now on the app's size calculation reports that the photo named
+// `photoName`, when its output is scaled down, was scaled down by the area limit. Both sides of
+// a pair have the same 5:7 shape, so the same limit sets both sizes unless whole-pixel rounding
+// falls differently for the two, which no person can arrange.
+function reportAreaLimitFor(page, photoName) {
+  return page.evaluate(name => {
+    const engine = window.CardEngine;
+    const computeGeometry = engine.computeGeometry;
+    engine.computeGeometry = function computeWithAreaLimit(state, ...rest) {
+      const geometry = computeGeometry.call(engine, state, ...rest);
+      const isNamed = !!state && !!state.source && state.source.name === name;
+      if (!isNamed || !geometry.ok || !geometry.output.isClamped) return geometry;
+      return { ...geometry, output: { ...geometry.output, clampedBy: 'area' } };
+    };
+  }, photoName);
+}
+
+test('MSG-72.9 With Separately, two sides scaled down by different limits share one note '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  const hand = await makePair(page, testInfo, PORTRAIT_PAIR, LONG_SIDE_UPSCALE_LINK);
+  // Stand-in: the front is reported as scaled down by the area limit; the back is scaled down
+  // by the long-side limit, as both really are under this link.
+  await reportAreaLimitFor(page, FRONT);
+  await goToStep(page, 'export', hand);
+  await check('The Export step, with 2000 and Together selected (a white fill each)', async () => {
+    expect(await selectedChoices(page, 'exportSize')).toEqual(['2000']);
+    expect(await selectedChoices(page, 'pairOutput')).toEqual(['Together']);
+  });
+  await chooseOutput(page, hand, 'separately');
+  const sizes = await readoutSizes(page);
+  const limits = await page.evaluate(() => window.CF.pairReadout().clampedBy);
+  await check('Separately is selected, and the one note, led by the amber warning mark, reads '
+    + `"${BOTH_BY_DIFFERENT_LIMITS}"`, async () => {
+    expect(await selectedChoices(page, 'pairOutput')).toEqual(['Separately']);
+    expect(sizes.map(size => Math.max(...size)), 'each side is scaled down')
+      .toEqual([LONG_SIDE_PX, LONG_SIDE_PX]);
+    expect(limits, 'the two sides’ limits differ').toEqual({ front: 'area', back: 'longSide' });
+    await expectExportNote(page, BOTH_BY_DIFFERENT_LIMITS);
+  });
+});
+
+test('MSG-72.10 A long-side limit with a fraction reads rounded down [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  await checkLimitNamed(page, check, testInfo, FRACTION_LINK, SCALED_DOWN_1000PX);
+});
+
 test('MSG-73.1 Export\'s JPEG transparency note [phone]', async ({
   page,
   check,
@@ -2355,8 +2578,10 @@ test('MSG-81.1 "Fix the corners in Perspective first." on the photo, for a perso
     + 'corners in Perspective first."; no picture is drawn');
 });
 
-test('MSG-82.1 "Fix the corners of both sides in Perspective first." on the joined image, for '
-  + 'a person to judge [phone]', async ({ page, check }, testInfo) => {
+test('MSG-82.1 The words in place of the joined image, for a person to judge [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
   const hand = await makePair(page, testInfo);
   await crossCorners(page, hand);
   await check('The corner lines cross', async () => {
@@ -2364,7 +2589,7 @@ test('MSG-82.1 "Fix the corners of both sides in Perspective first." on the join
   });
   await goToStep(page, 'export', hand);
   await check.eye('With Together selected, grey text centered in the photo area reads "Fix the '
-    + 'corners of both sides in Perspective first."; no joined image is drawn');
+    + 'back’s corners in Perspective first."; no joined image is drawn');
 });
 
 test('MSG-82.2 With the waiting side\'s corners crossed, Export names the side to fix [phone]',
@@ -2401,6 +2626,175 @@ test('MSG-82.2 With the waiting side\'s corners crossed, Export names the side t
       expect(dimmed).toEqual({ share: true, download: true, copy: true });
     });
   });
+
+// The share of the photo area that is empty stage when only a line of words is drawn on it
+// (photo-view.spec.js's MESSAGE_ONLY_SHARE).
+const WORDS_ONLY_SHARE = 0.97;
+
+// Does `action` (a tap that makes the photo area draw again) and returns what the photo area
+// then holds: { words, isWordsOnly }: the last line of words drawn on it ('' when none was),
+// and whether nothing else is drawn there (no photo, no joined image). recordDrawnText must
+// have been called before the app was opened: the words are drawn, so no element holds them.
+async function photoAreaAfter(page, action) {
+  await drawnTextsSoFar(page);
+  await action();
+  await waitForStill(page);
+  await nextFrames(page);
+  const texts = await drawnTextsSoFar(page);
+  return {
+    words: texts.length ? texts[texts.length - 1] : '',
+    isWordsOnly: (await stageShare(page)) > WORDS_ONLY_SHARE,
+  };
+}
+
+// Crosses the open side's corners on Perspective and checks the row's result.
+async function crossAndCheck(page, hand, check) {
+  await crossCorners(page, hand);
+  await check('The corner lines cross', async () => {
+    await expectStatus(page, PERSPECTIVE_STATUS, CROSSED, 'error');
+  });
+}
+
+// What a pair's Export step says under the photo about the corners to fix: the size line's
+// words, whether the line can be seen, and whether Download is greyed out.
+async function fixLineNow(page) {
+  const line = page.locator('#exportReadout');
+  return {
+    line: (await line.textContent()).trim(),
+    isLineShown: await line.isVisible(),
+    isDownloadOff: await page.locator('#btnDownload').isDisabled(),
+  };
+}
+
+// fixLineNow's reading when the size line reads `words` and nothing can be saved.
+const fixLineOf = words => ({ line: words, isLineShown: true, isDownloadOff: true });
+
+// Taps Export in the step tabs with Together chosen and checks the row's result: no joined
+// image, only `words` in the photo area; the size line under it reads the same; Download is
+// greyed out. isFirst: the row also says Together is selected.
+async function exportAndExpectWords(page, hand, check, words, isFirst = true) {
+  const shown = await photoAreaAfter(page, () => goToStep(page, 'export', hand));
+  const under = await fixLineNow(page);
+  const lead = isFirst ? 'With Together selected, the' : 'The';
+  await check(`${lead} photo area holds no joined image, only the words "${words}"; the size `
+    + 'line under it reads the same words, and Download is greyed out', async () => {
+    expect(await selectedChoices(page, 'pairOutput')).toEqual(['Together']);
+    expect(shown).toEqual({ words, isWordsOnly: true });
+    expect(under).toEqual(fixLineOf(words));
+  });
+}
+
+// Taps Front or Back on a pair's Export step with Together chosen and checks the row's result:
+// that side opens, the photo area still holds only `words`, and the size line under it reads
+// the same.
+async function switchAndExpectWords(page, hand, check, side, words) {
+  const shown = await photoAreaAfter(page, () => switchTo(page, hand, side));
+  const opened = { side: await openSide(page), step: await stepNow(page) };
+  const under = await fixLineNow(page);
+  await check(`The ${side} opens, still on Export; the photo area still holds only the words `
+    + `"${words}", and the size line under it reads the same words`, async () => {
+    expect(opened).toEqual({ side, step: 'export' });
+    expect(shown).toEqual({ words, isWordsOnly: true });
+    expect(under).toEqual(fixLineOf(words));
+  });
+}
+
+// Taps Separately on a pair's Export step, with the open side's corners crossed, and checks the
+// row's result: it is selected, the photo area still holds only `words`, the size line still
+// reads the same, and Download is still greyed out.
+async function separatelyAndExpectWords(page, hand, check, words) {
+  const shown = await photoAreaAfter(page, () => chooseOutput(page, hand, 'separately'));
+  const under = await fixLineNow(page);
+  await check('Separately is selected (a white fill); the photo area still holds only the words '
+    + `"${words}", the size line still reads the same words, and Download is still greyed out`,
+  async () => {
+    expect(await selectedChoices(page, 'pairOutput')).toEqual(['Separately']);
+    expect(shown).toEqual({ words, isWordsOnly: true });
+    expect(under).toEqual(fixLineOf(words));
+  });
+}
+
+test('MSG-82.3 The photo area and the size line name the back when only its corners are crossed '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  await recordDrawnText(page);
+  const hand = await makePair(page, testInfo);
+  await crossAndCheck(page, hand, check);
+  await exportAndExpectWords(page, hand, check, FIX_BACK);
+  await switchAndExpectWords(page, hand, check, 'front', FIX_BACK);
+  // Back to the side whose corners are crossed: the switch must finish there too.
+  await switchAndExpectWords(page, hand, check, 'back', FIX_BACK);
+  await separatelyAndExpectWords(page, hand, check, FIX_BACK);
+  // With Separately the photo area shows the open side, here the front, whose corners are fine.
+  const shown = await photoAreaAfter(page, () => switchTo(page, hand, 'front'));
+  const frontOpen = { side: await openSide(page), under: await fixLineNow(page) };
+  await check(`The front opens, and the photo area shows its picture; the size line still reads `
+    + `"${FIX_BACK}", and Download is still greyed out`, async () => {
+    expect(shown).toEqual({ words: '', isWordsOnly: false });
+    expect(frontOpen).toEqual({ side: 'front', under: fixLineOf(FIX_BACK) });
+  });
+});
+
+test('MSG-82.4 They name the front, and say both sides only when both are crossed [phone]',
+  async ({ page, check }, testInfo) => {
+    await recordDrawnText(page);
+    const hand = await makePair(page, testInfo);
+    await switchTo(page, hand, 'front');
+    await crossAndCheck(page, hand, check);
+    await exportAndExpectWords(page, hand, check, FIX_FRONT);
+    await switchAndExpectWords(page, hand, check, 'back', FIX_FRONT);
+    await goToStep(page, 'perspective', hand);
+    await check('The Perspective step, with the back’s photo and its outline, which does not '
+      + 'cross itself', async () => {
+      expect(await stepNow(page)).toBe('perspective');
+      expect((await editState(page)).source.name).toBe(BACK);
+      expect(await page.evaluate(() => window.__straightener.app.geometry.ok)).toBe(true);
+    });
+    await crossAndCheck(page, hand, check);
+    await exportAndExpectWords(page, hand, check, FIX_BOTH, false);
+    await separatelyAndExpectWords(page, hand, check, FIX_BOTH);
+  });
+
+test('MSG-82.5 While the back opens after Add back, a crossed front is the one side named '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  await recordDrawnText(page);
+  const hand = await start(page, testInfo, { photo: FRONT, step: 'perspective', share: null });
+  await crossAndCheck(page, hand, check);
+  const alone = await photoAreaAfter(page, () => goToStep(page, 'export', hand));
+  const lineAlone = await fixLineNow(page);
+  await check('The photo area holds no picture, only the words "Fix the corners in Perspective '
+    + 'first."; the size line is empty, and Download is greyed out', async () => {
+    expect(alone).toEqual({ words: 'Fix the corners in Perspective first.', isWordsOnly: true });
+    expect(lineAlone).toEqual({ line: '', isLineShown: false, isDownloadOff: true });
+  });
+  // Stand-in: the back's opening is held, so the screen can be read while it opens. The photo
+  // area is not drawn again until the back is up, so only the line is read here.
+  const choosing = page.waitForEvent('filechooser');
+  await hand.tap(page.locator('#btnAddBack'));
+  const chooser = await choosing;
+  await check('The file picker opens', () => {
+    expect(chooser.isMultiple()).toBe(false);
+  });
+  await holdNextOpening(page);
+  await chooser.setFiles(samplePath(BACK));
+  await waitForOpening(page);
+  const lineOpening = await fixLineNow(page);
+  await check(`While the back opens, the size line reads "${FIX_FRONT}", and Download is greyed `
+    + 'out', async () => {
+    expect(await page.evaluate(() => !!window.__straightener.app.isSwitching)).toBe(true);
+    expect(lineOpening).toEqual(fixLineOf(FIX_FRONT));
+  });
+  await releaseOpening(page);
+  await page.waitForFunction(name => {
+    const app = window.__straightener.app;
+    return !app.isSwitching && !!app.pair && app.state.source.name === name;
+  }, BACK);
+  await check('The back opens on the Perspective step, with Back selected in the top bar',
+    async () => {
+      expect(await stepNow(page)).toBe('perspective');
+      expect(await openSide(page)).toBe('back');
+      await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
+    });
+});
 
 // Each step's tips, as the app writes them (the phone shows them all; a wide screen leaves out
 // the ones about touch).

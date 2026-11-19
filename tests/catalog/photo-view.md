@@ -729,16 +729,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-14 Photo replaced by a message when the corners are wrong
 
-While the corners cross or fold inward, every step after Perspective shows "Fix the corners in Perspective first." in the photo area instead of the photo, and Perspective's **Preview** shows "Fix the corners first." A pair's joined preview on Export shows "Fix the corners of both sides in Perspective first."
+While the corners cross or fold inward, every step after Perspective shows "Fix the corners in Perspective first." in the photo area instead of the photo, and Perspective's **Preview** shows "Fix the corners first." With a pair open, Export names the side to fix instead: "Fix the back’s corners in Perspective first." (MSG-82 has the front's words, the words for both sides, and Separately.)
 
 - Risk: medium
 - Check: eye
 - Layout: both
 - Added: 1.10 baseline
 - Changed: 1.10.0
-- Anchors: "Fix the corners in Perspective first.", "Fix the corners first.", "Fix the corners of both sides in Perspective first.", `#view`
-- Source: `js/app/view.js` (`draw`, `drawTogether`, `drawMessage`)
-- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app does this since 1.10.0.
+- Anchors: "Fix the corners in Perspective first.", "Fix the corners first.", "’s corners in Perspective first.", `#view`
+- Source: `js/app/view.js` (`draw`, `fixCornersWords`, `drawTogether`, `drawMessage`); `js/app/pair.js` (`pairFixWords`)
+- Ruling: R82. On Perspective itself the words read "Fix the corners first." (approved wording, tests/catalog/wording.md); elsewhere they stay "Fix the corners in Perspective first." The app does this since 1.10.0. R98. The photo area names the side too, "Fix the back’s corners in Perspective first." (or the front’s); "Fix the corners of both sides in Perspective first." only when both sides' corners are invalid. With a pair open on Export, the line under the photo names the side to fix in the same words whichever side is open ("Fix the back’s corners in Perspective first.", the front’s, or "Fix the corners of both sides in Perspective first."), so the photo area and the line always say the same (wording approved by Rich, tests/catalog/wording.md). The app does this since 1.10.0.
 - Cases: 3
 
 ### VIEW-14.1 With the corners crossed, the later steps show a message, for a person to judge   [eye]
@@ -785,7 +785,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the top-left corner ring past the bottom-right one, and let go | The outline crosses itself |
-| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | **Together** is chosen; no photo; in the middle of the photo area, in grey, "Fix the corners of both sides in Perspective first." |
+| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | **Together** is chosen; no photo; in the middle of the photo area, in grey, "Fix the back’s corners in Perspective first." |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

@@ -58,6 +58,7 @@ const {
   colorsAround,
   stageShare,
   drawnSource,
+  recordDrawnText,
 } = require('./support/photo-view.js');
 
 // The space around a fitted photo, in CSS px (view.js, FIT_PADDING_PX and CROP_FIT_PADDING_PX):
@@ -1006,19 +1007,6 @@ test('VIEW-13.1 Rotate shows the whole frame; Levels shows only the crop, for a 
   await check.eye('only the square inside the crop shows, filling the width of the photo area');
 });
 
-// Records, in the page, every line of text drawn on a canvas from the moment it opens, in
-// window.testDrawnTexts: the words in the photo area are drawn, so no element holds them.
-function recordDrawnText(page) {
-  return page.addInitScript(() => {
-    window.testDrawnTexts = [];
-    const fillText = CanvasRenderingContext2D.prototype.fillText;
-    CanvasRenderingContext2D.prototype.fillText = function recordFillText(text, ...rest) {
-      window.testDrawnTexts.push(String(text));
-      return fillText.call(this, text, ...rest);
-    };
-  });
-}
-
 // Records that the photo area shows no photo, only the stage and a line of text. drawnText:
 // the words the line must be, read from recordDrawnText's list, or null not to read them.
 async function checkMessageOnly(page, check, description, drawnText = null) {
@@ -1063,6 +1051,7 @@ test('VIEW-14.2 Preview with the corners crossed asks to fix them, for a person 
 
 test('VIEW-14.3 A pair\'s joined preview with one side\'s corners crossed, for a person to '
   + 'judge [phone]', async ({ page, check }, testInfo) => {
+  await recordDrawnText(page);
   const hand = await makePair(page, testInfo);
   await crossTheCorners(page, hand);
   await check('the back\'s outline crosses itself', async () => {
@@ -1072,8 +1061,10 @@ test('VIEW-14.3 A pair\'s joined preview with one side\'s corners crossed, for a
   await check('Together is chosen', async () => {
     await expect(outputSegment(page, 'together')).toHaveAttribute('aria-pressed', 'true');
   });
+  // Ruling R98: the words name the side whose corners are crossed.
   await checkMessageOnly(page, check,
-    'on Export, no photo, only "Fix the corners of both sides in Perspective first."');
+    'on Export, no photo, only "Fix the back’s corners in Perspective first."',
+    'Fix the back’s corners in Perspective first.');
 });
 
 test('VIEW-15.1 On Perspective the pointer is a hand, a move pointer on a handle, a crosshair '

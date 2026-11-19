@@ -190,7 +190,28 @@ function drawnSource(page, point, radiusPx) {
   }, { middle: point, radius: radiusPx, differenceMin: PIXEL_DIFFERENCE_MIN });
 }
 
+// Records, in the page, every line of text drawn on a canvas from the moment it opens, in
+// window.testDrawnTexts: the words in the photo area are drawn, so no element holds them. Call
+// it before the app is opened.
+function recordDrawnText(page) {
+  return page.addInitScript(() => {
+    window.testDrawnTexts = [];
+    const fillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function recordFillText(text, ...rest) {
+      window.testDrawnTexts.push(String(text));
+      return fillText.call(this, text, ...rest);
+    };
+  });
+}
+
+// The lines of text recordDrawnText has seen drawn since the last call, in order.
+function drawnTextsSoFar(page) {
+  return page.evaluate(() => window.testDrawnTexts.splice(0));
+}
+
 module.exports = {
+  recordDrawnText,
+  drawnTextsSoFar,
   drawnSource,
   FIRST_FINGER,
   SECOND_FINGER,

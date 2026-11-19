@@ -143,6 +143,13 @@ const WARNING_TIMEOUT_MS = 5000;
 // link, and the note gives the limit in force (R47).
 const APPROVED_CLAMP_NOTE = 'Scaled down to fit the 1 MP limit.';
 const APPROVED_BACK_CLAMP_NOTE = 'The back is scaled down to fit the 1 MP limit.';
+// The lowered long-side limit for PAIR-27.2, in px (the lowest a link may set), and ruling
+// R102's approved note for an image that limit scaled down, with the limit in force.
+const LOW_LONG_SIDE = 1000;
+const APPROVED_LONG_SIDE_NOTE = 'Scaled down to fit the 1000 px limit.';
+// A Together image scaled down to the long-side limit fills at least this fraction of it (the
+// engine keeps a pair 0.5% under a limit, and whole-pixel rounding).
+const LONG_SIDE_FILL_MIN = 0.99;
 // Ruling R26's approved size line when the back, not on screen, has invalid corners.
 const FIX_BACK_MESSAGE = 'Fix the back’s corners in Perspective first.';
 const STEPS = ['perspective', 'rotate', 'crop', 'levels', 'overlay', 'export'];
@@ -1882,6 +1889,32 @@ test('PAIR-27.1 A Together image over the canvas limit scales both cards down al
   await check('both cards shrunk by the same factor, keeping their shape; gap white', async () => {
     expect(Math.abs(joined[0] / full.width - scale)).toBeLessThan(SHAPE_TOLERANCE);
     expect(isAllWhite(image.means), 'white gap').toBe(true);
+  });
+});
+
+test('PAIR-27.2 A Together image over the long-side limit names that limit [desktop]', async ({
+  page,
+  check,
+}, testInfo) => {
+  // Upscaling on, so each card is 2000 px tall at Size 2000 before the limit: without it the
+  // picture a card is cut from is itself held to the limit, and two cards are no wider than it.
+  const lowLimitLink = `index.html?maxOutputPx=${LOW_LONG_SIDE}&export.allowUpscale=1`;
+  const hand = await makePair(page, testInfo, PORTRAIT_PAIR, lowLimitLink);
+  await goToStep(page, 'export', hand);
+  const sizes = await readoutSizes(page);
+  const [joined] = sizes;
+  await check('Together is selected; the size line gives one size, wider than tall, its width '
+    + 'at most 1000 px and within 1% of it', async () => {
+    await expect(segment(page, 'pairOutput', 'together')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#exportReadout')).toBeVisible();
+    expect(sizes, 'one size').toHaveLength(1);
+    expect(joined[0]).toBeGreaterThan(joined[1]);
+    expect(joined[0]).toBeLessThanOrEqual(LOW_LONG_SIDE);
+    expect(joined[0]).toBeGreaterThan(LOW_LONG_SIDE * LONG_SIDE_FILL_MIN);
+  });
+  await check(`under the size line, one note reads "${APPROVED_LONG_SIDE_NOTE}"`, async () => {
+    await expect(page.locator('#exportMessage .export-note:visible'))
+      .toHaveText([APPROVED_LONG_SIDE_NOTE]);
   });
 });
 
