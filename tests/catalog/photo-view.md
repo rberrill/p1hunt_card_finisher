@@ -444,17 +444,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## VIEW-09 Drag to pan
 
-Dragging an empty part of the photo moves it.
+Dragging an empty part of the photo moves it. A press that moves 4 px or less is not a drag: it leaves the photo exactly as it was, still fitted if it was fitted. Past 4 px the photo follows the finger from where it was pressed. The cases prove a 60 px drag, a tap that wobbles by 2 px and a drag that starts with a 2 px move.
 
 - Risk: high
 - Check: script, touch
 - Layout: both. Not on Overlay.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#view`
-- Source: `js/app/input.js` (`panGesture`, `onPointerMove`)
+- Source: `js/app/input.js` (`panGesture`, `onPointerMove`, `DRAG_THRESHOLD_PX`)
 - Ruling: R84. On Overlay the photo is locked: with no logo placed, every touch and the wheel do nothing. The app already does this.
-- Cases: 2
+- Cases: 3
 
 ### VIEW-09.1 Dragging an empty part of the photo moves it   [auto: phone, webkit]
 Before you start:
@@ -483,6 +483,31 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Drag the middle of the photo 60 px right and 40 px down, and let go | The photo does not move |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### VIEW-09.3 A tap that wobbles by 2 px moves nothing; a drag that goes on past 4 px moves the photo   [auto: phone]
+Script only
+Stand-in: the script puts a dispatched finger down and moves it exactly 2 px. No person can hold a finger's wobble to 2 px.
+
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px, with touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo just opened, on the Perspective step
+
+The photo area is the space between the top bar and the controls (the block of buttons and sliders under the photo). The crop box is the outlined square on the photo on the Crop step, with a handle on each corner and the middle of each side.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Crop** in the step tabs (the six tabs Perspective to Export, along the bottom) | The photo is 36 px from the photo area's edges on its tighter side; **Fit to screen** (four corner brackets) is not in the top bar |
+| 2 | Put one finger on the photo area's top-left (40 px in from its left edge and 60 px down from its top, above the crop box and away from its handles), slide it 2 px right and lift it | The photo has not moved or changed size; **Fit to screen** is still not in the top bar |
+| 3 | Tap **Rotate** in the step tabs | The straightened photo is 24 px from the edges on its tighter side, and centered on the other |
+| 4 | Tap **Crop** in the step tabs | The photo is 36 px from the edges on its tighter side, and centered on the other |
+| 5 | Put one finger on the same place, slide it 2 px right and keep it down | The photo has not moved or changed size; **Fit to screen** is still not in the top bar |
+| 6 | Slide the finger on, to 30 px right and 20 px down of where it went down, and lift it | The photo has moved 30 px right and 20 px down, at the same size; **Fit to screen** shows in the top bar |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

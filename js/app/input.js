@@ -269,6 +269,8 @@
     });
   }
 
+  // A pointer moved. With none down it only sets the mouse cursor; with one down it carries on
+  // the gesture the press began: the logo's on Overlay, a pinch, a pan, or a handle or crop drag.
   function onPointerMove(event) {
     if (!pointers.has(event.pointerId)) {
       hoverCursor(event);
@@ -297,7 +299,11 @@
     }
     if (gesture.type === 'pan') {
       if (gesture.comparing) return;
-      // The mouse's hand closes while it holds the photo; onPointerUp opens it again.
+      // Until the press has passed the drag threshold it is still a tap or a hold, so the view
+      // stays exactly as it was, still fitted. Past it, the photo follows the pointer, measured
+      // from where it was pressed.
+      if (!gesture.moved) return;
+      // The mouse's hand closes while it drags the photo; onPointerUp opens it again.
       if (event.pointerType === 'mouse') elements.canvas.style.cursor = 'grabbing';
       view.panX = gesture.startView.panX + point[0] - gesture.start[0];
       view.panY = gesture.startView.panY + point[1] - gesture.start[1];

@@ -12,6 +12,7 @@ const {
   openOptions,
   closeOptions,
   waitForStill,
+  nextFrames,
 } = require('./support/app.js');
 const {
   sendTouch,
@@ -92,6 +93,11 @@ const PAN_DY_PX = 40;
 // Where an empty part of the photo is, from the photo area's top-left, in CSS px: left of and
 // above the card in 01_chrome_flat_black.JPEG.
 const EMPTY_SPOT = { dx: 40, dy: 60 };
+// VIEW-09.3: how far a tap's finger wobbles, in CSS px (under input.js's DRAG_THRESHOLD_PX, 4),
+// and how far the drag that starts with that wobble goes on, from where the finger went down.
+const WOBBLE_PX = 2;
+const SHORT_PAN_DX_PX = 30;
+const SHORT_PAN_DY_PX = 20;
 // How far a corner is dragged before the second finger, and the second finger's start, in CSS px.
 const CORNER_DRAG_PX = 30;
 const SECOND_FINGER_GAP_PX = 100;
@@ -682,6 +688,63 @@ test('VIEW-09.2 On Overlay with no logo, a drag does nothing [phone]', async ({
   await hand.drag(middle, { x: middle.x + PAN_DX_PX, y: middle.y + PAN_DY_PX });
   await check('the photo does not move', async () => {
     expect(await viewNow(page)).toEqual(before);
+  });
+});
+
+test('VIEW-09.3 A tap that wobbles by 2 px moves nothing; a drag that goes on past 4 px moves '
+  + 'the photo [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOn(page, testInfo);
+  const fitButton = page.locator('#btnFit');
+  await goToStep(page, 'crop', hand);
+  await check('on Crop the photo is 36 px from the edges on its tighter side; Fit to screen is '
+    + 'not in the top bar', async () => {
+    await expectFitted(page, CROP_GAP_PX);
+    await expect(fitButton).toBeHidden();
+  });
+  const fitted = await viewNow(page);
+  // On Crop this spot is above the crop box, about 120 px from its nearest handle (a handle
+  // takes a press within 24 px), so a press there is a pan.
+  const start = await pointInPhoto(page, EMPTY_SPOT.dx, EMPTY_SPOT.dy);
+  const wobbled = { x: start.x + WOBBLE_PX, y: start.y };
+  await fingerDown(page, FIRST_FINGER, start);
+  await sendTouch(page, '#view', 'pointermove', wobbled, FIRST_FINGER);
+  await fingerUp(page, FIRST_FINGER, wobbled);
+  // Fit to screen is shown or hidden when the photo is next drawn.
+  await nextFrames(page);
+  await check('the photo has not moved or changed size; Fit to screen is still not in the top '
+    + 'bar', async () => {
+    expect(await viewNow(page)).toEqual(fitted);
+    await expect(fitButton).toBeHidden();
+  });
+  await goToStep(page, 'rotate', hand);
+  await check('on Rotate the straightened photo is 24 px from the edges on its tighter side, '
+    + 'and centered on the other', () => expectFitted(page, FIT_GAP_PX));
+  await goToStep(page, 'crop', hand);
+  await check('on Crop the photo is 36 px from the edges on its tighter side, and centered on '
+    + 'the other', async () => {
+    await expectFitted(page, CROP_GAP_PX);
+    expect(await viewNow(page)).toEqual(fitted);
+  });
+  await fingerDown(page, FIRST_FINGER, start);
+  await sendTouch(page, '#view', 'pointermove', wobbled, FIRST_FINGER);
+  await nextFrames(page);
+  await check('with the finger down 2 px from where it landed, the photo has not moved or '
+    + 'changed size; Fit to screen is still not in the top bar', async () => {
+    expect(await viewNow(page)).toEqual(fitted);
+    await expect(fitButton).toBeHidden();
+  });
+  const end = await slideFinger(page, FIRST_FINGER, wobbled,
+    SHORT_PAN_DX_PX - WOBBLE_PX, SHORT_PAN_DY_PX);
+  await fingerUp(page, FIRST_FINGER, end);
+  await nextFrames(page);
+  await check('the photo has moved 30 px right and 20 px down, at the same size; Fit to screen '
+    + 'shows in the top bar', async () => {
+    const after = await viewNow(page);
+    expect(after.panX - fitted.panX).toBeCloseTo(SHORT_PAN_DX_PX, 3);
+    expect(after.panY - fitted.panY).toBeCloseTo(SHORT_PAN_DY_PX, 3);
+    expect(after.zoom).toBe(fitted.zoom);
+    expect(after.isFitted).toBe(false);
+    await expect(fitButton).toBeVisible();
   });
 });
 
