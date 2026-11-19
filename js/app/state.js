@@ -384,7 +384,9 @@
       // The edits were saved for a photo of another size, so none of them were used (R23).
       toast('Full edit history could not be restored, your photo has been opened fresh.', 'warn');
     }
-    runDetect({ auto: true, keepCorners: resumed });
+    // Resumed corners are kept, except ones still on the rectangle every photo starts on: no
+    // hand and no search placed those, so this search does (ruling R101).
+    runDetect({ auto: true, keepCorners: resumed && !areCornersAtStart() });
     return true;
   }
 
@@ -397,7 +399,8 @@
   // so it doesn't count as a new run for detection's warnings (see takeDetection).
   // A run is dropped, with no result and no message, when a newer one starts or its photo is
   // no longer the open one. One dropped because a pair's side was left stays in
-  // detection.pending, and detectReopenedSide runs it again (ruling R45).
+  // detection.pending, and detectReopenedSide runs it again (ruling R45); one a pair's export
+  // would drop, by decoding the open photo again, is run again by detectReloadedPhoto.
   async function runDetect(options = {}) {
     const { auto = false, keepCorners = false, seed = null, isForOverlay = false } = options;
     if (!app.img) return;
@@ -486,13 +489,18 @@
     if (detection === app.detection) CF.syncUI();
   }
 
+  // True when the open photo's corners are exactly on the rectangle every photo starts on:
+  // neither a hand nor a search has placed them.
+  function areCornersAtStart() {
+    const start = insetCorners(app.img.width, app.img.height);
+    return JSON.stringify(app.state.corners) === JSON.stringify(start);
+  }
+
   // True when the open photo's corners are where a hand put them: on neither a candidate of
   // its last finished run nor the rectangle every photo starts on. (wasMovedByHand can't say:
   // it is set before a photo's first run ends, and every run clears it.)
   function areCornersHandPlaced() {
-    const start = insetCorners(app.img.width, app.img.height);
-    const isAtStart = JSON.stringify(app.state.corners) === JSON.stringify(start);
-    return !app.detection.isOnCandidate && !isAtStart;
+    return !app.detection.isOnCandidate && !areCornersAtStart();
   }
 
   // Runs again a search that was thrown away before it ended (pending: its options, from
@@ -511,12 +519,27 @@
   // Detection for a pair's side that has just been opened again (switchSide).
   // A run that had not ended when the side was left was dropped, so it runs again (see
   // detectAgain).
-  // A side restored from a session has no candidates yet (for Candidate and snapping): its run
-  // keeps the resumed corners.
+  // A side restored from a session has never been searched (no run has started on its record),
+  // so it has no candidates yet (for Candidate and snapping): its run keeps the resumed
+  // corners, except ones still on the rectangle every photo starts on, which it places
+  // (ruling R101). A side whose search failed is searched again, and keeps its corners.
   function detectReopenedSide() {
+    const detection = app.detection;
+    if (detection.pending) {
+      detectAgain(detection.pending);
+    } else if (!detection.last) {
+      const isRestored = detection.running === 0;
+      runDetect({ auto: true, keepCorners: !isRestored || !areCornersAtStart() });
+    }
+  }
+
+  // Detection for the open photo once a pair's export has decoded it again (reloadOpenPhoto in
+  // pair.js). A search that had not ended was started on the photo object the export let go
+  // of, so runDetect drops it and it would never place this side's corners: it runs again on
+  // the new one, as a search cut short by a side switch does (see detectAgain; ruling R45).
+  function detectReloadedPhoto() {
     const pending = app.detection.pending;
     if (pending) detectAgain(pending);
-    else if (!app.detection.last) runDetect({ auto: true, keepCorners: true });
   }
 
   // Detection for the debug overlay as it is turned on (the Debug overlay switch, or the tuning
@@ -630,6 +653,7 @@
     openFile,
     runDetect,
     detectReopenedSide,
+    detectReloadedPhoto,
     detectForDebugOverlay,
     findCardAt,
     useCandidate,

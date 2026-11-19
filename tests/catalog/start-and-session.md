@@ -486,9 +486,9 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-## STA-09 Resume keeps the saved corners
+## STA-09 Resume keeps corners that were placed, and places ones that never were
 
-After a resume, card detection still runs, but only to fill the **Candidate** choices and the snap targets; it never moves the resumed corners. **Candidate** shows a number, and the line its confidence, only when the resumed corners sit on one of the outlines found; with no number showing, the next tap goes to the first outline, the best pick.
+After a resume, card detection still runs. Corners that a person or a search placed stay where they were saved, and the search only fills the **Candidate** choices and the snap targets; corners still exactly on the rectangle every photo starts on were never placed, so the search puts them on the card, with no undo step. **Candidate** shows a number, and the line its confidence, only when the resumed corners sit on one of the outlines found; with no number showing, the next tap goes to the first outline, the best pick.
 
 - Risk: medium
 - Check: script
@@ -496,9 +496,9 @@ After a resume, card detection still runs, but only to fill the **Candidate** ch
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: `#btnResume`, `#toolCandidate`
-- Source: `js/app/state.js` (`openFile`, `runDetect`, `noteDetectedCorners`)
-- Ruling: R6. Clear the number and the confidence when the corners are moved by hand. With no number showing (corners moved by hand, also after Resume), the next tap on Candidate goes to 1/N, the best pick. The app does this since 1.10.0.
-- Cases: 2
+- Source: `js/app/state.js` (`openFile`, `areCornersAtStart`, `runDetect`, `noteDetectedCorners`)
+- Ruling: R6. Clear the number and the confidence when the corners are moved by hand. With no number showing (corners moved by hand, also after Resume), the next tap on Candidate goes to 1/N, the best pick. The app does this since 1.10.0. R101. Corners still exactly on the starting rectangle are placed by the search on Resume, with no undo step; corners anywhere else are kept. The app does this since 1.10.0.
+- Cases: 3
 
 ### STA-09.1 Resume keeps corners placed by hand   [auto: phone, webkit]
 Before you start:
@@ -533,6 +533,28 @@ Before you start:
 | 2 | Wait two seconds, then reload the page | The card offers "Resume IMG_9136.JPEG?" |
 | 3 | Tap **Resume** | The photo opens with its handles on the card, where they were |
 | 4 | Look at **Candidate** and the line again, once the photo has settled | **Candidate** reads 1/3, and the line reads the same confidence as in row 1 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### STA-09.3 Resume puts corners still on the starting rectangle on the card, with no undo step   [auto: phone, webkit]
+Script only
+Stand-in: the script holds the photo's search open, and the reload cuts it off before it ends, so the corners saved for Resume are still on the rectangle every photo starts on. A search takes about half a second, and nothing a person can do slows it, so a person can't wait for the edits to be saved and reload inside it. Before the case starts, the script notes where the corners land when the photo is opened on its own.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window, in a private window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: IMG_9136.JPEG from samples/ (1498 × 2098 px)
+- Starting screen: IMG_9136.JPEG open (with **Open photo**), on the Perspective step, its four corner handles on the card
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Open** (the folder at the top left; on a phone it has no label) and choose IMG_9136.JPEG again | The photo opens again on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Wait two seconds, then reload the page (the script has not let the search end) | The card offers "Resume IMG_9136.JPEG?" |
+| 3 | Tap **Resume** | The photo opens on the Perspective step |
+| 4 | Look at the outline and at **Candidate** in the row of tools, once the photo has settled | The four corners are on the card's corners, where they land when this photo is opened on its own, and **Candidate** reads 1/3 |
+| 5 | Look at **Undo** (the arrow curving left, at the top right) | **Undo** is greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

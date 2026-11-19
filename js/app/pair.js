@@ -510,6 +510,8 @@
     if (app.img.el) return true;
     try {
       app.img = await CF.ImageSource.load(app.file, app.img.name);
+      // A search still running was started on the photo object just replaced.
+      CF.detectReloadedPhoto();
       return true;
     } catch (error) {
       console.warn('[card-finisher] photo not reloaded after the pair export:', error);

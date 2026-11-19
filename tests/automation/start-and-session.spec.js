@@ -50,6 +50,7 @@ const {
   slowDecodeOf,
   pageNowMs,
 } = require('./support/start-and-session.js');
+const { holdNextSearch } = require('./support/perspective.js');
 
 const PHOTO = 'IMG_9136.JPEG';
 const SECOND_PHOTO = 'IMG_9075.JPEG';
@@ -825,6 +826,70 @@ test('STA-09.2 Resume with corners nobody moved keeps Candidate\'s number and th
     await expect(page.locator('#toolCandidate')).toBeEnabled();
     expect(await candidateAndConfidence(page)).toEqual(before);
     expect((await editState(page)).corners).toEqual(detectedCorners);
+  });
+});
+
+// The rectangle every photo's corners start on, a fifth in from each edge (CONFIG.defaultInsetPct),
+// in photo px, top-left first, clockwise.
+function startingRectangle(width, height) {
+  return [
+    [width * 0.2, height * 0.2],
+    [width * 0.8, height * 0.2],
+    [width * 0.8, height * 0.8],
+    [width * 0.2, height * 0.8],
+  ];
+}
+
+// Expects two lists of [x, y] photo points to match within a hundredth of a photo px.
+function expectSameCorners(actual, expected) {
+  expect(actual).toHaveLength(expected.length);
+  actual.forEach((point, index) => {
+    expect(Math.abs(point[0] - expected[index][0])).toBeLessThan(0.01);
+    expect(Math.abs(point[1] - expected[index][1])).toBeLessThan(0.01);
+  });
+}
+
+test('STA-09.3 Resume puts corners still on the starting rectangle on the card, with no undo '
+  + 'step [phone] [webkit]', async ({ page, check }, testInfo) => {
+  // Before the case starts: the photo opened on its own, to learn where its corners land.
+  const hand = await startWithPhoto(page, testInfo);
+  const detectedCorners = (await editState(page)).corners;
+  // Script only: the next search is held open and never ends (the reload cuts it off), so the
+  // corners saved for Resume are the ones every photo starts on.
+  await holdNextSearch(page);
+  await pickWith(page, hand, page.locator('#btnOpen'), PHOTO);
+  await page.waitForFunction(() => {
+    const app = window.__straightener.app;
+    const isNew = !!app.img && app.img !== window.testPhotoBefore;
+    return isNew && !!app.geometry && app.detection.message === 'Detecting…';
+  });
+  const startCorners = (await editState(page)).corners;
+  await check('the photo opens again on Perspective, its outline on the rectangle a fifth in '
+    + 'from each edge, and the line reads "Detecting…"', async () => {
+    expect(await stepNow(page)).toBe('perspective');
+    expectSameCorners(startCorners, startingRectangle(PHOTO_WIDTH, PHOTO_HEIGHT));
+    await expect(page.locator('#perspectiveStatus .status-text')).toHaveText('Detecting…');
+  });
+  await waitForSaved(page, { name: PHOTO, tab: 'perspective', corners: startCorners });
+  const wasStillSearching = await page.evaluate(() => (
+    window.__straightener.app.detection.isSearching));
+  await reloadToStart(page);
+  await check('the card offers "Resume IMG_9136.JPEG?" (the search had not ended at the reload)',
+    async () => {
+      expect(wasStillSearching).toBe(true);
+      await expect(page.locator('#resumeName')).toHaveText(PHOTO);
+    });
+  await resumeAs(page, hand, PHOTO);
+  await check('the photo opens on the Perspective step', async () => {
+    expect(await stepNow(page)).toBe('perspective');
+  });
+  await check('once settled the four corners are on the card\'s corners, where they land when '
+    + 'this photo is opened on its own, and Candidate reads 1/3', async () => {
+    expectSameCorners((await editState(page)).corners, detectedCorners);
+    await expect(page.locator('#toolCandidate .tool-value')).toHaveText('1/3');
+  });
+  await check('Undo is greyed out', async () => {
+    await expect(page.locator('#btnUndo')).toBeDisabled();
   });
 });
 

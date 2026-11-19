@@ -20,6 +20,8 @@ const {
   waitInPage,
   viewNow,
   waitForDetection,
+  stepNow,
+  savedSize,
 } = require('./support/app.js');
 const {
   PHOTO,
@@ -72,6 +74,8 @@ const {
   switchTo,
   recordToasts,
   toastsSoFar,
+  downloadAll,
+  readoutSizes,
 } = require('./support/front-and-back.js');
 
 // The plain picture with no card in it (tests/fixtures/plain-grey.png, 1200 × 1600 px) and
@@ -412,6 +416,99 @@ test('PER-03.5 A search that fails after its side is left shows no message, and 
       expectSameCorners(await cornersNow(page), backFound);
       const shown = await toastsSoFar(page);
       expect(shown.filter(message => message.kind === 'error')).toEqual([]);
+    });
+});
+
+// The name the app gives the portrait pair's joined picture.
+const PAIR_FILE_NAME = '14_front_portrait_raw_white-pair.jpg';
+// Export's Size as a photo opens, in px: a joined picture this long or longer is saved without
+// the Upscale question.
+const EXPORT_SIZE_PX = 2000;
+
+// PER-03.6 and PER-03.7: with the back's first search still held open, goes to Export and
+// taps Download, then lets the held search end and waits two seconds. The held search's own
+// result is thrown away; it is held only so that a search is running all through the save.
+// What the corners do afterwards is the work of the search the app runs again. The file saved
+// must be the joined picture at the size the size line gave before the tap. Returns that
+// size, as [width, height] in px.
+async function downloadPairStillSearching(page, hand, check) {
+  await goToStep(page, 'export', hand);
+  const [sizeBefore] = await readoutSizes(page);
+  await check('the Export step shows, with Together in white beside the size line, which gives '
+    + 'a size 2000 px or more on its long side', async () => {
+    expect(await stepNow(page)).toBe('export');
+    const together = page.locator('#pairOutput .segment[data-value="together"]');
+    await expect(together).toHaveAttribute('aria-pressed', 'true');
+    expect(Math.max(...sizeBefore)).toBeGreaterThanOrEqual(EXPORT_SIZE_PX);
+  });
+  const wasSearching = await page.evaluate(() => window.__straightener.app.detection.isSearching);
+  const [saved] = await downloadAll(page, hand, 1);
+  await check('one file is saved, the joined picture at the size the size line gave (the '
+    + 'back\'s search was still running at the tap)', async () => {
+    expect(wasSearching).toBe(true);
+    expect(saved.name).toBe(PAIR_FILE_NAME);
+    expect(await savedSize(page, saved.file)).toEqual(sizeBefore);
+  });
+  await releaseSearch(page);
+  await page.waitForTimeout(SEARCH_SETTLE_MS);
+  await waitForDetection(page);
+  return sizeBefore;
+}
+
+test('PER-03.6 A search still running when a pair is downloaded runs again, and the side\'s '
+  + 'corners land on the card [phone]', async ({ page, check }, testInfo) => {
+  const { hand, backFound } = await addBackStillSearching(page, check, testInfo);
+  const sizeBefore = await downloadPairStillSearching(page, hand, check);
+  await check('the size line gives another size: the back\'s corners have moved; and Next card '
+    + 'does not show', async () => {
+    const [sizeAfter] = await readoutSizes(page);
+    expect(sizeAfter).not.toEqual(sizeBefore);
+    // The edits on screen are no longer the ones the file was made from.
+    await expect(page.locator('#btnNextCard')).toBeHidden();
+  });
+  await goToStep(page, 'perspective', hand);
+  await check('the four corners are on the back card\'s corners, and Candidate reads 1/3',
+    async () => {
+      expectSameCorners(await cornersNow(page), backFound);
+      await expect(candidateNumber(page)).toHaveText('1/3');
+    });
+  await check('the line reads NUDGE and Corner 1 of 4 with Confidence at its right, and Undo is '
+    + 'greyed out', async () => {
+    expect(await isNudgeLineNow(page)).toBe(true);
+    await expect(page.locator('#perspectiveLine .line-readout')).toHaveText(/^Confidence \d+%$/);
+    await expect(page.locator('#btnUndo')).toBeDisabled();
+  });
+});
+
+test('PER-03.7 A corner dragged before a pair is downloaded stays through the search that runs '
+  + 'again, and Candidate goes to the card [phone]', async ({ page, check }, testInfo) => {
+  const { hand, backFound } = await addBackStillSearching(page, check, testInfo);
+  const topLeft = await handleOnPage(page, TOP_LEFT);
+  await hand.drag(topLeft, offsetBy(topLeft, 40, 40));
+  await check('that corner has moved 40 px right and 40 px down', async () => {
+    expectMovedBy(await handleOnPage(page, TOP_LEFT), topLeft, 40, 40);
+  });
+  const dragged = await cornersNow(page);
+  const sizeBefore = await downloadPairStillSearching(page, hand, check);
+  await check('the size line still gives the size it gave before the download, and Next card '
+    + 'shows', async () => {
+    const [sizeAfter] = await readoutSizes(page);
+    expect(sizeAfter).toEqual(sizeBefore);
+    await expect(page.locator('#btnNextCard')).toBeVisible();
+  });
+  await goToStep(page, 'perspective', hand);
+  const candidate = page.locator('#toolCandidate');
+  await check('the corners are still as they were after the drag in row 2; Candidate shows no '
+    + 'number and is not greyed out', async () => {
+    expectSameCorners(await cornersNow(page), dragged);
+    await expect(candidateNumber(page)).toBeHidden();
+    await expect(candidate).toBeEnabled();
+  });
+  await hand.tap(candidate);
+  await check('the four corners go to the back card\'s corners, and Candidate reads 1/3',
+    async () => {
+      expectSameCorners(await cornersNow(page), backFound);
+      await expect(candidateNumber(page)).toHaveText('1/3');
     });
 });
 

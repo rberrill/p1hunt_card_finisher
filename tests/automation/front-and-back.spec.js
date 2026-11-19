@@ -80,6 +80,7 @@ const { typeAngle, angleText } = require('./support/rotate.js');
 const { levelsDot } = require('./support/levels.js');
 const { selectedPreset } = require('./support/crop.js');
 const { fixturePath } = require('./support/edits-files.js');
+const { holdNextSearch } = require('./support/perspective.js');
 
 const FRONT = PORTRAIT_PAIR.front;
 const BACK = PORTRAIT_PAIR.back;
@@ -2819,5 +2820,134 @@ test('PAIR-43.1 The first switch to a resumed side finds its card but leaves its
   await hand.tap(candidate);
   await check('the corners jump to another shape detection found', async () => {
     expect((await editState(page)).corners).not.toEqual(draggedCorners);
+  });
+});
+
+// How close two photo positions must be, in photo px, to count as the same place.
+const PHOTO_TOLERANCE_PX = 0.01;
+
+// Expects two lists of [x, y] photo points to match within PHOTO_TOLERANCE_PX.
+function expectSameCorners(actual, expected) {
+  expect(actual).toHaveLength(expected.length);
+  actual.forEach((point, index) => {
+    expect(Math.abs(point[0] - expected[index][0])).toBeLessThan(PHOTO_TOLERANCE_PX);
+    expect(Math.abs(point[1] - expected[index][1])).toBeLessThan(PHOTO_TOLERANCE_PX);
+  });
+}
+
+// Waits until a pair's `side` is open, whether or not its search has ended.
+function waitForSideOpen(page, side) {
+  return page.waitForFunction(wanted => {
+    const app = window.__straightener.app;
+    return !!app.pair && app.pair.current === wanted && !app.isSwitching;
+  }, side);
+}
+
+// Candidate's number in Perspective's row of tools ("1/3").
+const candidateNumber = page => page.locator('#toolCandidate .tool-value');
+
+// The start of PAIR-43.2 and PAIR-43.3. Opens the back on its own to learn where its search
+// puts the corners, then opens the front and adds the back with the back's first search held
+// open (holdNextSearch) and never let go: the reload cuts it off, so the back's corners are
+// stored on the rectangle every photo starts on. Returns the hand, the front's corners and the
+// back's corners as found on its own. The back is open on Perspective, still searching.
+async function addBackNeverSearched(page, check, testInfo) {
+  const hand = handFor(page, testInfo);
+  await openApp(page);
+  await openPhoto(page, BACK);
+  const backFound = (await editState(page)).corners;
+  await openPhoto(page, FRONT);
+  const frontCorners = (await editState(page)).corners;
+  await goToStep(page, 'export', hand);
+  await holdNextSearch(page);
+  await chooseInPicker(page, hand, page.locator('#btnAddBack'), BACK);
+  await waitForSideOpen(page, 'back');
+  await check('the back opens on Perspective, its outline on the rectangle a fifth in from each '
+    + 'edge, and the line reads "Detecting…"', async () => {
+    expect(await stepNow(page)).toBe('perspective');
+    const { corners, source } = await editState(page);
+    expectSameCorners(corners, [
+      [source.width * 0.2, source.height * 0.2],
+      [source.width * 0.8, source.height * 0.2],
+      [source.width * 0.8, source.height * 0.8],
+      [source.width * 0.2, source.height * 0.8],
+    ]);
+    await expect(page.locator('#perspectiveStatus .status-text')).toHaveText('Detecting…');
+  });
+  return { hand, frontCorners, backFound };
+}
+
+// PAIR-43.2 and PAIR-43.3: waits until the pair is stored, checks the search was never let
+// end, reloads the page and checks what Resume offers.
+async function reloadNeverSearched(page, check) {
+  await waitUntilPairStored(page);
+  const backSearch = await page.evaluate(() => {
+    const app = window.__straightener.app;
+    const detection = app.pair.current === 'back' ? app.detection : app.pair.other.detection;
+    return { hasResult: !!detection.last, isOwed: !!detection.pending };
+  });
+  await reloadToResume(page);
+  await check(`the start screen offers Resume, naming ${FRONT} + ${BACK} (the back's search had `
+    + 'not ended at the reload)', async () => {
+    expect(backSearch).toEqual({ hasResult: false, isOwed: true });
+    await expect(page.locator('#resumeName')).toHaveText(`${FRONT} + ${BACK}`);
+  });
+}
+
+test('PAIR-43.2 The first switch to a resumed side whose corners are still on the starting '
+  + 'rectangle puts them on the card [phone]', async ({ page, check }, testInfo) => {
+  const { hand, frontCorners, backFound } = await addBackNeverSearched(page, check, testInfo);
+  await hand.tap(sideButton(page, 'front'));
+  await waitForSideOpen(page, 'front');
+  await check('the front opens on Perspective, its corners on the front card', async () => {
+    expect(await stepNow(page)).toBe('perspective');
+    expect((await editState(page)).corners).toEqual(frontCorners);
+  });
+  await reloadNeverSearched(page, check);
+  await resume(page, hand, FRONT, 'front');
+  await check('the front opens on Perspective, with Front in white, its corners where they were',
+    async () => {
+      expect(await stepNow(page)).toBe('perspective');
+      await expect(sideButton(page, 'front')).toHaveAttribute('aria-pressed', 'true');
+      expect((await editState(page)).corners).toEqual(frontCorners);
+    });
+  await switchTo(page, hand, 'back');
+  await check('the back opens on Perspective; once settled its four corners are on the back '
+    + 'card\'s corners, and Candidate reads 1/3', async () => {
+    expect(await stepNow(page)).toBe('perspective');
+    expectSameCorners((await editState(page)).corners, backFound);
+    await expect(candidateNumber(page)).toHaveText('1/3');
+  });
+  await check('Undo is greyed out', async () => {
+    await expect(page.locator('#btnUndo')).toBeDisabled();
+  });
+});
+
+test('PAIR-43.3 Resume puts the open side\'s corners on the card when they are still on the '
+  + 'starting rectangle, and keeps the waiting side\'s [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const { hand, frontCorners, backFound } = await addBackNeverSearched(page, check, testInfo);
+  await reloadNeverSearched(page, check);
+  await resume(page, hand, BACK, 'back');
+  await check('the back opens on Perspective, with Back in white', async () => {
+    expect(await stepNow(page)).toBe('perspective');
+    await expect(sideButton(page, 'back')).toHaveAttribute('aria-pressed', 'true');
+  });
+  await check('once settled the back\'s four corners are on the back card\'s corners, and '
+    + 'Candidate reads 1/3', async () => {
+    expectSameCorners((await editState(page)).corners, backFound);
+    await expect(candidateNumber(page)).toHaveText('1/3');
+  });
+  await check('Undo is greyed out', async () => {
+    await expect(page.locator('#btnUndo')).toBeDisabled();
+  });
+  await switchTo(page, hand, 'front');
+  await check('the front opens on Perspective; its corners are where they were, on the front '
+    + 'card, and Candidate reads 1/3', async () => {
+    expect(await stepNow(page)).toBe('perspective');
+    expect((await editState(page)).corners).toEqual(frontCorners);
+    await expect(candidateNumber(page)).toHaveText('1/3');
   });
 });

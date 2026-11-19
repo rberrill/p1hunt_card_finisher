@@ -1990,16 +1990,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## PAIR-43 Detection for a resumed side
 
-A side brought back by Resume has no detection results, so the first switch to it runs detection quietly, keeping its corners where they are.
+A side brought back by Resume has no detection results: the side that was open is searched as it opens, and the waiting side quietly at the first switch to it. Corners that were placed stay where they are; corners still exactly on the rectangle every photo starts on were never placed, so that search puts them on the card, with no undo step.
 
 - Risk: low
 - Check: script
 - Layout: both. No difference.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#toolCandidate`, `#sideSwitch`
-- Source: `js/app/pair.js` (`switchSide`), `js/app/state.js` (`runDetect`)
-- Cases: 1
+- Source: `js/app/pair.js` (`switchSide`, `restoredSide`), `js/app/state.js` (`openFile`, `detectReopenedSide`, `areCornersAtStart`, `runDetect`)
+- Ruling: R101. Corners still exactly on the starting rectangle are placed by the search on Resume, with no undo step; corners anywhere else are kept. The app does this since 1.10.0.
+- Cases: 3
 
 ### PAIR-43.1 The first switch to a resumed side finds its card but leaves its corners alone   [auto: phone]
 Before you start:
@@ -2020,6 +2021,56 @@ Before you start:
 | 5 | Tap **Resume** | The back opens on Perspective, with **Back** in white |
 | 6 | Tap **Front** in the top bar | The front opens on Perspective; within a second **Candidate** can be tapped again; the top-left handle is still 40 px left of the card's corner; **Undo** (the arrow curving left, at the top right) is greyed out |
 | 7 | Tap **Candidate** | The corners jump to another shape detection found: detection ran for the front |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-43.2 The first switch to a resumed side whose corners are still on the starting rectangle puts them on the card   [auto: phone]
+Script only
+Stand-in: the script holds the back's first search open, and the reload cuts it off before it ends, so the back's corners are stored still on the rectangle every photo starts on. A search takes about half a second, and nothing a person can do slows it, so a person can't switch sides, wait for the pair to be saved and reload inside it. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+
+**Candidate** is the tool in Perspective's tool row that steps through the shapes detection found.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Tap **Front** in the top bar, while the line still reads "Detecting…" | The front opens on Perspective, its corners on the front card |
+| 3 | Wait two seconds, then reload the page (the script has not let the back's search end) | The start screen offers **Resume**, naming 14_front_portrait_raw_white.JPEG + 14_back_portrait_raw_white.JPEG |
+| 4 | Tap **Resume** | The front opens on Perspective, with **Front** in white, its corners where they were |
+| 5 | Tap **Back** in the top bar | The back opens on Perspective; once it has settled, its four corners are on the back card's corners, where they land when this photo is opened on its own, and **Candidate** reads 1/3 |
+| 6 | Look at **Undo** (the arrow curving left, at the top right) | **Undo** is greyed out |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### PAIR-43.3 Resume puts the open side's corners on the card when they are still on the starting rectangle, and keeps the waiting side's   [auto: phone]
+Script only
+Stand-in: the script holds the back's first search open, and the reload cuts it off before it ends, so the back's corners are stored still on the rectangle every photo starts on. A search takes about half a second, and nothing a person can do slows it, so a person can't wait for the pair to be saved and reload inside it. Before the case starts, the script opens the back on its own and notes where its corners land.
+
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the front open on its own, on the Export step
+
+**Candidate** is the tool in Perspective's tool row that steps through the shapes detection found.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Add back** and choose 14_back_portrait_raw_white.JPEG | The back opens on the Perspective step, its outline on the rectangle a fifth in from each edge, and the line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo, or in the panel at the right on a wide screen) reads "Detecting…" |
+| 2 | Wait two seconds, then reload the page (the script has not let the back's search end) | The start screen offers **Resume**, naming 14_front_portrait_raw_white.JPEG + 14_back_portrait_raw_white.JPEG |
+| 3 | Tap **Resume** | The back opens on Perspective, with **Back** in white |
+| 4 | Look at the outline and at **Candidate**, once the photo has settled | The back's four corners are on the back card's corners, where they land when this photo is opened on its own, and **Candidate** reads 1/3 |
+| 5 | Look at **Undo** (the arrow curving left, at the top right) | **Undo** is greyed out |
+| 6 | Tap **Front** in the top bar | The front opens on Perspective; its corners are where they were, on the front card, and **Candidate** reads 1/3 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
