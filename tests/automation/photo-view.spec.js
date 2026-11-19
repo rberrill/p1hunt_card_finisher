@@ -60,7 +60,8 @@ const {
   drawnSource,
 } = require('./support/photo-view.js');
 
-// The space around a fitted photo, in CSS px (view.js, fitView): 24, and 36 on Crop.
+// The space around a fitted photo, in CSS px (view.js, FIT_PADDING_PX and CROP_FIT_PADDING_PX):
+// 24, and 36 on Crop.
 const FIT_GAP_PX = 24;
 const CROP_GAP_PX = 36;
 // How close two page measurements must be, in CSS px.
@@ -223,7 +224,6 @@ test('VIEW-01.1 The photo opens fitted, with 24 px around it [phone]', async ({
 
 test('VIEW-01.2 Crop opened first leaves 36 px, and Rotate then fits its own 24 px [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-295');
     const hand = await startOn(page, testInfo);
     await goToStep(page, 'crop', hand);
     await check('on Crop the photo is 36 px from the edges on its tighter side',
@@ -235,7 +235,6 @@ test('VIEW-01.2 Crop opened first leaves 36 px, and Rotate then fits its own 24 
 
 test('VIEW-01.3 Rotate opened first leaves 24 px, and Crop then fits its own 36 px [phone]',
   async ({ page, check }, testInfo) => {
-    test.fail(true, 'BUG-295');
     const hand = await startOn(page, testInfo);
     await goToStep(page, 'rotate', hand);
     await check('on Rotate the straightened photo is 24 px from the edges on its tighter side',
@@ -244,6 +243,38 @@ test('VIEW-01.3 Rotate opened first leaves 24 px, and Crop then fits its own 36 
     await check('on Crop the photo is 36 px from the edges on its tighter side, and centered on '
       + 'the other', () => expectFitted(page, CROP_GAP_PX));
   });
+
+test('VIEW-01.4 After a zoom kept from Rotate, Fit to screen on Crop leaves 36 px, and Rotate '
+  + 'then fits its own 24 px [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOn(page, testInfo);
+  await goToStep(page, 'rotate', hand);
+  await check('on Rotate the straightened photo is 24 px from the edges on its tighter side',
+    () => expectFitted(page, FIT_GAP_PX));
+  const rotateFitted = await viewNow(page);
+  await pinchMiddle(page);
+  const rotateView = await viewNow(page);
+  await check('the photo zooms in to twice its fitted size; Fit to screen shows', async () => {
+    expect(rotateView.isFitted).toBe(false);
+    expect(rotateView.zoom / rotateFitted.zoom).toBeCloseTo(PINCH_END_PX / PINCH_START_PX, 5);
+    await expect(page.locator('#btnFit')).toBeVisible();
+  });
+  await goToStep(page, 'crop', hand);
+  await check('Crop shows the photo zoomed exactly as on Rotate; Fit to screen still shows',
+    async () => {
+      expect(await viewNow(page)).toEqual(rotateView);
+      await expect(page.locator('#btnFit')).toBeVisible();
+    });
+  await hand.tap(page.locator('#btnFit'));
+  await check('the photo is 36 px from the edges on its tighter side, and centered on the '
+    + 'other; Fit to screen has gone', async () => {
+    await expectFitted(page, CROP_GAP_PX);
+    expect((await viewNow(page)).isFitted).toBe(true);
+    await expect(page.locator('#btnFit')).toBeHidden();
+  });
+  await goToStep(page, 'rotate', hand);
+  await check('on Rotate the straightened photo is 24 px from the edges on its tighter side, '
+    + 'and centered on the other', () => expectFitted(page, FIT_GAP_PX));
+});
 
 test('VIEW-02.1 Perspective keeps its zoom; Rotate and Crop share theirs [phone]', async ({
   page,

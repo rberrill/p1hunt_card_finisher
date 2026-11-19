@@ -14,14 +14,18 @@
   const MAX_ZOOM = 64;
   // The dash of an invalid corner outline, in CSS px: 7 on, 5 off (frame P12).
   const INVALID_QUAD_DASH_PX = [7, 5];
+  // The space left around a fitted photo, in CSS px, and the wider space Crop leaves around the
+  // straightened frame.
+  const FIT_PADDING_PX = 24;
+  const CROP_FIT_PADDING_PX = 36;
 
   /* ---------- views (zoom and pan) ----------
      A view maps world (image) coordinates to the screen in CSS px:
      screen = world · zoom + (panX, panY). `auto` marks a view that still fits the photo, so a
-     resize can refit it. */
+     resize can refit it; `padding` is the space, in CSS px, it was fitted with. */
 
   // The view that fits a worldWidth × worldHeight area in the photo area with `padding` CSS px.
-  function fitView(worldWidth, worldHeight, padding = 24) {
+  function fitView(worldWidth, worldHeight, padding = FIT_PADDING_PX) {
     const width = app.cssWidth;
     const height = app.cssHeight;
     const fitX = (width - 2 * padding) / worldWidth;
@@ -32,6 +36,7 @@
       panX: (width - worldWidth * zoom) / 2,
       panY: (height - worldHeight * zoom) / 2,
       auto: true,
+      padding,
     };
   }
 
@@ -56,9 +61,15 @@
       }
       return app.views.export;
     }
-    if (!app.views.result) {
+    // Rotate, Crop and Perspective's Preview share one view, so a zoom or pan made on one is
+    // kept on the others (ruling R91). While it is still fitted, each step fits it its own way,
+    // whichever of them fitted it first (ruling R90).
+    const padding = app.tab === 'crop' ? CROP_FIT_PADDING_PX : FIT_PADDING_PX;
+    const shared = app.views.result;
+    const isKept = !!shared && (!shared.auto || shared.padding === padding);
+    if (!isKept) {
       const rotated = app.geometry.rotated;
-      app.views.result = fitView(rotated.width, rotated.height, app.tab === 'crop' ? 36 : 24);
+      app.views.result = fitView(rotated.width, rotated.height, padding);
     }
     return app.views.result;
   }

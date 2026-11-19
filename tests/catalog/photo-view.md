@@ -4,17 +4,17 @@ How the photo sits on screen: fitting, zooming and panning with fingers, the mou
 
 ## VIEW-01 The photo starts fitted
 
-Each view of the photo starts fitted to the photo area, with 24 px of space around it (36 px on Crop).
+Each view of the photo starts fitted to the photo area, with 24 px of space around it (36 px on Crop). Rotate and Crop each fit the straightened photo their own way, whichever was opened first, and so does **Fit to screen** on Crop after a zoom kept from Rotate.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#view`, `#btnFit`
-- Source: `js/app/view.js` (`fitView`, `currentView`)
-- Ruling: R90. Crop fits its own way, whatever step was opened before it. The app differs today.
-- Cases: 3
+- Source: `js/app/view.js` (`fitView`, `currentView`, `fitCurrent`)
+- Ruling: R90. Each step fits its own way, whatever came before. The app does this since 1.10.0.
+- Cases: 4
 
 ### VIEW-01.1 The photo opens fitted, with 24 px around it   [auto: phone]
 Before you start:
@@ -35,8 +35,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-01.2 Crop opened first leaves 36 px, and Rotate then fits its own 24 px   [auto: phone]
-Written to ruling R90; it fails until that is built (BUG-295).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -55,8 +53,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### VIEW-01.3 Rotate opened first leaves 24 px, and Crop then fits its own 36 px   [auto: phone]
-Written to ruling R90; it fails until that is built (BUG-295).
-
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
 - Build: the build under test
@@ -70,6 +66,27 @@ The photo area is the space between the top bar and the controls (the block of b
 | --- | --- | --- |
 | 1 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom) | The straightened photo is 24 px from the photo area's edges on its tighter side |
 | 2 | Tap **Crop** in the step tabs | The photo is 36 px from the edges on its tighter side, and centered on the other |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### VIEW-01.4 After a zoom kept from Rotate, Fit to screen on Crop leaves 36 px, and Rotate then fits its own 24 px   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window, 390 × 844 px, with touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Starting screen: the photo just opened, on the Perspective step
+
+The photo area is the space between the top bar and the controls (the block of buttons and sliders under the photo).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom) | The straightened photo is 24 px from the photo area's edges on its tighter side |
+| 2 | Put two fingers on the middle of the photo, 100 px apart side by side, spread them to 200 px apart and lift them | The photo zooms in to twice its fitted size; **Fit to screen** (four corner brackets) shows in the top bar |
+| 3 | Tap **Crop** in the step tabs | The photo is zoomed exactly as it was on Rotate; **Fit to screen** still shows |
+| 4 | Tap **Fit to screen** | The photo is 36 px from the edges on its tighter side, and centered on the other; **Fit to screen** has gone |
+| 5 | Tap **Rotate** in the step tabs | The straightened photo is 24 px from the edges on its tighter side, and centered on the other |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
