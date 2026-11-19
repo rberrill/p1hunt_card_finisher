@@ -17,3 +17,6 @@ On-screen text that Rich has approved for rulings that change or add a message (
 | R82 | Invalid corners, on Perspective itself | "Fix the corners first." |
 | R83 | The logo size limit in force, in Overlay's hint and in the refusal of a logo file over it | Under 1 MB, in whole KB: "…up to 64 KB.", "The logo limit is 64 KB." From 1 MB, in MB with at most one decimal, and none for a whole number: "…up to 5 MB.", "…up to 1.5 MB.", "The logo limit is 1.5 MB." (Rich, 2026-11-18) |
 | R49 | An export that fails because the logo's image isn't loaded keeps its advice (Rich, 2026-11-18) | "The logo isn’t loaded. Open the Overlay step and add it again." |
+| R97 | Load edits, a file with no photo name | "Saved for “another photo”; sizes match." |
+| R98 | The photo area on Export for a pair set to Together with a side to fix | "Fix the back’s corners in Perspective first." / "Fix the front’s corners in Perspective first."; both invalid: "Fix the corners of both sides in Perspective first." |
+| R102 | The size-limit note when the long-side limit scaled the output | "Scaled down to fit the 12000 px limit." / "The front is scaled down to fit the 12000 px limit." (or "The back…") / "Both sides are scaled down to fit the 12000 px limit.", with the limit in force |

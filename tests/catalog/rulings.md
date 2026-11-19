@@ -102,3 +102,9 @@ Rich's decisions on how the app should behave where its behavior was in question
 | R94 | A flip changes the sign of the angle shown | AS-IS |
 | R95 | Fit comes before Undo and Redo on a phone, after them on a wide screen | AS-IS |
 | R96 | A tap on an open sheet's title closes it | AS-IS |
+| R97 | Load edits' "Saved for “NAME”; sizes match." when the edits file holds no photo name | AS-IS (Rich, 2026-11-18): NAME reads another photo, giving "Saved for “another photo”; sizes match." |
+| R98 | With a pair set to Together and one side's corners invalid, the photo area says "both sides" while the line under it names one side | FIX (Rich, 2026-11-18): the photo area names the side too, "Fix the back’s corners in Perspective first." (or the front’s); "Fix the corners of both sides in Perspective first." only when both sides' corners are invalid |
+| R99 | On a phone a finished message with the WebP sentence and the Share now sentence runs to four lines and is cut at three | FIX (Rich, 2026-11-18): each sentence of a finished message is its own line, and a message of lines is never cut |
+| R100 | Resuming a pair whose two sides both have a saved size that no longer matches: the "opened fresh" message is replaced by "The saved pair wasn’t valid… This photo resumed on its own." | FIX (Rich, 2026-11-18): only "Full edit history could not be restored, your photo has been opened fresh." shows |
+| R101 | Resume always keeps a side's saved corners, so a side whose first search never finished stays on the starting rectangle | FIX (Rich, 2026-11-18): corners still exactly on the starting rectangle are placed by the search on Resume, with no undo step; corners anywhere else are kept |
+| R102 | The size-limit note names the area limit when the long-side limit is what scaled the output | FIX (Rich, 2026-11-18): the note names the limit that applied, "Scaled down to fit the 12000 px limit." with the long-side limit in force; the pair forms follow |

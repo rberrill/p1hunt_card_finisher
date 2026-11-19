@@ -14,6 +14,8 @@ const {
   closeOptions,
   waitForStill,
   hasWhiteFill,
+  questionCard,
+  questionButton,
 } = require('./support/app.js');
 const {
   holdDragAt,
@@ -26,6 +28,7 @@ const {
   addBack,
   reloadToStart,
   rememberPhoto,
+  toastNow,
   waitForPhoto,
   waitForSaved,
 } = require('./support/start-and-session.js');
@@ -1001,6 +1004,56 @@ test('CRP-16.3 In a front and back pair, Reset crop keeps 5:7 card [phone]', asy
     await expectOnlyCardLive(page);
     expectSameRect(await cropRect(page), fitted);
   });
+});
+
+test('CRP-16.4 After Unpair, Reset crop goes back to the remembered preset, not the pair\'s 5:7 '
+  + '[phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOnCrop(page, testInfo, { photo: PAIR_FRONT });
+  await hand.tap(presetChip(page, '4:5'));
+  const fitted = await cropRect(page);
+  await check('4:5 is white and the box is 4:5 around the card', async () => {
+    expect(await selectedChips(page)).toEqual(['4:5']);
+    expect(await hasWhiteFill(presetChip(page, '4:5'))).toBe(true);
+    expectNear(ratioOf(fitted), PORTRAIT_4_5, RATIO_TOLERANCE);
+    const card = await cardBox(page);
+    expectNear(fitted.centerX, card.x + card.width / 2);
+  });
+  await addBack(page, hand, PAIR_BACK);
+  await check('the back opens; Front / Back and Unpair show in the top bar', async () => {
+    expect((await editState(page)).source.name).toBe(PAIR_BACK);
+    await expect(page.locator('#sideSwitch')).toBeVisible();
+    await expect(page.locator('#btnUnpair')).toBeVisible();
+  });
+  await hand.tap(page.locator('#btnUnpair'));
+  await check('the question box asks: Keep front, Keep back, Cancel', async () => {
+    await expect(questionCard(page)).toHaveClass(/is-open/);
+    await expect(questionCard(page).getByRole('button'))
+      .toHaveText(['Keep front', 'Keep back', 'Cancel']);
+  });
+  await hand.tap(questionButton(page, 'Keep front'));
+  await check('a message reads "Unpaired. The front is a single photo now."; Front / Back and '
+    + 'Unpair have gone', async () => {
+    await expect.poll(async () => (await toastNow(page)).text)
+      .toBe('Unpaired. The front is a single photo now.');
+    await expect(page.locator('#sideSwitch')).toBeHidden();
+    await expect(page.locator('#btnUnpair')).toBeHidden();
+  });
+  await goToStep(page, 'crop', hand);
+  await check('5:7 card is white and the box is 5:7', async () => {
+    expect((await editState(page)).source.name).toBe(PAIR_FRONT);
+    expect(await selectedChips(page)).toEqual(['5:7 card']);
+    expect(await hasWhiteFill(presetChip(page, '5:7 card'))).toBe(true);
+    expectNear(ratioOf(await cropRect(page)), CARD_5_7, RATIO_TOLERANCE);
+  });
+  await resetCrop(page, hand);
+  await check('4:5 is white, and the box is back around the card at 4:5, as in row 1',
+    async () => {
+      expect(await selectedChips(page)).toEqual(['4:5']);
+      expect(await hasWhiteFill(presetChip(page, '4:5'))).toBe(true);
+      expectSameRect(await cropRect(page), fitted);
+    });
+  await openWithPicker(page, hand, check, page.locator('#btnOpen'), SECOND_PHOTO);
+  await seeRememberedPreset(page, hand, check);
 });
 
 // The two rows that open a photo with a picker: tap `control` (Open or Open photo) and see the

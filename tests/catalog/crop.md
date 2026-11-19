@@ -790,7 +790,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## CRP-16 Reset crop
 
-**Reset crop** in the options sheet puts the crop back around the card at the remembered preset (CRP-17; **1:1** when none is remembered), as one undo step, and leaves the remembered preset as it was. In a front and back pair the 5:7 lock is applied again.
+**Reset crop** in the options sheet puts the crop back around the card at the remembered preset (CRP-17; **1:1** when none is remembered), as one undo step, and leaves the remembered preset as it was. In a front and back pair the 5:7 lock is applied again. On a side kept after **Unpair**, whose crop is still the pair's 5:7, it goes to the remembered preset too.
 
 - Risk: medium
 - Check: script
@@ -799,8 +799,8 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 - Changed: 1.10.0
 - Anchors: `#cropResetRow`, "Reset crop", `CONFIG.crop.defaultPreset`
 - Source: `js/app/crop.js` (`buildCropResetRow`); `js/app/shell.js` (`resetStep`); `js/app/state.js` (`cropDefaults`); `js/app/adapters.js` (`Prefs.load`); `js/app/pair.js` (`applyPairRules`)
-- Ruling: R4. Reset crop goes back to the remembered preset and leaves the remembered preset unchanged. The app does this since 1.10.0.
-- Cases: 3
+- Ruling: R4. Reset crop goes back to the remembered preset and leaves the remembered preset unchanged. On a side kept after Unpair, whose crop is still the pair's 5:7, Reset crop also goes to the remembered preset (Rich, 2026-11-17). The app does this since 1.10.0.
+- Cases: 4
 
 ### CRP-16.1 Reset crop puts a box drawn by hand back around the card, one undo step   [auto: phone]
 Before you start:
@@ -857,6 +857,33 @@ Reset the crop: open **Crop options** (on a phone, tap the options tab, the smal
 | 1 | Tap **Crop** in the step tabs (the six tabs Perspective to Export) | **5:7 card** is white and the only preset not greyed out |
 | 2 | Drag the box from its middle 40 px to the right, and let go | The box has moved |
 | 3 | Reset the crop | **5:7 card** is still white and the only preset not greyed out; the box is back around the card at 5:7, as in row 1 |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### CRP-16.4 After Unpair, Reset crop goes back to the remembered preset, not the pair's 5:7   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photos: 14_front_portrait_raw_white.JPEG, 14_back_portrait_raw_white.JPEG and IMG_9075.JPEG from samples/
+- Starting screen: 14_front_portrait_raw_white.JPEG open, on the Crop step
+- Browser data: none for this site at the start (a private window, or the site's data cleared), so no preset is remembered; row 1 makes **4:5** the remembered preset
+
+Add the back: tap **Export** in the step tabs (the six tabs Perspective to Export), tap **Add back**, then choose 14_back_portrait_raw_white.JPEG.
+
+Reset the crop: open **Crop options** (on a phone, tap the options tab, the small tab with an up arrow on the top edge of the controls; on a wide screen they are always shown under the controls), tap **Reset crop**, then close the options (on a phone, tap the **×** at their top right).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **4:5** | **4:5** is white and the box is 4:5 around the card |
+| 2 | Add the back | The back opens; **Front** / **Back** and **Unpair** show in the top bar |
+| 3 | Tap **Unpair** (beside **Front** / **Back**) | The question box (the box over the dimmed photo) asks: **Keep front**, **Keep back**, **Cancel** |
+| 4 | Tap **Keep front** | A message reads "Unpaired. The front is a single photo now."; **Front** / **Back** and **Unpair** have gone |
+| 5 | Tap **Crop** in the step tabs | **5:7 card** is white and the box is 5:7 |
+| 6 | Reset the crop | **4:5** is white, and the box is back around the card at 4:5, as in row 1 |
+| 7 | Tap **Open** (the folder at the top left) | The photo picker opens |
+| 8 | Choose IMG_9075.JPEG | IMG_9075.JPEG opens, on the Perspective step |
+| 9 | Tap **Crop** in the step tabs | **4:5** is white and the box is 4:5 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
