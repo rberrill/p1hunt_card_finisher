@@ -62,6 +62,6 @@ To add one: give it the next number, say exactly what to do and what to record, 
 
 ## Q-10 A tap on Flip, Straighten or a step tab while the angle is typed
 
-- Waiting: ROT-07.3, ROT-07.4
+- Waiting: ROT-07.3, ROT-07.4, ROT-07.8, ROT-07.9
 - Do: on the UAT site, open IMG_9136.JPEG and tap **Rotate**. Tap the angle (**0.0°**), type 9 on the keypad, then tap **Flip** in the row of tools; tap **Straighten** and read the angle. Tap the angle again, type 3, tap **Straighten** and read the angle. Tap the angle again, type 5, tap **Crop** in the step tabs, then **Rotate**, and read the angle.
 - Write down: for each of the three taps (**Flip**, **Straighten**, **Crop**), whether the button could be tapped at all with the keypad up, or the keypad covers it; and where it could, whether the box closed and the angle read afterward (9.0°, 3.0° and 5.0° mean the typed angle was saved; the angle from before means it was thrown away).

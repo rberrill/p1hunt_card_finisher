@@ -256,17 +256,17 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## ROT-06 Save the typed angle
 
-**Done** or Enter saves the typed angle as its own undo step, kept within ±45° and rounded to 0.1°.
+**Done** or Enter saves the typed angle as its own undo step, kept within ±45° and rounded to 0.1°. With the box empty, they close it and keep the angle as it was, with no undo step.
 
 - Risk: medium
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#btnAngleDone`, `key:Enter`
-- Source: `js/app/rotate.js` (`stopTyping`, `bindTyping`, `setFine`)
-- Ruling: R1. An empty or unreadable entry keeps the old angle, with no undo step. The app differs today.
-- Cases: 3
+- Source: `js/app/rotate.js` (`stopTyping`, `readTypedAngle`, `bindTyping`, `setFine`)
+- Ruling: R1. Typed angle empty/garbage + Done: keep the old angle, no undo step (like cancel). The app does this since 1.10.0.
+- Cases: 4
 
 ### ROT-06.1 Done saves the typed angle as one undo step   [auto: phone]
 Before you start:
@@ -306,8 +306,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-06.3 Done on an empty box keeps the angle   [auto: phone]
-Written to ruling R1; it fails until that is built (BUG-002).
-
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -322,15 +320,36 @@ Before you start:
 | 3 | Tap **Done** | The angle reads 5.0° |
 | 4 | Tap the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
 | 5 | Press the delete key (Backspace on a keyboard, ⌫ on a phone's keypad) | The box is empty |
-| 6 | Tap **Done** | The angle still reads 5.0° |
+| 6 | Tap **Done** | The box closes; the angle still reads 5.0° |
 | 7 | Tap **Undo** (the arrow curving left, at the top right) | The angle reads 0.0°: the empty Done added no undo step |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### ROT-06.4 Enter on an empty box keeps the angle   [auto: desktop]
+Before you start:
+- Device and browser: a computer with a keyboard; a wide window
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, the angle at 0.0°, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Click the angle (**0.0°**) | A text box takes the angle's place, with 0.0 in it, selected |
+| 2 | Type 5 | The box shows 5 |
+| 3 | Press Enter | The box closes; the angle reads 5.0° |
+| 4 | Click the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
+| 5 | Press Backspace | The box is empty |
+| 6 | Press Enter | The box closes; the angle still reads 5.0° |
+| 7 | Click **Undo** (the arrow curving left, at the top right) | The angle reads 0.0°: the empty Enter added no undo step |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## ROT-07 Close the box
 
-Escape closes the text box without saving. A tap anywhere else, choosing **Straighten** or **Flip**, or leaving the step closes it and saves the typed angle, as **Done** does. The angle is saved only to the photo it was typed for: when another photo, or the other side of a pair, opens while the box is open, the box closes without saving.
+Escape closes the text box without saving. A tap anywhere else, choosing **Straighten** or **Flip**, or leaving the step closes it and saves the typed angle, as **Done** does. The angle is saved only to the photo it was typed for: when another photo, or the other side of a pair, opens while the box is open, the box closes without saving. An empty box closed by a tap anywhere else, by **Straighten** or **Flip**, or by leaving the step keeps the angle as it was, with no undo step.
 
 - Risk: low
 - Check: script
@@ -338,9 +357,9 @@ Escape closes the text box without saving. A tap anywhere else, choosing **Strai
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: `key:Escape`, `#rotateAngleField`
-- Source: `js/app/rotate.js` (`bindTyping`, `setRotateMode`, `syncRotate`, `startTyping`, `stopTyping`)
-- Ruling: R92. A tap away from a typed angle saves it, as **Done** and Enter do; Escape still closes the box without saving. Built in 1.10.0.
-- Cases: 6
+- Source: `js/app/rotate.js` (`bindTyping`, `setRotateMode`, `syncRotate`, `startTyping`, `stopTyping`, `readTypedAngle`)
+- Ruling: R92. A tap away from a typed angle saves it, as **Done** and Enter do; Escape still closes the box without saving. The app does this since 1.10.0. R1. Typed angle empty/garbage + Done: keep the old angle, no undo step (like cancel). The app does this since 1.10.0.
+- Cases: 9
 
 ### ROT-07.1 Escape closes the box without saving   [auto: desktop]
 
@@ -460,19 +479,89 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
+### ROT-07.7 A tap on the photo with the box empty keeps the angle   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, the angle at 0.0°, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+The ruler is the row of ticks under the angle. A drag starts on the ruler and moves sideways only.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the ruler 55 px (five ticks) to the left, and let go | The angle reads 5.0° |
+| 2 | Tap the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
+| 3 | Press the delete key (Backspace on a keyboard, ⌫ on a phone's keypad) | The box is empty |
+| 4 | Tap the middle of the photo | The box closes; the angle still reads 5.0° |
+| 5 | Tap **Undo** (the arrow curving left, at the top right) | The angle reads 0.0°: the empty box added no undo step |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### ROT-07.8 Choosing Flip or Straighten with the box empty keeps the angle   [auto: phone]
+Waiting on find-out Q-10: whether this control can be tapped at all with the keypad up on an iPhone. In the browsers the script runs in, the tap takes the cursor out of the box first, so this case passes through the same closing path as ROT-07.7.
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, the angle at 0.0°, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+The ruler is the row of ticks under the angle. A drag starts on the ruler and moves sideways only.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the ruler 55 px (five ticks) to the left, and let go | The angle reads 5.0° |
+| 2 | Tap the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
+| 3 | Press the delete key (Backspace on a keyboard, ⌫ on a phone's keypad) | The box is empty |
+| 4 | Tap **Flip** in the row of tools (the bottom row of buttons under the photo, or in the panel at the right on a wide screen: **Straighten**, **Flip**, **90° left**, **90° right**, **Fill frame**) | The line above the controls (the one line of text at the top of the controls, the block of buttons and sliders under the photo; on a wide screen, in the panel at the right) reads FLIP and "as you see it on screen" |
+| 5 | Tap **Straighten** in the row of tools | The line reads STRAIGHTEN and 5.0°: the box is closed and the angle is as it was |
+| 6 | Tap the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
+| 7 | Press the delete key (Backspace on a keyboard, ⌫ on a phone's keypad) | The box is empty |
+| 8 | Tap **Straighten** in the row of tools | The box closes; the angle still reads 5.0° |
+| 9 | Tap **Undo** (the arrow curving left, at the top right) | The angle reads 0.0°: neither empty box added an undo step |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### ROT-07.9 Leaving the step with the box empty keeps the angle   [auto: phone]
+Waiting on find-out Q-10: whether this control can be tapped at all with the keypad up on an iPhone. In the browsers the script runs in, the tap takes the cursor out of the box first, so this case passes through the same closing path as ROT-07.7.
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, the angle at 0.0°, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+The ruler is the row of ticks under the angle. A drag starts on the ruler and moves sideways only.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the ruler 55 px (five ticks) to the left, and let go | The angle reads 5.0° |
+| 2 | Tap the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
+| 3 | Press the delete key (Backspace on a keyboard, ⌫ on a phone's keypad) | The box is empty |
+| 4 | Tap **Crop** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Crop step shows |
+| 5 | Tap **Rotate** in the step tabs | The box is closed; the angle still reads 5.0° |
+| 6 | Tap **Undo** (the arrow curving left, at the top right) | The angle reads 0.0°: the empty box added no undo step |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
 ## ROT-08 What the box accepts
 
-The box accepts a hyphen or a true minus sign, a decimal comma and a trailing °. An empty or unreadable entry keeps the angle as it was, with no undo step.
+The box accepts a hyphen or a true minus sign, a decimal comma and a trailing °. An entry with no number in it (letters, a decimal point alone, a minus sign alone) keeps the angle as it was, with no undo step. A typed 0 is an angle like any other: it sets 0.0°, as an undo step.
 
 - Risk: low
 - Check: script
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: `#rotateAngleField`
-- Source: `js/app/rotate.js` (`readTypedAngle`)
-- Ruling: R1. An empty or unreadable entry keeps the old angle, with no undo step. The app differs today: it reads such an entry as 0.
-- Cases: 3
+- Source: `js/app/rotate.js` (`readTypedAngle`, `stopTyping`)
+- Ruling: R1. Typed angle empty/garbage + Done: keep the old angle, no undo step (like cancel). The app does this since 1.10.0.
+- Cases: 5
 
 ### ROT-08.1 The box accepts a hyphen or a true minus sign   [auto: desktop]
 Before you start:
@@ -518,9 +607,7 @@ A phone's number keypad has none of these characters, so this case uses a comput
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### ROT-08.3 An unreadable entry keeps the angle   [auto: desktop]
-Written to ruling R1; it fails until that is built (BUG-002).
-
+### ROT-08.3 Letters in the box keep the angle   [auto: desktop]
 Before you start:
 - Device and browser: a computer with a keyboard; a wide window
 - Build: the build under test
@@ -537,8 +624,54 @@ A phone's number keypad has none of these characters, so this case uses a comput
 | 3 | Click **Done** | The angle reads 5.0° |
 | 4 | Click the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
 | 5 | Type abc | The box shows abc |
-| 6 | Click **Done** | The angle still reads 5.0° |
+| 6 | Click **Done** | The box closes; the angle still reads 5.0° |
 | 7 | Click **Undo** (the arrow curving left, at the top right) | The angle reads 0.0°: abc added no undo step |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### ROT-08.4 A decimal point or a minus sign alone keeps the angle   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, the angle at 0.0°, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+The ruler is the row of ticks under the angle. A drag starts on the ruler and moves sideways only. A phone's number keypad can leave either of these alone in the box: its decimal point, and the minus sign that **±** puts in an empty box.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the ruler 55 px (five ticks) to the left, and let go | The angle reads 5.0° |
+| 2 | Tap the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
+| 3 | Type . (the decimal point) | The box shows only . |
+| 4 | Tap **Done** | The box closes; the angle still reads 5.0° |
+| 5 | Tap the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
+| 6 | Press the delete key (Backspace on a keyboard, ⌫ on a phone's keypad) | The box is empty |
+| 7 | Tap **±** | The box shows only − |
+| 8 | Tap **Done** | The box closes; the angle still reads 5.0° |
+| 9 | Tap **Undo** (the arrow curving left, at the top right) | The angle reads 0.0°: neither entry added an undo step |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### ROT-08.5 A typed 0 sets the angle to 0.0°   [auto: phone]
+Before you start:
+- Device and browser: any; a phone-width or a wide window
+- Build: the build under test
+- Photo: IMG_9136.JPEG from samples/
+- Starting screen: the photo open, on the Rotate step, the angle at 0.0°, nothing changed yet (**Undo** at the top right is greyed out)
+- Browser data: none for this site (a private window, or the site's data cleared)
+
+The ruler is the row of ticks under the angle. A drag starts on the ruler and moves sideways only.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Drag the ruler 55 px (five ticks) to the left, and let go | The angle reads 5.0° |
+| 2 | Tap the angle (**5.0°**) | The text box opens, with 5.0 in it, selected |
+| 3 | Type 0 | The box shows 0 |
+| 4 | Tap **Done** | The angle reads 0.0° |
+| 5 | Tap **Undo** (the arrow curving left, at the top right) | The angle reads 5.0°: the typed 0 was an undo step of its own |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

@@ -137,6 +137,27 @@ async function doneStep(page, hand, check, angle, description) {
   });
 }
 
+// Presses the delete key in the open box, whose text is selected (a row of its own), and checks
+// that the box is empty.
+async function emptyBoxStep(page, check) {
+  await page.keyboard.press('Backspace');
+  await check('the box is empty', async () => {
+    await expect(angleField(page)).toHaveValue('');
+  });
+}
+
+// Checks a row written to ruling R1: the box has closed and the angle reads 5.0°, as it did
+// before the box opened. Read once, not retried: the app has answered by the time the tap or
+// the key returns, and an angle that changed must not be waited back.
+async function checkAngleKept(page, check, description) {
+  const isOpen = await angleField(page).isVisible();
+  const shown = await angleText(page).textContent();
+  await check(description, () => {
+    expect(isOpen).toBe(false);
+    expect(shown).toBe('5.0°');
+  });
+}
+
 // Drags the Straighten ruler sideways by dx CSS px from its middle (dragging right lowers the
 // angle).
 async function dragRuler(page, hand, dx) {
@@ -286,6 +307,32 @@ async function flipModeStep(page, hand, check) {
 // Taps Undo, the arrow curving left at the top right.
 function tapUndo(page, hand) {
   return hand.tap(page.locator('#btnUndo'));
+}
+
+// Drags the ruler five ticks to the left (a row of its own) and checks that the angle reads
+// 5.0°: the one undo step the empty-box cases start from.
+async function dragToFiveStep(page, hand, check) {
+  await dragRuler(page, hand, -5 * RULER_PX_PER_DEGREE);
+  await check('the angle reads 5.0°', async () => {
+    await expect(angleText(page)).toHaveText('5.0°');
+  });
+}
+
+// Taps Undo once (a row of its own) and checks that the angle reads 0.0°: the one step before
+// it is undone, so nothing since added a step. `reason` ends the row's result.
+async function undoToZeroStep(page, hand, check, reason) {
+  await tapUndo(page, hand);
+  await check(`the angle reads 0.0°: ${reason}`, async () => {
+    expect(await angleText(page).textContent()).toBe('0.0°');
+  });
+}
+
+// The three rows the empty-box cases share: the ruler dragged to 5.0°, the angle tapped, and
+// the box emptied with the delete key.
+async function emptyBoxAtFiveSteps(page, hand, check) {
+  await dragToFiveStep(page, hand, check);
+  await tapAngleStep(page, hand, check, '5.0', 'the text box opens, with 5.0 in it, selected');
+  await emptyBoxStep(page, check);
 }
 
 test('ROT-01.1 The angle reads with one decimal and a true minus sign [phone]', async ({
@@ -535,24 +582,34 @@ test('ROT-06.3 Done on an empty box keeps the angle [phone]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-002');
   const hand = await startOnRotate(page, testInfo);
   await tapAngleStep(page, hand, check, '0.0');
   await typeStep(page, check, '5');
   await doneStep(page, hand, check, '5.0°');
   await tapAngleStep(page, hand, check, '5.0', 'the text box opens, with 5.0 in it, selected');
-  await page.keyboard.press('Backspace');
-  await check('the box is empty', async () => {
-    await expect(angleField(page)).toHaveValue('');
-  });
+  await emptyBoxStep(page, check);
   await hand.tap(page.locator('#btnAngleDone'));
-  await check('the angle still reads 5.0°', async () => {
-    expect(await angleText(page).textContent()).toBe('5.0°');
+  await checkAngleKept(page, check, 'the box closes; the angle still reads 5.0°');
+  await undoToZeroStep(page, hand, check, 'the empty Done added no undo step');
+});
+
+test('ROT-06.4 Enter on an empty box keeps the angle [desktop]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnRotate(page, testInfo);
+  await tapAngleStep(page, hand, check, '0.0');
+  await typeStep(page, check, '5');
+  await page.keyboard.press('Enter');
+  await check('the box closes; the angle reads 5.0°', async () => {
+    await expect(angleField(page)).toBeHidden();
+    await expect(angleText(page)).toHaveText('5.0°');
   });
-  await tapUndo(page, hand);
-  await check('the angle reads 0.0°: the empty Done added no undo step', async () => {
-    expect(await angleText(page).textContent()).toBe('0.0°');
-  });
+  await tapAngleStep(page, hand, check, '5.0', 'the text box opens, with 5.0 in it, selected');
+  await emptyBoxStep(page, check);
+  await page.keyboard.press('Enter');
+  await checkAngleKept(page, check, 'the box closes; the angle still reads 5.0°');
+  await undoToZeroStep(page, hand, check, 'the empty Enter added no undo step');
 });
 
 // Checks the result that ends ROT-07.1: the box has closed without saving; the angle still
@@ -692,6 +749,61 @@ test('ROT-07.6 A side that opens while the box is open closes it without saving 
   });
 });
 
+test('ROT-07.7 A tap on the photo with the box empty keeps the angle [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnRotate(page, testInfo);
+  await emptyBoxAtFiveSteps(page, hand, check);
+  await hand.tap(page.locator('#view'));
+  await checkAngleKept(page, check, 'the box closes; the angle still reads 5.0°');
+  await undoToZeroStep(page, hand, check, 'the empty box added no undo step');
+});
+
+test('ROT-07.8 Choosing Flip or Straighten with the box empty keeps the angle [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnRotate(page, testInfo);
+  await emptyBoxAtFiveSteps(page, hand, check);
+  await hand.tap(page.locator('#toolFlip'));
+  await check('the line above the controls reads FLIP and "as you see it on screen"', async () => {
+    const line = page.locator('#rotateFlipLine');
+    await expect(line).toBeVisible();
+    await expect(line.locator('.line-label')).toHaveText('Flip');
+    await expect(line.locator('.line-readout')).toHaveText('as you see it on screen');
+  });
+  await hand.tap(page.locator('#toolStraighten'));
+  await page.locator('#rotateStraightenLine').waitFor({ state: 'visible' });
+  await check('the line reads STRAIGHTEN and 5.0°: the box is closed and the angle is as it '
+    + 'was', async () => {
+    const label = page.locator('#rotateStraightenLine .line-label');
+    expect(await label.textContent()).toBe('Straighten');
+    expect(await angleField(page).isVisible()).toBe(false);
+    expect(await angleText(page).textContent()).toBe('5.0°');
+  });
+  await tapAngleStep(page, hand, check, '5.0', 'the text box opens, with 5.0 in it, selected');
+  await emptyBoxStep(page, check);
+  await hand.tap(page.locator('#toolStraighten'));
+  await checkAngleKept(page, check, 'the box closes; the angle still reads 5.0°');
+  await undoToZeroStep(page, hand, check, 'neither empty box added an undo step');
+});
+
+test('ROT-07.9 Leaving the step with the box empty keeps the angle [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnRotate(page, testInfo);
+  await emptyBoxAtFiveSteps(page, hand, check);
+  await goToStep(page, 'crop', hand);
+  await check('the Crop step shows', async () => {
+    await expect(page.locator('#cropArea')).toBeVisible();
+  });
+  await goToStep(page, 'rotate', hand);
+  await checkAngleKept(page, check, 'the box is closed; the angle still reads 5.0°');
+  await undoToZeroStep(page, hand, check, 'the empty box added no undo step');
+});
+
 test('ROT-08.1 The box accepts a hyphen or a true minus sign [desktop]', async ({
   page,
   check,
@@ -726,11 +838,10 @@ test('ROT-08.2 The box accepts a decimal comma and a degree sign [desktop]', asy
   await doneStep(page, hand, check, '6.0°');
 });
 
-test('ROT-08.3 An unreadable entry keeps the angle [desktop]', async ({
+test('ROT-08.3 Letters in the box keep the angle [desktop]', async ({
   page,
   check,
 }, testInfo) => {
-  test.fail(true, 'BUG-002');
   const hand = await startOnRotate(page, testInfo);
   await tapAngleStep(page, hand, check, '0.0');
   await typeStep(page, check, '5');
@@ -738,12 +849,43 @@ test('ROT-08.3 An unreadable entry keeps the angle [desktop]', async ({
   await tapAngleStep(page, hand, check, '5.0', 'the text box opens, with 5.0 in it, selected');
   await typeStep(page, check, 'abc');
   await hand.tap(page.locator('#btnAngleDone'));
-  await check('the angle still reads 5.0°', async () => {
-    expect(await angleText(page).textContent()).toBe('5.0°');
+  await checkAngleKept(page, check, 'the box closes; the angle still reads 5.0°');
+  await undoToZeroStep(page, hand, check, 'abc added no undo step');
+});
+
+test('ROT-08.4 A decimal point or a minus sign alone keeps the angle [phone]', async ({
+  page,
+  check,
+}, testInfo) => {
+  const hand = await startOnRotate(page, testInfo);
+  await dragToFiveStep(page, hand, check);
+  await tapAngleStep(page, hand, check, '5.0', 'the text box opens, with 5.0 in it, selected');
+  await page.keyboard.type('.');
+  await check('the box shows only .', async () => {
+    await expect(angleField(page)).toHaveValue('.');
   });
+  await hand.tap(page.locator('#btnAngleDone'));
+  await checkAngleKept(page, check, 'the box closes; the angle still reads 5.0°');
+  await tapAngleStep(page, hand, check, '5.0', 'the text box opens, with 5.0 in it, selected');
+  await emptyBoxStep(page, check);
+  await hand.tap(page.locator('#btnAngleSign'));
+  await check('the box shows only −', async () => {
+    await expect(angleField(page)).toHaveValue(MINUS);
+  });
+  await hand.tap(page.locator('#btnAngleDone'));
+  await checkAngleKept(page, check, 'the box closes; the angle still reads 5.0°');
+  await undoToZeroStep(page, hand, check, 'neither entry added an undo step');
+});
+
+test('ROT-08.5 A typed 0 sets the angle to 0.0° [phone]', async ({ page, check }, testInfo) => {
+  const hand = await startOnRotate(page, testInfo);
+  await dragToFiveStep(page, hand, check);
+  await tapAngleStep(page, hand, check, '5.0', 'the text box opens, with 5.0 in it, selected');
+  await typeStep(page, check, '0');
+  await doneStep(page, hand, check, '0.0°');
   await tapUndo(page, hand);
-  await check('the angle reads 0.0°: abc added no undo step', async () => {
-    expect(await angleText(page).textContent()).toBe('0.0°');
+  await check('the angle reads 5.0°: the typed 0 was an undo step of its own', async () => {
+    await expect(angleText(page)).toHaveText('5.0°');
   });
 });
 

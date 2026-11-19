@@ -229,12 +229,13 @@
 
   /* ---------- the typed angle (frame R3) ---------- */
   // Reads a typed angle: a hyphen or a true minus sign, and a decimal comma (the pad on a phone
-  // set to some regions types one). Returns degrees, or 0 for an empty or unreadable entry, as
-  // the old number box did.
+  // set to some regions types one). Returns degrees, or null for an entry with no number to
+  // read (an empty box, letters, a sign or a decimal point alone), which leaves the angle as it
+  // was (ruling R1).
   function readTypedAngle(text) {
     const normal = text.replace(MINUS_SIGN, '-').replace(',', '.').replace('°', '').trim();
     const degrees = parseFloat(normal);
-    return Number.isFinite(degrees) ? degrees : 0;
+    return Number.isFinite(degrees) ? degrees : null;
   }
 
   // Opens the typed angle: the field takes the angle's place, ± and Done take Reset's, and on a
@@ -259,7 +260,8 @@
 
   // Closes the typed angle; commits it when `shouldCommit`, through the same clamp and rounding
   // as the ruler. An angle typed for one photo is never committed to another: when a new photo
-  // or a pair's other side has opened since the box did, it closes unsaved.
+  // or a pair's other side has opened since the box did, it closes unsaved. So does an entry
+  // with no number in it, however the box is closed: the angle stays, with no undo step (R1).
   function stopTyping(shouldCommit) {
     if (!rotateView.isTyping) return;
     rotateView.isTyping = false;
@@ -269,7 +271,7 @@
     const degrees = readTypedAngle(field.value);
     showTypingControls(false);
     placeTypingRow();
-    if (shouldCommit && isSamePhoto) setFine(degrees);
+    if (shouldCommit && isSamePhoto && degrees !== null) setFine(degrees);
     if (document.activeElement === field) field.blur();
     if (app.state) syncRotate(app.state);
   }

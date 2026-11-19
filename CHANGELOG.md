@@ -101,6 +101,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Share corners** is shown or hidden as Export's **Share** is, each time the screen updates, and **Download corners** is the red button only while it is hidden. It used to be decided once, when the app started, so a browser that became able to share files afterwards showed **Share** but never **Share corners**.
 - On a phone with a keyboard, Enter and Space on the options tab (the tab with the up arrow on the controls' top edge) open the step's options, as a tap does. The keys used to do nothing there.
 - A tap on a control that lies under the options tab's touch area (the end of Rotate's angle, the tops of Export's **Size** and **Format** choices) now reaches the control while the controls are still fading in too: in the first tenth of a second after a step change, and after a tap on **Straighten** or **Flip**. It used to open the step's options instead.
+- On Rotate, closing the angle's text box with no number in it (empty, letters, or a decimal point or minus sign alone) keeps the angle as it was and adds no undo step, whether you tap **Done**, press Enter, tap somewhere else or change step. It used to set the angle to 0.0°.
 
 ### Security
 - The photo name read from an edits file is shown in the **Load edits** message with any line break, other control character or text-direction mark replaced by a space, so a crafted file can't add a line to the message or turn its words round.
