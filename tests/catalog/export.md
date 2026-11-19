@@ -712,15 +712,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## EXP-15 Share now
 
-If the browser refuses to share because the tap was too long ago (a slow export), the finished files are kept and **Share** reads **Share now**, live even while the rest is busy; tapping it shares them without rendering again.
+If the browser refuses to share because the tap was too long ago (a slow export), the finished files are kept and **Share** reads **Share now**, live even while the rest is busy; tapping it shares them without rendering again. The message that says the files are ready gives "Tap Share now to open the share sheet." a line of its own.
 
 - Risk: medium
 - Check: script; phone (Safari's own refusal)
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
-- Anchors: `#btnShare`, "Share now", " Tap Share now to open the share sheet."
-- Source: `js/app/export.js` (`shareFiles`, `shareExport`, `sharePending`); `js/app/export-controls.js` (`bindExport`, `syncSaveButtons`)
+- Changed: 1.10.0
+- Anchors: `#btnShare`, "Share now", "Tap Share now to open the share sheet."
+- Source: `js/app/export.js` (`shareFiles`, `shareExport`, `sharePending`, `toastSaved`); `js/app/export-controls.js` (`bindExport`, `syncSaveButtons`)
+- Ruling: R99. Each sentence of a finished message is its own line, and a message of lines is never cut (Rich, 2026-11-18). The app does this since 1.10.0.
 - Cases: 3
 
 ### EXP-15.1 A refused share leaves Share now, which shares the same file   [auto: phone]
@@ -737,7 +738,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | The share is refused; a message over the photo reads "Photo ready: 1400 × 1400 px in N s. Tap Share now to open the share sheet."; the red button reads **Share now** |
+| 2 | Tap **No** | The share is refused; a message over the photo reads, on two lines, "Photo ready: 1400 × 1400 px in N s." and "Tap Share now to open the share sheet."; the red button reads **Share now** |
 | 3 | Tap **Share now** | The share sheet is handed IMG_9136-straight.jpg, the very file it was handed before: no new export starts |
 | 4 | Look at the red button, once the stand-in has finished the share | It reads **Share** again |
 
@@ -780,7 +781,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo); no share sheet rises |
-| 2 | Wait for the line to finish | A message over the photo reads "Photo ready: W × H px in N s. Tap Share now to open the share sheet.", W × H the saved size and N the seconds it took; the red button reads **Share now** |
+| 2 | Wait for the line to finish | A message over the photo reads, on two lines, "Photo ready: W × H px in N s." and "Tap Share now to open the share sheet.", W × H the saved size and N the seconds it took; the red button reads **Share now** |
 | 3 | Tap **Share now** | The share sheet rises at once, with no red line first: nothing is rendered again |
 | 4 | Tap **Save Image** | The share sheet closes; the red button reads **Share** again, and **Next card** shows in white |
 
@@ -1929,16 +1930,16 @@ On a fail, record: the row number, what you saw instead, a screenshot, and the s
 
 ## EXP-38 Format fallback
 
-When the browser can't encode the chosen format (WebP in Safari), the file is saved as a PNG with a .png name, and the done message says so.
+When the browser can't encode the chosen format (WebP in Safari), the file is saved as a PNG with a .png name, and the done message says so on a line of its own.
 
 - Risk: medium
 - Check: phone
 - Layout: both
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: " isn’t supported by this browser, so it was saved as "
 - Source: `js/app/export.js` (`extensionFor`, `fallbackNote`, `toastSaved`)
-- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
+- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R99. Each sentence of a finished message is its own line, and a message of lines is never cut (Rich, 2026-11-18). The app does this since 1.10.0.
 - Cases: 2
 
 Playwright's WebKit can save WebP (a probe on 16 November 2026: its canvas encoded image/webp), so only a real iPhone shows the fallback; EXP-38.2 proves the app's side with a browser made unable to save WebP.
@@ -1956,7 +1957,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **WebP** | **WebP** is selected; the size line (the line under the size and format choices) reads Output 1080 × 1080 px · WEBP |
 | 2 | Tap **Download** (beside the red **Share**) | Safari asks whether to download IMG_9136-straight.png: a .png name, not .webp |
-| 3 | Tap **Download** in Safari's question | A message over the photo reads "Photo downloaded: 1080 × 1080 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." (N is the time it took) |
+| 3 | Tap **Download** in Safari's question | A message over the photo reads, on two lines, "Photo downloaded: 1080 × 1080 px in N s." and "WEBP isn’t supported by this browser, so it was saved as PNG." (N is the time it took) |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
@@ -1974,7 +1975,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **WebP** | **WebP** is selected; the size line reads Output 1080 × 1080 px · WEBP |
 | 2 | Tap **Download** | A file named IMG_9136-straight.png is saved |
-| 3 | Look at the message over the photo | It reads "Photo downloaded: 1080 × 1080 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." (N is the time it took), marked as a warning |
+| 3 | Look at the message over the photo | It reads, on two lines, "Photo downloaded: 1080 × 1080 px in N s." and "WEBP isn’t supported by this browser, so it was saved as PNG." (N is the time it took), marked as a warning |
 | 4 | Open the saved file | It is a PNG of 1080 × 1080 px |
 
 Pass: every row's result is seen.

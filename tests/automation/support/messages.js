@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { expect } = require('@playwright/test');
 const { root } = require('./app.js');
+const { withToastWords } = require('./toast.js');
 
 // The folder of the files the cases name that aren't sample photos.
 const FIXTURES = path.join(root, 'tests', 'fixtures');
@@ -44,9 +45,11 @@ const MESSAGE_TIMEOUT_MS = 20000;
 // [{ text, kind, icon, background, shownAtMs, hiddenAtMs }] on the page's clock (ms). kind is
 // 'info', 'warn' or 'error' (the toast's own class); icon the name of the icon it leads with
 // ('' for none); hiddenAtMs stays null while it shows. A message that replaces another at once
-// is its own entry. Only watches: the toast works as it always does.
+// is its own entry. Its words are read by toastWords (support/toast.js): a message of several
+// lines is recorded as its lines with a space between them. Only watches: the toast works as it
+// always does.
 async function watchMessages(page) {
-  await page.addInitScript(() => {
+  await page.addInitScript(withToastWords(wordsOf => {
     window.testMessages = [];
     const iconName = toast => {
       const path = toast.querySelector('.toast-icon path');
@@ -67,7 +70,7 @@ async function watchMessages(page) {
         if (last && last.hiddenAtMs === null) last.hiddenAtMs = nowMs;
         return;
       }
-      const text = toast.querySelector('.toast-text').textContent;
+      const text = wordsOf(toast.querySelector('.toast-text').childNodes);
       const kind = kindOf(toast);
       const isSame = last && last.hiddenAtMs === null && last.text === text && last.kind === kind;
       if (isSame) return;
@@ -89,7 +92,8 @@ async function watchMessages(page) {
       for (const record of records) {
         for (const node of record.addedNodes) {
           if (node.classList && node.classList.contains('is-ghost')) {
-            window.testFadingCopies.push(node.querySelector('.toast-text').textContent);
+            const copiedText = node.querySelector('.toast-text');
+            window.testFadingCopies.push(wordsOf(copiedText.childNodes));
           }
         }
       }
@@ -111,7 +115,7 @@ async function watchMessages(page) {
       if (watchToast()) waitForToast.disconnect();
     });
     waitForToast.observe(document, { childList: true, subtree: true });
-  });
+  }));
 }
 
 // The messages watchMessages has recorded so far.

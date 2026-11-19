@@ -56,6 +56,8 @@ const {
   undoRedoGreyed,
   isLogoGreen,
 } = require('./support/edits-files.js');
+// Where the message over the photo and its lines sit, and whether one box is inside another.
+const { messageBoxes, isInside } = require('./support/toast.js');
 const { selectedPreset } = require('./support/crop.js');
 
 // The name of IMG_9136.JPEG's edits file.
@@ -156,30 +158,6 @@ async function expectOnlyLoadedMessage(page, before) {
 function isExportSheetOpen(page) {
   return page.evaluate(() => window.CF.isSheetOpen(document.getElementById('exportSheet')));
 }
-
-// Where the message over the photo sits: { stage, toast, lines }, the photo area's box, the
-// message's and each of its lines', as { top, bottom, left, right } in CSS px.
-function messageBoxes(page) {
-  return page.evaluate(() => {
-    const boxOf = el => {
-      const rect = el.getBoundingClientRect();
-      return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
-    };
-    const toast = document.getElementById('toast');
-    return {
-      stage: boxOf(document.getElementById('stage')),
-      toast: boxOf(toast),
-      lines: [...toast.querySelectorAll('.toast-line')].map(boxOf),
-    };
-  });
-}
-
-// True when `inner` lies wholly inside `outer` (boxes from messageBoxes), to the rounding of
-// PLACE_TOLERANCE_PX.
-const isInside = (inner, outer) => inner.top >= outer.top - PLACE_TOLERANCE_PX
-  && inner.bottom <= outer.bottom + PLACE_TOLERANCE_PX
-  && inner.left >= outer.left - PLACE_TOLERANCE_PX
-  && inner.right <= outer.right + PLACE_TOLERANCE_PX;
 
 // The edits a case compares before and after a refused file: the whole edit state and how
 // many steps Undo and Redo can take.

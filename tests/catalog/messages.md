@@ -148,7 +148,7 @@ On a fail, record: what differs from the description, the screenshot.
 
 ## MSG-04 Messages never block a touch
 
-Touches pass through a message to the photo beneath it. A long message is cut to three lines with an ellipsis; a message of several lines, as **Load edits** shows, has every line on show, with none cut (MSG-38.2). A screen reader announces each message without interrupting.
+Touches pass through a message to the photo beneath it. A long message is cut to three lines with an ellipsis; a message of several lines, as **Load edits** shows and a finished export with more than one sentence does, has every line on show, with none cut (MSG-38.2, MSG-28.3, MSG-28.4). A screen reader announces each message without interrupting.
 
 - Risk: medium
 - Check: script
@@ -157,6 +157,7 @@ Touches pass through a message to the photo beneath it. A long message is cut to
 - Changed: 1.10.0
 - Anchors: `#toast`, `.toast-text`
 - Source: `js/app/parts/toast.js` (`buildToast`, `setToastText`, `setToastLines`); `css/app.css` (the toast part)
+- Ruling: R99. Each sentence of a finished message is its own line, and a message of lines is never cut (Rich, 2026-11-18). The app does this since 1.10.0.
 - Cases: 3
 
 ### MSG-04.1 A drag that starts on a message moves the photo beneath it   [auto: phone]
@@ -851,16 +852,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-27 The format the browser couldn't save
 
-When the browser saves another format than the one chosen (Safari has no WebP encoder), the finished-export message gains a sentence, "{CHOSEN} isn’t supported by this browser, so it was saved as {SAVED}." (for example WEBP and PNG), and shows as an amber warning for 6 seconds. It applies to the main export, a pair and corner shots.
+When the browser saves another format than the one chosen (Safari has no WebP encoder), the finished-export message gains a line under its first, "{CHOSEN} isn’t supported by this browser, so it was saved as {SAVED}." (for example WEBP and PNG), and shows as an amber warning for 6 seconds. It applies to the main export, a pair and corner shots.
 
 - Risk: medium
 - Check: script; phone (Safari's own fallback, MSG-27.2)
 - Layout: both.
 - Added: 1.10 baseline
-- Changed: none
+- Changed: 1.10.0
 - Anchors: " isn’t supported by this browser, so it was saved as ", `#exportFormat`
-- Source: `js/app/export.js` (`fallbackNote`, `toastSaved`)
-- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this.
+- Source: `js/app/export.js` (`fallbackNote`, `toastSaved`); `js/app/core.js` (`toast`); `js/app/parts/toast.js` (`setToastLines`)
+- Ruling: R64. This message explains a result that would otherwise look like a fault, so it needs no next step. The app already does this. R99. Each sentence of a finished message is its own line, and a message of lines is never cut (Rich, 2026-11-18). The app does this since 1.10.0.
 - Cases: 2
 
 ### MSG-27.1 A format the browser couldn't save is named   [auto: phone]
@@ -880,7 +881,7 @@ Before you start:
 | 1 | Tap **WebP** | **WebP** is selected (a white fill) |
 | 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | One file is saved, and it is a PNG: 01_chrome_flat_black-straight.png |
-| 4 | Read the message over the photo | An amber warning reads "Photo downloaded: 1074 × 1074 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG." |
+| 4 | Read the message over the photo | An amber warning reads, on two lines with neither cut off, "Photo downloaded: 1074 × 1074 px in N s." and "WEBP isn’t supported by this browser, so it was saved as PNG.", N the seconds it took, to one decimal place |
 | 5 | Time the message | It stays 6 s |
 
 Pass: every row's result is seen.
@@ -899,14 +900,14 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **WebP** | **WebP** is selected (a white fill) |
 | 2 | Tap **Download** | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 3 | Tap **No** | An amber message over the photo reads "Photo downloaded: 1074 × 1074 px in N s. WEBP isn’t supported by this browser, so it was saved as PNG.", N the seconds the export took; Safari asks whether to download 01_chrome_flat_black-straight.png: the name ends .png, not .webp |
+| 3 | Tap **No** | An amber message over the photo reads, on two lines, "Photo downloaded: 1074 × 1074 px in N s." and "WEBP isn’t supported by this browser, so it was saved as PNG.", N the seconds the export took; Safari asks whether to download 01_chrome_flat_black-straight.png: the name ends .png, not .webp |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
 
 ## MSG-28 "Tap Share now to open the share sheet."
 
-When the browser refuses to share because the tap was too long ago (a slow export), the finished message says "ready" where it would say "shared", gains "Tap Share now to open the share sheet." ("Photo ready: {width} × {height} px in {seconds} s. Tap Share now to open the share sheet.") and stays 6 seconds (white, or amber with MSG-27's sentence). Tapping **Share now** takes it down.
+When the browser refuses to share because the tap was too long ago (a slow export), the finished message says "ready" where it would say "shared", gains a line under it, "Tap Share now to open the share sheet." ("Photo ready: {width} × {height} px in {seconds} s.", then "Tap Share now to open the share sheet."), and stays 6 seconds (white, or amber with MSG-27's line between the two). Each sentence starts a line of its own and none is cut off, on a 390 px phone and on a 375 px one. Tapping **Share now** takes it down.
 
 - Risk: low
 - Check: script; phone (a real refusal after a slow export, MSG-28.2)
@@ -914,9 +915,9 @@ When the browser refuses to share because the tap was too long ago (a slow expor
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: "Tap Share now to open the share sheet.", `pending: 'ready'`, `#btnShare`, `#btnCornerShare`
-- Source: `js/app/export.js` (`toastSaved`, `sharePending`); `js/app/corner-shots.js` (`shareCornerShots`)
-- Ruling: R78. A message may say "Tap" on a wide screen. The app already does this. R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0.
-- Cases: 2
+- Source: `js/app/export.js` (`toastSaved`, `sharePending`); `js/app/corner-shots.js` (`shareCornerShots`); `js/app/core.js` (`toast`); `js/app/parts/toast.js` (`setToastLines`)
+- Ruling: R78. A message may say "Tap" on a wide screen. The app already does this. R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0. R99. Each sentence of a finished message is its own line, and a message of lines is never cut (Rich, 2026-11-18). The app does this since 1.10.0.
+- Cases: 4
 
 ### MSG-28.1 A refused share says to tap Share now   [auto: phone]
 Script only
@@ -932,7 +933,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | A white message reads "Photo ready: 1074 × 1074 px in N s. Tap Share now to open the share sheet.", N the seconds the export took, to one decimal place; the red button reads **Share now** |
+| 2 | Tap **No** | A white message reads, on two lines with neither cut off, "Photo ready: 1074 × 1074 px in N s." and "Tap Share now to open the share sheet.", N the seconds the export took, to one decimal place; the red button reads **Share now** |
 | 3 | Tap **Share now** | The message goes at once, well before its 6 s are up |
 
 Pass: every row's result is seen.
@@ -952,12 +953,58 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo); no share sheet rises |
-| 2 | Wait for the line to finish | A white message over the photo reads "Photo ready: W × H px in N s. Tap Share now to open the share sheet.", W × H the saved size and N the seconds it took; the red button reads **Share now** |
+| 2 | Wait for the line to finish | A white message over the photo reads, on two lines, "Photo ready: W × H px in N s." and "Tap Share now to open the share sheet.", W × H the saved size and N the seconds it took; the red button reads **Share now** |
 | 3 | Within 3 s of the message showing, tap **Share now** | The message goes at once; the share sheet rises |
 | 4 | Tap the **×** at the share sheet's top right | The share sheet closes; no message is over the photo |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screen recording (Control Center, the Screen Recording button).
+
+### MSG-28.3 A pair's finished message of three sentences shows every line whole   [auto: phone, webkit]
+Script only
+Stand-in: the message needs two things at once that a sample photo in a desktop browser can't give: a browser that can't save WebP, and a share refused for coming too long after the tap. The script makes the browser hand back a PNG when asked for WebP, as Safari does, and gives the page a stand-in share sheet that refuses the first share, as Safari does after a slow export. On a real iPhone the two sentences are MSG-27.2 and MSG-28.2.
+
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, with **Together** and **2000** selected
+- A stopwatch. The time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **WebP** | **WebP** is selected (a white fill) |
+| 2 | Tap **Share** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 3 | Tap **No** | An amber warning shows over the photo; its lines read "Front and back ready: 1583 × 1100 px in N s.", "WEBP isn’t supported by this browser, so it was saved as PNG." and "Tap Share now to open the share sheet.", in that order, each sentence starting a line of its own, N the seconds the export took, to one decimal place |
+| 4 | Look at the message | Every line is shown whole, none cut off or ending in "…", and the whole message is inside the photo area, between the top bar and the controls |
+| 5 | Time the message | It stays 6 s |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
+### MSG-28.4 On a small phone a pair's finished message of three sentences shows every line whole   [auto: small]
+Script only
+Stand-in: the message needs two things at once that a sample photo in a desktop browser can't give: a browser that can't save WebP, and a share refused for coming too long after the tap. The script makes the browser hand back a PNG when asked for WebP, as Safari does, and gives the page a stand-in share sheet that refuses the first share, as Safari does after a slow export. On a real iPhone the two sentences are MSG-27.2 and MSG-28.2.
+
+Before you start:
+- Device and browser: a narrow phone window, 375 × 667 px (an iPhone SE), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
+- Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the Export step, with **Together** and **2000** selected
+- A stopwatch. The time is from the moment the message shows to the moment it has gone. The script allows 50 ms early to 0.4 s late; by stopwatch allow half a second either way.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Tap **WebP** | **WebP** is selected (a white fill) |
+| 2 | Tap **Share** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
+| 3 | Tap **No** | An amber warning shows over the photo; its lines read "Front and back ready: 1583 × 1100 px in N s.", "WEBP isn’t supported by this browser, so it was saved as PNG." and "Tap Share now to open the share sheet.", in that order, each sentence starting a line of its own, N the seconds the export took, to one decimal place |
+| 4 | Look at the message | Every line is shown whole, none cut off or ending in "…", and the whole message is inside the photo area, between the top bar and the controls |
+| 5 | Time the message | It stays 6 s |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-29 "Photo copied (PNG)."
 
@@ -1273,7 +1320,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-38 Edits saved for a file of another name
 
-When the edits file's photo name differs but the size matches, the edits are applied and **Load edits** shows one amber warning: "Edits loaded.", and under it the line "Saved for “{name}”; sizes match." Each problem with a file is a line of that one message, so a file with three problems shows four lines, in one message that no other replaces. The name is cut to 60 characters (SEC-11.2), and a line break or a direction mark in it shows as a space (SEC-11.3).
+When the edits file's photo name differs but the size matches, the edits are applied and **Load edits** shows one amber warning: "Edits loaded.", and under it the line "Saved for “{name}”; sizes match." Each problem with a file is a line of that one message, so a file with three problems shows four lines, in one message that no other replaces. The name is cut to 60 characters (SEC-11.2), and a line break or a direction mark in it shows as a space (SEC-11.3). When the file holds no photo name, the line reads "Saved for “another photo”; sizes match."
 
 - Risk: low
 - Check: script
@@ -1282,8 +1329,8 @@ When the edits file's photo name differs but the size matches, the edits are app
 - Changed: 1.10.0
 - Anchors: "”; sizes match.", "another photo"
 - Source: `js/app/export.js` (`loadEdits`, `shownEditsName`); `js/app/core.js` (`shortText`, `toast`); `js/app/parts/toast.js` (`setToastLines`)
-- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0.
-- Cases: 2
+- Ruling: R12. One combined warning, up to three short lines (WORDING). Rich, 2026-11-18: the message stays the warning's usual 5 seconds, however many lines it has. Rich, 2026-11-18: on a phone, choosing an edits file closes Export's options sheet, so the message has the whole photo area. The app does this since 1.10.0. R48. They apply to every load: "Edits loaded." plus each line that applies. A load with no problem shows "Edits loaded." alone, as a white information message (Rich, 2026-11-17). The app does this since 1.10.0. R97. Load edits' "Saved for “NAME”; sizes match." when the edits file holds no photo name: AS-IS (Rich, 2026-11-18): NAME reads another photo, giving "Saved for “another photo”; sizes match." The app already does this.
+- Cases: 3
 
 ### MSG-38.1 Edits saved for a file of another name   [auto: phone]
 Before you start:
@@ -1327,6 +1374,27 @@ The named actions:
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot or a screen recording.
+
+### MSG-38.3 An edits file that names no photo says it was saved for another photo   [auto: phone]
+Before you start:
+- Device and browser: a phone-width window (390 × 844), touch
+- Build: the build under test
+- Browser data: none for this site (a private window, or the site's data cleared)
+- Photo: 01_chrome_flat_black.JPEG from samples/
+- Edits file: 01_chrome_flat_black-no-name-edits.json from tests/fixtures/: 01_chrome_flat_black.JPEG's edits after **90° right** on Rotate, as **Save edits** saves them (the photo's name "01_chrome_flat_black.JPEG", its size 1536 × 2048 px, `"quarter": 1`), changed in a text editor so that the line `"name": "01_chrome_flat_black.JPEG",` is deleted: the file gives the photo's size and no name
+- Starting screen: the photo open, upright, on the Export step
+
+The named actions:
+- Open Export options: tap the options tab (the small tab with an up arrow on the top edge of the controls); EXPORT OPTIONS rise from the bottom.
+- Load the edits file F: open Export options, tap **Load edits**, then choose F in the file picker.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Load the edits file 01_chrome_flat_black-no-name-edits.json | One amber message shows, and no other comes after it; its lines read "Edits loaded." and "Saved for “another photo”; sizes match.", in that order |
+| 2 | Look at the photo | It is turned a quarter clockwise: the edits were applied |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-39 Settings in the edits file that were reset
 

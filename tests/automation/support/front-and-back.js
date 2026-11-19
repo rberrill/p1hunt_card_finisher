@@ -17,6 +17,7 @@ const {
   waitInPage,
   crossTheCorners,
 } = require('./app.js');
+const { withToastWords } = require('./toast.js');
 
 // How long a side may take to open (and, for a new photo, be detected) before a case gives up.
 const SIDE_TIMEOUT_MS = 20000;
@@ -523,13 +524,15 @@ function heldPhotos(page) {
 
 // Starts recording every message the toast shows, as [{ text, kind }] in window.testToasts
 // (kind: 'error', 'warn' or ''). A message can be replaced before a case could look at it.
+// Its words are read by toastWords (support/toast.js): a message of several lines is
+// recorded as its lines with a space between them.
 function recordToasts(page) {
-  return page.evaluate(() => {
+  return page.evaluate(withToastWords(wordsOf => {
     window.testToasts = [];
     const toast = document.getElementById('toast');
     const record = () => {
       if (!toast.classList.contains('is-shown')) return;
-      const text = toast.querySelector('.toast-text').textContent;
+      const text = wordsOf(toast.querySelector('.toast-text').childNodes);
       let kind = '';
       if (toast.classList.contains('is-error')) kind = 'error';
       if (toast.classList.contains('is-warn')) kind = 'warn';
@@ -543,7 +546,7 @@ function recordToasts(page) {
       subtree: true,
       characterData: true,
     });
-  });
+  }));
 }
 
 // The messages recordToasts has seen since the last call: [{ text, kind }].

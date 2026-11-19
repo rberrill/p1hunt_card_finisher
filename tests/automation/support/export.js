@@ -16,6 +16,7 @@ const {
   crossTheCorners,
   holdFinger,
 } = require('./app.js');
+const { toastNow } = require('./toast.js');
 
 // The image types a saved file can have, by its extension.
 const MIME_TYPES = { '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
@@ -217,11 +218,11 @@ async function chooseFill(page, hand, value) {
   await closeOptions(page, hand, 'export');
 }
 
-// The message the toast shows, or '' when no message is up.
+// The message the toast shows, or '' when no message is up (toastNow's words: a message of
+// several lines reads as its lines with a space between them).
 async function toastMessage(page) {
-  const toast = page.locator('#toast');
-  const isShown = await toast.evaluate(el => el.classList.contains('is-shown'));
-  return isShown ? (await toast.locator('.toast-text').textContent()).trim() : '';
+  const toast = await toastNow(page);
+  return toast.isShown ? toast.text.trim() : '';
 }
 
 // Downloads the export and returns { name, file, bytes }: the name the app gave it, the path of

@@ -125,6 +125,7 @@ const {
   visibleTips,
 } = require('./support/messages.js');
 const { toastShownLines } = require('./support/edits-files.js');
+const { messageBoxes, isInside } = require('./support/toast.js');
 const { typeAngle, angleText } = require('./support/rotate.js');
 const {
   cropHandleOnPage,
@@ -1154,8 +1155,17 @@ test('MSG-26.1 Download corners with 4 photos says so [phone]', async ({
   await expectFinished(page, check, '4 corner photos downloaded: 156 × 156 px each in N s.');
 });
 
-// The sentence a WebP export gains where the browser saved a PNG instead.
+// The sentence a WebP export gains where the browser saved a PNG instead, and the one a
+// refused share gains. Each is a line of its own under the finished sentence (ruling R99).
 const WEBP_AS_PNG = 'WEBP isn’t supported by this browser, so it was saved as PNG.';
+const TAP_SHARE_NOW = 'Tap Share now to open the share sheet.';
+
+// The finished message as the screen shows it now: { lines, isCut } (toastShownLines), with
+// the seconds in its lines written as N.
+async function finishedLinesShown(page) {
+  const shown = await toastShownLines(page);
+  return { lines: shown.lines.map(withSecondsAsN), isCut: shown.isCut };
+}
 
 test('MSG-27.1 A format the browser couldn\'t save is named [phone]', async ({
   page,
@@ -1175,10 +1185,14 @@ test('MSG-27.1 A format the browser couldn\'t save is named [phone]', async ({
     expect(fs.readFileSync(saved[0].file).subarray(1, 4).toString()).toBe('PNG');
   });
   const message = await waitForMessage(page, / s\. WEBP isn’t supported/);
-  await check('An amber warning reads "Photo downloaded: 1074 × 1074 px in N s. '
-    + `${WEBP_AS_PNG}"`, () => {
-    expect(withSecondsAsN(message.text))
-      .toBe(`Photo downloaded: 1074 × 1074 px in N s. ${WEBP_AS_PNG}`);
+  const onScreen = await finishedLinesShown(page);
+  await check('An amber warning reads, on two lines with neither cut off, "Photo downloaded: '
+    + `1074 × 1074 px in N s." and "${WEBP_AS_PNG}", N the seconds it took, to one decimal `
+    + 'place', () => {
+    expect(onScreen).toEqual({
+      lines: ['Photo downloaded: 1074 × 1074 px in N s.', WEBP_AS_PNG],
+      isCut: false,
+    });
     expectKind(message, 'warn');
   });
   const gone = await waitUntilGone(page, message.text, ERROR_MS * 2);
@@ -1196,11 +1210,14 @@ test('MSG-28.1 A refused share says to tap Share now [phone]', async ({
   await tapAndExpectUpscale(page, hand, check, page.locator('#btnShare'));
   await hand.tap(questionButton(page, 'No'));
   const message = await waitForMessage(page, /Tap Share now to open the share sheet\.$/);
-  await check('A white message reads "Photo ready: 1074 × 1074 px in N s. Tap Share now to open '
-    + 'the share sheet.", N the seconds the export took, to one decimal place; the red button '
-    + 'reads Share now', async () => {
-    expect(withSecondsAsN(message.text))
-      .toBe('Photo ready: 1074 × 1074 px in N s. Tap Share now to open the share sheet.');
+  const onScreen = await finishedLinesShown(page);
+  await check('A white message reads, on two lines with neither cut off, "Photo ready: 1074 × '
+    + `1074 px in N s." and "${TAP_SHARE_NOW}", N the seconds the export took, to one decimal `
+    + 'place; the red button reads Share now', async () => {
+    expect(onScreen).toEqual({
+      lines: ['Photo ready: 1074 × 1074 px in N s.', TAP_SHARE_NOW],
+      isCut: false,
+    });
     expectKind(message, 'info');
     await expect(page.locator('#btnShare')).toContainText('Share now');
   });
@@ -1210,6 +1227,64 @@ test('MSG-28.1 A refused share says to tap Share now [phone]', async ({
     const after = (await messagesSoFar(page)).find(shown => shown.text === message.text);
     expect(shownForMs(after)).toBeLessThan(ERROR_MS - LATE_MS);
   });
+});
+
+// The lines of MSG-28.3's and MSG-28.4's message, the seconds written as N: a pair's Together
+// image, asked for as WebP and saved as PNG, waiting for Share now.
+const THREE_SENTENCES = ['Front and back ready: 1583 × 1100 px in N s.', WEBP_AS_PNG,
+  TAP_SHARE_NOW];
+
+// The body of MSG-28.3 and MSG-28.4 (ruling R99): a pair's Share of a WebP the browser saves
+// as PNG, refused once, shows a finished message of three sentences, each on a line of its own
+// and every line whole, inside the photo area, for 6 s. The cases differ in the size of the
+// phone.
+async function checkThreeSentencesWhole(page, check, testInfo) {
+  await watchMessages(page);
+  // Stand-ins: the browser hands back a PNG when asked for WebP, and the share sheet refuses
+  // the first share, both as Safari does.
+  await takeAwayWebpSaving(page);
+  await installShareStandIn(page, 'refuseOnce');
+  const hand = await makePair(page, testInfo);
+  await goToStep(page, 'export', hand);
+  await hand.tap(choiceButton(page, 'exportFormat', 'WebP'));
+  await check('WebP is selected (a white fill)', async () => {
+    expect(await selectedChoices(page, 'exportFormat')).toEqual(['WebP']);
+  });
+  await tapAndExpectUpscale(page, hand, check, page.locator('#btnShare'));
+  await hand.tap(questionButton(page, 'No'));
+  const message = await waitForMessage(page, /Tap Share now to open the share sheet\.$/);
+  const onScreen = await finishedLinesShown(page);
+  await check(`An amber warning shows over the photo; its lines read ${quoted(THREE_SENTENCES)}, `
+    + 'in that order, each sentence starting a line of its own, N the seconds the export took, '
+    + 'to one decimal place', () => {
+    expectKind(message, 'warn');
+    expect(onScreen.lines).toEqual(THREE_SENTENCES);
+  });
+  await waitForStill(page);
+  const boxes = await messageBoxes(page);
+  await check('Every line is shown whole, none cut off or ending in "…", and the whole message '
+    + 'is inside the photo area, between the top bar and the controls', () => {
+    // Whole: none of the text is cut off below the message's last row, there is a line for
+    // each sentence, and each line lies inside the message.
+    expect(onScreen.isCut).toBe(false);
+    expect(boxes.lines.length).toBe(THREE_SENTENCES.length);
+    expect(isInside(boxes.toast, boxes.stage)).toBe(true);
+    expect(boxes.lines.every(line => isInside(line, boxes.toast))).toBe(true);
+  });
+  const gone = await waitUntilGone(page, message.text, ERROR_MS * 2);
+  await check('It stays 6 s', () => {
+    expectStayed(gone, ERROR_MS);
+  });
+}
+
+test('MSG-28.3 A pair\'s finished message of three sentences shows every line whole [phone] '
+  + '[webkit]', async ({ page, check }, testInfo) => {
+  await checkThreeSentencesWhole(page, check, testInfo);
+});
+
+test('MSG-28.4 On a small phone a pair\'s finished message of three sentences shows every '
+  + 'line whole [small]', async ({ page, check }, testInfo) => {
+  await checkThreeSentencesWhole(page, check, testInfo);
 });
 
 // Any message a finished Copy shows: it names the format on the clipboard.
@@ -1430,6 +1505,19 @@ test('MSG-38.2 Three problems in one edits file make one warning [phone]', async
     });
   });
 });
+
+test('MSG-38.3 An edits file that names no photo says it was saved for another photo [phone]',
+  async ({ page, check }, testInfo) => {
+    const hand = await start(page, testInfo);
+    const loaded = await loadAndSettle(page, hand, 'no-name');
+    // Ruling R97: with no photo name in the file, the line names "another photo".
+    const lines = [EDITS_LOADED, 'Saved for “another photo”; sizes match.'];
+    await check('One amber message shows, and no other comes after it; its lines read '
+      + `"${lines[0]}" and "${lines[1]}", in that order`, () => {
+      expectOneWarning(loaded, lines);
+    });
+    await expectTurned(page, check, 'It is turned a quarter clockwise: the edits were applied');
+  });
 
 test('MSG-39.1 Settings in the edits file that were reset [phone]', async ({
   page,

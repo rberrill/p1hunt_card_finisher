@@ -59,7 +59,9 @@ const asPattern = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // key of FINISHED_THINGS; action: 'downloaded', 'shared', or 'ready' while a refused share
 // waits for Share now; size: the size the message must give ('1074 × 1074 px', '748 × 1047 px
 // and 785 × 1100 px', '1000 × 1000 px each'), or null for any. The seconds are its first
-// group. A sentence may follow ("WEBP isn’t supported…", "Tap Share now…");
+// group. A sentence may follow ("WEBP isn’t supported…", "Tap Share now…"), each on a line of
+// its own on screen (ruling R99); the toast's reader (toastWords, support/toast.js) gives the
+// lines with a space between them, and this matches the first whatever follows.
 // wholeFinishedMessage allows none.
 function finishedMessage(kind, action, size = null) {
   const sizeText = size === null ? '.+?' : asPattern(size);

@@ -62,6 +62,7 @@ const {
   tapFormat,
   shareLabel,
 } = require('./support/export.js');
+const { toastShownLines } = require('./support/edits-files.js');
 const { typeAngle } = require('./support/rotate.js');
 
 const PHOTO = 'IMG_9136.JPEG';
@@ -856,9 +857,18 @@ test('EXP-14.2 Share, Download and Copy are dimmed while an export runs [phone]'
 });
 
 // The message while a refused share waits: "Photo ready: 1400 × 1400 px in N s. Tap Share now
-// to open the share sheet."
+// to open the share sheet.", its two sentences each on a line of its own (ruling R99).
+const TAP_SHARE_NOW = 'Tap Share now to open the share sheet.';
 const SHARE_NOW_MESSAGE = new RegExp(`${READY_MESSAGE.source} Tap Share now to open the `
   + 'share sheet\\.$');
+
+// The lines the message over the photo shows now, top to bottom. toastShownLines asks the
+// screen where each line ends, which toastMessage (the words, a space between lines) can't.
+const shownLines = async page => (await toastShownLines(page)).lines;
+
+// A pattern for a line that is exactly a finished sentence (`finished`: finishedMessage's
+// pattern, which allows more after it).
+const wholeLine = finished => expect.stringMatching(new RegExp(`${finished.source}$`));
 
 test('EXP-15.1 A refused share leaves Share now, which shares the same file [phone]', async ({
   page,
@@ -869,10 +879,11 @@ test('EXP-15.1 A refused share leaves Share now, which shares the same file [pho
   await checkAskedToUpscale(page, check);
   await hand.tap(questionButton(page, 'No'));
   await waitForShares(page, 1);
-  await check('the share is refused; a message reads "Photo ready: 1400 × 1400 px in N s. Tap '
-    + 'Share now to open the share sheet."; the red button reads Share now',
+  await check('the share is refused; a message reads, on two lines, "Photo ready: 1400 × 1400 '
+    + `px in N s." and "${TAP_SHARE_NOW}"; the red button reads Share now`,
     async () => {
       await expect.poll(() => toastMessage(page)).toMatch(SHARE_NOW_MESSAGE);
+      expect(await shownLines(page)).toEqual([wholeLine(READY_MESSAGE), TAP_SHARE_NOW]);
       await expect(shareLabel(page)).toHaveText('Share now');
     });
   await hand.tap(page.locator('#btnShare'));
@@ -2258,10 +2269,12 @@ test('EXP-37.2 A pasted photo saves as pasted-photo-straight.jpg [desktop]', asy
 // The first four bytes of every PNG file (part of its signature).
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47];
 // The done message when WebP was saved as a PNG: "Photo downloaded: 1080 × 1080 px in N s.",
-// then "WEBP isn’t supported by this browser, so it was saved as PNG."
+// then, on a line of its own (ruling R99), "WEBP isn’t supported by this browser, so it was
+// saved as PNG."
+const DOWNLOADED_1080 = finishedMessage('photo', 'downloaded', '1080 × 1080 px');
+const WEBP_AS_PNG = 'WEBP isn’t supported by this browser, so it was saved as PNG.';
 const WEBP_FALLBACK_MESSAGE = new RegExp(
-  `${finishedMessage('photo', 'downloaded', '1080 × 1080 px').source} `
-    + 'WEBP isn’t supported by this browser, so it was saved as PNG\\.$',
+  `${DOWNLOADED_1080.source} WEBP isn’t supported by this browser, so it was saved as PNG\\.$`,
 );
 
 test('EXP-38.2 Where WebP can\'t be saved, Download saves a PNG and says so [phone]', async ({
@@ -2280,11 +2293,13 @@ test('EXP-38.2 Where WebP can\'t be saved, Download saves a PNG and says so [pho
   await check('a file named IMG_9136-straight.png is saved', async () => {
     expect(saved.name).toBe('IMG_9136-straight.png');
   });
-  await check('the message says WEBP isn’t supported, so it was saved as PNG, as a warning',
-    async () => {
-      await expect.poll(() => toastMessage(page)).toMatch(WEBP_FALLBACK_MESSAGE);
-      await expect(page.locator('#toast')).toHaveClass(/is-warn/);
-    });
+  await check('the message reads, on two lines, "Photo downloaded: 1080 × 1080 px in N s." and '
+    + `"${WEBP_AS_PNG}", marked as a warning`,
+  async () => {
+    await expect.poll(() => toastMessage(page)).toMatch(WEBP_FALLBACK_MESSAGE);
+    expect(await shownLines(page)).toEqual([wholeLine(DOWNLOADED_1080), WEBP_AS_PNG]);
+    await expect(page.locator('#toast')).toHaveClass(/is-warn/);
+  });
   await check('the saved file is a PNG of 1080 × 1080 px', async () => {
     const bytes = fs.readFileSync(saved.file);
     expect(Array.from(bytes.subarray(0, PNG_SIGNATURE.length))).toEqual(PNG_SIGNATURE);

@@ -410,7 +410,7 @@
     if (file.type === type) return '';
     const asked = (EXTENSIONS[type] || type).toUpperCase();
     const savedAs = extensionFor(file).toUpperCase();
-    return ` ${asked} isn’t supported by this browser, so it was saved as ${savedAs}.`;
+    return `${asked} isn’t supported by this browser, so it was saved as ${savedAs}.`;
   }
 
   // What a finished save did, as the finished message says it, by toastSaved's outcome: "ready"
@@ -425,16 +425,18 @@
   // (SAVED_ACTIONS); 'pending' also adds how to finish, 'cancelled' and 'failed' show nothing
   // (shareFiles already said why). fallbackNote's sentence follows when the browser saved
   // another format than the requested `type`, as a longer warning. The note used to be its own
-  // toast, which the finished message replaced at once.
+  // toast, which the finished message replaced at once. Each sentence is a line of its own
+  // (ruling R99): as one run of text, the three together were cut at three lines on a phone. The
+  // finished sentence alone stays a plain message, as it always was.
   function toastSaved(saved, files, type, outcome) {
     const action = SAVED_ACTIONS[outcome];
     if (!action) return;
     const done = `${saved.thing} ${action}: ${saved.size} in ${saved.seconds} s.`;
     const note = fallbackNote(files[0], type);
-    const finish = outcome === 'pending' ? ' Tap Share now to open the share sheet.' : '';
-    const text = done + note + finish;
-    if (note || finish) toast(text, note ? 'warn' : '', 6000);
-    else toast(text);
+    const finish = outcome === 'pending' ? 'Tap Share now to open the share sheet.' : '';
+    const added = [note, finish].filter(sentence => sentence !== '');
+    if (added.length) toast([done, ...added], note ? 'warn' : '', 6000);
+    else toast(done);
   }
 
   // Delivers a finished export by Download or Share, with a toast saying how it went.

@@ -358,12 +358,12 @@ Before you start:
 - Photo: the photo find-out Q-09 names, in your photos
 - Starting screen: the photo open, on the Export step
 
-The size line is the line on Export that gives the saved picture's size in px and its format. Here the finished message shows over the bottom of the photo when the picture is ready, before the share sheet: "Photo ready: W × H px in N s. Tap Share now to open the share sheet.", where N is the time from the tap on **Share**, in seconds to a tenth.
+The size line is the line on Export that gives the saved picture's size in px and its format. Here the finished message shows over the bottom of the photo when the picture is ready, before the share sheet: "Photo ready: W × H px in N s." and, on a line under it, "Tap Share now to open the share sheet.", where N is the time from the tap on **Share**, in seconds to a tenth.
 
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Original** under Size | **Original** has the solid white fill; the size line reads "Output W × H px · JPEG" |
-| 2 | Tap **Share** | A thin red line on the top edge of the controls grows from left to right; then the red button reads **Share now**, and the finished message reads "Photo ready: W × H px in N s. Tap Share now to open the share sheet.", with the size line's W × H |
+| 2 | Tap **Share** | A thin red line on the top edge of the controls grows from left to right; then the red button reads **Share now**, and the finished message reads, on two lines, "Photo ready: W × H px in N s." and "Tap Share now to open the share sheet.", with the size line's W × H |
 | 3 | Tap **Share now** | The iPhone's share sheet rises from the bottom of the screen |
 | 4 | Tap **Save Image** in the share sheet | The share sheet closes; **Share now** reads **Share** again |
 

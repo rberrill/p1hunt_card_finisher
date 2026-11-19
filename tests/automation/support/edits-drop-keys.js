@@ -20,6 +20,8 @@ const {
 } = require('./app.js');
 const { saveFileBy } = require('./export.js');
 const { expect } = require('./case.js');
+// The toast as it is now ({ text, kind, isShown }), and its one reader: support/toast.js.
+const { toastNow, withToastWords } = require('./toast.js');
 
 // The photo most cases use: a PSA slab, 1498 × 2098 px.
 const PHOTO = 'IMG_9136.JPEG';
@@ -117,10 +119,11 @@ function waitForEdits(page, expected) {
 // Starts recording every message the toast shows, as [{ text, kind }] (kind: 'error', 'warn'
 // or ''), from before the app loads. Each time the toast rises counts, even with the same words
 // as the last, and so does a message replaced by another in the same moment, which a person
-// would see only as a flicker. The toast is built when it is first needed, so the whole page
-// is watched for it.
+// would see only as a flicker. Its words are read by toastWords (support/toast.js): a message
+// of several lines is recorded as its lines with a space between them. The toast is built when
+// it is first needed, so the whole page is watched for it.
 function recordMessages(page) {
-  return page.addInitScript(() => {
+  return page.addInitScript(withToastWords(wordsOf => {
     window.testMessages = [];
     const isToast = node => !!node && node.id === 'toast';
     const kindOf = className => {
@@ -144,8 +147,9 @@ function recordMessages(page) {
           && change.target.classList
           && change.target.classList.contains('toast-text')
           && isToast(change.target.parentElement);
-        // Each new message is a new text node, so it still holds the words set at that moment.
-        if (isText) text = change.addedNodes.length ? change.addedNodes[0].textContent : '';
+        // Each new message is a new text node, or a new node for each of its lines, so the
+        // nodes this change added still hold the words set at that moment.
+        if (isText) text = wordsOf(change.addedNodes);
         if (!classChanges.includes(change)) continue;
         const after = classAfter(change);
         if (!isShownIn(change.oldValue) && isShownIn(after)) {
@@ -162,23 +166,11 @@ function recordMessages(page) {
         subtree: true,
       });
     });
-  });
+  }));
 }
 
 // The messages recordMessages has seen so far: [{ text, kind }].
 const messagesSoFar = page => page.evaluate(() => window.testMessages.slice());
-
-// The toast over the photo now: { text, kind, isShown }; kind is 'error', 'warn' or ''.
-function toastNow(page) {
-  return page.evaluate(() => {
-    const toast = document.getElementById('toast');
-    let kind = '';
-    if (toast.classList.contains('is-error')) kind = 'error';
-    if (toast.classList.contains('is-warn')) kind = 'warn';
-    const text = toast.querySelector('.toast-text').textContent;
-    return { text, kind, isShown: toast.classList.contains('is-shown') };
-  });
-}
 
 // Waits until the toast shows a message and returns it ({ text, kind }).
 async function waitForToast(page) {

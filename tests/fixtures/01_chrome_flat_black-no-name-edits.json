@@ -1,0 +1,57 @@
+{
+  "version": 2,
+  "source": {
+    "width": 1536,
+    "height": 2048
+  },
+  "corners": [
+    [
+      426.18467913699374,
+      529.4502026980531
+    ],
+    [
+      1081.1702831222774,
+      530.7342600649598
+    ],
+    [
+      1119.6657637304963,
+      1428.1116431466587
+    ],
+    [
+      414.9541777134332,
+      1432.959210690817
+    ]
+  ],
+  "strength": 1,
+  "aspect": {
+    "ratio": 0.7142857142857142,
+    "orientation": "auto"
+  },
+  "squareUpHeight": "preserveEdges",
+  "rotation": {
+    "quarter": 1,
+    "fine": 0,
+    "fillFrame": false
+  },
+  "flip": {
+    "h": false,
+    "v": false
+  },
+  "crop": {
+    "mode": "fit",
+    "preset": "1:1",
+    "ratio": 1,
+    "swapped": false,
+    "orient": null,
+    "rect": null
+  },
+  "levels": null,
+  "overlay": null,
+  "export": {
+    "format": "jpeg",
+    "quality": 0.92,
+    "longEdge": 2000,
+    "interp": "bilinear",
+    "fill": "#ffffff"
+  }
+}

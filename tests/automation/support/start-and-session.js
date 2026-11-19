@@ -7,6 +7,8 @@
 const fs = require('fs');
 const path = require('path');
 const { root, samplePath, goToStep } = require('./app.js');
+// The toast as it is now ({ text, kind, isShown }): support/toast.js has the one reader.
+const { toastNow } = require('./toast.js');
 
 // How long a photo may take to open (an enlarged 48 MP copy is slow in WebKit).
 const OPEN_TIMEOUT_MS = 45000;
@@ -160,19 +162,6 @@ async function addBack(page, hand, backName) {
     const [pair, edits] = await Promise.all([Session.get('pair'), Session.peek()]);
     return !!window.__straightener.app.pair && !!pair && !!edits && edits.name === name;
   }, backName, SAVE_TIMEOUT_MS, 'the pair to be saved');
-}
-
-// The toast over the photo: { text, kind, isShown }; kind is 'error', 'warn' or ''.
-function toastNow(page) {
-  return page.evaluate(() => {
-    const toast = document.getElementById('toast');
-    if (!toast) return { text: '', kind: '', isShown: false };
-    let kind = '';
-    if (toast.classList.contains('is-error')) kind = 'error';
-    if (toast.classList.contains('is-warn')) kind = 'warn';
-    const text = toast.querySelector('.toast-text').textContent;
-    return { text, kind, isShown: toast.classList.contains('is-shown') };
-  });
 }
 
 // One record the app keeps on the device (the IndexedDB store's 'photo', 'edits',
