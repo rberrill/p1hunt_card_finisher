@@ -58,7 +58,10 @@ const UPSCALE_QUESTION = 'Upscale to 2000 px?';
 // A second photo, for "the next photo".
 const SECOND_PHOTO = 'IMG_9075.JPEG';
 // The address the app has under a website's subfolder, as GitHub Pages serves it.
-const SUBFOLDER_ADDRESS = 'p1hunt_card_finisher/index.html';
+const SITE_URL = process.env.CARD_FINISHER_URL || '';
+// Against a deployed site, the site's own address is the subfolder (Pages serves it from one).
+const SUBFOLDER_ADDRESS = SITE_URL ? 'index.html' : 'p1hunt_card_finisher/index.html';
+const SUBFOLDER_PART = SITE_URL ? new URL(SITE_URL).pathname : '/p1hunt_card_finisher/';
 // The console warning when the image engine's worker can't start, up to the reason.
 const WORKER_WARNING = '[card-finisher] Web Worker unavailable, running on main thread:';
 // The page's title and the browser's own color (the theme-color meta).
@@ -506,7 +509,7 @@ test('STO-05.1 The app works from a website\'s subfolder [phone]', async ({
     async () => {
       const served = requests.filter(address => /^https?:/.test(address));
       expect(served.length).toBeGreaterThan(0);
-      const outside = served.filter(address => !address.includes('/p1hunt_card_finisher/'));
+      const outside = served.filter(address => !address.includes(SUBFOLDER_PART));
       expect(outside).toEqual([]);
       expect(failed).toEqual([]);
     });
