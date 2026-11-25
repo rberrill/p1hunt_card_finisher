@@ -3259,7 +3259,7 @@ test('PER-38.2 The Debug overlay switch adds no undo step after a hand-placed co
 
 // How long PER-39.1 may take: it opens all 22 sample photos, about a second each.
 const ACCURACY_TIMEOUT_MS = 240000;
-// The error recorded when a photo has no candidate at all, as R1 records it (%).
+// The error recorded when a photo has no candidate at all, as PER-39 records it (%).
 const NO_CANDIDATE_PCT = 99;
 // Photos known to miss their rules, by browser engine, each with its bug. They play the part
 // test.fail plays for a whole case, photo by photo, so the other photos stay gated: a listed
@@ -3302,7 +3302,7 @@ async function measureDetection(page, hand, name) {
   };
 }
 
-// A table of the measured errors next to the baselines, and the scoreboard R1 prints: how many
+// A table of the measured errors next to the baselines, and the scoreboard PER-39 prints: how many
 // photos each pick finds within 1%, all of them, the raw cards and the held-out photos.
 function accuracyReport(measured) {
   const rows = measured.map(photo => {

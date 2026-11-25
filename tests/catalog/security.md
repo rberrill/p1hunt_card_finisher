@@ -78,7 +78,7 @@ Before you start:
 | 3 | Tap **Rotate** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Rotate step shows, with **90° right** |
 | 4 | Tap **90° right** | The photo turns a quarter right |
 | 5 | Tap **Export** in the step tabs | The Export step shows, with **Download** |
-| 6 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 6 | Tap **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 7 | Tap **No** | IMG_9136-straight.jpg is saved |
 | 8 | Look at the Network tab | No request went over the network since the list was cleared: every address listed, if any, starts with blob: or data:, which stay on the device |
 
@@ -606,7 +606,7 @@ The named actions (the step tabs are the six tabs Perspective to Export, along t
 | 3 | Apply Auto levels | The photo's colors change, and there is no dot on the **Levels** tab: the levels are applied |
 | 4 | Add the logo | The app's icon is placed on the photo |
 | 5 | Tap **Export** in the step tabs | The Export step shows, with **Download** |
-| 6 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 6 | Tap **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 7 | Tap **No** | IMG_9136-straight.jpg is saved |
 | 8 | Look at the Console | It holds no error, and no message that the security policy refused something |
 

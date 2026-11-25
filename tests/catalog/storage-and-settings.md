@@ -73,7 +73,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **PNG** under Format | **PNG** is selected, and no message shows over the photo |
-| 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | IMG_9136-straight.png is saved |
 | 4 | Look at the Console | It holds no error |
 
@@ -271,7 +271,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **Yes** | IMG_9136-straight.jpg is saved, 2000 × 2000 px |
 | 3 | Wait two seconds, then reload the page | The start screen offers **Resume** |
 | 4 | Tap **Resume** | The photo opens on the Export step |
@@ -307,7 +307,7 @@ Before you start:
 | 1 | Look at the Network tab | Every file the page asked for came from the subfolder (its address has /p1hunt_card_finisher/ in it), and none failed |
 | 2 | Tap **Open photo** and choose the photo | The photo opens on the Perspective step, with the corner outline on the card's edges |
 | 3 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Export step shows, with **Download** |
-| 4 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 4 | Tap **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 5 | Tap **No** | IMG_9136-straight.jpg is saved |
 
 Pass: every row's result is seen.
@@ -325,7 +325,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Click **Open photo** and choose the photo | The photo opens on the Perspective step, with the corner outline on the card's edges |
 | 2 | Click **Export** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Export step shows, with **Download** |
-| 3 | Click **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 3 | Click **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 4 | Click **No** | IMG_9136-straight.jpg is saved |
 | 5 | Look at the Console and the Network tab | No error and no warning that the worker is unavailable; nothing was asked of a server: every address starts with file:, blob: or data: |
 
@@ -348,7 +348,7 @@ Before you start:
 | 1 | Look at the Console | One warning reads "[card-finisher] Web Worker unavailable, running on main thread: Stand-in: workers are blocked" |
 | 2 | Tap **Open photo** and choose the photo | The photo opens on the Perspective step, with the corner outline on the card's edges |
 | 3 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Export step shows, with **Download** |
-| 4 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 4 | Tap **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 5 | Tap **Yes** | IMG_9136-straight.jpg is saved at 2000 × 2000 px: the sharpening ran on the page too |
 
 Pass: every row's result is seen.
@@ -486,7 +486,7 @@ That the self-tests run in the worker is DEV-05.1.
 | --- | --- | --- |
 | 1 | Tap **Open photo** and choose the photo | The photo opens with the corner outline on the card's edges; the worker was handed the detection |
 | 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Export step shows, with **Download** |
-| 3 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 3 | Tap **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 4 | Tap **Yes** | IMG_9136-straight.jpg is saved; the worker was handed the sharpening |
 | 5 | Look at the Console | No warning that the worker is unavailable |
 

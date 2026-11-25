@@ -55,7 +55,7 @@ const { holdNextSearch } = require('./support/perspective.js');
 
 const PHOTO = 'IMG_9136.JPEG';
 const SECOND_PHOTO = 'IMG_9075.JPEG';
-// P1Hunt red (#e5322d), the color of the one main button on a screen.
+// P1Hunt red (#e5322d), the color of a main button.
 const P1HUNT_RED = 'rgb(229, 50, 45)';
 const STEP_NAMES = ['perspective', 'rotate', 'crop', 'levels', 'overlay', 'export'];
 const FRONT = '14_front_portrait_raw_white.JPEG';
@@ -518,7 +518,7 @@ test('STA-05.5 An unreadable saved time and name [phone]', async ({
   check,
 }, testInfo) => {
   await startWithSavedPhoto(page, testInfo);
-  // Script only: no control changes a saved record (whether the developer tools can is Q-07).
+  // Script only: no control changes a saved record.
   await changeSavedEdits(page, 'savedAt', 'soon');
   await check('the saved edits hold the time "soon"', async () => {
     expect((await storedRecord(page, 'edits')).savedAt).toBe('soon');
@@ -707,7 +707,7 @@ test('STA-08.1 A size mismatch says the photo was opened fresh [phone]', async (
   check,
 }, testInfo) => {
   const hand = await startWithSavedTurn(page, testInfo);
-  // Script only: no control changes a saved record (whether the developer tools can is Q-07).
+  // Script only: no control changes a saved record.
   await changeSavedEdits(page, 'width', PHOTO_WIDTH + 1);
   await check('the saved edits hold the width 1499', async () => {
     expect((await storedRecord(page, 'edits')).width).toBe(PHOTO_WIDTH + 1);
@@ -773,7 +773,7 @@ async function checkResumeOpensFresh(page, check, hand) {
 test('STA-08.3 A saved record that holds no edits says the photo was opened fresh [phone]',
   async ({ page, check }, testInfo) => {
     const hand = await startWithSavedTurn(page, testInfo);
-    // Script only: no control changes a saved record (whether the developer tools can is Q-07).
+    // Script only: no control changes a saved record.
     await changeSavedEdits(page, 'state', null);
     await check('the saved record holds no edits, and still holds the width 1498', async () => {
       const record = await storedRecord(page, 'edits');

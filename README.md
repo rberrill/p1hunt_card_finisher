@@ -12,7 +12,7 @@ Six steps, in order. On a phone they're the tabs along the bottom of the screen;
 
 1. **Perspective.** Finds the card's four corners automatically, even inside a case or slab, and corrects the camera angle.
    - Drag corners or edges, with a magnifier that stays clear of your finger. Double-tap a handle to zoom in on it.
-   - A row of tools: **Nudge** moves the selected handle a pixel at a time; **Flatten** sets how flat the card comes out (100% gives a flat 5:7 card, as if scanned; 0% squares it up but keeps some depth); **Candidate** tries the next-best detection when the first pick catches a stand or case edge; **Snap** pulls a dragged handle onto the nearest detected edge; and **Preview** shows the corrected result. The detection confidence is always shown.
+   - A row of tools: **Nudge** moves the selected handle a pixel at a time; **Flatten** sets how flat the card comes out (100% gives a flat 5:7 card, as if scanned; 0% squares it up but keeps some depth); **Candidate** tries the next-best detection when the first pick catches a stand or case edge; **Snap** pulls a dragged handle onto the nearest detected edge; and **Preview** shows the corrected result. The detection confidence shows beside the tools, except while a message or **Preview** takes its place.
    - Corners on the wrong card? **Tap to find card** (in the options sheet), then tap the card: detection runs again around that spot. **Cancel** stops it waiting.
 2. **Rotate.** Drag the **Straighten** ruler, or tap the angle to type it (on a phone, **±** and **Done** sit above the keyboard). **90° left** and **90° right** turn the photo, **Flip** mirrors it, and **Fill frame** zooms in so a tilted photo leaves no empty corners.
 3. **Crop.** A row of presets: Free, Original, 1:1, 4:3, 5:4, 3:2, 16:9 and 5:7 card. On a phone the row runs off the right edge: swipe it sideways for the rest. Drag inside the crop box to move it, and its handles to resize it; the crop's size is always shown.
@@ -48,7 +48,7 @@ Also:
 
 - **Hosted:** [rberrill.github.io/p1hunt_card_finisher](https://rberrill.github.io/p1hunt_card_finisher/) (GitHub Pages). This is the recommended way on a phone: the Share button needs HTTPS, which Pages provides.
 - **From disk:** download the repository (Code → Download ZIP), unzip it, and open `index.html` in a current browser (tested in Chrome on desktop and Safari on iPhone). It makes no network requests.
-- **Local server:** from this folder, run the command below and open `http://localhost:8765/index.html`. The sample-photo tests need this.
+- **Local server:** from this folder, run the command below and open `http://localhost:8765/index.html`.
 
   ```bash
   python -m http.server 8765

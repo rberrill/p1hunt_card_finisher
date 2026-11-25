@@ -120,6 +120,8 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 **Nothing remembered.** The app remembers the crop preset, the export settings and a saved logo. Every case's "Before you start" has the line "Browser data: none for this site (a private window, or the site's data cleared)", unless the case is about what is remembered and says what is.
 
+**The journeys are the exception** (`journeys.md`): they are run on a real phone as it is, so they start from "whatever is there" and may say what to do if a Resume box or a saved logo shows (*Claude's call*).
+
 **Files.** Sample photos are in `samples/`. Any other file a case needs (a logo, a file that isn't a picture, an edits file with one value changed) is in `tests/fixtures/`, named in the case. A change made to a file by hand is quoted exactly.
 
 **Words used in cases.** Define a term where a case first uses it, in these words:

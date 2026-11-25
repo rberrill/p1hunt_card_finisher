@@ -1653,7 +1653,7 @@ function CardEngineModule(globalScope) {
    * fresh state for this photo). A malformed field keeps the base value and is listed in
    * `invalid`; a missing sub-field takes the base value (older files); unknown fields are
    * dropped. options: { presetIds: crop preset ids, maxPx: the largest export long edge }.
-   * `fields` lists every state field this checks (regression R14 compares).
+   * `fields` lists every state field this checks.
    */
   function sanitizeState(input, base, options = {}) {
     const state = JSON.parse(JSON.stringify(base));

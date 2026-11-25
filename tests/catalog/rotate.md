@@ -973,7 +973,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Export** in the step tabs (the six tabs Perspective to Export: along the bottom on a phone, in the top bar on a wide screen) | The Export step shows **Download** |
-| 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 2 | Tap **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | A file named IMG_9136-straight.jpg is saved |
 | 4 | Tap **Rotate** in the step tabs | The Rotate step shows |
 | 5 | Tap **Flip** in the row of tools (the bottom row of buttons under the photo, or in the panel at the right on a wide screen: **Straighten**, **Flip**, **90° left**, **90° right**, **Fill frame**) | **Horizontal** and **Vertical** show, neither of them white |
@@ -1099,7 +1099,7 @@ Before you start:
 
 Two actions are used twice:
 - Type the angle N: tap the angle (**0.0°**, with a pencil after it), type N, tap **Done**.
-- Save a copy: tap **Download**; the question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?"; tap **No**.
+- Save a copy: tap **Download**; the question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?"; tap **No**.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -1178,7 +1178,7 @@ Before you start:
 - Browser data: none for this site (a private window, or the site's data cleared)
 
 One action is used twice:
-- Save a copy: tap **Download**; the question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?"; tap **No**.
+- Save a copy: tap **Download**; the question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?"; tap **No**.
 
 | # | Do this | You should see |
 | --- | --- | --- |

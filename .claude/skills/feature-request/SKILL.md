@@ -127,5 +127,5 @@ catalog (the `test` skill), and the page's UAT section says where they went.
 
 Put phone figures in `<div class="plates">` in twos, so no plate sits alone in a row. The page
 follows the viewer's light or dark theme through the colour tokens in `page.css`; a drawing
-never uses a colour of its own. The two `.js` files follow `.claude/rules/code-style.md` and are
-in the style check; page scripts live outside the repo and are not.
+never uses a colour of its own. The two `.js` files are skill scripts, so the code style check
+does not cover them (Rich, 2026-11-17); keep them readable. Page scripts live outside the repo.

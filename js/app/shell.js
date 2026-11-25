@@ -161,7 +161,7 @@
     byId('btnRedo').onclick = CF.redo;
     byId('btnFit').onclick = CF.fitCurrent;
     document.querySelectorAll('.control-area > .grabber').forEach(grabber => {
-      // The grabber's target reaches 22 px up over the photo. A press there that lands on a
+      // The grabber's target reaches 25 px up over the photo. A press there that lands on a
       // handle or a ring belongs to the photo: hand it over before the sheet takes it.
       grabber.addEventListener('pointerdown', event => {
         if (!CF.hitsPhotoControl(event.clientX, event.clientY)) return;

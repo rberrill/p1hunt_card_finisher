@@ -7,8 +7,8 @@ const path = require('path');
 const { defineConfig } = require('@playwright/test');
 const { runFolder } = require('./automation/support/run-folder.js');
 
-// The port the suite's own server uses. The preview servers use 8766 and 8771, and Rich's
-// LAN server 8765, so a run never collides with them.
+// The port the suite's own server uses. Ports 8765, 8766 and 8771 are left for other local
+// servers, so a run never collides with them.
 // Set CARD_FINISHER_PORT when two runs must not share a server (several writers at once).
 const PORT = Number(process.env.CARD_FINISHER_PORT) || 8770;
 const root = path.resolve(__dirname, '..');
@@ -21,8 +21,8 @@ const PHONE = { width: 390, height: 844 };
 const SMALL_PHONE = { width: 375, height: 667 };
 const DESKTOP = { width: 1280, height: 800 };
 
-// A case names where it runs in its title. The size: [phone], [desktop] or [both]; adding
-// [webkit] runs it in WebKit as well as Chromium. [all] is [both] with [webkit]. A case runs
+// A case names where it runs in its title. The size: [phone], [desktop], [both], [small] or
+// [disk]; adding [webkit] runs it in WebKit as well as Chromium. [all] is [both] with [webkit]. A case runs
 // only where its verdict could differ: Chromium at phone size by default, the desktop size
 // where the wide layout or a keyboard and mouse matter, WebKit where the engine could change
 // the answer (layout, saved files, storage, the file input, the worker, gestures).

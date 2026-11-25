@@ -188,7 +188,7 @@ Before you start:
 | 3 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom) | The Export step shows |
 | 4 | Tap **PNG** | PNG is selected |
 | 5 | Tap **3000** | 3000 is selected; the size line (the line that gives the saved picture's size in px and its format) reads "Output", the crop's own size, then "px · PNG · full crop, not upscaled" |
-| 6 | Tap **Download** | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 3000 px?" |
+| 6 | Tap **Download** | The question box (the box that appears over the dimmed photo with a question and three buttons) asks "Upscale to 3000 px?" |
 | 7 | Tap **Yes** | A PNG of 3000 × 3000 px is saved |
 | 8 | Open the file and zoom in on the middle of the logo, where black meets white | The edge is sharp: at most 2 px of gray between the black and the white |
 
@@ -208,7 +208,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Save the photo | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 1 | Save the photo | The question box (the box that appears over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **No** | A first file is saved, with no logo |
 | 3 | Tap **Overlay** in the step tabs | The Overlay step shows, with no logo |
 | 4 | Add blue-disc.png | The blue disc shows in the middle of the photo |
@@ -236,7 +236,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Add overlay-split-2048.png | The logo shows in the middle of the photo: its left half black, its right half white |
 | 2 | Hold **Larger** (the **+** key, right of the arrows) for about 2.5 s | The logo grows to the photo's full width and stops |
-| 3 | Save a PNG at 3000 | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 3000 px?" |
+| 3 | Save a PNG at 3000 | The question box (the box that appears over the dimmed photo with a question and three buttons) asks "Upscale to 3000 px?" |
 | 4 | Tap **Yes** | A PNG is saved; in it, across the logo's middle, the black turns white within 2 px |
 
 Pass: every row's result is seen.
@@ -259,7 +259,7 @@ Before you start:
 | --- | --- | --- |
 | 1 | Add overlay-split-2048.png | The logo shows in the middle of the photo: its left half black, its right half white |
 | 2 | Hold **Larger** (the **+** key, right of the arrows) for about 2.5 s | The logo grows to the photo's full width and stops |
-| 3 | Save a PNG at 3000 | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 3000 px?" |
+| 3 | Save a PNG at 3000 | The question box (the box that appears over the dimmed photo with a question and three buttons) asks "Upscale to 3000 px?" |
 | 4 | Tap **Yes** | A PNG is saved; in it, across the logo's middle, the edge between black and white is soft: 5 px of gray or more |
 
 Pass: every row's result is seen.
@@ -1676,7 +1676,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Add overlay-dark-and-light-grays.png | The two-gray square shows in the middle |
-| 2 | Save a PNG at 2000 | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 2 | Save a PNG at 2000 | The question box (the box that appears over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 3 | Tap **No** | A first PNG is saved |
 | 4 | Tap **Levels** in the step tabs | The Levels step shows |
 | 5 | Tap **Auto** | A white dot shows on the **Levels** tab: levels are set but not applied |
@@ -1702,7 +1702,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Add overlay-greys.png | The two-gray square shows in the middle |
-| 2 | Save a PNG at 3000 | The question box (the box that appears over the dimmed photo with a question and two buttons) asks "Upscale to 3000 px?" |
+| 2 | Save a PNG at 3000 | The question box (the box that appears over the dimmed photo with a question and three buttons) asks "Upscale to 3000 px?" |
 | 3 | Tap **Yes** | A PNG of 3000 × 3000 px is saved |
 | 4 | Look across the logo's middle in the file | No px is more than 6 darker than gray 100 or more than 6 lighter than gray 150: no sharpening halo along the edge between the two grays (the browser's own enlarging of the logo strays up to 4; the photo's sharpening, put on the logo, would stray 11 or more) |
 

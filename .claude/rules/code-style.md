@@ -52,9 +52,9 @@ rest is for review.
 | Namespaces, classes, objects of methods | PascalCase | `CardEngine`, `Quad`, `Mat3`, `Session` |
 | Module-level constant tables, defaults, limits | UPPER_SNAKE | `DETECT_DEFAULTS`, `BLOCKED_KEYS` |
 | CSS classes and custom properties | kebab-case | `.step-number`, `--panel-bg` |
-| HTML ids (JS handles) | camelCase | `stepMenu`, `btnOpen` |
+| HTML ids (JS handles) | camelCase | `btnDownload`, `btnOpen` |
 
-In HTML and CSS, `btn` is allowed as the button class and id prefix (`.btn`, `btnShare`).
+`btn` is allowed as the id prefix of a button (`btnShare`).
 
 Acronyms are one word in camelCase: `levelsLut`, `toSrgb`, `parseSvg`, not `levelsLUT`.
 

@@ -143,8 +143,9 @@
     if (!app.img) return;
     lastTabPress = { time: -Infinity, isBackward: false };
     elements.canvas.classList.remove('is-keyboard-focus');
-    // focusVisible false: a click or touch shows no focus ring, even after Tab presses (Chrome
-    // otherwise carries the keyboard's ring over to a focus made in script).
+    // focusVisible false asks for no focus ring on a click or touch. After Tab has put the ring
+    // on the photo it stays all the same: the photo already had the focus, so the browser keeps
+    // it marked as keyboard focus (as intended, ruling R41).
     elements.canvas.focus({ preventScroll: true, focusVisible: false });
     try {
       elements.canvas.setPointerCapture(event.pointerId);

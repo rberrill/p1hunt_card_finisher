@@ -1,6 +1,6 @@
 /* =====================================================================
    js/app/parts/action-button.js: the Action button part. A pill with a label and an optional
-   icon. One red button per screen (the main action); white is the next thing to do.
+   icon. Red is for a main action; white is the next thing to do.
    Shell modules share one namespace, CF (created in core.js). Names from core are destructured
    below; anything from another module is called as CF.name. tests/selftest.js checks these
    boundaries.
@@ -14,7 +14,7 @@
   const BUTTON_LOOKS = ['main', 'next', 'quiet'];
 
   // Builds a button.
-  //   look     'main' (red: the screen's one main action), 'next' (white), 'quiet' (a lighter
+  //   look     'main' (red: a main action), 'next' (white), 'quiet' (a lighter
   //            grey, on a card) or none
   //   size     'small' (36 px, in a status or the typed-angle bar), 'tall' (48 px, Export's save
   //            row and cards) or none (44 px)

@@ -38,9 +38,6 @@ A second reader checks every new or changed case. The faults found most often in
 - A capability whose description names two things and whose cases prove one.
 - A touch behavior with no `[phone]` case: anything where Safari's own gestures (double-tap zoom, the back swipe, the page pinch, the long-press menu) could take the touch from the app.
 
-## When several writers work at once
+## What a writer may edit
 
-- Edit only your own area's catalog file, spec file and `tests/automation/support/<area>.js`. Read the shared helpers; don't edit them, `tests/bugs.md` or the configuration. Say in your report which of your helpers should become shared.
-- Use the bug numbers you were given, and write your rows, in the format of `tests/bugs.md`, to the file you were told. One row per defect, naming every case it makes fail.
-- Run only your own spec, with your own port and run folder: `CARD_FINISHER_PORT=<port> CARD_FINISHER_RUN_DIR=<folder> npx playwright test automation/<file>.spec.js`.
-- Finish with your spec passing (known defects pass through `test.fail`), nothing flaky when repeated, and `node tests/selftest.js` reporting no problem in your area.
+One writer works at a time (the `test` skill). What a writer may change, and how it reports, is in `.claude/agents/case-writer.md`.

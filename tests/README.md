@@ -65,30 +65,32 @@ When a change improves a photo, lower its baseline in the same change; it moves 
 
 The run also prints a **scoreboard** that never fails: how many photos are found by the top pick and by the best of 3, raw cards on their own, and the held-out photos. The held-out photos (`HELD_OUT`) are not looked at while tuning detection and are checked once at the end, so a change that only fits the photos it was tuned on shows up.
 
-| Sample | Shot | Top pick | Best of 3 | Group |
-|---|---|---|---|---|
-| IMG_9060 | One-touch on a stand | 2.48% | 0.49% | Near miss (the stand edge outranks the card) |
-| IMG_9074 | Beckett slab on a stand | 1.80% | 1.80% | Near miss (the card edge is nearly invisible beside a rail) |
-| IMG_9075 | Beckett slab on white | 0.04% | 0.04% | Within 1% |
-| IMG_9136 | PSA slab | 0.46% | 0.46% | Within 1% |
-| IMG_9142 | CGC slab, landscape card, on a stand | 0.25% | 0.25% | Within 1% |
-| IMG_9216 | Toploader on a stand | 0.09% | 0.09% | Within 1% |
-| 01_chrome_flat_black | Raw chrome card, flat on a black mat | 0.00% | 0.00% | Within 1% |
-| 02_black_flat_black | Raw black card, flat on a black mat | 0.24% | 0.24% | Within 1% (found by the second, more sensitive pass) |
-| 03_chrome_flat_busy | Raw chrome card, flat on a busy mat | 24.32% | 24.32% | Wrong shape (mat lines break up the card's outline). Held out |
-| 04_red_angle_busy | Raw red card, steep angle, busy mat | 6.29% | 1.35% | Wrong shape (the printed frame inside the card) |
-| 05_sapphire_flat_black | Landscape card in a toploader, black mat | 0.03% | 0.03% | Within 1% |
-| 06_chrome_flat_white | Toploader, flat on white | 0.42% | 0.42% | Within 1% |
-| 07_dark_flat_black | Landscape card in a toploader, black mat | 1.75% | 0.93% | Near miss (misses the bottom strip). Held out |
-| 08_silver_stand_busy | Silver card in a toploader on a silver stand, busy background | 1.16% | 1.16% | Near miss (the card's bottom edge barely differs from the stand) |
-| 09_silver_stand_white | Hard holder on a stand, white background | 0.19% | 0.19% | Within 1% |
-| 10_sapphire_flat_busy | Hard holder, flat on a busy mat | 5.64% | 1.60% | Wrong shape (stops above the name bar). Held out |
-| 11_any_flatglare_black | Graded slab with glare, black mat | 1.24% | 1.24% | Near miss |
-| 12_blackred_stand_busy | Graded slab on a stand, busy background | 0.36% | 0.36% | Within 1%. Held out |
-| 13_front_landscape_onetouch_labeled_white | Landscape card in a labelled one-touch, on white (the front of a pair) | 2.28% | 2.28% | Near miss (the one-touch's edge under the label outranks the card's) |
-| 13_back_landscape_onetouch_labeled_white | The same card's back | 2.57% | 2.57% | Near miss (mixes the label's and the holder's edges with the card's) |
-| 14_front_portrait_raw_white | Raw portrait card, on white (the front of a pair) | 3.79% | 2.29% | Near miss (stops above the card's bottom edge) |
-| 14_back_portrait_raw_white | The same card's back, shot in the front's orientation | 2.07% | 2.07% | Near miss (the printed frame inside the card's white border). Held out |
+Each photo's baseline (top pick and best of 3) and its group are in `BASELINE` in `tests/automation/support/detection-baselines.js`, their one home; the run's scoreboard prints them.
+
+| Sample | Shot | Note |
+|---|---|---|
+| IMG_9060 | One-touch on a stand | The stand edge outranks the card |
+| IMG_9074 | Beckett slab on a stand | The card edge is nearly invisible beside a rail |
+| IMG_9075 | Beckett slab on white |  |
+| IMG_9136 | PSA slab |  |
+| IMG_9142 | CGC slab, landscape card, on a stand |  |
+| IMG_9216 | Toploader on a stand |  |
+| 01_chrome_flat_black | Raw chrome card, flat on a black mat |  |
+| 02_black_flat_black | Raw black card, flat on a black mat | Found by the second, more sensitive pass |
+| 03_chrome_flat_busy | Raw chrome card, flat on a busy mat | Mat lines break up the card's outline. Held out |
+| 04_red_angle_busy | Raw red card, steep angle, busy mat | The printed frame inside the card |
+| 05_sapphire_flat_black | Landscape card in a toploader, black mat |  |
+| 06_chrome_flat_white | Toploader, flat on white |  |
+| 07_dark_flat_black | Landscape card in a toploader, black mat | Misses the bottom strip. Held out |
+| 08_silver_stand_busy | Silver card in a toploader on a silver stand, busy background | The card's bottom edge barely differs from the stand |
+| 09_silver_stand_white | Hard holder on a stand, white background |  |
+| 10_sapphire_flat_busy | Hard holder, flat on a busy mat | Stops above the name bar. Held out |
+| 11_any_flatglare_black | Graded slab with glare, black mat |  |
+| 12_blackred_stand_busy | Graded slab on a stand, busy background | Held out |
+| 13_front_landscape_onetouch_labeled_white | Landscape card in a labelled one-touch, on white (the front of a pair) | The one-touch's edge under the label outranks the card's |
+| 13_back_landscape_onetouch_labeled_white | The same card's back | Mixes the label's and the holder's edges with the card's |
+| 14_front_portrait_raw_white | Raw portrait card, on white (the front of a pair) | Stops above the card's bottom edge |
+| 14_back_portrait_raw_white | The same card's back, shot in the front's orientation | The printed frame inside the card's white border. Held out |
 
 ## Bugs that became tests
 
@@ -103,4 +105,4 @@ The run also prints a **scoreboard** that never fails: how many photos are found
 
 Strip location data first. The privacy check fails on any JPEG in `samples/` with a GPS block. Put the photo in `samples/` itself, not a subfolder (the privacy check only looks there), with an uppercase `.JPEG` extension; the tests assume it. Keep it full frame, as the phone took it. Name it `NN_<card>_<pose>_<background>`; a card's front and back share a number, as `13_front_…` and `13_back_…` do, and the back is shot in the front's orientation, as a pair needs.
 
-To place its corners, open it in the app, drag the four corners onto the card's outer corners (the card, not its holder) and use **Save edits**; the file's `corners` go into `GROUND_TRUTH`. Run PER-39 once (from `tests/`: `npx playwright test -g "PER-39"`), put the measured top-pick and best-of-3 errors into `BASELINE`, and add a row to the table above. A new photo comes in at its measured baseline, so it never changes the rule for the others.
+To place its corners, open it in the app, drag the four corners onto the card's outer corners (the card, not its holder) and use **Save edits**; the file's `corners` go into `GROUND_TRUTH`. Run PER-39 once (from `tests/`: `npx playwright test -g "PER-39"`), put the measured top-pick and best-of-3 errors into `BASELINE`, and add the photo's row (its shot and any note) to the table above. A new photo comes in at its measured baseline, so it never changes the rule for the others.

@@ -2055,8 +2055,9 @@ test('TOP-32.2 Levels shows one tips heading on a wide screen [desktop]', async 
 });
 
 // Starts recording, in the page, every fade that starts inside the element `selector` names:
-// each time a class is added that starts a fade (is-leaving or is-arriving). Returns a function
-// that reads the list: the ids (or class names) of the elements that started one.
+// each time a class is added that starts a fade (is-leaving or is-arriving; a line's
+// is-entering fade-in is not recorded). Returns a function that reads the list: the ids (or
+// class names) of the elements that started one.
 async function watchFades(page, selector) {
   await page.evaluate(target => {
     window.testFades = [];

@@ -144,8 +144,10 @@ until he has reviewed the run's bugs and said which to fix.
    time, and let him name the exceptions (*Claude's call* on the grouping).
 3. **Record** his answer in each row's Decision.
 4. **Fix** only rows that read "Fix", most severe first, test-first as above. A row that
-   reads "Open for now" keeps its `test.fail` mark and may ship; the release tag's message
-   lists those.
+   reads "Open for now" keeps its `test.fail` mark (a detection bug on single photos keeps
+   its line in PER-39's known-slips list, `KNOWN_SLIPS` in
+   `tests/automation/perspective.spec.js`) and may ship; the release tag's message lists
+   those.
 
 ## When the checklist comes back
 
@@ -154,7 +156,9 @@ until he has reviewed the run's bugs and said which to fix.
 - A Part C answer: write it into the case that was waiting, add a ruling if the answer is a
   decision, and delete the item from `find-out.md`.
 - Commit the filled-in checklist; it is the record of the round. The release tag's message
-  cites it.
+  cites it. Commit it on its own, before any case is changed: the next checklist's Part A
+  holds what changed since the last commit to `tests/checklists/`, so a case changed in that
+  same commit is left out (*Claude's call*).
 
 A real iPhone is the only judge of what Safari and iOS do (the share sheet, Photos, the
 keyboard, safe areas). Playwright's WebKit is not Safari.

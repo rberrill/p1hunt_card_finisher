@@ -16,7 +16,6 @@ paths:
 - Shared state goes on `app`, never in a top-level `let` shared across modules.
 - Untrusted input (edits files, IndexedDB, localStorage) goes through `CF.cleanState` (`CardEngine.sanitizeState`).
 - Keep `window.__straightener` (the test hook) and `CONFIG.storageKey` unchanged.
-- Touch first: every feature works by touch alone, with ≥ 44 px targets. Keyboard shortcuts are extras.
 
 ## Where things are (load order)
 
@@ -48,7 +47,7 @@ paths:
 Fifteen parts build every screen of the 1.10 layout (the plan's component inventory; Rich, 2026-11-14). The names, the function shapes and the class names below are Claude's build calls.
 
 - **One module per part**, with its rules under its own banner in `css/app.css`. A part exports a `build…` function, which returns an element and attaches only the part's own behavior (hold to repeat, the ruler's drag, a sheet's close), and an `update…` function, which writes values into it. A value left out of an update stays as it is.
-- **A step composes parts; it doesn't restyle them.** The step's module builds its control area and its sheet from parts, binds their events and syncs them from the state. If a part can't do what a step needs, the part changes (through the lead), not the step.
+- **A step composes parts; it doesn't restyle them.** The step's module builds its control area and its sheet from parts, binds their events and syncs them from the state. If a part can't do what a step needs, the part changes, not the step.
 - **State is in attributes**, so CSS and screen readers agree: `aria-pressed` (a mode or switch tool, a chip, a segment), `aria-selected` (a tab), `disabled`, `hidden`. Looks are `is-…` classes (`is-main`, `is-tall`, `is-warn`).
 - **Motion belongs to the parts** (Claude's build, 1.10 phase 6, from the plan's sequences M1 to M13): a part animates itself through classes it sets (`is-open`, `is-dragging`, `is-held`, `is-leaving`, `is-entering`, `is-arriving`, `is-done`, `is-ghost`), only with `transform` and `opacity`. Things drawn on the canvas (Overlay's rings and snap, the compare badge) are timed redraws: the state is committed at once and only the drawing is animated. Ask `CF.isMotionReduced()` before any timed sequence in JS.
 - **Fixed heights are tokens** in `:root` (`--top-bar-height`, `--control-area-height`, `--tab-bar-height`); use them, not the numbers.

@@ -116,8 +116,8 @@ const PICTURE_TOLERANCE_PX = 0.5;
 // NOT_BLUE_MAX (0 to 255); the same bounds, green for blue, make the green logos' green.
 const BLUE_MIN = 200;
 const NOT_BLUE_MAX = 60;
-// How many taps of a pad key make a named "ten taps": a tenth of a quarter-wide logo's width
-// per two taps, so ten move it a fifth of its own width.
+// How many taps of a pad key make a named "ten taps": each tap moves a quarter-wide logo a
+// fiftieth of its width, so ten move it a fifth of its own width.
 const TEN_TAPS = 10;
 // A gray level between these (0 to 255) is neither the black nor the white half of the split
 // logo: the soft part of the edge between them.

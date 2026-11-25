@@ -448,7 +448,7 @@ The photo shows a 2 px white ring when the keyboard brought focus to it, and non
 - Changed: none
 - Anchors: `#view`, `.is-keyboard-focus`
 - Source: `js/app/input.js` (`onPointerDown`, `stepHandleByTab`), `css/app.css` (`#view:focus-visible`)
-- Ruling: R41. After Tab puts the ring on the photo, a click on the photo leaves the ring, which means the keyboard is acting on the photo. The app already does this. (The code's comment that says otherwise is to be corrected.)
+- Ruling: R41. After Tab puts the ring on the photo, a click on the photo leaves the ring, which means the keyboard is acting on the photo. The app already does this.
 - Cases: 2
 
 ### KEY-09.1 The photo shows a white ring when the keyboard brings the focus, not a click   [auto: desktop, webkit]

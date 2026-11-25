@@ -1009,7 +1009,7 @@
   ];
   // The line above the controls while the corners are invalid: no logo can be added until they
   // are fixed (ruling R11). The photo area shows the same words then, written out in
-  // js/app/view.js (draw): a rewording changes both.
+  // js/app/view.js (fixCornersWords): a rewording changes both.
   const FIX_CORNERS_FIRST = 'Fix the corners in Perspective first.';
 
   // The hint shown with no logo placed. It gives the size limit in force, which a link can

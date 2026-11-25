@@ -146,10 +146,6 @@
     if (CONFIG.debug) CF.toggleDebugPanel(true);
     // ?selftest=0 means off (ruling R28); any other value, or none, runs them.
     if (params.has('selftest') && params.get('selftest') !== '0') runSelfTests();
-    // PWA (phase two): register the service worker from its own file.
-    // if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    //   navigator.serviceWorker.register('sw.js');
-    // }
     // The test hook (not used by the UI): lets automated checks drive the app.
     window.__straightener = {
       app,

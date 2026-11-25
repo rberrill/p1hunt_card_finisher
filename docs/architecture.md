@@ -72,7 +72,7 @@ source (photo px) —homography→ perspective (corrected) —flip, then rotate�
 
 - **Preview:** a 2048 px copy; a 720 px copy for the live mini-preview; a 1000 px copy for detection.
 - **Export:** row bands of about 2 MP; each band reads at most 6 MP of the source. Output is capped at 16.7 MP (iOS Safari's canvas limit).
-- **Corner shots:** rendered one at a time through the same banded renderer (`renderWarped`), at most 1200 px a side, so the sheet stays under 2.5 × 2.5 k px.
+- **Corner shots:** rendered one at a time through the same banded renderer (`renderWarped`), at most 2000 px a side (`cornerShots.maxPx`), so the sheet is at most 4032 px a side, just under the 16.7 MP cap.
 - **Front + back pairs:** the side you're on lives in the app state like any photo. The other side keeps its edits, undo history, preview copies and original bytes, but not its decoded full-resolution photo, so only one full-resolution photo is in memory at a time: switching decodes the other side's photo before releasing the open one, and a pair export renders the open side, releases its photo, decodes, renders and closes the other side's, then decodes the open side's again. The Together image renders both sides into one canvas (`renderWarped`'s `target`), laid out by `CardEngine.pairLayout`, and obeys the same 16.7 MP cap, both sides scaling down together. `pairLayout`'s `longEdgePx` fits the joined image to a long edge exactly (the upscale question's Yes), both sides enlarged alike and the gutter taking the rounding remainder.
 - **Levels in export:** the LUT is applied to each band's source pixels before the warp, so the fill color is never recolored.
 

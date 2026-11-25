@@ -12,7 +12,7 @@
   const { byId, makeEl, app } = CF;
 
   // The step's tips (the plan's approved wording, 14 November) and its keyboard help on a wide
-  // screen (Claude's wording, recorded by the lead).
+  // screen (Claude's wording).
   const ROTATE_TIPS = [
     'Drag the ruler to straighten, or tap the angle to type it.',
     'Fill frame zooms in so a tilted photo leaves no empty corners.',

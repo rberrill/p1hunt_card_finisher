@@ -1213,7 +1213,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 }
 
 /* ---- step: Perspective ---- */
-/* Owned by js/app/perspective.js's phase. Phone-only and wide-only rules go in a
+/* The rules for js/app/perspective.js. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
 /* Preview's two grey lines (in the label row and the control row): at most two lines each in
    their 44 px row, as the status text is. */
@@ -1253,7 +1253,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 }
 
 /* ---- step: Rotate ---- */
-/* Owned by js/app/rotate.js's phase. Phone-only and wide-only rules go in a
+/* The rules for js/app/rotate.js. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
 /* The angle is a button (it opens the typed angle): a 44 px target, its text underlined with
    dots and followed by a pencil (frame R1). */
@@ -1314,11 +1314,11 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 }
 
 /* ---- step: Crop ---- */
-/* Owned by js/app/crop.js's phase. Phone-only and wide-only rules go in a
+/* The rules for js/app/crop.js. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
 
 /* ---- step: Levels ---- */
-/* Owned by js/app/levels.js's phase. Phone-only and wide-only rules go in a
+/* The rules for js/app/levels.js. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
 /* The instruction between Discard and Apply (frame L1): centered in what the two buttons
    leave, on one line where it fits and two where it doesn't (a 375 px phone), as the status
@@ -1341,7 +1341,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 .levels-tips { display: flex; flex-direction: column; gap: 10px; }
 
 /* ---- step: Overlay ---- */
-/* Owned by js/app/overlay.js's phase. Phone-only and wide-only rules go in a
+/* The rules for js/app/overlay.js. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
 /* The hint in the label row while no logo is placed: grey, at most two lines in its 44 px
    row, as the status text is. */
@@ -1378,7 +1378,7 @@ section[data-panel].active { display: flex; flex-direction: column; flex: 1; min
 #overlayTools .tool { flex: 0 0 calc((100% - 15px) / 4); }
 
 /* ---- step: Export ---- */
-/* Owned by js/app/export-controls.js's phase. Phone-only and wide-only rules go in a
+/* The rules for js/app/export-controls.js. Phone-only and wide-only rules go in a
    media block inside this banner (max-width: 760px or min-width: 761px). */
 /* Four rows in the area's 200 px: 44, 44, 48 and 44, with the area's 4 px between them
    (frame E1). Its rows keep 6 px between their controls. */

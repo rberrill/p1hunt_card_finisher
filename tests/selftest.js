@@ -170,7 +170,7 @@ function report(pass, name, detail) {
     missing.length ? missing.join(', ') : `${exported.size} exports`);
 }
 
-// Security rules (1.6). Untrusted text (file names, edits files, links) must never become markup
+// Security rules. Untrusted text (file names, edits files, links) must never become markup
 // or code: no HTML-string sinks or eval anywhere in js/, and index.html keeps a strict Content
 // Security Policy with no inline script, style or event-handler attributes and no off-site assets.
 {
@@ -259,7 +259,7 @@ function hasGps(bytes) {
   return false;
 }
 
-// Privacy rules (1.7). The repository is public: sample photos may not carry a GPS location, and
+// Privacy rules. The repository is public: sample photos may not carry a GPS location, and
 // the published text files may not contain private network addresses or local drive paths
 // (those belong in the gitignored CLAUDE.local.md).
 {
@@ -313,7 +313,7 @@ function hasGps(bytes) {
 // Defines globalThis.CardEngine.
 new Function(engine)();
 
-// CONFIG consistency (1.7). The engine's built-in defaults (used when no settings are passed, as
+// CONFIG consistency. The engine's built-in defaults (used when no settings are passed, as
 // in these Node tests) must match CONFIG, and every CONFIG_LIMITS key must name a CONFIG number
 // whose default is in range.
 {

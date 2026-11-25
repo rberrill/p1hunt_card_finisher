@@ -13,7 +13,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
    When he asks for it as a document, the `feature-request` skill writes it: a Markdown file in `../../feature-requests/` and a request page in Claude, with a description, purpose, impact, drawn wireframes and acceptance criteria (Rich, 2026-11-10).
 
-   Don't edit code until he agrees the full set. Small, clear bug reports with steps can be fixed straight away (Claude's working habit, not a rule Rich set).
+   Don't edit code until he agrees the full set.
 2. **Write for the reviewer.** Code is read more than it's run: whole-word names, one statement per line, lines of 100 characters at most, a comment on every function. The detail is in `.claude/rules/code-style.md` (it loads with any code file). It covers the files that ship (`js/`, `css/`, `index.html`), not test tooling, hooks or work files (Rich, 2026-11-17). Apply it to everything you touch there, and don't add to the debt.
 3. **Build with its catalog** (the `test` skill; Rich, 2026-11-17). A feature, an enhancement or a bug fix is finished only when the catalog matches it, in the same change: entries and cases first, each automated case's test seen to fail, then the code. A bug is a row in `tests/bugs.md`, with a severity (Critical, High, Medium, Low; Rich's definitions are in that file), and a failing test before it is a fix. No bug is fixed until Rich has reviewed the run's bugs and said which to fix and which stay open for now (Rich, 2026-11-17). Report measured results from the run, not assumptions.
 4. **Testing** is one process (Rich approved it on 2026-11-15; everything before it is void):
@@ -25,16 +25,17 @@ A static web app that straightens, crops and color-corrects phone photos of trad
    Delegated work goes to the agents in `.claude/agents/` (Rich, 2026-11-17).
 
    `/test uat` starts a UAT round (complete run, build to the UAT site, checklist); `/test refresh` only puts the current build there.
-5. **Release only on Rich's go-ahead**, after the checklist has passed on the UAT site. He runs `/release X.Y.Z`, which tags `main` and moves the `release` branch (the live site) to the tag.
+5. **Release only on Rich's go-ahead**, after the checklist has passed on the UAT site. He runs `/release X.Y.Z`: that is his go for the preflight only. After its report he says whether to go on; only then is `main` tagged and the `release` branch (the live site) moved to the tag (Rich, 2026-11-24).
 6. **Record as you go:**
    - user-visible changes in `CHANGELOG.md` under `## [X.Y.0] - Unreleased`;
    - what changed in the catalog, on a `Catalog:` line in the commit message of any change to the app (a hook checks it);
    - decisions, and files changed in the background, in `../../decision-log.md` (dated, newest first, with the *why*);
-   - the "Waiting on" line in `CLAUDE.local.md`.
+   - the "Waiting on" line in `CLAUDE.local.md`;
+   - in a cloud session the decision log, `CLAUDE.local.md`, the feature requests and the UAT checkout are not there: put what would go in them in the commit message under `Decision log (to copy):`, say so in the closing message, and leave UAT rounds, releases and feature-request pages to a session on Rich's machine (*Claude's call*).
 
 **Rich's preferences:**
 - Direct feedback; push back when something is wrong.
-- **One question at a time, as a multiple-choice picker.** When there are several decisions to make, ask the first with the question tool (options to pick from, the recommended one first, what each costs), wait for the answer, then ask the next. Never a batch of questions in one message (Rich, 2026-11-15).
+- **One question at a time, as a multiple-choice picker.** When there are several decisions to make, ask the first with the question tool (options to pick from, the recommended one first, what each costs), wait for the answer, then ask the next. Never a batch of questions in one message (Rich, 2026-11-15). The one exception: the same question in several places is asked once, listing every place (Rich, 2026-11-25).
 - Simplicity over features: he removed case detection, Square up mode and the Before button when they didn't earn their place.
 - No messages a user can't act on (such as "needs HTTPS").
 - Nothing blocks the photo, except a temporary flyout the user opens or an alert they must answer before they can go on.
@@ -45,7 +46,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 
 - **Plain static files:** the app needs no build step, no npm and no Node to run; no frameworks, zero runtime dependencies, nothing loaded from another site. Test tooling may use npm, in `tests/` only, and the app never loads anything from there (Rich, 2026-11-15). Must work from `file://`, `localhost` and a Pages subfolder. Classic `<script src>` on relative paths, with `?v=<appVersion>` on every asset link.
 - Everything stays in the browser; no image is ever uploaded.
-- **Non-destructive:** the original is never modified. All edits live in one serializable state object, and export is `render(source, state)` from full resolution. Edits files round-trip pixel-identically (R6).
+- **Non-destructive:** the original is never modified. All edits live in one serializable state object, and export is `render(source, state)` from full resolution. Edits files round-trip pixel-identically.
 - **Engine / shell split:** `js/engine.js` is pure and runs in a Web Worker; the shell (`js/app/`) talks to adapters (`ImageSource`, `Detector`, `Exporter`, `Session`) so native versions can swap in. The rules in `.claude/rules/` load when you touch those files.
 - **Touch first:** everything works by touch alone, with ≥ 44 px targets and safe-area padding. Keyboard shortcuts are extras.
 - **Phone memory:** preview from downscaled copies, export in row bands, output capped at 16.7 MP (the iOS canvas limit).
@@ -109,13 +110,13 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 | `tests/README.md` | How to run the tests, what each guards, the detection baseline |
 | `.claude/skills/` | `test` (the catalog, the runs, UAT rounds), `release` (Rich-triggered), `feature-request` (a request's Markdown file and its page), `sweep` (Rich-triggered: audits the instructions and docs for conflicts and dead weight, and changes nothing without his approval of each item) |
 | `.claude/agents/` | `case-writer`, `fixer`, `reviewer`, `triage-tester`: the roles delegated work goes to (the `test` skill says when) |
-| `.claude/hooks/` | SessionStart: project state. Stop: runs selftest when app code changed. Before a commit: the message's `Catalog:` line. `guard-paths.js` keeps an agent to its own files |
+| `.claude/hooks/` | SessionStart: project state. Stop: runs selftest when app code or tests changed. Before a commit: the message's `Catalog:` line. `guard-paths.js` keeps an agent to its own files |
 | `CHANGELOG.md`, `README.md`, `SECURITY.md` | Public docs (see `.claude/rules/public-docs.md`) |
 | `tests/catalog/`, `tests/automation/`, `tests/bugs.md`, `tests/checklists/` | The test cases, their automated tests, open defects, and Rich's phone checklists (the `test` skill) |
 | `archive/`, `CLAUDE.local.md`, `tests/runs/`, `tests/node_modules/` | Local only (gitignored) |
 
 **Branches:**
-- `main` holds all work. Commit and push it as you go; that never changes the live site.
+- `main` holds all work. Commit and push it as you go; that never changes the live site. A cloud session can push only the branch it was given: it commits there and says in its closing message that the branch waits to be merged into `main` (*Claude's call*).
 - `release` is what Pages serves. Never commit to it. Only the `release` skill moves it, and only to a release tag (rollback moves it back one tag). A GitHub ruleset blocks deleting or force-pushing it; Rich is the bypass for rollback.
 - `fix/<name>`, from the live tag, is only for a hotfix while `main` has unreleased work.
 - Releases are annotated tags on `main` (`vX.Y.Z`). Moving `release` needs Rich's go-ahead.
@@ -135,7 +136,7 @@ Claude maintains these files without being asked. Each kind of fact has one home
 | What changed, for users | `CHANGELOG.md` |
 | Why we decided it | `../../decision-log.md` |
 | How a release was verified | the release's annotated tag message (`git show vX.Y.Z`) |
-| What's current (version, what's unreleased, what's blocked and on whom) | Not this file. At the start of every session a script shows Claude the branch, last release, version and the CHANGELOG's unreleased entries; what's blocked is under **Waiting on** in `CLAUDE.local.md` |
+| What's current (version, what's unreleased, what's blocked and on whom) | Not this file. At the start of every session a script shows Claude the branch, the live release (what the `release` branch is on), version and the CHANGELOG's unreleased entries; what's blocked is under **Waiting on** in `CLAUDE.local.md` |
 
 - When Rich settles a product decision, add one line under "Settled product decisions" and log the detail in the decision-log.
 - **A rule needs a source.** A line in this file, a rule file or a skill that constrains the product or the process needs a decision of Rich's behind it (a decision-log entry). Claude's own build calls, habits and heuristics are marked as Claude's, so no later session takes them for his (Rich, 2026-10-31, after finding a "nothing scrolls" rule he never set).

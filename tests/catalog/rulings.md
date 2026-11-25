@@ -2,6 +2,8 @@
 
 Rich's decisions on how the app should behave where its behavior was in question (15 November 2026). A catalog entry that a ruling changes carries its number in a Ruling field.
 
+**A record, not the spec (Rich, 2026-11-25).** Every ruling here was asked, answered and built into the catalog entries, which are the spec. Nobody works from this file: where it and an entry differ, the entry stands.
+
 **FIX** means the app differs today: the entry's cases are written to the ruling and fail until the app is changed, test first. **AS-IS** means today's behavior is intended. **WORDING** means new on-screen text that Rich approves before it is built.
 
 | # | Behavior in question | Ruling |

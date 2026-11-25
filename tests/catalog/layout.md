@@ -515,7 +515,7 @@ Before you start:
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and two buttons) asks "Upscale to 2000 px?" |
+| 1 | Tap **Download** | The question box (the box over the dimmed photo with a question and three buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **Yes** | A thin red line on the top edge of the controls (the block of buttons under the photo) grows from left to right in several steps, then goes; a message over the photo begins "Photo downloaded: 2000 × 2000 px" |
 
 Pass: every row's result is seen.

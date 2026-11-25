@@ -2449,7 +2449,7 @@ Detection puts the corners on the card's own outer edge, not on the slab, stand,
 - Changed: none
 - Anchors: `CONFIG.detect.wArea`, `CONFIG.detect.retryConfidence`, `CONFIG.detect.refine`
 - Source: `js/engine.js` (`detect`, `detectionPass`, `refineQuad`); the measured baselines are in `tests/automation/support/detection-baselines.js` (`GROUND_TRUTH`, `BASELINE`, `HELD_OUT`)
-- Ruling: R34. Detection is made robust for 02_black_flat_black in both browsers before 1.10.0; no baseline is raised. The app differs today (BUG-065).
+- Ruling: R34. Detection finds the card in 02_black_flat_black in both browsers, and no baseline is raised.
 - Cases: 1
 
 ### PER-39.1 Every sample photo is detected within its own baseline   [auto: desktop, webkit]
@@ -2461,7 +2461,7 @@ Known defects, each expected to miss until it is fixed, while every other photo 
 Before you start:
 - Device and browser: a computer; a wide window, 1280 × 800 px; Chrome's engine and WebKit, one run in each
 - Build: the build under test
-- Photos: the 22 sample photos in samples/ listed in tests/README.md under "Detection (R1)", each with its hand-placed corners and its two baselines (top pick and best of 3)
+- Photos: the 22 sample photos in samples/ listed in tests/README.md under "Detection", each with its hand-placed corners and its two baselines (top pick and best of 3)
 - Starting screen: the start screen, with no photo open
 - Browser data: none for this site (a private window, or the site's data cleared)
 

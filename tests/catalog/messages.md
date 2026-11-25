@@ -721,6 +721,9 @@ Before you start:
 | 2 | Tap **No** | The share sheet is handed one file, 01_chrome_flat_black-straight.jpg |
 | 3 | Read the message over the photo | A white message reads "Photo shared: 1074 × 1074 px in N s.", N the seconds it took, to one decimal place |
 
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
+
 ## MSG-23 "Front and back downloaded: … px in … s." for a pair saved Together
 
 An information message after a pair's **Download** or **Share** with **Together** chosen: "Front and back downloaded: {width} × {height} px in {seconds} s." or "Front and back shared: …", the size the joined image's.
@@ -924,7 +927,7 @@ When the browser refuses to share because the tap was too long ago (a slow expor
 
 ### MSG-28.1 A refused share says to tap Share now   [auto: phone]
 Script only
-Stand-in: Safari refuses a share that starts too long after the tap, but an export of a sample photo is too quick for that, and no case uses a desktop browser's own share sheet; the script gives the page a stand-in share sheet that refuses the first share as Safari does and finishes every later one at once. On a real iPhone this is MSG-28.2.
+Stand-in: Safari refuses a share that starts too long after the tap, but an export of a sample photo is too quick for that, and no case uses a desktop browser's own share sheet; the script gives the page a stand-in share sheet that refuses the first share as Safari does and finishes every later one at once.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -944,7 +947,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-28.3 A pair's finished message of three sentences shows every line whole   [auto: phone, webkit]
 Script only
-Stand-in: the message needs two things at once that a sample photo in a desktop browser can't give: a browser that can't save WebP, and a share refused for coming too long after the tap. The script makes the browser hand back a PNG when asked for WebP, as Safari does, and gives the page a stand-in share sheet that refuses the first share, as Safari does after a slow export. On a real iPhone the two sentences are MSG-27.2 and MSG-28.2.
+Stand-in: the message needs two things at once that a sample photo in a desktop browser can't give: a browser that can't save WebP, and a share refused for coming too long after the tap. The script makes the browser hand back a PNG when asked for WebP, as Safari does, and gives the page a stand-in share sheet that refuses the first share, as Safari does after a slow export. On a real iPhone the WebP sentence is MSG-27.2.
 
 Before you start:
 - Device and browser: a phone-width window (390 × 844), touch
@@ -967,7 +970,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### MSG-28.4 On a small phone a pair's finished message of three sentences shows every line whole   [auto: small]
 Script only
-Stand-in: the message needs two things at once that a sample photo in a desktop browser can't give: a browser that can't save WebP, and a share refused for coming too long after the tap. The script makes the browser hand back a PNG when asked for WebP, as Safari does, and gives the page a stand-in share sheet that refuses the first share, as Safari does after a slow export. On a real iPhone the two sentences are MSG-27.2 and MSG-28.2.
+Stand-in: the message needs two things at once that a sample photo in a desktop browser can't give: a browser that can't save WebP, and a share refused for coming too long after the tap. The script makes the browser hand back a PNG when asked for WebP, as Safari does, and gives the page a stand-in share sheet that refuses the first share, as Safari does after a slow export. On a real iPhone the WebP sentence is MSG-27.2.
 
 Before you start:
 - Device and browser: a narrow phone window, 375 × 667 px (an iPhone SE), touch
@@ -1031,6 +1034,9 @@ Before you start:
 | --- | --- | --- |
 | 1 | Tap **Original** | **Original** is selected (a white fill): at the photos' own resolution no question box asks first |
 | 2 | Tap **Copy** | A white message reads "Front and back copied (PNG)." |
+
+Pass: every row's result is seen.
+On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## MSG-30 "Copy failed."
 
