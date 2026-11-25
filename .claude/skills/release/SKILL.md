@@ -1,6 +1,6 @@
 ---
 name: release
-description: Release a Card Finisher version to GitHub Pages - preflight, version bump, annotated tag on main, move the release branch to the tag, live-site check, rollback if needed, start the next version. Only after the phone checklist has passed on the UAT site and Rich has said go.
+description: Release a Card Finisher version to GitHub Pages - preflight, version bump, annotated tag on main, move the release branch to the tag, live-site check, rollback if needed. Only after the phone checklist has passed on the UAT site and Rich has said go.
 disable-model-invocation: true
 argument-hint: "[X.Y.Z]"
 ---
@@ -114,11 +114,14 @@ Pages takes a minute or two to deploy, and caches files for about 10 minutes.
 3. Fix on `main`, then release `X.Y.Z+1` the normal way.
 4. Log the rollback in `decision-log.md`.
 
-## 5. Start the next version (on `main`)
+## 5. After Keep: `main` stays at the released version
 
-- `node .claude/skills/release/set-version.js X.Y+1.0-dev`.
-- Add `## [X.Y+1.0] - Unreleased` above the release in the CHANGELOG.
-- Commit `Start X.Y+1.0-dev` and push `main`.
+No next `-dev` version is started after a release (Rich, 2026-11-25, at 1.10.0, beta
+release 1: what follows is fixes and a version 1 release candidate, and any further
+version 1 iteration is bug fixes or updates from beta feedback). `main` keeps the released
+version until the next work is agreed. What number that work takes is Rich's call: ask him
+before the first change to the app, then set it with `set-version.js` and add its
+`Unreleased` section to the CHANGELOG.
 
 ## Hotfix while `main` has unreleased work
 
