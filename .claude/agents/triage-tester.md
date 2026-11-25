@@ -40,6 +40,10 @@ How:
    - **Known defect now passing:** a test marked `test.fail` that passed. The app was fixed:
      name the bug row to close.
 4. Never mark a test `test.fail` yourself, and never change a test or the app.
+5. A brief gives you at most 8 failing case runs (Rich, 2026-11-24: no agent gets a whole
+   run's failures; the number is Claude's). Rows skipped only because an earlier case in
+   their file failed don't count. Given more, triage the first 8 and say in your report
+   which were left.
 
 Report a table: case, target, verdict (defect, test fault, flaky, fixed), one line of why,
 and the bug row and its severity if you drafted one; then the run's totals.

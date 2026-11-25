@@ -32,6 +32,13 @@ Edits Rich makes on GitHub's website go on `main`, never on `release`.
 - The full run passes (from `tests/`: `CARD_FINISHER_FULL=1 npx playwright test`): no unexpected failure. Note its totals for the tag message.
 - Privacy audit: `git diff --stat vPREV..HEAD` and `git ls-files`. Nothing local-only is tracked (`CLAUDE.local.md`, `archive/`, `tests/runs/`, `tests/node_modules/`, `.claude/settings.local.json`), and every new file is meant to be public.
 
+### Triage the failures
+
+A failure in the full run is sorted before the report: defect, test fault or flaky. That
+goes to `triage-tester` in batches of at most 8 failing case runs, never one brief with
+every failure (Rich, 2026-11-24; how the batches are made is in the `test` skill, under
+Agents). Triage fixes nothing and changes no test.
+
 ### Rich decides what happens next
 
 Running `/release` is Rich's go for the preflight, not for the tag (Rich, 2026-11-24). When the preflight is done, **stop and report**: the selftest, the full run's totals, each failure with what it is and where, and anything the branch and privacy checks found. Then wait. He chooses:

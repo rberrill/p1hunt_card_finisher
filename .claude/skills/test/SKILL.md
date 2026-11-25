@@ -89,7 +89,20 @@ never runs the complete run: it runs its areas' specs and the related cases only
 session runs the complete run once, when every fix of a cycle is in, to find what isn't fixed and any regression (Rich, 2026-11-17: a complete
 run per fix repeats nine minutes of tests each time). Several
 `triage-tester` or `reviewer` runs in parallel are fine where it helps; say what it will
-cost first. The usual chain for a bug: `case-writer` (if no test fails for it yet), `fixer`,
+cost first.
+
+How much one `triage-tester` gets: a batch, never the whole list of a run's failures (Rich,
+2026-11-24, after a release preflight handed one agent all 43: a brief that size
+eventually fails). At most 8 failing case runs to a brief (the number is Claude's, not
+Rich's: each is read and re-run three times). Make the batches before the first brief:
+failures that look like one cause go together (the same error text, the same area and
+target), and a row that is only skipped because an earlier case in its file failed travels
+with that case and doesn't count toward the 8. Each batch's brief names its case runs and
+its own bug-number range, and its report is checked before the next batch's verdicts are
+built on it. A cause one batch has settled goes into the later briefs as settled, so it is
+not worked out twice.
+
+The usual chain for a bug: `case-writer` (if no test fails for it yet), `fixer`,
 `reviewer`, commit.
 
 ## `/test uat`: start a UAT round
