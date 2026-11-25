@@ -397,7 +397,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-07.3 Choosing Flip or Straighten closes the box and saves the angle   [auto: phone]
-Waiting on find-out Q-10: whether a tap on **Flip** or **Straighten** with the box open saves the typed angle on an iPhone. In the browsers the script runs in, the tap takes the cursor out of the box first, and that is what saves it. A phone case is added here once Rich has seen it on the phone.
+On an iPhone the keypad covers **Flip**, **Straighten** and the step tabs while the box is open, so a person there finishes with **Done** (Rich, on his iPhone, 2026-11-24): this case is for a computer or the script. In the browsers the script runs in, the tap takes the cursor out of the box first, and that is what saves it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -420,7 +420,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-07.4 Leaving the step closes the box and saves the angle   [auto: phone]
-Waiting on find-out Q-10: whether a tap on a step tab with the box open saves the typed angle on an iPhone. In the browsers the script runs in, the tap takes the cursor out of the box first, and that is what saves it. A phone case is added here once Rich has seen it on the phone.
+On an iPhone the keypad covers **Flip**, **Straighten** and the step tabs while the box is open, so a person there finishes with **Done** (Rich, on his iPhone, 2026-11-24): this case is for a computer or the script. In the browsers the script runs in, the tap takes the cursor out of the box first, and that is what saves it.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -501,7 +501,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-07.8 Choosing Flip or Straighten with the box empty keeps the angle   [auto: phone]
-Waiting on find-out Q-10: whether this control can be tapped at all with the keypad up on an iPhone. In the browsers the script runs in, the tap takes the cursor out of the box first, so this case passes through the same closing path as ROT-07.7.
+On an iPhone the keypad covers **Flip**, **Straighten** and the step tabs while the box is open, so a person there finishes with **Done** (Rich, on his iPhone, 2026-11-24): this case is for a computer or the script. In the browsers the script runs in, the tap takes the cursor out of the box first, so this case passes through the same closing path as ROT-07.7.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -527,7 +527,7 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### ROT-07.9 Leaving the step with the box empty keeps the angle   [auto: phone]
-Waiting on find-out Q-10: whether this control can be tapped at all with the keypad up on an iPhone. In the browsers the script runs in, the tap takes the cursor out of the box first, so this case passes through the same closing path as ROT-07.7.
+On an iPhone the keypad covers **Flip**, **Straighten** and the step tabs while the box is open, so a person there finishes with **Done** (Rich, on his iPhone, 2026-11-24): this case is for a computer or the script. In the browsers the script runs in, the tap takes the cursor out of the box first, so this case passes through the same closing path as ROT-07.7.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test

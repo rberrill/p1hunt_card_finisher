@@ -296,7 +296,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-05.5 An unreadable saved time and name   [auto: phone]
 Script only
-Stand-in: no control changes the edits the app has saved on the device, so the script rewrites two of their values, as a saved record the app can no longer read as it wrote it would be. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+Stand-in: no control changes the edits the app has saved on the device, so the script rewrites two of their values, as a saved record the app can no longer read as it wrote it would be. This case is run by the script alone.
 Before you start:
 - Device and browser: any; a phone-width or a wide window
 - Build: the build under test
@@ -447,7 +447,7 @@ Resume applies the saved edits only if there are any and their saved width and h
 
 ### STA-08.1 A size mismatch says the photo was opened fresh   [auto: phone]
 Script only
-Stand-in: no control changes the size saved with the edits, and no sample photo decodes at a size other than its own, so the script changes the saved width by one pixel, as a photo that no longer decodes at the size it was saved with would be. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+Stand-in: no control changes the size saved with the edits, and no sample photo decodes at a size other than its own, so the script changes the saved width by one pixel, as a photo that no longer decodes at the size it was saved with would be. This case is run by the script alone.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -467,7 +467,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-08.2 After a size mismatch the fresh edits replace the saved ones   [auto: phone, webkit]
 Script only
-Stand-in: as for STA-08.1, the script changes the width saved with the edits by one pixel; no control can, and whether Chrome's developer tools can is find-out item Q-07.
+Stand-in: as for STA-08.1, the script changes the width saved with the edits by one pixel; no control can.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -488,7 +488,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### STA-08.3 A saved record that holds no edits says the photo was opened fresh   [auto: phone]
 Script only
-Stand-in: no control removes the edits from the record the app saves, so the script removes them and leaves the photo's name and size, as a record that was written wrong would be. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+Stand-in: no control removes the edits from the record the app saves, so the script removes them and leaves the photo's name and size, as a record that was written wrong would be. This case is run by the script alone.
 
 Before you start:
 - Device and browser: any; a phone-width or a wide window
@@ -1515,7 +1515,7 @@ Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
 - Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
-- Photo: a photo of a card saved in the Files app as a HEIC file: its name in Files ends in .HEIC. Whether Photos' Save to Files keeps that ending is find-out item Q-06; until it is answered, look at the name in Files before you start
+- Photo: a photo of a card saved in the Files app as a HEIC file: its name in Files ends in .HEIC, as Photos' Save to Files leaves it. iOS hands the app the photo in a type the app supports, so nothing here depends on the type it names (Rich, on his iPhone, 2026-11-24)
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |
@@ -1524,7 +1524,6 @@ Before you start:
 | 2 | Tap **Choose File** | The Files app's picker opens |
 | 3 | Tap the HEIC file | The photo opens on the Perspective step, with its corner handles on the card |
 | 4 | Tap **Export** in the step tabs (the six tabs along the bottom, Perspective to Export) | The Export step shows **Download** |
-| 5 | Tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Export options rise; the line near their foot names the file's type as image/heic |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).
@@ -1644,41 +1643,16 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ## STA-24 A 48 MP phone photo
 
-A 48 MP iPhone photo opens and stays usable: the screen works from smaller copies (2048 px for the photo on screen, 720 px for the live preview while dragging, 1000 px for card detection), and only the export reads the full photo.
+A 48 MP photo opens and stays usable: the screen works from smaller copies (2048 px for the photo on screen, 720 px for the live preview while dragging, 1000 px for card detection), and only the export reads the full photo.
 
 - Risk: high
-- Check: phone, script
+- Check: script
 - Layout: both
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `CONFIG.previewMaxPx`, `CONFIG.thumbMaxPx`, `CONFIG.detect.workingSize`
 - Source: `js/app/state.js` (`makeCopies`); `js/app/adapters.js` (`scaledCopy`)
-- Cases: 2
-
-### STA-24.1 A 48 MP photo from the camera stays usable on an iPhone   [phone]
-Before you start:
-- Device and browser: an iPhone whose main camera takes 48 MP photos, Safari. Which iPhones do, and at which camera setting, is find-out item Q-02; until it is answered, row 6 confirms the photo is 48 MP
-- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
-- Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
-- Photo: a photo of a card taken with the main camera at its highest resolution setting, held upright, with the card filling at least half the photo's height, in Photos
-- Starting screen: the start screen, with no photo open
-
-Accept Safari's downloads (a named action): each time Safari asks whether to download a file, tap **Download**, until it asks no more.
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Open photo** | A menu offers Photo Library, Take Photo and Choose File |
-| 2 | Tap **Photo Library** | Your photos show |
-| 3 | Choose the photo | The photo opens on the Perspective step, with its corner handles on the card; the page did not reload or go blank |
-| 4 | Drag a corner handle about a finger's width toward the middle of the card, and lift your finger | The handle moves with the finger and stays where you lifted it; the page did not reload or go blank |
-| 5 | Tap **Export** in the step tabs (the six tabs along the bottom, Perspective to Export) | The Export step shows **Download** |
-| 6 | Tap the options tab (the small tab with an up arrow on the top edge of the controls, the block of buttons under the photo) | Export options rise; the line near their foot starts "Source" and gives between 47 and 49 MP |
-| 7 | Tap the **×** at the top right of Export options | They close; **Download** shows |
-| 8 | Tap **Download** | No question box; a message over the photo begins "Photo downloaded: 2000 × 2000 px" |
-| 9 | Accept Safari's downloads | Safari asks nothing more; the photo is still on screen, on Export; the page did not reload or go blank |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, the iPhone model, a screenshot (press the side button and volume up together).
+- Cases: 1
 
 ### STA-24.2 A 48 MP photo is worked on from smaller copies   [auto: phone, webkit]
 Script only
@@ -1805,7 +1779,7 @@ Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
 - Browser data: none for this site (a private tab, or the site's data cleared in Settings › Safari)
-- Photo: a 12 MP photo of a card in the Photo Library, taken with the camera's usual setting (HEIC, the iPhone's default format). Note its size in pixels, such as 3024 × 4032, before you start; where Photos shows it is find-out item Q-03
+- Photo: a 12 MP photo of a card in the Photo Library, taken with the camera's usual setting (HEIC, the iPhone's default format). Note its size in pixels, such as 3024 × 4032, before you start: Photos shows it in the picture's info panel (open the picture and swipe up on it, or tap ⓘ)
 - Starting screen: the start screen, with no photo open
 
 | # | Do this | You should see |

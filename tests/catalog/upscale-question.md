@@ -579,7 +579,7 @@ After **Yes** or **No**, **Copy** still reaches the clipboard within the tap tha
 - Cases: 2
 
 ### UPS-10.1 On an iPhone, Copy after Yes or No reaches the clipboard   [phone]
-Waiting on find-out Q-03: where iOS shows a picture's pixel size. Rows 4 and 9 gain the steps that read the pasted picture's size (2000 × 2000 px after **Yes**, 1074 × 1074 px after **No**) once Rich has seen where it shows.
+Photos shows a picture's pixel size in its info panel (Rich, on his iPhone, 2026-11-24), so rows 4 and 9 save the pasted picture to Photos and read it there.
 
 Before you start:
 - Device and browser: an iPhone, Safari
@@ -595,12 +595,12 @@ Before you start:
 | 1 | Tap **Copy** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
 | 2 | Tap **Yes** | The question box closes; a message reads "Photo copied (PNG)." and no message about permission shows |
 | 3 | Paste into a new note | The straightened card is pasted into the note |
-| 4 | (Waiting on Q-03) Read the pasted picture's size | 2000 × 2000 px |
+| 4 | Save the pasted picture from the note to Photos, open it in Photos and swipe up on it (or tap ⓘ) | The info panel gives 2000 × 2000 |
 | 5 | Go back to Safari | The app shows, on the Export step |
 | 6 | Tap **Copy** | The question box asks "Upscale to 2000 px?" |
 | 7 | Tap **No** | The question box closes; a message reads "Photo copied (PNG)." |
 | 8 | Paste into a new note | The straightened card is pasted into the note |
-| 9 | (Waiting on Q-03) Read the pasted picture's size | 1074 × 1074 px |
+| 9 | Save the pasted picture from the note to Photos, open it in Photos and swipe up on it (or tap ⓘ) | The info panel gives 1074 × 1074 |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot (press the side button and volume up together).

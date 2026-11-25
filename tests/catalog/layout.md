@@ -187,7 +187,9 @@ On a fail, record: the row number, what you measured.
 
 ## LAY-05 The app fills the screen as Safari's bars come and go
 
-On an iPhone the app fills exactly the visible screen as Safari's address bar and toolbar show and hide, and the page never bounces or rubber-bands when dragged at its edges.
+On an iPhone the app fills exactly the visible screen, whether Safari's address bar and toolbar show or not, and the page never bounces or rubber-bands when dragged at its edges. LAY-05.1 checks it on an iPhone with the bars showing; LAY-05.2 checks by script that it fills the window at every height.
+
+- Ruling: R105. The app fits whether Safari's bars show or not; making them hide is not a step any case requires.
 
 - Risk: high
 - Check: phone
@@ -198,9 +200,7 @@ On an iPhone the app fills exactly the visible screen as Safari's address bar an
 - Source: `css/app.css` (`html, body`, `#app`)
 - Cases: 2
 
-### LAY-05.1 The app fills the screen as Safari's bars come and go   [phone]
-Waiting on find-out Q-04: which action makes Safari's bars hide and show every time, on a page that never scrolls. Row 2 gains that action once Rich has seen it on the phone; until then the case can't be run.
-
+### LAY-05.1 On an iPhone the app sits just above Safari's bar and never bounces   [phone]
 Before you start:
 - Device and browser: an iPhone, Safari, with its address bar at the bottom
 - Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/
@@ -211,9 +211,8 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Look at the bottom of the screen | The step tabs (the six tabs Perspective to Export) sit just above Safari's bar, with no gap and nothing hidden behind it |
-| 2 | (Waiting on Q-04) Make Safari's bars shrink | The app follows: the step tabs stay just above the bar, and the photo grows to fill the space |
-| 3 | Put a finger on the top bar and drag it quickly 200 px down | The page doesn't move or bounce, and nothing shows behind it |
-| 4 | Put a finger on the step tabs and drag it quickly 200 px up | The page doesn't move or bounce, and nothing shows behind it |
+| 2 | Put a finger on the top bar and drag it quickly 200 px down | The page doesn't move or bounce, and nothing shows behind it |
+| 3 | Put a finger on the step tabs and drag it quickly 200 px up | The page doesn't move or bounce, and nothing shows behind it |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, a screen recording (Control Center, the Screen Recording button).

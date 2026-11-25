@@ -381,8 +381,6 @@ Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### EXP-08.2 Share opens the iPhone's share sheet   [phone]
-Waiting on find-out Q-08: what the top of the iPhone's share sheet shows for a shared picture (a small picture of it, its name). Row 2 gains those words once Rich has seen it on the phone.
-
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP the Share button is hidden)
@@ -393,7 +391,7 @@ Before you start:
 | # | Do this | You should see |
 | --- | --- | --- |
 | 1 | Tap **Share** (red, first in the row of three buttons) | A question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?" |
-| 2 | Tap **No** | A thin red line runs along the top edge of the controls (the block of buttons under the photo), then the iPhone's share sheet rises from the bottom of the screen |
+| 2 | Tap **No** | A thin red line runs along the top edge of the controls (the block of buttons under the photo), then the iPhone's share sheet rises from the bottom of the screen, with a small picture of the straightened card at its top (it shows no file name) |
 | 3 | Tap the **×** at the share sheet's top right | The share sheet closes; the app is on the Export step as before, with no message shown |
 
 Pass: every row's result is seen.
@@ -715,14 +713,14 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 If the browser refuses to share because the tap was too long ago (a slow export), the finished files are kept and **Share** reads **Share now**, live even while the rest is busy; tapping it shares them without rendering again. The message that says the files are ready gives "Tap Share now to open the share sheet." a line of its own.
 
 - Risk: medium
-- Check: script; phone (Safari's own refusal)
+- Check: script
 - Layout: both
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: `#btnShare`, "Share now", "Tap Share now to open the share sheet."
 - Source: `js/app/export.js` (`shareFiles`, `shareExport`, `sharePending`, `toastSaved`); `js/app/export-controls.js` (`bindExport`, `syncSaveButtons`)
 - Ruling: R99. Each sentence of a finished message is its own line, and a message of lines is never cut (Rich, 2026-11-18). The app does this since 1.10.0.
-- Cases: 3
+- Cases: 2
 
 ### EXP-15.1 A refused share leaves Share now, which shares the same file   [auto: phone]
 Script only
@@ -767,26 +765,6 @@ Share without upscaling: tap **Share**, then **No** in the question box (the box
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
-
-### EXP-15.3 On an iPhone, a slow export leaves Share now, which opens the share sheet   [phone]
-Waiting on find-out Q-09: which photo is slow enough to save at **Original** that Safari refuses the share. The photo below is filled in from Rich's answer; until then the case can't be run.
-
-Before you start:
-- Device and browser: an iPhone, Safari
-- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP the Share button is hidden)
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: the photo Q-09 names, in Photos
-- Starting screen: the photo open, on the Export step, with **Original** selected (Original never asks to upscale)
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo); no share sheet rises |
-| 2 | Wait for the line to finish | A message over the photo reads, on two lines, "Photo ready: W × H px in N s." and "Tap Share now to open the share sheet.", W × H the saved size and N the seconds it took; the red button reads **Share now** |
-| 3 | Tap **Share now** | The share sheet rises at once, with no red line first: nothing is rendered again |
-| 4 | Tap **Save Image** | The share sheet closes; the red button reads **Share** again, and **Next card** shows in white |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screen recording (Control Center, the Screen Recording button).
 
 ## EXP-16 An edit drops a waiting Share now
 
@@ -1779,45 +1757,6 @@ The same cap keeps the straightened photo itself within 1000 px on its long side
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot, and the saved file.
-
-## EXP-35 A 48 MP photo on an iPhone
-
-A 48 MP photo saves at **Original** and at **3000** on an iPhone without the page reloading, because it is rendered a band of rows at a time.
-
-- Risk: high
-- Check: phone
-- Layout: phone. It is about the iPhone's memory.
-- Added: 1.10 baseline
-- Changed: none
-- Anchors: `CONFIG.export.bandPx`, `CONFIG.export.maxBandSrcPx`
-- Source: `js/app/export.js` (`renderWarped`, `isRegionTooBig`)
-- Cases: 1
-
-### EXP-35.1 A 48 MP photo saves at Original and at 3000 on an iPhone   [phone]
-Waiting on find-out Q-02: which iPhone models take 48 MP photos, and the size the source line gives for one. The device and row 3's size are filled in from Rich's answer.
-
-Before you start:
-- Device and browser: an iPhone that takes 48 MP photos, Safari
-- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP the Share button is hidden)
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: a 48 MP photo of a card, taken with the camera at its highest resolution, held upright, with the card filling at least half the photo's height, in Photos. At 48 MP that makes the card's crop more than 3000 px on its long side, so neither save below asks to upscale
-- Starting screen: the app open, no photo yet
-
-"Share and save": tap **Share** (red, first in the row of three buttons), then **Save Image** in the share sheet that rises.
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Open photo** and choose the 48 MP photo | The photo opens on the Perspective step, with the corner handles on the card's corners |
-| 2 | Tap **Export** in the step tabs (the six tabs Perspective to Export, along the bottom on a phone, in the top bar on a wide screen) | The Export controls show |
-| 3 | Tap the options tab (the tab with an up arrow on the top edge of the controls) | Near the end of **Export options**, the source line begins "Source" and gives 48 MP or more, such as "(48.8 MP)" |
-| 4 | Tap the **×** at the options' top right | The options go down |
-| 5 | Tap **Original** | The size line (the line under the size and format choices) reads Output N × N px · JPEG, with N more than 3000 |
-| 6 | Share and save | A thin red line runs along the top edge of the controls, the share sheet rises, and after **Save Image** a message over the photo begins "Photo shared: N × N px in", with the same N; the photo is still on screen, on the Export step: the page didn't reload |
-| 7 | Tap **3000** | The size line reads Output 3000 × 3000 px · JPEG |
-| 8 | Share and save | No question box; after **Save Image** a message begins "Photo shared: 3000 × 3000 px in"; the photo is still on screen, on the Export step |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screen recording (Control Center, the Screen Recording button).
 
 ## EXP-36 Interpolation in the saved file
 

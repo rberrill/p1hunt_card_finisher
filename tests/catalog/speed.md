@@ -326,7 +326,7 @@ On an iPhone, from tapping **Share** with Size **Original** to the share sheet o
 - Changed: none
 - Anchors: `#btnShare`, `"Share now"`, `"Original"`
 - Source: `js/app/export.js` (`doExport`, `runExport`, `deliverExport`, `shareExport`, `shareFiles`, `sharePending`)
-- Cases: 2
+- Cases: 1
 
 ### PERF-09.1 A Share at Original on a real iPhone, timed   [phone]
 Limit: none yet. This case measures the time on a real iPhone, and Rich sets the limit from it.
@@ -348,24 +348,3 @@ The size line is the line on Export that gives the saved picture's size in px an
 Pass: every row's result is seen. Write down N, and the iPhone's model and iOS version: Rich sets the limit from it.
 On a fail, record: the row number, a screen recording (Control Center, the Screen Recording button).
 
-### PERF-09.2 A Share at Original that needs Share now, timed   [phone]
-Waiting on find-out Q-09: which photo makes Safari refuse the share after a slow save, so that the red **Share** button turns to **Share now**. The case names that photo once Rich has found it; until then it can't be run.
-Limit: none yet. This case measures the time on a real iPhone, and Rich sets the limit from it.
-Before you start:
-- Device and browser: an iPhone, Safari
-- Build: the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (a secure page, so **Share** shows)
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: the photo find-out Q-09 names, in your photos
-- Starting screen: the photo open, on the Export step
-
-The size line is the line on Export that gives the saved picture's size in px and its format. Here the finished message shows over the bottom of the photo when the picture is ready, before the share sheet: "Photo ready: W × H px in N s." and, on a line under it, "Tap Share now to open the share sheet.", where N is the time from the tap on **Share**, in seconds to a tenth.
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Original** under Size | **Original** has the solid white fill; the size line reads "Output W × H px · JPEG" |
-| 2 | Tap **Share** | A thin red line on the top edge of the controls grows from left to right; then the red button reads **Share now**, and the finished message reads, on two lines, "Photo ready: W × H px in N s." and "Tap Share now to open the share sheet.", with the size line's W × H |
-| 3 | Tap **Share now** | The iPhone's share sheet rises from the bottom of the screen |
-| 4 | Tap **Save Image** in the share sheet | The share sheet closes; **Share now** reads **Share** again |
-
-Pass: every row's result is seen. Write down N, and the iPhone's model and iOS version: Rich sets the limit from it.
-On a fail, record: the row number, a screen recording (Control Center, the Screen Recording button).

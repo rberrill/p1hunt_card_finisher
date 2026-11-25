@@ -1197,8 +1197,8 @@ Before you start:
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
 
-### PER-20.4 On an iPhone, a slide of the Flatten knob is one undo step   [phone]
-Waiting on find-out Q-01: what Safari does with a tap on the slider's track, away from its knob. The rows for that tap are added here once Rich has seen it on the phone.
+### PER-20.4 On an iPhone, a slide of the Flatten knob is one undo step, and a tap on the track moves the knob   [phone]
+Rows 4 and 5 are what Rich saw on his iPhone (2026-11-24): a tap on the track, away from the knob, moves the knob there and lights **Undo**.
 
 Before you start:
 - Device and browser: an iPhone, Safari
@@ -1212,6 +1212,8 @@ Before you start:
 | 1 | Tap **Flatten** | The line above the controls (the one line of text at the top of the controls: the block of buttons and sliders under the photo) reads FLATTEN 100%, with the slider's knob at its right end |
 | 2 | Put a finger on the knob, slide it to the left end of the track, and lift the finger | The line reads FLATTEN 0%; **Undo** (the arrow curving left, at the top right) is no longer greyed out |
 | 3 | Tap **Undo** | The line reads FLATTEN 100% and **Undo** is greyed out again: the whole slide was one undo step |
+| 4 | Tap once on the slider's track near its left end, well away from the knob, without dragging | The knob jumps to where you tapped and the line reads FLATTEN with a figure under 100% |
+| 5 | Look at **Undo** | It is no longer greyed out |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

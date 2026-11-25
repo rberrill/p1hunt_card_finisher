@@ -1482,8 +1482,6 @@ On a fail, record: the row number, what you saw instead, how many times Safari a
 - Cases: 2
 
 ### PAIR-32.1 Share opens one share sheet with the pair's file or files   [phone]
-Waiting on find-out Q-08: what the top of the iPhone's share sheet shows for shared pictures (a small picture of each, their names). Rows 1 and 4 gain those words once Rich has seen it on the phone.
-
 Before you start:
 - Device and browser: an iPhone, Safari
 - Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP the Share button is hidden)
@@ -1495,7 +1493,7 @@ At **Original** no question box asks to upscale. The share sheet is the iPhone's
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo), then the share sheet rises from the bottom of the screen |
+| 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo), then the share sheet rises from the bottom of the screen, with a small picture of the joined image at its top (it shows no file name) |
 | 2 | Tap **Save Image** | The share sheet closes; a message over the photo begins "Front and back shared: " |
 | 3 | Tap **Separately** | **Separately** is selected (white) |
 | 4 | Tap **Share** | One share sheet rises |

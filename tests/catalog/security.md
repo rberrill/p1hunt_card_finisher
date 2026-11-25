@@ -295,7 +295,7 @@ On **Resume**, the stored session is checked like an edits file: its edits are c
 
 ### SEC-08.1 Resume cleans a damaged field and an unknown step   [auto: phone, webkit]
 Script only
-Stand-in: no control changes the edits the app has saved on the device, so the script rewrites two of their values, as a damaged saved record would hold them. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+Stand-in: no control changes the edits the app has saved on the device, so the script rewrites two of their values, as a damaged saved record would hold them. This case is run by the script alone.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -628,7 +628,7 @@ A logo read back from the device's storage (the saved logo, this photo's logo, o
 
 ### SEC-15.1 A stored logo of an unknown type is not offered   [auto: phone]
 Script only
-Stand-in: no control changes the saved logo the app keeps on the device, so the script changes its stored type, as a damaged saved record would hold it. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+Stand-in: no control changes the saved logo the app keeps on the device, so the script changes its stored type, as a damaged saved record would hold it. This case is run by the script alone.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px
@@ -650,7 +650,7 @@ On a fail, record: the row number, what you saw instead, a screenshot.
 
 ### SEC-15.2 A stored logo whose bytes are damaged is refused when used   [auto: phone]
 Script only
-Stand-in: no control changes the saved logo the app keeps on the device, so the script replaces its stored bytes with a line of text, as a damaged saved record would hold. Whether a person could do the same in Chrome's developer tools is find-out item Q-07; until it is answered, this case is run by the script alone.
+Stand-in: no control changes the saved logo the app keeps on the device, so the script replaces its stored bytes with a line of text, as a damaged saved record would hold. This case is run by the script alone.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px

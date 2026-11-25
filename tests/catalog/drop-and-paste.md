@@ -10,7 +10,7 @@ Drop an image file on the photo area to open it. Of several files dropped, the f
 
 - Risk: medium
 - Check: script
-- Layout: both. The cases use a computer: whether an iPhone lets a person drag a photo from Photos into Safari at all is find-out item Q-05.
+- Layout: both. The cases use a computer: dropping is a computer feature and is not tested on a phone (ruling R106).
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: `#stage`, `.drag-over`, "Couldn’t read that file as an image."
@@ -220,7 +220,7 @@ On the Overlay step with a photo open, a dropped or pasted image is added as the
 
 - Risk: medium
 - Check: script
-- Layout: both. The cases use a computer: whether an iPhone lets a person drag a picture into Safari at all is find-out item Q-05.
+- Layout: both. The cases use a computer: dropping is a computer feature and is not tested on a phone (ruling R106).
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: `"Drop to add as the logo"`, `#overlayInput`, `"Wait for the export to finish, then open the photo."`
@@ -488,7 +488,7 @@ A file dropped anywhere but the photo area (the side panel, the top bar) shows t
 
 - Risk: medium
 - Check: script
-- Layout: wide. The cases use the wide layout's side panel; whether an iPhone lets a person drag a file into Safari at all is find-out item Q-05.
+- Layout: wide. The cases use the wide layout's side panel: dropping is a computer feature and is not tested on a phone (ruling R106).
 - Added: 1.10 baseline
 - Changed: none
 - Anchors: `#panel`, `#topBarHost`

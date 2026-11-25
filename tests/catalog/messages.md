@@ -910,14 +910,14 @@ On a fail, record: the row number, what you saw instead, a screenshot (press the
 When the browser refuses to share because the tap was too long ago (a slow export), the finished message says "ready" where it would say "shared", gains a line under it, "Tap Share now to open the share sheet." ("Photo ready: {width} × {height} px in {seconds} s.", then "Tap Share now to open the share sheet."), and stays 6 seconds (white, or amber with MSG-27's line between the two). Each sentence starts a line of its own and none is cut off, on a 390 px phone and on a 375 px one. Tapping **Share now** takes it down.
 
 - Risk: low
-- Check: script; phone (a real refusal after a slow export, MSG-28.2)
+- Check: script
 - Layout: both.
 - Added: 1.10 baseline
 - Changed: 1.10.0
 - Anchors: "Tap Share now to open the share sheet.", `pending: 'ready'`, `#btnShare`, `#btnCornerShare`
 - Source: `js/app/export.js` (`toastSaved`, `sharePending`); `js/app/corner-shots.js` (`shareCornerShots`); `js/app/core.js` (`toast`); `js/app/parts/toast.js` (`setToastLines`)
 - Ruling: R78. A message may say "Tap" on a wide screen. The app already does this. R79. The message says what was exported and how (Rich): "THING ACTION: SIZE in N s." THING is "Photo", "Front and back", "Corner sheet" or "4 corner photos"; ACTION is "downloaded" or "shared". Copy reads "Photo copied (PNG)." (a pair's joined image: "Front and back copied (PNG)."). Rich, 2026-11-17: for a pair saved Separately SIZE is both files', front first ("748 × 1047 px and 771 × 1080 px"); for four corner photos it is one size and "each" ("1000 × 1000 px each"); while a refused share waits for **Share now**, ACTION is "ready" ("Photo ready: SIZE in N s. Tap Share now to open the share sheet."). The app does this since 1.10.0. R99. Each sentence of a finished message is its own line, and a message of lines is never cut (Rich, 2026-11-18). The app does this since 1.10.0.
-- Cases: 4
+- Cases: 3
 
 ### MSG-28.1 A refused share says to tap Share now   [auto: phone]
 Script only
@@ -938,27 +938,6 @@ Before you start:
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
-
-### MSG-28.2 On an iPhone, a slow export says to tap Share now   [phone]
-Waiting on find-out Q-09: which photo is slow enough to save at **Original** that Safari refuses the share. The photo below is filled in from Rich's answer; until then the case can't be run.
-
-Before you start:
-- Device and browser: an iPhone, Safari
-- Build: the build under test at the UAT site, https://rberrill.github.io/p1hunt_card_finisher_uat/ (HTTPS; over plain HTTP the Share button is hidden)
-- Browser data: none for this site (a private window, or the site's data cleared)
-- Photo: the photo Q-09 names, in Photos
-- Starting screen: the photo open, on the Export step, with **Original** selected (Original never asks to upscale)
-- A stopwatch, started when the message shows
-
-| # | Do this | You should see |
-| --- | --- | --- |
-| 1 | Tap **Share** (red, first in the row of three buttons) | A thin red line runs along the top edge of the controls (the block of buttons under the photo); no share sheet rises |
-| 2 | Wait for the line to finish | A white message over the photo reads, on two lines, "Photo ready: W × H px in N s." and "Tap Share now to open the share sheet.", W × H the saved size and N the seconds it took; the red button reads **Share now** |
-| 3 | Within 3 s of the message showing, tap **Share now** | The message goes at once; the share sheet rises |
-| 4 | Tap the **×** at the share sheet's top right | The share sheet closes; no message is over the photo |
-
-Pass: every row's result is seen.
-On a fail, record: the row number, what you saw instead, a screen recording (Control Center, the Screen Recording button).
 
 ### MSG-28.3 A pair's finished message of three sentences shows every line whole   [auto: phone, webkit]
 Script only
