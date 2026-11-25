@@ -2,7 +2,8 @@
 //   node tests/tools/make-checklist.js          Part A: what changed since the last checklist
 //   node tests/tools/make-checklist.js --all    Part A: every phone case in the catalog
 // Part A is generated, never written from memory: it holds the [phone] cases of every
-// capability whose catalog entry was added or changed since the last checklist was committed.
+// capability whose catalog entry was added or changed since the build the last checklist was
+// made for (the commit in its file name).
 // Part B is the fixed main flow: the journeys in tests/catalog/journeys.md.
 // Part C is every open item in tests/catalog/find-out.md: things only a real iPhone can
 // settle, each with a place to write the answer.
@@ -69,9 +70,29 @@ function areaFiles() {
     .sort();
 }
 
-// The commit of the last checklist, or '' when there is none.
-function lastChecklistCommit() {
-  return git(['log', '-1', '--format=%H', '--', 'tests/checklists']);
+// The commit a checklist file was made for, from its name (<version>_<commit>.md), with the
+// time of that commit; null when the name holds no commit or the commit is not in this clone.
+function checklistBuild(name) {
+  const short = (name.match(/_([0-9a-f]{7,40})\.md$/) || [])[1];
+  if (!short) return null;
+  const line = git(['log', '-1', '--format=%H %ct', short]);
+  if (!line) return null;
+  const [hash, time] = line.split(' ');
+  return { hash, time: Number(time) };
+}
+
+// The commit the last checklist was made for, or '' when there is none: the newest build
+// among the files in tests/checklists, leaving out the file this run is about to write. The
+// baseline is the build a checklist was run on, not the commit that added its file, so a
+// case changed in that commit, or a file deleted from the folder, doesn't move it.
+function lastChecklistCommit(ownFile) {
+  if (!fs.existsSync(checklistDir)) return '';
+  const builds = fs.readdirSync(checklistDir)
+    .filter(name => name !== ownFile)
+    .map(checklistBuild)
+    .filter(Boolean)
+    .sort((one, other) => other.time - one.time);
+  return builds.length ? builds[0].hash : '';
 }
 
 // Each entry's text as it was at a commit, by ID. Empty when the file did not exist then.
@@ -119,8 +140,9 @@ function buildInfo() {
 // The whole checklist's text.
 function checklistText(build, since, partA, changedIds, partB, partC) {
   const sinceText = since
-    ? `capabilities added or changed since the last checklist (commit ${since.slice(0, 7)})`
-    : 'every phone case in the catalog';
+    ? 'The phone cases of capabilities added or changed since the last checklist '
+      + `(commit ${since.slice(0, 7)}).`
+    : 'Every phone case in the catalog.';
   return [
     `# Phone checklist: ${build.version}, commit ${build.commit}`,
     '',
@@ -135,9 +157,9 @@ function checklistText(build, since, partA, changedIds, partB, partC) {
     '| --- | --- | --- |',
     '| | | |',
     '',
-    `## Part A: new and changed (${partA.count} cases)`,
+    `## Part A: ${since ? 'new and changed' : 'every phone case'} (${partA.count} cases)`,
     '',
-    `The phone cases of ${sinceText}.`,
+    sinceText,
     changedIds.length ? `Changed capabilities: ${changedIds.join(', ')}.` : '',
     '',
     partA.count ? partA.text : 'Nothing changed that needs a phone.',
@@ -161,16 +183,17 @@ function checklistText(build, since, partA, changedIds, partB, partC) {
 }
 
 const isAll = process.argv.includes('--all');
-const since = isAll ? '' : lastChecklistCommit();
+const build = buildInfo();
+const ownFile = `${build.version}_${build.commit}.md`;
+const since = isAll ? '' : lastChecklistCommit(ownFile);
 const changed = areaFiles()
   .filter(name => name !== JOURNEYS)
   .flatMap(name => changedEntries(name, since));
 const journeys = readEntries(fs.readFileSync(path.join(catalogDir, JOURNEYS), 'utf8'));
-const build = buildInfo();
 const changedIds = since ? changed.map(entry => entry.id) : [];
 const parts = [phoneCases(changed), changedIds, phoneCases(journeys), findOutItems()];
 const text = checklistText(build, since, ...parts);
 fs.mkdirSync(checklistDir, { recursive: true });
-const file = path.join(checklistDir, `${build.version}_${build.commit}.md`);
+const file = path.join(checklistDir, ownFile);
 fs.writeFileSync(file, text);
 console.log(`Wrote ${path.relative(root, file)}`);

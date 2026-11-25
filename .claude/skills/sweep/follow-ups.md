@@ -9,16 +9,6 @@ Each item says what was found, where, and what the next step would be.
 
 ## From the full sweep of 2026-11-25
 
-### F-01 The dev.18 checklist was ticked from a summary report
-
-- Where: `tests/checklists/1.10.0-dev.18_001d4bf.md`, "the cases below were marked passed from
-  that report, not one by one"; its iPhone is "not recorded".
-- Found: cases its own text says could not be run were ticked pass (EXP-15.3, MSG-28.2,
-  PERF-09.2, LAY-05.1; they were retired or reworded afterwards).
-- Next step: a question for Rich. He said of a like finding (kept K-003) that who ticks the
-  boxes makes no difference; if that covers this too, record it in `kept.md` and remove this
-  item. Otherwise add a dated note under the checklist's Result.
-
 ### F-02 FLOW-01.3 expects a "dev" version
 
 - Where: `tests/catalog/journeys.md`, FLOW-01.3 row 2: "a version that contains "dev""; also
@@ -27,18 +17,6 @@ Each item says what was found, where, and what the next step would be.
   after a release, so this main-flow row fails on the next phone checklist.
 - Next step: a `case-writer` changes the row to expect the version given with the build.
   Before the next checklist is generated.
-
-### F-03 The checklist tool's baseline, and the two blank checklists
-
-- Where: `tests/tools/make-checklist.js`, `lastChecklistCommit`; and
-  `tests/checklists/1.10.0-dev.16_6062dde.md`, `1.10.0-dev.17_a617147.md`.
-- Found: "what changed" is counted from the last commit that touched `tests/checklists/`, so a
-  case changed in that same commit (as in 80186eb) is left out of the next Part A, and deleting
-  a file there moves the baseline. The two files are blank, identical and never used. The
-  heading "Part A: new and changed" is also wrong for a checklist made with `--all`.
-- Next step: change the tool to take its baseline from the commit the last checklist was
-  generated from (its file name carries it); then delete the two blank files in the same job.
-  Rich approved the deletion on 2026-11-25, to be done with the tool fix.
 
 ### F-04 Retire `rulings.md` as a live file
 
@@ -60,15 +38,12 @@ Each item says what was found, where, and what the next step would be.
 - Found: Rich said on 2026-11-25 that a test says only what it tests: no deadline, no plan and
   no bug. Only PER-39's ruling line was changed. The marks that keep a run green while a bug is
   open rest on the opposite idea.
-- Next step: a question for Rich: whether the rule covers only the catalog's wording, or the
-  marks too (a run would then fail on every open bug until it is triaged).
-
-### F-06 Prune `tests/bugs.md`
-
-- Where: `tests/bugs.md`; `.claude/skills/test/SKILL.md` calls it "One row per open defect".
-- Found: 72 rows, 4 open (BUG-065, BUG-240, BUG-306, BUG-308). The rest are fixed or closed,
-  and the file is 131 KB that every bug-handling agent reads first.
-- Next step: remove the fixed and closed rows (git history and the CHANGELOG keep them).
+- Rich ruled on 2026-11-25 (`/sweep followup`): the marks too. A test says what failed; the
+  run's report gives a pass count and a fail count; in triage each failure is checked against
+  the bugs already reported, and one that is an accepted bug is closed there.
+- Next step: a proposal for Rich to agree: the marks and PER-39's known-slips list removed,
+  the catalog's bug sentences removed, what the run's summary shows, what triage does with a
+  failure that is a known bug, and what a release preflight needs in place of "0 failed".
 
 ### F-07 Trim `CLAUDE.md`
 

@@ -48,3 +48,10 @@ Comments that call **Tap to find card** "Find card":
 - `js/app/input.js`: "// Find card: a still tap (however long) finds the card where the photo was tapped."
 - `js/app/state.js`: "// Find card: disarms it, then finds the card containing `point` (source px, where the photo"
 - Rich: leave as it is (no reason given).
+
+## K-005 Conflict of record (kept 2026-11-25)
+
+Cases the checklist's own text says could not be run are ticked pass (follow-up item F-01):
+
+- `tests/checklists/1.10.0-dev.18_001d4bf.md`: "Rich reported on 2026-11-24 that everything passed on his iPhone on the UAT site; the cases below were marked passed from that report, not one by one."
+- Rich: dropped from the follow-up list; his reason for K-003 covers it.

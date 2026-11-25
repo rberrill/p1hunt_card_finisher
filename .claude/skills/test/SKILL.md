@@ -156,9 +156,8 @@ until he has reviewed the run's bugs and said which to fix.
 - A Part C answer: write it into the case that was waiting, add a ruling if the answer is a
   decision, and delete the item from `find-out.md`.
 - Commit the filled-in checklist; it is the record of the round. The release tag's message
-  cites it. Commit it on its own, before any case is changed: the next checklist's Part A
-  holds what changed since the last commit to `tests/checklists/`, so a case changed in that
-  same commit is left out (*Claude's call*).
+  cites it. The next checklist's Part A holds what changed since the build this one was made
+  for (the commit in its file name).
 
 A real iPhone is the only judge of what Safari and iOS do (the share sheet, Photos, the
 keyboard, safe areas). Playwright's WebKit is not Safari.
