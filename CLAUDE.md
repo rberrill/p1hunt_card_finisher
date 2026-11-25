@@ -108,7 +108,7 @@ A static web app that straightens, crops and color-corrects phone photos of trad
 | `icons/` | The app icon: `icon.svg` is the source of the `.ico` and the touch icon (see the `index.html` rule) |
 | `docs/architecture.md` | Engine, shell, adapters, coordinate frames, memory budget, edits-file format |
 | `tests/README.md` | How to run the tests, what each guards, the detection baseline |
-| `.claude/skills/` | `test` (the catalog, the runs, UAT rounds), `release` (Rich-triggered), `feature-request` (a request's Markdown file and its page), `sweep` (Rich-triggered: audits the instructions and docs for conflicts and dead weight, and changes nothing without his approval of each item) |
+| `.claude/skills/` | `test` (the catalog, the runs, UAT rounds), `release` (Rich-triggered), `feature-request` (a request's Markdown file and its page), `sweep` (Rich-triggered: audits the instructions and docs for conflicts and dead weight, and changes nothing without his approval of each item; `/sweep followup` walks through the follow-up work it listed, in `.claude/skills/sweep/follow-ups.md`) |
 | `.claude/agents/` | `case-writer`, `fixer`, `reviewer`, `triage-tester`: the roles delegated work goes to (the `test` skill says when) |
 | `.claude/hooks/` | SessionStart: project state. Stop: runs selftest when app code or tests changed. Before a commit: the message's `Catalog:` line. `guard-paths.js` keeps an agent to its own files |
 | `CHANGELOG.md`, `README.md`, `SECURITY.md` | Public docs (see `.claude/rules/public-docs.md`) |

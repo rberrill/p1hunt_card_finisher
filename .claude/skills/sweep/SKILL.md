@@ -2,13 +2,14 @@
 name: sweep
 description: Audit the project's instructions and docs (CLAUDE.md, rules, skills, agents, hooks, settings, every Markdown file and the comments in the code) for conflicts, orphaned to-dos and lists, rules that cost more than they earn, dead references, duplicates, rules with no source, stale text, and instructions that fight how Claude Code works. Reports in chat, then takes Rich through the findings one at a time. Changes nothing without his approval on that item. Only when Rich runs /sweep.
 disable-model-invocation: true
-argument-hint: "[full]"
+argument-hint: "[full | followup]"
 ---
 
 # Sweep
 
 Rich typed `/sweep $ARGUMENTS`. With no argument this is the **scan**; with `full` it is the
-**full sweep** (see Depth).
+**full sweep** (see Depth); with `followup` it is no sweep at all, only the walk through the
+follow-up list (see `/sweep followup`).
 
 **What Rich set (2026-11-17, in an interview of eleven questions):** the scope, the kinds of
 finding, the cost test for a blocking rule, the report in chat, an edit made as each item is
@@ -151,13 +152,15 @@ never grouped.
 - The sweep edits instruction files, process docs and comments. In `js/`, `css/` and
   `index.html` it changes comment text only, never a line of code.
 - A finding whose fix would change what the app does, a catalog case's verdict, a ruling or the
-  words on screen is **handed off**, not edited. Its picker offers **Hand off**, **Leave as it
-  is** and **Decide later**. A handoff is named in the closing message with its next step under
-  the `test` skill: a question for Rich to rule on, a failing case and then a row in
-  `tests/bugs.md`, or an item for `find-out.md`. Those steps are that process's to take, not
-  the sweep's.
+  words on screen goes on the **follow-up list**, not edited. Its picker offers **Follow-up
+  list**, **Leave as it is** and **Decide later**, and says in plain words that nothing changes
+  now (Rich, 2026-11-25: "hand off" meant nothing to him in a picker; never use it there). The
+  item is written to `follow-ups.md` with its next step under the `test` skill: a question for
+  Rich to rule on, a failing case and then a row in `tests/bugs.md`, or an item for
+  `find-out.md`. Those steps are that process's to take, not the sweep's.
 - Records are not rewritten: a filled-in checklist, a released section of the CHANGELOG, a past
-  entry in the decision log, a release tag. A finding there is a handoff or a new dated entry.
+  entry in the decision log, a release tag. A finding there goes on the follow-up list or gets a
+  new dated entry.
 - Removing or changing a rule that has Rich's name behind it is his to approve like any other
   item; the edit takes the old source mark with it and the new line carries today's.
 
@@ -168,11 +171,33 @@ never grouped.
    each kept item with the why. Where the log can't be reached, put the same list in the commit
    message under `Decision log (to copy):`. A product decision Rich settled on the way also gets
    its line under "Settled product decisions" in `CLAUDE.md`.
-3. Commit the sweep's own edits as one commit (`Sweep: <what changed, in a line>`, then one line
+3. Write every follow-up item to `follow-ups.md` before the commit, so it is in the repository
+   and not only in the chat.
+4. Commit the sweep's own edits as one commit (`Sweep: <what changed, in a line>`, then one line
    for each item), with `Catalog: none (comments only)` when a comment in the app changed, and
    push as the session's branch rules say.
-4. The closing message: what changed (each file, one line), what was kept, what was handed off
-   and to which step, what waits for the next sweep, and what was unverified or unread here.
+5. The closing message: what changed (each file, one line), what was kept, what went on the
+   follow-up list, what waits for the next sweep, and what was unverified or unread here.
+
+## `/sweep followup`: the follow-up list (`follow-ups.md`)
+
+Rich set this on 2026-11-25: the follow-up items live in `follow-ups.md`, beside this file and
+committed, and `/sweep followup` is how they are looked at. The steps are Claude's.
+
+1. Read `follow-ups.md`. Run no sweep and start no agent. No item open is a fine result: say
+   so and stop.
+2. Check each item against the files as they are now. One that is already done, or whose quoted
+   lines are gone, is said to be so and removed with Rich's answer.
+3. Say how many items are open, one line each, then take them one at a time, each as a picker
+   that stands on its own: what was found, in a sentence or two of plain words, and the next
+   step. Its options: **Do it now** (where this session can), **Keep on the list**, **Drop
+   it** (recorded in `kept.md` with his reason when the finding is still in the files).
+4. **Do it now** starts that work under its own process, not the sweep's limits: the proposal
+   and his agreement first for a change to the app (`CLAUDE.md`, "How we work"), the `test`
+   skill for a case or a bug, the agents it names. Say first when this session can't do it (a
+   cloud session has no decision log, UAT checkout or phone).
+5. Remove an item from `follow-ups.md` in the commit that finishes it. A new sweep adds its
+   items under a dated heading; it never rewrites the ones already there.
 
 ## The ledger (`kept.md`)
 
