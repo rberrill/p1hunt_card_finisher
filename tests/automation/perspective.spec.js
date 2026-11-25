@@ -39,6 +39,8 @@ const {
   pressAt,
   pinchAt,
   middleColor,
+  noteMiddlePixels,
+  shareBrighterThanNoted,
   sendTouch,
   holdDragAt,
   releaseDrag,
@@ -2070,9 +2072,17 @@ test('PER-27.3 Preview turns off when a pair switches sides [phone]', async ({
 // The most any colour channel of two middleColor readings differs (0 to 255).
 const colorChange = (first, second) => Math.max(...first.map((value, i) => Math.abs(value
   - second[i])));
-// Levels' Auto on IMG_9136 brightens the middle of the picture by more than this; a redraw of
-// the same picture changes it by less.
+// A redraw of the same picture changes the middle's mean color by less than this (it reads 0).
+// PER-27.5's Preview card changes by more (2.6 in Chromium, 2.35 in WebKit).
 const LEVELS_CHANGE_MIN = 2;
+// PER-27.4's row 4. Levels' Auto on IMG_9136 stretches the picture's contrast: the middle's mean
+// color hardly moves (by about 2 levels, too close to a threshold to decide on), but its lighter
+// parts brighten. Pixel for pixel against the picture before the tap, about 8% of the middle
+// third's pixels brighten by more than BRIGHTER_BY_MIN levels (0 to 255) in Chromium and in
+// WebKit; a redraw of the same picture brightens none. The step asks for more than
+// BRIGHTER_SHARE_MIN (0 to 1) of them.
+const BRIGHTER_BY_MIN = 4;
+const BRIGHTER_SHARE_MIN = 0.02;
 
 test('PER-27.4 Preview shows the applied levels, not an unapplied draft [phone]', async ({
   page,
@@ -2084,12 +2094,12 @@ test('PER-27.4 Preview shows the applied levels, not an unapplied draft [phone]'
   const levelsMark = page.locator('[data-step="levels"]:visible .step-tab-mark');
   await goToLevelsForAuto(page, hand, check);
   await waitForStill(page);
-  const levelsBefore = await middleColor(page);
+  await noteMiddlePixels(page);
   await hand.tap(page.locator('#toolAutoLevels'));
   await check('the photo brightens: an unapplied draft, with Apply lit in the line above the '
     + 'controls and a white dot on the Levels tab', async () => {
-    await expect.poll(async () => colorChange(await middleColor(page), levelsBefore))
-      .toBeGreaterThan(LEVELS_CHANGE_MIN);
+    await expect.poll(() => shareBrighterThanNoted(page, BRIGHTER_BY_MIN))
+      .toBeGreaterThan(BRIGHTER_SHARE_MIN);
     await expect(apply).toBeEnabled();
     await expect(levelsMark).toBeVisible();
   });

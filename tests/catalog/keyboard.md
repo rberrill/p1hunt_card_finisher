@@ -133,19 +133,24 @@ Before you start:
 - Photo: IMG_9136.JPEG from samples/
 - Starting screen: the photo open, on the Rotate step, the angle at 0.0° and **Fill frame** Off
 
-The named action:
+The named actions:
+- Tab to X: click the photo area 20 px in from its top-left corner, then press Tab until X has the focus (a white ring shows around it).
 - Type the angle 5: click the angle (**0.0°**, with a pencil after it), type 5, press Enter.
+
+The focus is brought to **Fill frame** and **Quality** with Tab, not a click: not every browser gives a clicked button or slider the focus.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **Fill frame** | It reads On, and keeps the keyboard focus |
-| 2 | Press Ctrl+Z (Cmd+Z on a Mac) | **Fill frame** reads Off |
-| 3 | Type the angle 5 | The angle reads 5.0° and the photo turns |
-| 4 | Click the angle again | The angle box opens again showing 5.0, with the focus |
-| 5 | Press Ctrl+Z | The photo goes back to 0.0° |
-| 6 | Click **Export** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Export step shows, with **Quality** at 92% in Export options under the controls |
-| 7 | Click the middle of the **Quality** slider | **Quality** reads 75%, and the slider has the focus |
-| 8 | Press Ctrl+Z | **Quality** reads 92% again |
+| 1 | Tab to **Fill frame** | A white ring shows around **Fill frame** |
+| 2 | Press Space | **Fill frame** reads On, and keeps the ring |
+| 3 | Press Ctrl+Z (Cmd+Z on a Mac) | **Fill frame** reads Off |
+| 4 | Type the angle 5 | The angle reads 5.0° and the photo turns |
+| 5 | Click the angle again | The angle box opens again showing 5.0, with the focus |
+| 6 | Press Ctrl+Z | The photo goes back to 0.0° |
+| 7 | Click **Export** in the step tabs (the six tabs Perspective to Export, in the top bar) | The Export step shows, with **Quality** at 92% in Export options under the controls |
+| 8 | Tab to **Quality** | A white ring shows around **Quality** |
+| 9 | Press ← (the left arrow key) | **Quality** reads 91% |
+| 10 | Press Ctrl+Z | **Quality** reads 92% again |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.

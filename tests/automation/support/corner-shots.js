@@ -21,6 +21,7 @@ const {
   questionButton,
   isQuestionUp,
   savedSize,
+  waitInPage,
 } = require('./app.js');
 const {
   installShareStandIn,
@@ -28,7 +29,7 @@ const {
   waitForQuestion,
   waitForExportEnd,
 } = require('./export.js');
-const { downloadAll } = require('./front-and-back.js');
+const { downloadAll, chooseFile, switchTo } = require('./front-and-back.js');
 
 // The committed files the cases name besides the sample photos (a logo, and the like).
 const FIXTURES_DIR = path.join(root, 'tests', 'fixtures');
@@ -40,6 +41,11 @@ const FIXTURE_TYPES = { '.png': 'image/png', '.svg': 'image/svg+xml', '.gif': 'i
 // 144 px in Chromium and 136 px in WebKit), and the light card on the dark mat shows where the
 // card's corner sits in each shot.
 const CORNER_PHOTO = '01_chrome_flat_black.JPEG';
+// The edits file that places the front's corners in the "14" pair: saved with Save edits from
+// 14_front_portrait_raw_white.JPEG on its own, its corners where Chromium's detection puts them
+// (on the card), turned 3.0° and with a square crop (the pair's lock drops the crop; Reset on
+// Rotate undoes the turn).
+const FRONT_CORNERS_EDITS = 'pair-front-square-crop-edits.json';
 // A link that never asks the Upscale question for corner shots (0 never asks), for cases about
 // something else.
 const NO_CORNER_QUESTION = 'index.html?cornerShots.upscaleTargetPx=0';
@@ -442,6 +448,28 @@ async function saveTheCorners(page, hand, count = 1, answer = 'No') {
   return saved;
 }
 
+// Place the front's corners, the named action in the pair cases about sizes (CNR-16.1,
+// MSG-24.1, MSG-77, UPS-06): from the "14" pair (PORTRAIT_PAIR) with the back open, taps Front,
+// Export, opens Export options, taps Load edits and chooses FRONT_CORNERS_EDITS, then taps Rotate
+// and Reset (the angle back to 0.0°), then Back. Ends with the back open on Rotate.
+// Why: detection of that front differs by browser engine (Chromium finds the card; Playwright's
+// WebKit an outline about 38 px inside its left and right edges), and the crop is fitted to the
+// corners. With the corners from a file, every engine measures the same card.
+async function placeFrontCorners(page, hand) {
+  await switchTo(page, hand, 'front');
+  await goToStep(page, 'export', hand);
+  await openOptions(page, hand, 'export');
+  await chooseFile(page, hand, page.locator('#btnLoadEdits'),
+    path.join(FIXTURES_DIR, FRONT_CORNERS_EDITS));
+  await waitInPage(page, () => window.__straightener.app.state.rotation.fine === 3);
+  // On a phone the app closes the options once it has applied the file (ruling R12).
+  if (hand.isTouch) await page.locator('#exportSheet').waitFor({ state: 'hidden' });
+  await goToStep(page, 'rotate', hand);
+  await hand.tap(page.locator('#btnRotateReset'));
+  await waitInPage(page, () => window.__straightener.app.state.rotation.fine === 0);
+  await switchTo(page, hand, 'back');
+}
+
 // The four thumbnails as drawn now, in order: a SHA-256 of each canvas's pixels, equal for two
 // drawings exactly when every pixel is.
 function thumbnailDigests(page) {
@@ -524,6 +552,7 @@ module.exports = {
   openPicker,
   chooseFixtureLogo,
   saveTheCorners,
+  placeFrontCorners,
   thumbnailDigests,
   isOutlineCrossed,
   logoCoverOfShot,

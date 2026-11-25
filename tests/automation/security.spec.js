@@ -177,43 +177,56 @@ async function downloadAnsweringNo(page, hand) {
 
 /* ---------------- SEC-01 The page's security policy ---------------- */
 
+// The refusals the page has reported since the first `count` of them.
+const refusalsSince = async (page, count) => (await policyRefusals(page)).slice(count);
+
+// SEC-01.2 decides each refusal from the browser's own report of it (a securitypolicyviolation
+// event: the rule broken and the address refused), which Chromium and WebKit give alike. The
+// Console's red error is that same report in words, and only Chromium's words quote the rule
+// ("script-src 'self'"); WebKit's don't. So the words the rows quote are read in Chromium, where
+// they also prove the rule is the one written in the page, and not read in WebKit. Were the
+// policy to stop refusing, no report would come (the wait fails) and the script would run.
 test('SEC-01.2 The browser applies the policy: a script or a picture from elsewhere is refused '
-  + '[phone]', async ({ page, check }) => {
-  await watchPolicyRefusals(page);
+  + '[phone]', async ({ page, browserName, check }) => {
+  const quotesTheRule = browserName === 'chromium';
   const messages = watchConsole(page);
+  // The Console's red errors that quote `rule`.
+  const errorsQuoting = rule => messages
+    .filter(message => message.type === 'error' && message.text.includes(rule));
+  await watchPolicyRefusals(page);
   await openApp(page);
+  const beforeScript = (await policyRefusals(page)).length;
   await page.evaluate(() => {
     const script = document.createElement('script');
     script.textContent = 'window.testInlineRan = true';
     document.body.append(script);
   });
-  await waitInPage(page, () => window.testPolicyRefusals.length >= 1);
-  await check(`a red error in the Console names the policy rule "${SCRIPT_RULE}": the script was `
-    + 'blocked', async () => {
-    const errors = messages.filter(message => message.type === 'error'
-      && message.text.includes(SCRIPT_RULE));
-    expect(errors).toHaveLength(1);
-    const directives = (await policyRefusals(page)).map(refusal => refusal.directive);
-    // Chromium reports the rule a script element breaks as script-src-elem.
-    expect(directives.map(directive => directive.startsWith('script-src'))).toEqual([true]);
+  await waitInPage(page, count => window.testPolicyRefusals.length > count, beforeScript);
+  await checkDroppingShotRefusals(page, check, `a red error in the Console names the policy rule `
+    + `"${SCRIPT_RULE}": the script was blocked`, async () => {
+    const refusals = await refusalsSince(page, beforeScript);
+    // Both engines report the rule a script element breaks as script-src-elem, the part of
+    // script-src that governs script elements.
+    expect(refusals.map(refusal => refusal.directive.startsWith('script-src'))).toEqual([true]);
+    if (quotesTheRule) expect(errorsQuoting(SCRIPT_RULE)).toHaveLength(1);
   });
-  await check('the Console answers undefined: the script did not run', async () => {
+  await checkDroppingShotRefusals(page, check, 'the Console answers undefined: the script did not '
+    + 'run', async () => {
     expect(await page.evaluate(() => window.testInlineRan)).toBeUndefined();
   });
+  const beforePicture = (await policyRefusals(page)).length;
   await page.evaluate(() => {
     const picture = document.createElement('img');
     picture.src = 'https://example.com/picture.png';
     document.body.append(picture);
   });
-  await waitInPage(page, () => window.testPolicyRefusals.length >= 2);
-  await check(`a red error in the Console names the policy rule "${IMAGE_RULE}": the picture was `
-    + 'blocked', async () => {
-    const errors = messages.filter(message => message.type === 'error'
-      && message.text.includes(IMAGE_RULE));
-    expect(errors).toHaveLength(1);
-    const refusals = await policyRefusals(page);
-    expect(refusals[1].directive.startsWith('img-src')).toBe(true);
-    expect(refusals[1].blocked).toBe('https://example.com/picture.png');
+  await waitInPage(page, count => window.testPolicyRefusals.length > count, beforePicture);
+  await checkDroppingShotRefusals(page, check, `a red error in the Console names the policy rule `
+    + `"${IMAGE_RULE}": the picture was blocked`, async () => {
+    const refusals = await refusalsSince(page, beforePicture);
+    expect(refusals.map(refusal => refusal.directive.startsWith('img-src'))).toEqual([true]);
+    expect(refusals[0].blocked).toBe('https://example.com/picture.png');
+    if (quotesTheRule) expect(errorsQuoting(IMAGE_RULE)).toHaveLength(1);
   });
 });
 

@@ -185,12 +185,20 @@ test('KEY-02.2 During an export, the redo keys do nothing [desktop]', async ({
   });
 });
 
+// KEY-03.1 brings the focus to Fill frame and to Quality with Tab, not a click: Safari, and
+// WebKit with it, gives a clicked button or slider no focus (Chromium does), and the case is
+// about the undo key pressed while the control has the focus.
 test('KEY-03.1 The undo key undoes the app\'s edit from a switch, a slider or the typed angle '
   + '[desktop]', async ({ page, check }, testInfo) => {
   const hand = await startOn(page, testInfo, { step: 'rotate' });
   const fillFrame = page.locator('#toolFillFrame');
-  await hand.tap(fillFrame);
-  await check('Fill frame reads On, and has the keyboard focus', async () => {
+  await tabFromPhotoTo(page, hand, '#toolFillFrame');
+  await check('Tab to Fill frame: a white ring shows around it', async () => {
+    await expect(fillFrame).toBeFocused();
+    expect(await focusRingOf(page, '#toolFillFrame')).toEqual({ width: '2px', style: 'solid', color: RING_WHITE });
+  });
+  await page.keyboard.press('Space');
+  await check('Space: Fill frame reads On, and keeps the ring', async () => {
     await expect(fillFrame).toHaveAttribute('aria-pressed', 'true');
     await expect(fillFrame).toBeFocused();
   });
@@ -220,12 +228,15 @@ test('KEY-03.1 The undo key undoes the app\'s edit from a switch, a slider or th
     await expect(page.locator('#qualityValue')).toHaveText('92%');
   });
   const quality = page.locator('#quality');
-  await hand.tap(quality);
-  await check('a click in the middle of Quality sets it to 75%; the slider has the focus',
-    async () => {
-      await expect(page.locator('#qualityValue')).toHaveText('75%');
-      await expect(quality).toBeFocused();
-    });
+  await tabFromPhotoTo(page, hand, '#quality');
+  await check('Tab to Quality: a white ring shows around it', async () => {
+    await expect(quality).toBeFocused();
+    expect(await focusRingOf(page, '#qualityRow .slider')).toEqual({ width: '2px', style: 'solid', color: RING_WHITE });
+  });
+  await page.keyboard.press('ArrowLeft');
+  await check('←: Quality reads 91%', async () => {
+    await expect(page.locator('#qualityValue')).toHaveText('91%');
+  });
   await page.keyboard.press('Control+z');
   await check('Ctrl+Z: Quality reads 92% again', async () => {
     await expect(page.locator('#qualityValue')).toHaveText('92%');

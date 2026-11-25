@@ -60,6 +60,7 @@ const {
   colorOnPage,
   nextFrames,
   tapAndLookAtLogo,
+  tapAndLookOneFrameOn,
   ringMarksAt,
   readSavedLogo,
   bandSpread,
@@ -1781,10 +1782,13 @@ test('OVL-22.4 A tapped ring glides the logo there, not at once [phone]', async 
   check,
 }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  // The test holds the page's clock so that "the very next frame" is the one a sixtieth of a
+  // second after the tap, whatever the load on the computer; the clock runs as usual otherwise.
+  await page.clock.install();
   const hand = await startOnOverlay(page, testInfo);
   await addDisc(page, hand);
   await page.waitForTimeout(RINGS_BACK_MS);
-  const color = await tapAndLookAtLogo(page, await ringOnPage(page, 'br'));
+  const color = await tapAndLookOneFrameOn(page, await ringOnPage(page, 'br'));
   await check('in the very next frame the logo is still on its way: the place where it will sit '
     + 'doesn\'t show the blue disc yet', () => {
     expectNotBlue(color);

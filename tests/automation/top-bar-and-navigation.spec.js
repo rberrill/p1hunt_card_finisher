@@ -2254,18 +2254,35 @@ test('TOP-35.1 A mode fills white, an action flashes, a switch reads On or Off [
   });
 });
 
+// Starts noting, in the page, whether the element `selector` names is given the class
+// `className`. Returns a function that reads the note: true once it has been, even if the class
+// has gone again. A fade's class lasts a sixth of a second or less, too short for a round trip
+// from the test to catch on a busy machine, so it is seen in the page as it happens (as with
+// 90° right's flash in TOP-35.1).
+async function noteClassAdded(page, selector, className) {
+  const noteKey = `${selector} ${className}`;
+  await page.evaluate(({ target, name, key }) => {
+    window.testClassNotes = window.testClassNotes || {};
+    window.testClassNotes[key] = false;
+    const el = document.querySelector(target);
+    new MutationObserver(() => {
+      if (el.classList.contains(name)) window.testClassNotes[key] = true;
+    }).observe(el, { attributes: true, attributeFilter: ['class'] });
+  }, { target: selector, name: className, key: noteKey });
+  return () => page.evaluate(key => window.testClassNotes[key], noteKey);
+}
+
 test('TOP-36.1 A mode tap swaps the line with a short fade, for a person to judge [phone]',
   async ({ page, check }, testInfo) => {
     const hand = await startOn(page, testInfo);
     const flatten = page.locator('#toolFlatten');
     const nudgeRow = page.locator('#perspectiveNudgeRow');
+    const hasNudgeRowLeft = await noteClassAdded(page, '#perspectiveNudgeRow', 'is-leaving');
     await hand.tap(flatten);
-    const atTap = {
-      isWhite: await hasWhiteFill(flatten),
-      isLeaving: await nudgeRow.evaluate(row => row.classList.contains('is-leaving')),
-    };
-    await check('Flatten fills white at once, and the arrow buttons start to fade out', () => {
-      expect(atTap).toEqual({ isWhite: true, isLeaving: true });
+    const isWhiteAtTap = await hasWhiteFill(flatten);
+    await check('Flatten fills white at once, and the arrow buttons start to fade out', async () => {
+      expect(isWhiteAtTap).toBe(true);
+      await expect.poll(hasNudgeRowLeft).toBe(true);
     });
     await page.waitForTimeout(STILL_AFTER_MS);
     await check('half a second on, Flatten is white and the slider has taken their place',
@@ -2283,9 +2300,10 @@ test('TOP-36.1 A mode tap swaps the line with a short fade, for a person to judg
       expect(await fades()).toEqual([]);
       await expect(page.locator('#perspectiveFlattenRow')).toBeVisible();
     });
+    const hasRotateArrived = await noteClassAdded(page, '#rotateArea', 'is-arriving');
     await hand.tap(stepTab(page, 'rotate'));
     await check('a step change starts to fade Rotate\'s controls in', async () => {
-      await expect(page.locator('#rotateArea')).toHaveClass(/is-arriving/);
+      await expect.poll(hasRotateArrived).toBe(true);
     });
     await page.waitForTimeout(STILL_AFTER_MS);
     await check('half a second on, Rotate\'s controls are shown', async () => {

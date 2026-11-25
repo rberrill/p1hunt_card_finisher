@@ -48,6 +48,7 @@ const {
   makeCornerShotsImpossible,
   makeCardTooSmallForCorners,
   isCornerSheetOpen,
+  placeFrontCorners,
 } = require('./support/corner-shots.js');
 const {
   SHARE_FAILURE_MESSAGE,
@@ -1098,6 +1099,7 @@ test('MSG-24.1 A pair\'s Separately Download says so [phone]', async ({
 }, testInfo) => {
   await watchMessages(page);
   const hand = await makePair(page, testInfo);
+  await placeFrontCorners(page, hand);
   await goToStep(page, 'export', hand);
   await chooseSeparately(page, hand, check);
   await tapAndExpectUpscale(page, hand, check, page.locator('#btnDownload'));
@@ -2565,6 +2567,7 @@ test('MSG-77.1 The Upscale question for a pair saved Separately [phone]', async 
   check,
 }, testInfo) => {
   const hand = await makePair(page, testInfo);
+  await placeFrontCorners(page, hand);
   await goToStep(page, 'export', hand);
   await chooseSeparately(page, hand, check);
   await hand.tap(page.locator('#btnDownload'));
@@ -2580,6 +2583,7 @@ test('MSG-77.2 With one side over the size, the question names only the other [p
   check,
 }, testInfo) => {
   const hand = await makePair(page, testInfo);
+  await placeFrontCorners(page, hand);
   await goToStep(page, 'export', hand);
   await chooseSeparately(page, hand, check);
   await chooseSize(page, hand, '1080');

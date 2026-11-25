@@ -8,7 +8,14 @@
 // Every row of a case has its own check, in order, described in the row's own words.
 'use strict';
 const { test, expect } = require('./support/case.js');
-const { samplePath, waitForStill, stepNow, backgroundOf } = require('./support/app.js');
+const {
+  samplePath,
+  waitForStill,
+  stepNow,
+  backgroundOf,
+  tapPoint,
+} = require('./support/app.js');
+const { tabTo, focusRingOf } = require('./support/edits-drop-keys.js');
 const {
   choiceButton,
   selectedChoices,
@@ -289,11 +296,36 @@ test('QCD-03.2 The pair\'s questions have no red choice [phone]', async ({
 // The id of the element that has the keyboard focus.
 const focusedId = page => page.evaluate(() => document.activeElement.id);
 
+// The app's white (#f2f2f3), the color of every focus ring.
+const RING_WHITE = 'rgb(242, 242, 243)';
+// Where QCD-04.1 clicks the photo area before it presses Tab: 20 px in from its top-left
+// corner, away from the card.
+const PHOTO_EDGE_INSET_PX = 20;
+
+// QCD-04.1's "Tab to Download": a click on the photo area, then Tab until Download has the
+// focus. The case brings the focus there with the keyboard, not a click: Safari, and WebKit
+// with it, gives a clicked button no focus (Chromium does), so after a click there is no
+// control for the focus to go back to.
+async function tabToDownload(page, hand) {
+  const photo = await boxOf(page.locator('#view'));
+  await tapPoint(page, hand, {
+    x: photo.x + PHOTO_EDGE_INSET_PX,
+    y: photo.y + PHOTO_EDGE_INSET_PX,
+  });
+  await tabTo(page, '#btnDownload');
+}
+
 test('QCD-04.1 The focus starts on the first choice, stays in the question box, and goes back '
   + 'to Download [desktop]', async ({ page, check }, testInfo) => {
   const hand = await startOnExport(page, testInfo);
-  await askToUpscale(page, hand);
-  await check(`${FIRST_ASK}; the focus is on Yes`, async () => {
+  await tabToDownload(page, hand);
+  await check('Tab to Download: a white ring shows around it', async () => {
+    await expect(downloadButton(page)).toBeFocused();
+    expect(await focusRingOf(page, '#btnDownload')).toEqual({ width: '2px', style: 'solid', color: RING_WHITE });
+  });
+  await page.keyboard.press('Enter');
+  await waitForQuestion(page, true);
+  await check(`Enter: ${FIRST_ASK}; the focus is on Yes`, async () => {
     await expectQuestion(page, ASK_2000);
     expect(await focusedId(page)).toBe('btnPromptFirst');
   });

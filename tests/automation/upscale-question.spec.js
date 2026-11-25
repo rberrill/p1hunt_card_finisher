@@ -40,6 +40,7 @@ const {
   openPicker,
   chooseFixtureLogo,
   downloadCorners,
+  placeFrontCorners,
 } = require('./support/corner-shots.js');
 const {
   QUESTION_BOX,
@@ -66,8 +67,9 @@ const ASK_1080 = 'Upscale to 1080 px?';
 const LARGE_CROP_PHOTO = 'IMG_9136.JPEG';
 // A link that turns the sharpening after an upscale off.
 const NO_SHARPEN = 'index.html?upscale.sharpenAmount=0';
-// The pair's sizes at the photos' resolution, as Chromium finds the cards: the Together
-// image, and each side's export.
+// The pair's sizes at the photos' resolution: the Together image, the same in Chromium and
+// WebKit as the app finds the cards; and each side's export, with the front's corners placed
+// from an edits file (placeFrontCorners), since the engines find a different front.
 const TOGETHER_TEXT = 'The image is 1583 × 1100 px at the photos’ resolution.';
 const TOGETHER_PX = [1583, 1100];
 const SEPARATELY_TEXT = 'The front is 748 × 1047 px and the back 785 × 1100 px at the photos’ '
@@ -373,8 +375,12 @@ test('UPS-04.4 With upscaling on from a link, a size the canvas limit holds back
 });
 
 // Makes the case's pair (the back open), goes to Export and picks the output. Returns the hand.
-async function startOnPair(page, testInfo, output, address = 'index.html') {
+// isFrontPlaced: place the front's corners from an edits file first (placeFrontCorners), for a
+// case that names the front's own size.
+async function startOnPair(page, testInfo, output, address = 'index.html',
+  isFrontPlaced = false) {
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR, address);
+  if (isFrontPlaced) await placeFrontCorners(page, hand);
   await goToStep(page, 'export', hand);
   await chooseOutput(page, hand, output);
   return hand;
@@ -413,7 +419,7 @@ test('UPS-06.1 Separately names both sides, and Yes gives each the size [phone]'
   page,
   check,
 }, testInfo) => {
-  const hand = await startOnPair(page, testInfo, 'separately');
+  const hand = await startOnPair(page, testInfo, 'separately', 'index.html', true);
   await askAndCheck(page, hand, check, downloadButton(page),
     `${FIRST_ASK} and reads "${SEPARATELY_TEXT}"`, ASK_2000, SEPARATELY_TEXT);
   const saved = await answerAndCollect(page, hand, 'Yes', 2);
@@ -431,7 +437,7 @@ test('UPS-06.1 Separately names both sides, and Yes gives each the size [phone]'
 
 test('UPS-06.2 A side already at the size is saved the same after Yes as after No [phone]',
   async ({ page, check }, testInfo) => {
-    const hand = await startOnPair(page, testInfo, 'separately');
+    const hand = await startOnPair(page, testInfo, 'separately', 'index.html', true);
     await chooseAndCheck(page, hand, check, 'exportSize', '1080');
     await askAndCheck(page, hand, check, downloadButton(page),
       `${QUESTION_BOX} asks "${ASK_1080}" and reads "${SEPARATELY_1080_TEXT}"`, ASK_1080,

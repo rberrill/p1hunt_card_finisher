@@ -381,6 +381,38 @@ function middleColor(page) {
   });
 }
 
+// Keeps, in the page, the pixels of the middle third of the photo area as drawn now, for
+// shareBrighterThanNoted to compare with.
+function noteMiddlePixels(page) {
+  return page.evaluate(() => {
+    const canvas = document.getElementById('view');
+    const width = Math.floor(canvas.width / 3);
+    const height = Math.floor(canvas.height / 3);
+    window.testNotedPixels = canvas.getContext('2d').getImageData(width, height, width, height)
+      .data.slice();
+  });
+}
+
+// The share (0 to 1) of the middle third's pixels that are brighter now than when
+// noteMiddlePixels kept them, by more than `byMin` levels (0 to 255) of their mean of red, green
+// and blue. Pixel for pixel, so a change of contrast shows where a mean over the area would not.
+function shareBrighterThanNoted(page, byMin) {
+  return page.evaluate(levelsMin => {
+    const canvas = document.getElementById('view');
+    const width = Math.floor(canvas.width / 3);
+    const height = Math.floor(canvas.height / 3);
+    const now = canvas.getContext('2d').getImageData(width, height, width, height).data;
+    const noted = window.testNotedPixels;
+    let brighter = 0;
+    for (let i = 0; i < now.length; i += 4) {
+      const levelNow = (now[i] + now[i + 1] + now[i + 2]) / 3;
+      const levelNoted = (noted[i] + noted[i + 1] + noted[i + 2]) / 3;
+      if (levelNow - levelNoted > levelsMin) brighter += 1;
+    }
+    return brighter / (now.length / 4);
+  }, byMin);
+}
+
 // The line above Perspective's controls that names the selected handle.
 const handleName = page => page.locator('#perspectiveLine .line-value');
 
@@ -416,6 +448,8 @@ module.exports = {
   recordCornerMoveTimes,
   readCornerMoveTimes,
   middleColor,
+  noteMiddlePixels,
+  shareBrighterThanNoted,
   tapAt: tapPoint,
   zoomNow: viewZoom,
   handleName,

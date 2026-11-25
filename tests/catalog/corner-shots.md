@@ -1008,7 +1008,10 @@ Before you start:
 - Build: the build under test, opened with `?cornerShots.upscaleTargetPx=0` (index.html?cornerShots.upscaleTargetPx=0)
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: a pair, the back open on the Export step (open the front, tap **Export**, tap **Add back** and choose the back)
+- Edits file: pair-front-square-crop-edits.json from tests/fixtures/: edits saved from 14_front_portrait_raw_white.JPEG, with its four corners on the card's corners, turned 3.0° and with a square crop
+- Starting screen: a pair, the back open on the Export step (open the front, tap **Export**, tap **Add back** and choose the back, then place the front's corners, then tap **Export** in the step tabs)
+
+Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
 
 | # | Do this | You should see |
 | --- | --- | --- |

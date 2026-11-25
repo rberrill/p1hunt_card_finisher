@@ -296,6 +296,62 @@ function tapAndLookAtLogo(page, point) {
   }, { x: point.x, y: point.y, fingerId: TAP_FINGER_ID });
 }
 
+// One frame's time at sixty frames a second, in ms: how far tapAndLookOneFrameOn moves the clock.
+const FRAME_MS = 16;
+// How far tapAndLookOneFrameOn jumps the page's clock before it stops it, in ms: enough to be
+// sure the moment is still ahead when the jump is made, however slow the round trip.
+const CLOCK_JUMP_MS = 5000;
+
+// In the page: one dispatched finger taps the point (CSS px) on the photo area.
+function dispatchTapInPage({ x, y, fingerId }) {
+  const canvas = document.getElementById('view');
+  const send = type => canvas.dispatchEvent(new PointerEvent(type, {
+    pointerId: fingerId,
+    pointerType: 'touch',
+    isPrimary: true,
+    clientX: x,
+    clientY: y,
+    bubbles: true,
+    cancelable: true,
+    buttons: type === 'pointerdown' ? 1 : 0,
+  }));
+  send('pointerdown');
+  send('pointerup');
+}
+
+// In the page: the photo area's color, as drawn now, at the place tapAndLookAtLogo reads (inside
+// the logo where its placement now puts it, a quarter of its width right of and above its
+// middle). Returns [r, g, b].
+function logoTargetColorInPage() {
+  const canvas = document.getElementById('view');
+  const app = window.__straightener.app;
+  const crop = app.geometry.crop;
+  const placed = window.CardEngine.clampOverlay(app.state.overlay, crop.width, crop.height);
+  const rect = window.CardEngine.overlayRect(placed, crop.width, crop.height);
+  const lookAt = [crop.x + rect.x + rect.width * 3 / 4, crop.y + rect.y + rect.height / 4];
+  const [screenX, screenY] = window.CF.toScreen(window.CF.currentView(), lookAt);
+  const scale = canvas.width / canvas.getBoundingClientRect().width;
+  const pixel = canvas.getContext('2d')
+    .getImageData(Math.round(screenX * scale), Math.round(screenY * scale), 1, 1).data;
+  return Array.from(pixel.slice(0, 3));
+}
+
+// Taps a page point with one dispatched finger while the page's clock stands still, lets one
+// frame's time (FRAME_MS) pass on that clock, and reads the color where tapAndLookAtLogo does.
+// The app times its drawing, and the logo's glide, by the page's clock, so the picture read is
+// the one a sixtieth of a second after the tap however busy the computer is: a busy computer
+// only makes the frame late in real time. The page's clock must have been taken over
+// (page.clock.install) before the app opened; it runs on again afterwards. Returns [r, g, b].
+async function tapAndLookOneFrameOn(page, point) {
+  const pageNow = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(pageNow + CLOCK_JUMP_MS);
+  await page.evaluate(dispatchTapInPage, { x: point.x, y: point.y, fingerId: TAP_FINGER_ID });
+  await page.clock.runFor(FRAME_MS);
+  const color = await page.evaluate(logoTargetColorInPage);
+  await page.clock.resume();
+  return color;
+}
+
 // The colors drawn at a ring's place on the page (CSS px): { dot, shadow }, each [r, g, b] of the
 // one device pixel there: `dot` at the point itself (where a ring's white dot is drawn) and
 // `shadow` `shadowPx` to its left (where a ring's dark outline is drawn, round the white
@@ -439,6 +495,7 @@ module.exports = {
   colorOnPage,
   nextFrames,
   tapAndLookAtLogo,
+  tapAndLookOneFrameOn,
   ringMarksAt,
   readSavedLogo,
   bandSpread,

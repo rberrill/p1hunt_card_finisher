@@ -86,6 +86,7 @@ const {
   openPicker,
   chooseFixtureLogo,
   saveTheCorners,
+  placeFrontCorners,
   thumbnailDigests,
   isOutlineCrossed,
   logoCoverOfShot,
@@ -155,7 +156,8 @@ const DARK_EDGE_MAX = 160;
 // matching pair of cells may differ on average (0 to 255): JPEG saved twice.
 const MATCH_GRID = 4;
 const MATCH_TOLERANCE = 12;
-// The pair's corner shots in Chromium: the back's and the front's shot sides, in px.
+// The pair's corner shots, with the front's corners placed from an edits file
+// (placeFrontCorners): the back's and the front's shot sides, in px, the same in every engine.
 const BACK_SHOT_PX = 152;
 const FRONT_SHOT_PX = 144;
 // The logo the no-logo cases add, from tests/fixtures/: a solid green square.
@@ -1325,6 +1327,7 @@ test('CNR-16.1 In a pair, the corner shots are of the side on screen [phone]', a
 }, testInfo) => {
   await installShareStandIn(page);
   const hand = await makePair(page, testInfo, PORTRAIT_PAIR, NO_CORNER_QUESTION);
+  await placeFrontCorners(page, hand);
   await goToStep(page, 'export', hand);
   const backSheetPx = 2 * BACK_SHOT_PX + GAP_PX;
   const frontSheetPx = 2 * FRONT_SHOT_PX + GAP_PX;

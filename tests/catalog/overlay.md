@@ -1317,7 +1317,7 @@ On a fail, record: the row number, what you saw instead, a screen recording.
 
 ### OVL-22.4 A tapped ring glides the logo there, not at once   [auto: phone]
 Script only
-Stand-in: the script reads the picture the app draws in the frame right after the tap; a person can't see a single frame (about a sixtieth of a second).
+Stand-in: the script holds the page's clock still at the tap, lets a sixtieth of a second pass on it, and reads the picture the app draws in that frame; a person can't see a single frame, and holding the clock makes it the same frame however busy the computer is.
 
 Before you start:
 - Device and browser: a phone-width window, 390 × 844 px, with motion not reduced

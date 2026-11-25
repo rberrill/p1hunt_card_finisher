@@ -171,16 +171,20 @@ Before you start:
 - Photo: 01_chrome_flat_black.JPEG from samples/
 - Starting screen: the photo open, on the Export step, **2000** selected
 
-The focus is the control the keyboard acts on, drawn with a ring.
+The focus is the control the keyboard acts on, drawn with a ring. **Download** is reached with Tab, not a click: not every browser gives a clicked button the focus.
+
+The named action:
+- Tab to **Download**: click the photo area 20 px in from its top-left corner, then press Tab until **Download** has the focus.
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Click **Download** | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?"; the focus is on **Yes** |
-| 2 | Press Tab | The focus moves to **No** |
-| 3 | Press Tab | The focus moves to **Cancel** |
-| 4 | Press Tab | The focus goes back to **Yes**, not to anything behind the question box |
-| 5 | Press Shift+Tab | The focus goes to **Cancel** |
-| 6 | Press Escape | The question box closes, and the focus is back on **Download** |
+| 1 | Tab to **Download** | A white ring shows around **Download** |
+| 2 | Press Enter | The question box (the box over the dimmed photo with a question and buttons) asks "Upscale to 2000 px?"; the focus is on **Yes** |
+| 3 | Press Tab | The focus moves to **No** |
+| 4 | Press Tab | The focus moves to **Cancel** |
+| 5 | Press Tab | The focus goes back to **Yes**, not to anything behind the question box |
+| 6 | Press Shift+Tab | The focus goes to **Cancel** |
+| 7 | Press Escape | The question box closes, and the focus is back on **Download** |
 
 Pass: every row's result is seen.
 On a fail, record: the row number, what you saw instead, a screenshot.
