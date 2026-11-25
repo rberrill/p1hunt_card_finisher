@@ -41,8 +41,7 @@ Agents). Triage fixes nothing and changes no test.
 
 Before the first batch, move the full run's folder into `tests/runs/kept/`: the reporter
 keeps only the newest ten run folders, and the triage re-runs push the full run out
-(Claude's habit, after the 1.10.0 preflight's run folder was lost that way). The summary's
-"failed" total also counts rows skipped on purpose, so count the failures from the table.
+(Claude's habit, after the 1.10.0 preflight's run folder was lost that way).
 
 ### Rich decides what happens next
 
