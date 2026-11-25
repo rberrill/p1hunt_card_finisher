@@ -10,7 +10,7 @@ argument-hint: "[X.Y.Z]"
 **Stop and ask** if Rich hasn't said go in this conversation, or if any of these is not true (the `test` skill):
 
 - the newest checklist in `tests/checklists/` is for the build being released (no app file changed since), is filled in, and its result is Pass;
-- every open row in `tests/bugs.md` has the Decision "Open for now" (Rich reviewed it and it may ship): none reads "Fix" or "Not reviewed";
+- every open row in `tests/bugs.md` has a Decision that begins "Open for now" (Rich reviewed it and accepted it for this release, whether or not it says when it will be fixed): none reads "Fix" or "Not reviewed". A row closed as not a bug does not count;
 - `tests/catalog/find-out.md` has no item a case in this release is waiting on.
 
 ## Branches
