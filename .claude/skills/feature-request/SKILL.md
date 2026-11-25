@@ -71,15 +71,15 @@ Every request has drawings, including one that changes no screen.
 
 - **A screen change** gets a phone wireframe for each new state (the phone is the primary
   device), with what is new outlined in dashed red and a legend above the plates. Draw the
-  question cards and the More options rows as they would really sit.
+  question cards and a sheet's rows as they would really sit.
 - **A change with no screen** shows what the user sees today that it fixes, and a diagram of
   where it joins the code or the process.
 - **A change to state, storage, the export or a flow** also gets a diagram: the pipeline or the
   life of the thing, with new parts dashed red and unchanged context greyed.
-- **Draw to scale, and let the drawing test the design.** The phone is 240 units wide; the
-  192 px control area is about 118 units and a 44 px row about 27. If the rows don't fit the
-  drawing, they don't fit the phone: change the design, not the scale. (The caption request's
-  plate style moved under More options this way.)
+- **Draw to scale, and let the drawing test the design.** The phone is 240 units wide for a
+  390 px screen and 519 tall: the top bar is 30 units, the 200 px control area 123, a 44 px
+  row 27, the 70 px tool row 43 and the tab bar 32 (`PHONE` in the kit). If the rows don't fit
+  the drawing, they don't fit the phone: change the design, not the scale.
 - **Use the app's real words** on every button and label, and plain sample text. No team, driver
   or series names or marks anywhere, as in the app.
 - **Data is drawn to scale** with direct labels (the detection scoreboard), never as a table of
@@ -94,6 +94,8 @@ Every request has drawings, including one that changes no screen.
    `const kit = require(process.env.FR_KIT);` and ends
    `kit.write(process.env.FR_OUT, '<name>', kit.page({ … }));`. Copy the shape of an existing
    page script in that folder; the kit's parts are listed below and commented in `page-kit.js`.
+   A page script written before 1.10 draws the old phone with parts the kit no longer has
+   (`selects`, `moreBar`, `actionBar`): redraw its phones before rebuilding it.
 3. Build it into the scratchpad:
    `node .claude/skills/feature-request/build-page.js <page script> <scratchpad folder>`.
    It writes `<name>.html` (the page) and `figures-<name>.html` (its drawings on one dark sheet).
@@ -121,7 +123,10 @@ catalog (the `test` skill), and the page's UAT section says where they went.
 | `page({ title, eyebrow, heading, lede, chips, sections, footer })` | The whole page; sections are numbered in order |
 | `impact`, `criteria`, `table`, `list`, `LEGEND` | The section bodies |
 | `figure(drawing(width, height, label, body), caption, plateClass)` | A drawing in its plate: `''` for a phone, `'wide'`, or `'full'` for a diagram |
-| `phoneFrame`, `photo`, `selects`, `moreBar`, `actionBar`, `scrim`, `dialog` | Phone wireframes |
+| `phoneFrame`, `phoneLayout`, `topBar`, `photo`, `controlArea`, `tabBar` | The phone, top to bottom; `phoneLayout()` gives each part's place |
+| `labelRow`, `controlRow`, `toolRow`, `exportRows` | What sits in the control area: the three rows of a step, or Export's four |
+| `sheet`, `handleTab`, `scrim`, `dialog` | A sheet risen over the photo; a question card over the dimmed photo |
+| `pill`, `pillRow`, `segmented` | The app's rounded controls: resting, selected (white), on (ringed), accent (red) |
 | `node`, `arrow` | Diagrams: `node` / `flow` exists today, `node-new` / `flow-new` is added, `node-mute` / `flow-mute` is unchanged context |
 | `rect`, `line`, `text`, `textLines`, `polygon`, `circle`, `button` | Everything else; the CSS classes are at the end of `page.css` |
 

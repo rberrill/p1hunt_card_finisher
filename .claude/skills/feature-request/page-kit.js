@@ -20,23 +20,49 @@ const BASELINE_PX = 3.5;
 const NODE_TITLE_Y = 16;
 const NODE_FIRST_LINE_Y = 30;
 const NODE_LINE_STEP = 11;
-// The phone wireframe's grid, in drawing units. The phone is 240 units wide, as on the first
-// request pages; a real 192 px control area is about 118 units at this scale.
+// The phone wireframe's grid, in drawing units. The phone is 240 units wide for a 390 px
+// screen, so a unit is about 1.6 px. The heights are the app's own (css/app.css): the top bar
+// 48 px, the control area 200 px, a label or control row 44 px, the tool row 70 px, the tab
+// bar 52 px, the grabber's tab 80 × 24 px.
 const PHONE = {
+  height: 519,
   frameInset: 4,
   frameWidth: 232,
   frameRadius: 14,
+  // The inside of the frame, which the bars and the control area span.
+  left: 5,
+  width: 230,
   photoLeft: 10,
   photoWidth: 220,
-  controlLeft: 14,
-  controlWidth: 212,
   centerX: 120,
   cardWidth: 56,
   cardHeight: 80,
-  rowHeight: 22,
-  barHeight: 28,
-  gap: 6,
+  topBarHeight: 30,
+  controlHeight: 123,
+  tabBarHeight: 32,
+  // Inside the control area: its side padding, and each row's top and height.
+  pad: 10,
+  labelRowTop: 4,
+  controlRowTop: 33,
+  toolRowTop: 66,
+  rowHeight: 27,
+  toolRowHeight: 43,
+  gap: 3,
+  tabWidth: 49,
+  tabHeight: 15,
+  toolRadius: 7,
 };
+// Export's control area has four rows of its own: each row's top and height.
+const EXPORT_ROWS = {
+  choicesTop: 4,
+  readoutTop: 36,
+  actionsTop: 62,
+  actionsHeight: 30,
+  bottomTop: 94,
+  sizeWidth: 124,
+};
+// The six steps, as the tab bar words them.
+const STEPS = ['Perspective', 'Rotate', 'Crop', 'Levels', 'Overlay', 'Export'];
 // A question card over the dimmed photo.
 const DIALOG = {
   left: 24,
@@ -52,8 +78,6 @@ const DIALOG = {
   bottomPad: 6,
   outlinePad: 3,
 };
-// The Export step's action bar: [label, is it red, relative width].
-const EXPORT_BAR = [['Export ▾', false, 64], ['Share', true, 66], ['Download', true, 70]];
 const LEGEND = '<div class="legend"><span><i></i>New in this request</span></div>';
 
 /* ---------- text helpers ---------- */
@@ -157,15 +181,87 @@ function arrowheadDefinitions() {
 
 /* ---------- phone wireframe parts ---------- */
 
-// The phone's outline and the app header. height is the whole drawing's height.
-function phoneFrame(height) {
+// The phone's outline. height is the whole drawing's height. The bars are parts of their own,
+// because the app shows none before a photo is open.
+function phoneFrame(height = PHONE.height) {
   const frameHeight = height - 2 * PHONE.frameInset;
   return rect('frame', PHONE.frameInset, PHONE.frameInset, PHONE.frameWidth, frameHeight,
-    ` rx="${PHONE.frameRadius}"`)
-    + text(16, 30, 'P1', 'a')
-    + text(34, 30, 'CARD FINISHER', 'h')
-    + text(196, 30, '↶')
-    + text(214, 30, '↷');
+    ` rx="${PHONE.frameRadius}"`);
+}
+
+// Where the parts sit in a phone drawing of this height, top to bottom: the top bar, the
+// photo, the control area and the tab bar. → { photoTop, photoHeight, controlTop, tabBarTop }
+function phoneLayout(height = PHONE.height) {
+  const photoTop = PHONE.left + PHONE.topBarHeight + 1;
+  const tabBarTop = height - PHONE.left - PHONE.tabBarHeight;
+  const controlTop = tabBarTop - PHONE.controlHeight;
+  return { photoTop, photoHeight: controlTop - photoTop, controlTop, tabBarTop };
+}
+
+// A rounded control with its label centred. state: '' (resting), 'selected' (the solid white
+// fill of a chosen mode or choice), 'on' (a switch that is on: a white ring), 'accent' (the
+// red main action) or 'quiet' (greyed out). radius defaults to a full pill. isSmall draws the
+// label in the small face, for a control whose words are small in the app.
+function pill(x, y, width, height, label, state = '', radius = height / 2, isSmall = false) {
+  const boxClass = { selected: 'btn-on', on: 'btn-ring', accent: 'btn-accent' }[state] || 'btn';
+  const labelClass = { selected: 'inv c', accent: 'w c', quiet: 'm c' }[state] || 'c';
+  return rect(boxClass, x, y, width, height, ` rx="${rounded(radius)}"`)
+    + text(x + width / 2, y + height / 2 + BASELINE_PX, label,
+      isSmall ? `${labelClass} s` : labelClass);
+}
+
+// A row of pills from x across width, sized by weight. items: [[label, state, weight], …];
+// state as for pill, weight 1 when left out.
+function pillRow(x, y, width, height, items, radius) {
+  const room = width - PHONE.gap * (items.length - 1);
+  const totalWeight = items.reduce((sum, item) => sum + (item[2] || 1), 0);
+  let left = x;
+  let out = '';
+  for (const [label, state, weight] of items) {
+    const itemWidth = room * (weight || 1) / totalWeight;
+    out += pill(left, y, itemWidth, height, label, state, radius);
+    left += itemWidth + PHONE.gap;
+  }
+  return out;
+}
+
+// A one-tap choice: every label on one pill, the chosen one filled white.
+function segmented(x, y, width, height, labels, chosen) {
+  const weights = labels.map(label => label.length + 2);
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  let left = x;
+  let out = rect('btn', x, y, width, height, ` rx="${rounded(height / 2)}"`);
+  labels.forEach((label, i) => {
+    const itemWidth = width * weights[i] / totalWeight;
+    const middleY = y + height / 2 + BASELINE_PX;
+    if (label === chosen) {
+      out += pill(left, y, itemWidth, height, label, 'selected', height / 2, true);
+    } else {
+      out += text(left + itemWidth / 2, middleY, label, 'c s');
+    }
+    left += itemWidth;
+  });
+  return out;
+}
+
+// The top bar: Open at the left, Undo and Redo at the right. pair: 'Front' or 'Back' draws
+// Front | Back with Unpair beside it, as while a pair is open. isZoomed adds Fit, which the
+// phone shows only while the photo is zoomed or panned.
+function topBar({ pair = '', isZoomed = false } = {}) {
+  const top = PHONE.left;
+  const bottom = top + PHONE.topBarHeight;
+  const middleY = top + PHONE.topBarHeight / 2 + BASELINE_PX;
+  const folder = [[14, 15], [19, 15], [21, 17], [27, 17], [27, 26], [14, 26]];
+  let out = line('box', PHONE.left, bottom, PHONE.left + PHONE.width, bottom)
+    + polygon('flow', folder)
+    + text(204, middleY, '↶', 'c')
+    + text(222, middleY, '↷', 'c');
+  if (pair) {
+    out += segmented(60, top + 6, 72, 18, ['Front', 'Back'], pair)
+      + pill(135, top + 6, 36, 18, 'Unpair');
+  }
+  if (isZoomed) out += pill(174, top + 6, 20, 18, 'Fit');
+  return out;
 }
 
 // The photo area from y down. inner replaces the default card outline in its middle.
@@ -176,38 +272,121 @@ function photo(y, height, inner) {
     + (inner || rect('card', cardLeft, cardTop, PHONE.cardWidth, PHONE.cardHeight));
 }
 
-// The Export step's Format and Size dropdowns.
-function selects(y) {
-  const labelY = y + PHONE.rowHeight / 2 + BASELINE_PX;
-  return rect('btn', 14, y, 102, PHONE.rowHeight)
-    + text(22, labelY, 'JPEG ▾')
-    + rect('btn', 122, y, 104, PHONE.rowHeight)
-    + text(130, labelY, '2000 px ▾');
+// The tab that opens a sheet, centred on x with its bottom edge at y: an up chevron while the
+// sheet is down, a pill while it is up.
+function handleTab(x, y, isSheetOpen = false) {
+  const left = x - PHONE.tabWidth / 2;
+  const middleY = y - PHONE.tabHeight / 2;
+  const mark = isSheetOpen
+    ? line('flow', x - 6, middleY, x + 6, middleY)
+    : `<polyline class="flow" points="${x - 5},${middleY + 2} ${x},${middleY - 2} `
+      + `${x + 5},${middleY + 2}"/>`;
+  return rect('panel', left, y - PHONE.tabHeight, PHONE.tabWidth, PHONE.tabHeight + 1,
+    ' rx="6"') + mark;
 }
 
-// The full-width More options bar: red with the chevron up when open.
-function moreBar(y, isOpen, height = PHONE.rowHeight) {
-  const labelY = y + height / 2 + BASELINE_PX;
-  const labelClass = isOpen ? 'w' : '';
-  return rect(isOpen ? 'btn-accent' : 'btn', PHONE.controlLeft, y, PHONE.controlWidth, height)
-    + text(22, labelY, 'More options', labelClass)
-    + text(212, labelY, isOpen ? '▴' : '▾', labelClass);
+// The control area's panel with its top at y, and the grabber's tab over the photo's bottom
+// edge. rows is what sits in it: labelRow + controlRow + toolRow, or exportRows, or parts of
+// the author's own placed with PHONE's row tops. hasGrabber: false for a step with no sheet.
+function controlArea(y, rows = '', hasGrabber = true) {
+  return rect('panel', PHONE.left, y, PHONE.width, PHONE.controlHeight)
+    + (hasGrabber ? handleTab(PHONE.centerX, y) : '')
+    + rows;
 }
 
-// The action bar at y, under a divider. items: [[label, isAccent, relativeWidth], …].
-function actionBar(y, items) {
-  const room = PHONE.controlWidth - PHONE.gap * (items.length - 1);
-  const totalWeight = items.reduce((sum, item) => sum + item[2], 0);
-  const dividerY = y - 8;
-  const photoRight = PHONE.photoLeft + PHONE.photoWidth;
-  let x = PHONE.controlLeft;
-  let out = line('box', PHONE.photoLeft, dividerY, photoRight, dividerY);
-  for (const [label, isAccent, weight] of items) {
-    const width = room * weight / totalWeight;
-    out += button(x, y, width, PHONE.barHeight, label, isAccent);
-    x += width + PHONE.gap;
-  }
+// The label row of the control area at y: the adjustment's name, its value, and a readout or
+// a short note at the right (all optional). A status message takes this row in the app.
+function labelRow(y, name, value = '', readout = '') {
+  const baselineY = y + PHONE.labelRowTop + PHONE.rowHeight / 2 + BASELINE_PX;
+  const left = PHONE.left + PHONE.pad;
+  const right = PHONE.left + PHONE.width - PHONE.pad;
+  const nameWidth = name ? name.length * 6.6 + 6 : 0;
+  return (name ? text(left, baselineY, name, 't') : '')
+    + (value ? text(left + nameWidth, baselineY, value, 'h') : '')
+    + (readout ? text(right, baselineY, readout, 'm e') : '');
+}
+
+// The control row of the control area at y, as pills. items: [[label, state, weight], …].
+function controlRow(y, items) {
+  const left = PHONE.left + PHONE.pad;
+  const width = PHONE.width - 2 * PHONE.pad;
+  return pillRow(left, y + PHONE.controlRowTop, width, PHONE.rowHeight, items);
+}
+
+// The tool row of the control area at y. tools: [[label, state, isSwitch], …]; state
+// 'selected' is the mode in use and 'on' a switch that is on. A switch carries a small On or
+// Off in its corner.
+function toolRow(y, tools) {
+  const left = PHONE.left + PHONE.pad;
+  const width = PHONE.width - 2 * PHONE.pad;
+  const top = y + PHONE.toolRowTop;
+  const toolWidth = (width - PHONE.gap * (tools.length - 1)) / tools.length;
+  let out = '';
+  tools.forEach(([label, state, isSwitch], i) => {
+    const toolLeft = left + i * (toolWidth + PHONE.gap);
+    const middleX = toolLeft + toolWidth / 2;
+    // The label sits low in the tool, under where the app draws its icon.
+    out += pill(toolLeft, top, toolWidth, PHONE.toolRowHeight, '', state, PHONE.toolRadius)
+      + rect('box', middleX - 5, top + 9, 10, 10, ' rx="2"')
+      + text(middleX, top + 33, label, state === 'selected' ? 'inv c s' : 'c s');
+    if (isSwitch || state === 'on') {
+      out += text(toolLeft + toolWidth - 4, top + 11, state === 'on' ? 'On' : 'Off', 'tab e');
+    }
+  });
   return out;
+}
+
+// Export's four rows in the control area at y: Size and Format, the readout (or the note
+// that takes its place), Share, Download and Copy, then the bottom row. bottom: the labels of
+// the last row (Add back and Corner shots; Next card once the edits are exported).
+function exportRows(y, { size = '2000', format = 'JPEG', readout = '', bottom } = {}) {
+  const left = PHONE.left + PHONE.pad;
+  const width = PHONE.width - 2 * PHONE.pad;
+  const formatLeft = left + EXPORT_ROWS.sizeWidth + 2 * PHONE.gap;
+  const formatWidth = width - EXPORT_ROWS.sizeWidth - 2 * PHONE.gap;
+  const choicesTop = y + EXPORT_ROWS.choicesTop;
+  const sizes = ['1080', '2000', '3000', 'Original'];
+  const lastRow = (bottom || ['Add back', 'Corner shots']).map(label => [label, '']);
+  const actions = [['Share', 'accent', 6], ['Download', '', 6], ['Copy', '', 4]];
+  return segmented(left, choicesTop, EXPORT_ROWS.sizeWidth, PHONE.rowHeight, sizes, size)
+    + segmented(formatLeft, choicesTop, formatWidth, PHONE.rowHeight,
+      ['JPEG', 'PNG', 'WebP'], format)
+    + text(left, y + EXPORT_ROWS.readoutTop + 13, readout, 'm')
+    + pillRow(left, y + EXPORT_ROWS.actionsTop, width, EXPORT_ROWS.actionsHeight, actions)
+    + pillRow(left, y + EXPORT_ROWS.bottomTop, width, PHONE.rowHeight, lastRow);
+}
+
+// The six-step tab bar with its top at y. selected is the step's name as the bar words it.
+function tabBar(y, selected) {
+  const weights = STEPS.map(step => step.length + 3);
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  let left = PHONE.left;
+  let out = line('box', PHONE.left, y, PHONE.left + PHONE.width, y);
+  STEPS.forEach((step, i) => {
+    const tabWidth = PHONE.width * weights[i] / totalWeight;
+    const middleX = left + tabWidth / 2;
+    const isSelected = step === selected;
+    out += rect(isSelected ? 'btn-on' : 'box', middleX - 4, y + 6, 8, 8, ' rx="1.5"')
+      + text(middleX, y + 25, step, isSelected ? 'tab sel c' : 'tab c');
+    left += tabWidth;
+  });
+  return out;
+}
+
+// A sheet that has risen over the photo, from y to the bottom of a phone drawing of this
+// height: it covers the control area and the tab bar, as the step's options sheet and the
+// Corner shots sheet do. title is drawn as the sheet's heading, with × to close it; body is
+// the author's rows, placed from about y + 30.
+function sheet(y, title, body = '', height = PHONE.height) {
+  const bottom = height - PHONE.left;
+  const closeX = PHONE.left + PHONE.width - PHONE.pad - 7;
+  return rect('panel', PHONE.left, y, PHONE.width, bottom - y,
+    ` rx="${PHONE.frameRadius - 1}"`)
+    + handleTab(PHONE.centerX, y, true)
+    + text(PHONE.left + PHONE.pad, y + 19, title, 't')
+    + circle('btn', closeX, y + 15, 7)
+    + text(closeX, y + 15 + BASELINE_PX, '×', 'c')
+    + body;
 }
 
 // Dims everything inside the phone frame, as the app does behind a question card.
@@ -346,7 +525,8 @@ function write(folder, name, html) {
 
 module.exports = {
   PHONE,
-  EXPORT_BAR,
+  EXPORT_ROWS,
+  STEPS,
   LEGEND,
   escapeHtml,
   rect,
@@ -361,10 +541,20 @@ module.exports = {
   drawing,
   figure,
   phoneFrame,
+  phoneLayout,
+  pill,
+  pillRow,
+  segmented,
+  topBar,
   photo,
-  selects,
-  moreBar,
-  actionBar,
+  handleTab,
+  controlArea,
+  labelRow,
+  controlRow,
+  toolRow,
+  exportRows,
+  tabBar,
+  sheet,
   scrim,
   dialog,
   impact,

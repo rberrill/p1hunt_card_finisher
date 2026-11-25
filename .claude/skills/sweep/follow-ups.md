@@ -60,12 +60,6 @@ Each item says what was found, where, and what the next step would be.
 - Next step: a change to the app, so it needs Rich's go-ahead: remove what is unused, and
   correct the two notes.
 
-### F-09 The feature-request kit draws the pre-1.10 phone
-
-- Where: `.claude/skills/feature-request/page-kit.js` (the header, a 192 px control area,
-  `selects`, `moreBar`, `actionBar`) and the lines of that skill's `SKILL.md` that describe them.
-- Next step: update the kit and the skill to the 1.10 layout, before the next feature request.
-
 ### F-10 Catalog work for a case-writer
 
 Three kinds. A `case-writer` does each, then a `reviewer` reads it.

@@ -116,6 +116,9 @@ footer { color: var(--muted); font-size: 13px; font-family: var(--font-mono); bo
 .wf .holder { fill: var(--wf-bg); stroke: var(--muted); stroke-width: 1; }
 .wf .btn { fill: var(--wf-fill); stroke: var(--line); stroke-width: 1; }
 .wf .btn-accent { fill: var(--accent); stroke: none; }
+.wf .btn-on { fill: var(--ink); stroke: none; }
+.wf .btn-ring { fill: var(--wf-fill); stroke: var(--ink); stroke-width: 1.5; }
+.wf .panel { fill: var(--panel); stroke: var(--line); stroke-width: 1; }
 .wf .new { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; }
 .wf .hot { fill: none; stroke: var(--accent); stroke-width: 1.5; }
 .wf .band { fill: var(--accent); opacity: 0.18; stroke: none; }
@@ -153,3 +156,6 @@ footer { color: var(--muted); font-size: 13px; font-family: var(--font-mono); bo
 .legend i.solid { border-top: 2px solid var(--ink); }
 .legend i.grey { border-top: 2px dotted var(--muted); }
 .wf text.big { font-size: 13px; }
+.wf text.s { font-size: 8.5px; }
+.wf text.tab { fill: var(--muted); font-size: 7.5px; }
+.wf text.tab.sel { fill: var(--ink); font-weight: 600; }
