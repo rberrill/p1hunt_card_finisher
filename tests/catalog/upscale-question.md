@@ -326,9 +326,9 @@ Before you start:
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Edits file: pair-front-square-crop-edits.json from tests/fixtures/: edits saved from 14_front_portrait_raw_white.JPEG, with its four corners on the card's corners, turned 3.0° and with a square crop
-- Starting screen: a pair, as in UPS-05.1, with the front's corners placed, on the Export step; **Separately** and **2000** selected
+- Starting screen: a pair (open the front, tap **Export**, tap **Add back** and choose the back), with the front's corners placed, on the Export step; **Separately** and **2000** selected
 
-Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
+Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls, the block of buttons and sliders under the photo); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -345,9 +345,9 @@ Before you start:
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
 - Edits file: pair-front-square-crop-edits.json from tests/fixtures/: edits saved from 14_front_portrait_raw_white.JPEG, with its four corners on the card's corners, turned 3.0° and with a square crop
-- Starting screen: a pair, as in UPS-05.1, with the front's corners placed, on the Export step; **Separately** selected
+- Starting screen: a pair (open the front, tap **Export**, tap **Add back** and choose the back), with the front's corners placed, on the Export step; **Separately** selected
 
-Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
+Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls, the block of buttons and sliders under the photo); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -366,7 +366,7 @@ Before you start:
 - Build: the build under test, opened with `?export.allowUpscale=1&export.longEdge=12000` (index.html?export.allowUpscale=1&export.longEdge=12000): each side's file would be 12000 px tall, and the 16.7 MP canvas limit holds it at 4846 px
 - Browser data: none for this site (a private window, or the site's data cleared)
 - Photos: 14_front_portrait_raw_white.JPEG and 14_back_portrait_raw_white.JPEG from samples/
-- Starting screen: a pair, as in UPS-05.1, on the Export step; **Separately** selected
+- Starting screen: a pair (open the front, tap **Export**, tap **Add back** and choose the back), on the Export step; **Separately** selected
 
 | # | Do this | You should see |
 | --- | --- | --- |

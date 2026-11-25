@@ -775,7 +775,7 @@ Before you start:
 - Edits file: pair-front-square-crop-edits.json from tests/fixtures/: edits saved from 14_front_portrait_raw_white.JPEG, with its four corners on the card's corners, turned 3.0° and with a square crop
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the front's corners placed; then the Export step, with **Together** and **2000** selected
 
-Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
+Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls, the block of buttons and sliders under the photo); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -2769,7 +2769,7 @@ Before you start:
 - Edits file: pair-front-square-crop-edits.json from tests/fixtures/: edits saved from 14_front_portrait_raw_white.JPEG, with its four corners on the card's corners, turned 3.0° and with a square crop
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the front's corners placed; then the Export step, with **Together** and **2000** selected
 
-Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
+Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls, the block of buttons and sliders under the photo); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
 
 | # | Do this | You should see |
 | --- | --- | --- |
@@ -2788,7 +2788,7 @@ Before you start:
 - Edits file: pair-front-square-crop-edits.json from tests/fixtures/: edits saved from 14_front_portrait_raw_white.JPEG, with its four corners on the card's corners, turned 3.0° and with a square crop
 - Starting screen: the pair made: the front opened, then on Export **Add back** and the back chosen; the back open on Perspective; then the front's corners placed; then the Export step, with **Together** and **2000** selected
 
-Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
+Place the front's corners: tap **Front** in the top bar; tap **Export** in the step tabs; open **Export options** (tap the options tab, the small tab with an up arrow on the top edge of the controls, the block of buttons and sliders under the photo); tap **Load edits** and choose pair-front-square-crop-edits.json; tap **Rotate** in the step tabs; tap **Reset**, so the angle reads 0.0°; tap **Back** in the top bar. The pair keeps its **5:7 card** crop. Detection alone can outline a slightly smaller card in another browser engine; the file puts the corners on the card itself, so the sizes below are the same in every browser.
 
 At **1080** the front's card, 748 × 1047 px, is under the size; the back's, 785 × 1100 px, is over it and is scaled down, so **Yes** would upscale the front only.
 
