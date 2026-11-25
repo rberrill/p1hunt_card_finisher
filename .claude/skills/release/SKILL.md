@@ -32,6 +32,16 @@ Edits Rich makes on GitHub's website go on `main`, never on `release`.
 - The full run passes (from `tests/`: `CARD_FINISHER_FULL=1 npx playwright test`): no unexpected failure. Note its totals for the tag message.
 - Privacy audit: `git diff --stat vPREV..HEAD` and `git ls-files`. Nothing local-only is tracked (`CLAUDE.local.md`, `archive/`, `tests/runs/`, `tests/node_modules/`, `.claude/settings.local.json`), and every new file is meant to be public.
 
+### Rich decides what happens next
+
+Running `/release` is Rich's go for the preflight, not for the tag (Rich, 2026-11-24). When the preflight is done, **stop and report**: the selftest, the full run's totals, each failure with what it is and where, and anything the branch and privacy checks found. Then wait. He chooses:
+
+- **go on** with the release as it is;
+- **accept** a failure as a bug and go on: it gets a row in `tests/bugs.md` with the Decision "Open for now", and the tag's message lists it;
+- **cancel** the release for more fixes: the fix cycle and a new UAT round come first (the `test` skill), and `/release` is run again afterwards.
+
+Don't take a clean run as his approval, don't take a failure as an automatic stop, and don't describe the later steps as what will happen. Nothing in steps 2 and 3 is done until he has answered.
+
 ## 2. Version commit
 
 - `node .claude/skills/release/set-version.js X.Y.Z` sets `appVersion` in `js/config.js` and every `?v=` in `index.html`.
