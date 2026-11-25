@@ -1334,8 +1334,10 @@ test('STA-11.1 Resume after the saved photo has gone [phone] [webkit]', async ({
 
 test('STA-12.1 Resume that fails names no browser error [desktop]', async ({
   page,
+  browserName,
   check,
 }, testInfo) => {
+  test.skip(browserName !== 'chromium', 'Only Chromium lets a test clear the site data');
   const hand = await startWithSavedPhoto(page, testInfo);
   // The developer tools' Clear site data, through the same browser command they use.
   const devTools = await page.context().newCDPSession(page);

@@ -530,8 +530,10 @@ test('DEV-07.1 Re-detect runs detection, and Close tuning closes the panel [phon
 test('DEV-07.2 Copy CONFIG copies every setting [phone]', async ({
   page,
   context,
+  browserName,
   check,
 }, testInfo) => {
+  test.skip(browserName !== 'chromium', 'Only Chromium lets a test use the clipboard');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   const hand = await startWith(page, testInfo, { address: 'index.html?debug=1' });
   await hand.tap(page.locator('#debugCopy'));

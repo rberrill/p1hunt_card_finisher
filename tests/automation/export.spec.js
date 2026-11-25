@@ -1653,10 +1653,14 @@ test('EXP-26.1 Fill outside photo picks a color and shows its swatch [phone]', a
   });
 });
 
+// Chromium only: Playwright's WebKit on Windows has no color input (it reads back as a text
+// box), so the picker can't be counted there. EXP-27.2 checks Safari on an iPhone.
 test('EXP-27.1 Custom… opens the color picker and shows the Custom color row [phone]', async ({
   page,
+  browserName,
   check,
 }, testInfo) => {
+  test.skip(browserName !== 'chromium', 'The WebKit of Playwright has no color input to open');
   // Counts the times the app opens the color picker, which no script can see open.
   await page.addInitScript(() => {
     window.testPickerOpenings = 0;

@@ -46,8 +46,11 @@ function resultLines(results) {
 function summaryText(runDir, results, wallClockMs) {
   const { version, commit, isDirty } = buildInfo(root);
   const knownCount = results.filter(result => result.status === 'known defect').length;
-  const failedCount = results
-    .filter(result => result.status !== 'passed' && result.status !== 'known defect').length;
+  // A case skipped on purpose (one only Chromium can run, in WebKit) is not a failure.
+  const skippedCount = results.filter(result => result.status === 'skipped').length;
+  const notFailed = ['passed', 'known defect', 'skipped'];
+  const failedCount = results.filter(result => !notFailed.includes(result.status)).length;
+  const passedCount = results.length - failedCount - knownCount - skippedCount;
   const screenshots = filesUnder(path.join(runDir, 'evidence'));
   const megabytes = filesUnder(runDir)
     .reduce((total, file) => total + fs.statSync(file).size, 0) / BYTES_PER_MB;
@@ -56,7 +59,7 @@ function summaryText(runDir, results, wallClockMs) {
     `# Test run ${path.basename(runDir)}`,
     '',
     `- **Build:** ${version}, commit ${commit}${isDirty ? ' with uncommitted changes' : ''}`,
-    `- **Result:** ${results.length - failedCount - knownCount} passed, ${failedCount} failed, `
+    `- **Result:** ${passedCount} passed, ${failedCount} failed, ${skippedCount} skipped, `
       + `${knownCount} known defects, of ${results.length} case runs`,
     `- **Time:** ${(wallClockMs / 1000).toFixed(1)} s wall clock`,
     `- **Evidence:** ${screenshots.length} screenshots; the run folder is `

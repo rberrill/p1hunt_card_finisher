@@ -1442,7 +1442,8 @@ const flattenValue = page => page.locator('#perspectiveLine .line-value');
 // Chromium only: in Playwright's WebKit a tap on the slider's track sends "input" but no
 // "change", so no undo step is made (PER-20.4 checks Safari on an iPhone).
 test('PER-20.1 Flatten at 100% is a flat 5:7 card, at 0% a squared-up trapezoid, one undo '
-  + 'step [phone]', async ({ page, check }, testInfo) => {
+  + 'step [phone]', async ({ page, browserName, check }, testInfo) => {
+  test.skip(browserName !== 'chromium', 'The WebKit of Playwright sends no change event for a tap on a slider track');
   const hand = await startOnPerspective(page, testInfo);
   await hand.tap(page.locator('#toolFlatten'));
   await check('the line reads FLATTEN 100%, with the slider\'s knob at its right end', async () => {
@@ -1489,8 +1490,10 @@ test('PER-20.1 Flatten at 100% is a flat 5:7 card, at 0% a squared-up trapezoid,
   });
 });
 
+// Chromium only, as PER-20.1.
 test('PER-20.2 Two changes to Flatten less than 0.9 seconds apart are one undo step [phone]',
-  async ({ page, check }, testInfo) => {
+  async ({ page, browserName, check }, testInfo) => {
+    test.skip(browserName !== 'chromium', 'The WebKit of Playwright sends no change event for a tap on a slider track');
     const hand = await startOnPerspective(page, testInfo);
     await hand.tap(page.locator('#toolFlatten'));
     await check('the line reads FLATTEN 100%', async () => {

@@ -863,8 +863,10 @@ test('MSG-12.1 Resume after the saved photo has gone [phone]', async ({
 
 test('MSG-13.1 A Resume that fails says "Couldn’t resume." [phone]', async ({
   page,
+  browserName,
   check,
 }, testInfo) => {
+  test.skip(browserName !== 'chromium', 'Only Chromium lets a test clear the site data');
   const hand = await startWithSavedPhoto(page, testInfo);
   // The developer tools' Clear site data, through the same browser command they use.
   const devTools = await page.context().newCDPSession(page);
@@ -1293,8 +1295,10 @@ const ANY_COPIED = /\(PNG\)\.$/;
 test('MSG-29.1 Copy says what it put on the clipboard [phone]', async ({
   page,
   context,
+  browserName,
   check,
 }, testInfo) => {
+  test.skip(browserName !== 'chromium', 'Only Chromium lets a test use the clipboard');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   const hand = await start(page, testInfo);
   await tapAndExpectUpscale(page, hand, check, page.locator('#btnCopy'));
@@ -1312,8 +1316,10 @@ test('MSG-29.1 Copy says what it put on the clipboard [phone]', async ({
 test('MSG-29.2 A pair\'s Copy says it copied the front and back [phone]', async ({
   page,
   context,
+  browserName,
   check,
 }, testInfo) => {
+  test.skip(browserName !== 'chromium', 'Only Chromium lets a test use the clipboard');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await watchMessages(page);
   const hand = await makePair(page, testInfo);
@@ -1572,8 +1578,10 @@ const TUNING_LINK = 'index.html?debug';
 test('MSG-41.1 Copy CONFIG says it copied [desktop]', async ({
   page,
   context,
+  browserName,
   check,
 }, testInfo) => {
+  test.skip(browserName !== 'chromium', 'Only Chromium lets a test use the clipboard');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   const hand = await startTuning(page, testInfo);
   await hand.tap(page.locator('#debugCopy'));

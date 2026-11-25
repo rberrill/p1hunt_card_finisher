@@ -4,6 +4,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { test } = require('@playwright/test');
 
 const root = path.resolve(__dirname, '../../..');
 // How many moves a drag is split into, so the app sees a drag and not a jump.
@@ -373,8 +374,12 @@ function tapPoint(page, hand, point) {
 // touch input (the DevTools protocol's Input.dispatchTouchEvent), as a real finger would be: the
 // browser scrolls a row and moves a native slider for it as it does for a real finger, which a
 // dispatched pointer can't do and Playwright's touchscreen (it can only tap) can't either.
-// Chromium only. Returns the finger: { moveTo(point), lift() }; lift ends the touch.
+// Chromium only, so a case that holds a finger is skipped in any other browser (Rich,
+// 2026-11-24: such cases are Chromium-only; no WebKit stand-in is built).
+// Returns the finger: { moveTo(point), lift() }; lift ends the touch.
 async function holdFinger(page, point) {
+  const browserName = page.context().browser().browserType().name();
+  test.skip(browserName !== 'chromium', 'Only Chromium lets a test hold a finger down');
   const session = await page.context().newCDPSession(page);
   // Sends one touch event of `type` with the finger at (x, y); a touchEnd has no finger left.
   const touch = (type, place) => session.send('Input.dispatchTouchEvent', {
